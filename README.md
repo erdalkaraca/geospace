@@ -89,4 +89,9 @@ You can change the default provider in the AI view once you have connected to a 
 File Not Found: If you don't see a file you expect, try reloading the workspace.
 AI Assistant Not Working: Ensure settings.json is correctly configured within the .geospace folder and that your API keys are valid.
 
+# Trusted by
+
+- [Kiosk Scout](https://developer.mozilla.org/en-US/docs/Web/API/Window/showDirectoryPicker): A cross-platform/PWA (mobile, browser, desktop) app which allows users to search for nearby vending machines.
+- Want your geo!space app listed here?
+
 # Happy mapping!
