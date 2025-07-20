@@ -4,7 +4,7 @@ import {TOOLBAR_MAIN, TOOLBAR_MAIN_RIGHT} from "./constants.ts";
 import {PyEnv} from "./pyservice.ts";
 import {EditorInput, editorRegistry} from "./editorregistry.ts";
 import {html, render} from "lit";
-import README from "../assets/README.md?url"
+import README from "../../README.md?raw"
 import {toastError, toastInfo} from "./toast.ts";
 import {activePartSignal, activeSelectionSignal} from "./appstate.ts";
 import {SETTINGS_FILE_PATH} from "./settingsservice.ts";

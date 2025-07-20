@@ -33,15 +33,24 @@ export class KMonacoEditor extends KPart {
     private mdContents?: string
 
     protected doAfterUI() {
-        fetch(this.input.data).then(data => {
-            data.text().then(text => {
-                this.mdContents = marked.parse(text) as string
+        const data: string = this.input.data
+        if (data.startsWith("http")) {
+            fetch(data).then(data => {
+                data.text().then(text => {
+                    this.updateContents(text)
+                })
             })
-        })
+        } else {
+            this.updateContents(data)
+        }
     }
 
     protected render() {
         return html`
             <div style="max-height: 90vh;">${unsafeHTML(this.mdContents)}</div>`
+    }
+
+    private updateContents(text: string) {
+        this.mdContents = marked.parse(text) as string
     }
 }
