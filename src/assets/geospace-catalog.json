@@ -1,0 +1,82 @@
+{
+  "label": "geo!space catalog",
+  "icon": "earth",
+  "contributionId": "catalog.root.geospace",
+  "items": [
+    {
+      "contributionId": "catalog.root.datasets",
+      "label": "Datasets",
+      "icon": "clone",
+      "items": [
+        {
+          "label": "countries.geojson",
+          "icon": "fg geojson-file",
+          "state": {
+            "url": "${baseURL}/datasets/countries.geojson",
+            "type": "file"
+          }
+        }
+      ]
+    },
+    {
+      "contributionId": "catalog.root.maps",
+      "label": "Maps",
+      "icon": "map-location",
+      "items": [
+        {
+          "label": "OpenStreetMap basemap",
+          "icon": "earth",
+          "state": {
+            "url": "${baseURL}/maps/osm.geospace",
+            "type": "file"
+          }
+        },
+        {
+          "label": "basemap.de basemap",
+          "icon": "earth",
+          "state": {
+            "url": "${baseURL}/maps/bm.geospace",
+            "type": "file"
+          }
+        }
+      ]
+    },
+    {
+      "contributionId": "catalog.root.overlays",
+      "label": "Overlays",
+      "icon": "fg map-poi",
+      "items": [
+      ]
+    },
+    {
+      "contributionId": "catalog.root.controls",
+      "label": "Controls",
+      "icon": "fg map-control",
+      "items": [
+      ]
+    },
+    {
+      "contributionId": "catalog.root.icons",
+      "label": "Icons",
+      "icon": "icons",
+      "items": [
+        {
+          "label": "marker.png",
+          "icon": "file",
+          "state": {
+            "url": "${baseURL}/icons/marker.png",
+            "type": "file"
+          }
+        },
+        {
+          "label": "location-user-24.png",
+          "icon": "file",
+          "state": {
+            "url": "${baseURL}/icons/location-user-24.png",
+            "type": "file"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "aiConfig": {
+    "defaultProvider": "webllm",
+    "providers": [
+      {
+        "name": "webllm",
+        "model": "gemma-2-2b-it-q4f32_1-MLC-1k",
+        "chatApiEndpoint": "",
+        "apiKey": ""
+      },
+      {
+        "name": "ollama",
+        "model": "gemma3:12b",
+        "chatApiEndpoint": "http://localhost:11434/v1/chat/completions",
+        "apiKey": ""
+      },
+      {
+        "name": "groq",
+        "model": "llama-3.1-8b-instant",
+        "chatApiEndpoint": "https://api.groq.com/openai/v1/chat/completions",
+        "apiKey": "<your api key>"
+      },
+      {
+        "name": "cerebras",
+        "model": "llama3.1-8b",
+        "chatApiEndpoint": "https://api.cerebras.ai/v1/chat/completions",
+        "apiKey": "<your api key>"
+      },
+      {
+        "name": "openai",
+        "model": "gpt-4.1-mini",
+        "chatApiEndpoint": "https://api.openai.com/v1/chat/completions",
+        "apiKey": "<your api key>"
+      }
+    ]
+  }
+}

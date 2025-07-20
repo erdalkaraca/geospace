@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en" class="wa-dark">
+<head>
+    <meta charset="UTF-8"/>
+    <link rel="icon" type="image/svg+xml" href="/geospace.svg"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>🌐geo!space</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/pace-js@latest/pace.min.js"></script>
+    <link rel="stylesheet" href="./src/loading-bar.css">
+
+    <script type="module">
+        import "./src/app/app.ts"
+    </script>
+
+    <style>
+        html, body, k-app {
+            height: 100vh;
+            width: 100vw;
+            margin: 0px;
+            padding: 0px;
+            overflow: hidden;
+            max-height: 100vh;
+        }
+
+        wa-tab::part(base) {
+            padding: 3px 0.5rem;
+        }
+
+        wa-tab-group::part(base) {
+            display: grid;
+            grid-template-rows: auto minmax(0, 1fr);
+            height: 100%;
+            width: 100%;
+        }
+
+        wa-tab-panel[active] {
+            display: grid;
+            grid-template-rows: minmax(0, 1fr);
+            height: 100%;
+            width: 100%;
+        }
+
+        wa-tab-panel {
+            --padding: 0px;
+        }
+
+        .part-dirty::part(base) {
+            font-style: italic;
+            color: var(--wa-color-danger-fill-loud)
+        }
+    </style>
+</head>
+<body>
+</body>
+</html>
