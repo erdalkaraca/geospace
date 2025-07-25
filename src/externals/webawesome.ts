@@ -52,7 +52,7 @@ import {
 
 registerIconLibrary('fg', {
     resolver: (name, _family, _variant) => {
-        return import.meta.resolve("/icon-libs/font-gis.svg") + `#fg-${name}`
+        return import.meta.resolve(`${import.meta.env.VITE_BASE_PATH || ""}/icon-libs/font-gis.svg`) + `#fg-${name}`
     },
     mutator: svg => {
         svg.setAttribute('fill', 'currentColor')
