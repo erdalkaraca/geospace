@@ -1,4 +1,4 @@
-name: Build and Deploy Vite App
+name: Build and deploy geo!space
 
 # Trigger only on new tag push
 on:

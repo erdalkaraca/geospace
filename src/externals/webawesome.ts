@@ -51,7 +51,7 @@ import {
 } from "@awesome.me/webawesome/dist/webawesome.loader.js";
 
 registerIconLibrary('fg', {
-    resolver: (name, family, variant) => {
+    resolver: (name, _family, _variant) => {
         return import.meta.resolve("/icon-libs/font-gis.svg") + `#fg-${name}`
     },
     mutator: svg => {
