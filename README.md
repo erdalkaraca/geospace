@@ -91,7 +91,7 @@ AI Assistant Not Working: Ensure settings.json is correctly configured within th
 
 # Trusted by
 
-- [Kiosk Scout](https://developer.mozilla.org/en-US/docs/Web/API/Window/showDirectoryPicker): A cross-platform/PWA (mobile, browser, desktop) app which allows users to search for nearby vending machines.
+- [Kiosk Scout](https://finder.kioskscout.de): A cross-platform/PWA (mobile, browser, desktop) app which allows users to search for nearby vending machines.
 - Want your geo!space app listed here?
 
 # Happy mapping!
