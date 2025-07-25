@@ -1,0 +1,40 @@
+name: Build and Deploy Vite App
+
+# Trigger only on new tag push
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+' # run only if matches a semantic version
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Set package.json version from tag
+        run: |
+          VERSION=${GITHUB_REF_NAME}
+          npm version --no-commit-hooks --no-git-tag-version "$VERSION"
+
+      - name: Build app
+        run: npm run build
+
+      - name: Build runtime library
+        run: npm run build-gslib
+
+      - name: Deploy to GitHub Pages branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
