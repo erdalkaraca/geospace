@@ -1,5 +1,8 @@
 name: Build and deploy geo!space
 
+permissions:
+  contents: write
+
 # Trigger only on new tag push
 on:
   push:
