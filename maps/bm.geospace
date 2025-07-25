@@ -1,0 +1,23 @@
+{
+  "center": [
+    1152842.7206673883,
+    6542592.78521498
+  ],
+  "zoom": 4.512836090599681,
+  "projection": "EPSG:3857",
+  "layers": [
+    {
+      "type": "GROUP",
+      "source": {
+        "type": "BM",
+        "url": "https://sgx.geodatenzentrum.de/gdz_basemapworld_vektor/styles/bm_web_wld_col.json"
+      },
+      "visible": true
+    }
+  ],
+  "overlays": [],
+  "controls": [],
+  "interactions": [],
+  "state": {},
+  "styles": {}
+}
