@@ -29,5 +29,6 @@ export default defineConfig({
     plugins: [
         mkcert(),
         //viteStaticCopyPyodide(),
-    ]
+    ],
+    base: process.env.VITE_BASE_PATH || '/',
 });

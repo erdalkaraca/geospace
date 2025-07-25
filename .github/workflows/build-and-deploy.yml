@@ -30,11 +30,14 @@ jobs:
           VERSION=${GITHUB_REF_NAME}
           npm version --no-commit-hooks --no-git-tag-version "$VERSION"
 
-      - name: Build app
-        run: npm run build
-
       - name: Build runtime library
         run: npm run build-gslib
+
+      - name: Build app
+        run: |
+          REPO=${GITHUB_REPOSITORY##*/}
+          export VITE_BASE_PATH="/$REPO/"
+          npm run build
 
       - name: Deploy to GitHub Pages branch
         uses: peaceiris/actions-gh-pages@v4
