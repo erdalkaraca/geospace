@@ -116,7 +116,8 @@ export class BuildService {
 
     private async downloadFile(fromDlLink: string, toWsPath: any) {
         const workspace = (await workspaceService.getWorkspace())!
-        await fetch(fromDlLink).then(async response => response.blob())
+        const link = (import.meta.env.VITE_BASE_PATH || "") + fromDlLink
+        await fetch(link).then(async response => response.blob())
             .then(async contents => {
                 await workspace.getResource(toWsPath, {
                     create: true
