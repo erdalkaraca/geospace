@@ -1,10 +1,11 @@
 import {EDITOR_AREA_MAIN} from "./constants.ts";
-import {observeOverflow} from "./k-utils.ts";
 import {KPart} from "../parts/k-part.ts";
 import {activePartDirtySignal, activePartSignal} from "./appstate.ts";
 import {watchSignal} from "./signals.ts";
 import {subscribe} from "./events.ts";
 import {TOPIC_WORKSPACE_CONNECTED} from "./filesys.ts";
+import {KTabs} from "../parts/k-tabs.ts";
+import {TabContribution} from "./contributionregistry.ts";
 
 export const EVENT_SHOW_EDITOR = "editors/showEditor";
 
@@ -26,11 +27,12 @@ export interface EditorInputHandler {
 class EditorRegistry {
     private editorInputHandlers: EditorInputHandler[] = [];
 
+
     constructor() {
         document.addEventListener("readystatechange", () => {
             const editorArea = this.getEditorArea()
             const handler = (event: CustomEvent) => {
-                const tabPanel = editorArea.querySelector(`:scope>wa-tab-panel[name='${event.detail.name}']`)! as HTMLElement
+                const tabPanel = event.detail
                 if (tabPanel) {
                     const parts = Array.from(tabPanel.querySelectorAll(`*`)).filter(element => element instanceof KPart)
                     parts.forEach((part) => {
@@ -39,17 +41,25 @@ class EditorRegistry {
                 }
             }
             // @ts-ignore
-            editorArea.addEventListener("wa-tab-show", handler)
+            editorArea.addEventListener("tab-shown", handler)
+
+            const closed = (event: CustomEvent) => {
+                const tabPanel: HTMLElement = event.detail
+                const parts = Array.from(tabPanel.querySelectorAll(`*`)).filter(element => element instanceof KPart)
+                parts.forEach((part) => {
+                    part.close()
+                    if (activePartSignal.get() == part) {
+                        activePartSignal.set(null as unknown as KPart)
+                    }
+                })
+            }
+            // @ts-ignore
+            editorArea.addEventListener("tab-closed", closed)
 
             watchSignal(activePartDirtySignal, (targetPart: KPart) => {
                 const tabPanel = targetPart.closest("wa-tab-panel") as HTMLElement
                 const name = tabPanel.getAttribute("name") as string
-                const tab = editorArea.querySelector(`:scope>wa-tab[panel='${name}']`) as HTMLElement
-                if (targetPart.isDirty()) {
-                    tab.classList.add("part-dirty")
-                } else {
-                    tab.classList.remove("part-dirty")
-                }
+                editorArea.markDirty(name, targetPart.isDirty())
             })
         })
         subscribe(TOPIC_WORKSPACE_CONNECTED, () => {
@@ -70,8 +80,8 @@ class EditorRegistry {
         }
     }
 
-    getEditorArea() {
-        return document.querySelector(`wa-tab-group#${EDITOR_AREA_MAIN}`)! as HTMLElement
+    getEditorArea(): KTabs {
+        return document.querySelector(`k-tabs#${EDITOR_AREA_MAIN}`)! as KTabs
     }
 
     async loadEditor(editorInput: EditorInput | any) {
@@ -90,52 +100,19 @@ class EditorRegistry {
 
         const editorArea = this.getEditorArea()
 
-        const existingEditor = editorArea.querySelector(`:scope>wa-tab[panel='${editorInput.key}']`)
-        if (existingEditor) {
-            editorArea.setAttribute("active", editorInput.key)
+        if (editorArea.has(editorInput.key)) {
+            editorArea.activate(editorInput.key)
             return
         }
 
-        const closeTab = (event: Event) => {
-            event.stopPropagation();
-            const tab = (<HTMLElement>event.currentTarget!).parentElement!
-            tab.remove();
-            const tabPanel = <HTMLElement>editorArea.querySelector(`:scope>*[name='${editorInput.key}']`)
-            const parts = Array.from(tabPanel.querySelectorAll(`*`)).filter(element => element instanceof KPart)
-            parts.forEach((part) => {
-                part.close()
-                if (activePartSignal.get() == part) {
-                    activePartSignal.set(null as unknown as KPart)
-                }
-            })
-            tabPanel.remove()
-
-            const allRemainingTabs = editorArea.querySelectorAll(":scope>wa-tab")
-            if (allRemainingTabs.length > 0) {
-                const newActive = allRemainingTabs.item(0).getAttribute("panel")!
-                editorArea.setAttribute("active", newActive)
-            } else {
-                editorArea.removeAttribute("active")
-            }
-        }
-
-        const doc = new DOMParser().parseFromString(`
-            <wa-tab panel="${editorInput.key}">
-                <wa-icon name="${editorInput.icon}"></wa-icon>
-                ${editorInput.title}
-                <wa-button for="${editorInput.key}" tabindex="-1" title="Close editor" appearance="plain" size="small"><wa-icon name="xmark"></wa-icon></wa-button>
-            </wa-tab>
-            <wa-tab-panel name="${editorInput.key}"></wa-tab-panel>`, "text/html")
-        editorArea.append(...doc.body.children);
-        editorArea.querySelector(`wa-button[for="${editorInput.key}"]`)!.addEventListener("click", closeTab);
-
-        const tabPanel = editorArea.querySelector(`:scope>wa-tab-panel[name='${editorInput.key}']`)! as HTMLElement
-        editorArea.setAttribute("active", editorInput.key)
-        await editorInput.widgetFactory(tabPanel)
-
-        if (editorInput.noOverflow === undefined || editorInput.noOverflow) {
-            observeOverflow(tabPanel)
-        }
+        editorArea.open({
+            name: editorInput.key,
+            label: editorInput.title,
+            icon: editorInput.icon,
+            closable: true,
+            noOverflow: editorInput.noOverflow,
+            component: editorInput.widgetFactory
+        } as TabContribution)
     }
 }
 

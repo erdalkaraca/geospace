@@ -87,7 +87,8 @@ export const registerCatalog = (catalog: CatalogContribution) => {
             contributionId: item.contributionId
         } as TreeContribution)
 
-        const base = import.meta.resolve("/.")
+        const url = (import.meta.env.VITE_BASE_PATH || "") + "/."
+        const base = import.meta.resolve(url)
         item.items.forEach((child: any) => {
             const contribution = {
                 label: child.label,

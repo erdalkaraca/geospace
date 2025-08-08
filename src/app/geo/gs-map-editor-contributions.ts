@@ -3,6 +3,7 @@ import {EditorInput, editorRegistry} from "../../core/editorregistry.ts";
 import {File} from "../../core/filesys.ts";
 import {rtUtils} from "../rt";
 import {toBlobUri} from "./utils.ts";
+import {html} from "lit";
 
 rtUtils.standalone = false
 rtUtils.resolveUrl = path => toBlobUri(path);
@@ -17,13 +18,8 @@ editorRegistry.registerEditorInputHandler({
             icon: "location-dot",
             state: {}
         } as EditorInput
-        editorInput.widgetFactory = async (container: HTMLElement) => {
-            import("./gs-map-editor.ts").then(_mod => {
-                const gsMap = document.createElement("gs-map")
-                gsMap.input = editorInput
-                container.append(gsMap)
-            })
-        }
+        editorInput.widgetFactory = () => html`
+            <gs-map .input="${editorInput}"></gs-map>`
         return editorInput
     }
 })

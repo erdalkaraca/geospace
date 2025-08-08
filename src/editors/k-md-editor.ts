@@ -1,6 +1,6 @@
 import {customElement, property, state} from "lit/decorators.js";
 import {KPart} from "../parts/k-part.ts";
-import {html, render} from "lit";
+import {html} from "lit";
 import {marked} from "marked";
 import {EditorInput, editorRegistry} from "../core/editorregistry.ts";
 import {unsafeHTML} from "lit/directives/unsafe-html.js";
@@ -17,10 +17,8 @@ editorRegistry.registerEditorInputHandler({
             noOverflow: false,
             state: {},
         } as EditorInput
-        editorInput.widgetFactory = async (container: HTMLElement) => {
-            render(html`
-                <k-md-editor .input=${editorInput}></k-md-editor>`, container)
-        }
+        editorInput.widgetFactory = () => html`
+            <k-md-editor .input=${editorInput}></k-md-editor>`
         return editorInput;
     }
 })

@@ -1,4 +1,5 @@
 import {Signal} from "@lit-labs/signals";
+import {TemplateResult} from "lit";
 
 export interface Contribution {
     target?: string;
@@ -14,6 +15,13 @@ export interface CommandContribution extends Contribution {
 
 export interface HTMLContribution extends Contribution {
     html: string
+}
+
+export interface TabContribution extends Contribution {
+    name: string;
+    closable?: boolean;
+    noOverflow?: boolean;
+    component: () => TemplateResult;
 }
 
 class ContributionRegistry {

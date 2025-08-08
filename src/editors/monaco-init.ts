@@ -6,7 +6,7 @@ import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker'
 
 import {EditorInput, editorRegistry} from "../core/editorregistry.ts";
 import {File} from "../core/filesys.ts";
-import {html, render} from "lit";
+import {html} from "lit";
 
 import "./k-monaco-editor.ts"
 
@@ -39,10 +39,8 @@ editorRegistry.registerEditorInputHandler({
             noOverflow: false,
             state: {},
         } as EditorInput
-        editorInput.widgetFactory = async (container: HTMLElement) => {
-            render(html`
-                <k-monaco-editor .input=${editorInput}></k-monaco-editor>`, container)
-        }
+        editorInput.widgetFactory = () => html`
+            <k-monaco-editor .input=${editorInput}></k-monaco-editor>`
         return editorInput;
     }
 })

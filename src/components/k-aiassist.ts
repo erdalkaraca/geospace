@@ -21,7 +21,7 @@ import {watching} from "../core/signals.ts";
 import {activePartSignal} from "../core/appstate.ts";
 import {taskService} from "../core/taskservice.ts";
 
-@customElement('k-ai-assist')
+@customElement('k-aiassist')
 export class KAIAssist extends KPart {
     @state()
     private chatContext: ChatContext = defaultChatContext
@@ -105,10 +105,30 @@ export class KAIAssist extends KPart {
 
     render() {
         return html`
+            ${when(!this.defaultProvider, () => html`
+                <k-no-content message="Select a provider."></k-no-content>`)}
+            <div class="chat-messages" ${ref(this.containerRef)}}>
+                ${when(this.busy, () => html`
+                    <wa-card class="message">
+                        <wa-animation name="flip" duration="2000" play>
+                            <wa-icon name="robot"></wa-icon>
+                        </wa-animation>
+                        <span>Waiting for reply...</span>
+                    </wa-card>
+                `)}
+                ${this.chatContext.history.map((chat: ChatMessage) => {
+                    return html`
+                        <wa-card class="message ${chat.role}">
+                            <wa-icon slot="image" name=${chat.role == "user" ? "user" : "robot"}></wa-icon>
+                            ${unsafeHTML(marked.parse(chat.content) as string)}
+                        </wa-card>
+                    `
+                })}
+            </div>
             <wa-input
                     placeholder="${this.chatContext.label}: ${this.chatContext.userHelp}"
                     title=${this.chatContext.userHelp}
-                    @change=${this.onHandlePrompt}>
+                    @change=${this.onHandlePrompt} autocomplete="off">
                 <wa-icon slot="start" name="${this.chatContext.icon}"></wa-icon>
 
                 <wa-dropdown slot="end">
@@ -136,31 +156,23 @@ export class KAIAssist extends KPart {
                     </wa-dropdown-item>
                 </wa-dropdown>
             </wa-input>
-            ${when(!this.defaultProvider, () => html`
-                <k-no-content message="Select a provider."></k-no-content>`)}
-            <div class="container" ${ref(this.containerRef)}}>
-                ${when(this.busy, () => html`
-                    <wa-card>
-                        <wa-animation name="flip" duration="2000" play>
-                            <wa-icon name="robot"></wa-icon>
-                        </wa-animation>
-                        <span>Waiting for reply...</span>
-                    </wa-card>
-                `)}
-                ${this.chatContext.history.map((chat: ChatMessage) => {
-                    return html`
-                        <wa-card class="${chat.role}">
-                            <wa-icon slot="image" name=${chat.role == "user" ? "user" : "robot"}></wa-icon>
-                            ${unsafeHTML(marked.parse(chat.content) as string)}
-                        </wa-card>
-                    `
-                }).reverse()}
-            </div>
         `
     }
 
     static styles = css`
         :host {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
 
         p, pre {
@@ -168,29 +180,33 @@ export class KAIAssist extends KPart {
             white-space: break-spaces;
         }
 
-        wa-card {
-            padding: 0;
-            margin: 0.5rem;
-            overflow: auto;
+        .message {
+            padding: 10px 14px;
+            border-radius: 4px;
+            font-size: small;
+            line-height: 1.4;
             word-break: break-word;
+            display: inline-block;
         }
 
         wa-card::part(body) {
             --spacing: 0.5rem;
         }
 
-        wa-card.user {
-            background-color: var(--wa-color-neutral-fill-normal)
+        .message.user {
+            background-color: var(--wa-color-neutral-fill-normal);
+            align-self: flex-end;
         }
 
-        wa-card.assistant {
-            background-color: var(--wa-color-neutral-fill-quiet)
+        .message.assistant {
+            background-color: var(--wa-color-neutral-fill-quiet);
+            align-self: flex-start;
         }
     `;
 }
 
 declare global {
     interface HTMLElementTagNameMap {
-        'k-ai-assist': KAIAssist
+        'k-aiassist': KAIAssist
     }
 }
