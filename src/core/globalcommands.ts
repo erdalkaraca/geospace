@@ -3,7 +3,7 @@ import {Resource, workspaceService} from "./filesys.ts";
 import {TOOLBAR_MAIN, TOOLBAR_MAIN_RIGHT} from "./constants.ts";
 import {PyEnv} from "./pyservice.ts";
 import {EditorInput, editorRegistry} from "./editorregistry.ts";
-import {html, render} from "lit";
+import {html} from "lit";
 import README from "../../README.md?raw"
 import {toastError, toastInfo} from "./toast.ts";
 import {activePartSignal, activeSelectionSignal} from "./appstate.ts";
@@ -214,10 +214,8 @@ registerAll({
                 icon: "bullhorn",
                 state: {},
             } as EditorInput
-            editorInput.widgetFactory = async (container: HTMLElement) => {
-                render(html`
-                    <k-md-editor .input=${editorInput}></k-md-editor>`, container)
-            }
+            editorInput.widgetFactory = () => html`
+                <k-md-editor .input=${editorInput}></k-md-editor>`
             await editorRegistry.loadEditor(editorInput)
         }
     },
