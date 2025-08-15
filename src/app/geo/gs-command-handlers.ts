@@ -1,5 +1,5 @@
 import {CommandRegistry} from "../../core/commandregistry.ts";
-import {fromLonLat} from "ol/proj";
+import {fromLonLat, transformExtent} from "ol/proj";
 import VectorLayer from "ol/layer/Vector";
 import {GsMapEditor} from "./gs-map-editor.ts";
 import {findOlLayer, replaceUris} from "./utils.ts";
@@ -30,6 +30,9 @@ import {
     toOlOverlay,
     toSourceUrl
 } from "../rt";
+import {workspaceService, File} from "../../core/filesys.ts";
+// @ts-ignore
+import {toGeojson} from "osmtogeojson";
 
 export const registerCommands = (commandRegistry: CommandRegistry) => {
 
@@ -407,6 +410,81 @@ export const registerCommands = (commandRegistry: CommandRegistry) => {
                 } as GsControl)
                 olMap.addControl(olControl)
                 importControlSource(olControl, src)
+            }
+        }
+    })
+
+    commandRegistry.registerAll({
+        command: {
+            "id": "view_extents",
+            "name": "View extents",
+            "description": "Stores the extent of the current view as a variable",
+            "parameters": [
+                {
+                    "name": "latlon",
+                    "description": "set to true to reverse coordinates to lat/lon instead of lon/lat; useful for various external services such as OpenStreetMap Overpass API",
+                    "required": false
+                }
+            ],
+            "output": [
+                {
+                    "name": "viewExtent",
+                    "description": "the current view's extent as lat/lon coordinates",
+                    "type": "number[]"
+                }
+            ]
+        },
+        handler: {
+            execute: context => {
+                const latlon = context.params!["latlon"]
+                const controller: GsMapEditor = context.source;
+                const extent = controller.getView().calculateExtent();
+                let extent4326 = transformExtent(extent, controller.getView().getProjection(), 'EPSG:4326');
+                if (latlon || latlon === undefined) {
+                    [extent4326[0], extent4326[1]] = [extent4326[1], extent4326[0]];
+                    [extent4326[2], extent4326[3]] = [extent4326[3], extent4326[2]];
+                }
+                context["viewExtent"] = extent4326;
+            }
+        }
+    })
+
+    commandRegistry.registerAll({
+        command: {
+            "id": "overpass",
+            "name": "OpenStreetMap Overpass",
+            "description": "Runs a query against the OpenStreetMap Overpass API to download geodata (hint: use boundary=administrative; use [out:json]; use nwr to select all nodes, ways and relations; use out geom to include geometries",
+            "parameters": [
+                {
+                    "name": "query",
+                    "description": "the overpass query to submit, use {{varX}} to reference a variable from a previously executed command, for example {{viewExtent}} to obtain the current view's extents as a bounding box",
+                    "required": true
+                },
+                {
+                    "name": "outputFile",
+                    "description": "the path to the output file within the workspace",
+                    "required": true
+                }
+            ]
+        },
+        handler: {
+            execute: async ({params: {query, outputFile}}: any) => {
+                if (!query || !outputFile) {
+                    return
+                }
+
+                const geojson = await fetch('https://overpass-api.de/api/interpreter', {
+                    method: 'POST',
+                    body: query,
+                })
+                    .then(response => response.json())
+                    .then(toGeojson)
+
+                const workspace = await workspaceService.getWorkspace()
+                const outFile = await workspace?.getResource(outputFile, {create: true})! as File
+                if (outFile) {
+                    await outFile.saveContents(JSON.stringify(geojson))
+                }
             }
         }
     })

@@ -67,7 +67,7 @@ export abstract class KWidget extends LitElement {
             source: this,
             params: params
         }
-        commandRegistry.getHandlerRegistry().execute(command, execContext);
+        commandRegistry.execute(command, execContext);
     }
 
     protected watch(signal: Signal.State<any>, callback: (value: any) => void) {

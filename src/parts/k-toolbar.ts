@@ -33,7 +33,11 @@ export class KToolbar extends SignalWatcher(KElement) {
                 </wa-button>
             `
         } else if ("html" in contribution) {
-            return unsafeHTML((contribution as HTMLContribution).html)
+            const contents = (contribution as HTMLContribution).html
+            if (contents instanceof Function) {
+                return contents()
+            }
+            return unsafeHTML(contents)
         } else {
             return html`<span>unknown contribution type: ${typeof contribution}</span>`
         }

@@ -14,7 +14,7 @@ export interface CommandContribution extends Contribution {
 }
 
 export interface HTMLContribution extends Contribution {
-    html: string
+    html: string | (() => TemplateResult)
 }
 
 export interface TabContribution extends Contribution {

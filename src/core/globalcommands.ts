@@ -356,7 +356,7 @@ registerAll({
     },
     handler: {
         execute: _context => {
-            commandRegistry.getHandlerRegistry().execute("open_editor", {
+            commandRegistry.execute("open_editor", {
                 params: {
                     path: SETTINGS_FILE_PATH
                 }

@@ -17,6 +17,8 @@ import {stylesLoader} from "../rt";
 import olCSS from "../../../node_modules/ol/ol.css?raw";
 import {loadEnvs, replaceUris, revertBlobUris} from "./utils.ts";
 import {File} from '../../core/filesys.ts';
+import {commandRegistry as globalCommandRegistry} from "../../core/commandregistry.ts";
+import {taskService} from "../../core/taskservice.ts";
 
 @customElement('gs-map')
 export class GsMapEditor extends KPart implements ChatContextProvider {
@@ -26,7 +28,7 @@ export class GsMapEditor extends KPart implements ChatContextProvider {
     public olMap?: Map;
     public gsMap?: GsMap;
     private mapContainer: Ref<HTMLElement> = createRef();
-    private commandRegistry = new CommandRegistry();
+    private commandRegistry = new CommandRegistry(globalCommandRegistry);
 
     public chatContext: ChatContext = {
         history: [],
@@ -83,25 +85,37 @@ export class GsMapEditor extends KPart implements ChatContextProvider {
         return this.olMap?.getLayers().getArray() || []
     }
 
-    onMessageArrived(message?: ChatMessage) {
+    async onMessageArrived(message?: ChatMessage) {
         if (!message) {
             return
         }
         this.markDirty(true)
         const content = message.content.replace("```json", "").replace("```", "");
         const commands: Array<any> = JSON.parse(content);
-        this.executeCommands(commands);
-        this.requestUpdate()
+        taskService.runAsync("Executing map commands", () => this.executeCommands(commands))
+            .then(() => this.requestUpdate())
     }
 
-    executeCommands(commands: Array<any>) {
+    replaceVars(template: string, variables: any) {
+        return template.replace(/{{(.*?)}}/g, (_, varName) =>
+            variables[varName.trim()] ?? ''
+        );
+    }
+
+    async executeCommands(commands: Array<any>) {
         logger.debug("Executing commands: " + JSON.stringify(commands));
+        const context: ExecutionContext = {
+            source: this,
+        }
         for (const command of commands) {
-            const context: ExecutionContext = {
-                source: this,
-            }
-            context.params = command["parameters"]
-            this.commandRegistry.getHandlerRegistry().execute(command["id"], context)
+            const replaced = Object.entries(command["parameters"] || {}).map(([key, value]) => {
+                if (typeof value === 'string') {
+                    value = this.replaceVars(value, context)
+                }
+                return [key, value];
+            })
+            context.params = Object.fromEntries(replaced)
+            await this.commandRegistry.execute(command["id"], context)
         }
     }
 
@@ -110,7 +124,7 @@ export class GsMapEditor extends KPart implements ChatContextProvider {
             params: params,
             source: this
         }
-        this.commandRegistry.getHandlerRegistry().execute(id, execContext);
+        this.commandRegistry.execute(id, execContext);
     }
 
     async save() {

@@ -12,9 +12,14 @@ import '../editors/k-md-editor.ts'
 import "../editors/monaco-init.ts"
 import "./build/build-init.ts"
 
-import {TABS_LEFT_END, TABS_LEFT_START, TABS_RIGHT} from "../core/constants.ts";
+import {TABS_LEFT_END, TABS_LEFT_START, TABS_RIGHT, TOOLBAR_MAIN} from "../core/constants.ts";
 
-import {contributionRegistry, TabContribution} from "../core/contributionregistry.ts";
+import {contributionRegistry, HTMLContribution, TabContribution} from "../core/contributionregistry.ts";
+
+contributionRegistry.registerContribution(TOOLBAR_MAIN, {
+    slot: "start",
+    html: `<span style="margin-right: 1rem;"><span><nobr>🌐<i><b>geo!</b></i><small>space</small></nobr></span></span>`
+} as HTMLContribution)
 
 contributionRegistry.registerContribution(TABS_RIGHT, {
     name: "assistant",

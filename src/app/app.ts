@@ -20,13 +20,10 @@ import {version as appVersion} from "../../package.json"
 
 defaultChatContext.sysPrompt = APP_SYS_PROMPT.replace("${commandsJson}", JSON.stringify(commandRegistry.listCommands(), null, 2))
 
-export const GEOSPACE_LOGO = html`<span><nobr>🌐<i><b>geo!</b></i><small>space</small></nobr></span>`
-
 render(html`
     <k-app id="gs-app">
         <div style="width: 100%; display: grid; grid-template-columns: 1fr 2fr 1fr; align-items: center; border-bottom: solid 1px grey;">
-            <k-toolbar id=${TOOLBAR_MAIN}><span slot="start" style="margin-right: 1rem;">${GEOSPACE_LOGO}</span>
-            </k-toolbar>
+            <k-toolbar id=${TOOLBAR_MAIN}></k-toolbar>
             <k-toolbar id=${TOOLBAR_MAIN_CENTER}>
             </k-toolbar>
             <k-toolbar style="justify-self: end;" id=${TOOLBAR_MAIN_RIGHT} align="right">

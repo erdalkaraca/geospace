@@ -49,8 +49,18 @@ export interface Handler {
     execute: (context: ExecutionContext) => any;
 }
 
-class HandlerRegistry {
+export interface Commands {
+    [commandId: string]: Command
+}
+
+export class CommandRegistry {
+    private parentCommandRegistry?: CommandRegistry;
+    private commands: Commands = {};
     private handlers: Map<string, Handler[]> = new Map();
+
+    constructor(parentCommandRegistry?: CommandRegistry) {
+        this.parentCommandRegistry = parentCommandRegistry;
+    }
 
     registerHandler(commandId: string, handler: Handler) {
         if (!this.handlers.has(commandId)) {
@@ -73,25 +83,12 @@ class HandlerRegistry {
         }
         throw new Error(`Registered handlers could not match execution of command: ${commandId}`);
     }
-}
-
-export interface Commands {
-    [commandId: string]: Command
-}
-
-export class CommandRegistry {
-    private handlerRegistry = new HandlerRegistry();
-    private commands: Commands = {};
-
-    getHandlerRegistry() {
-        return this.handlerRegistry;
-    }
 
     createAndRegisterCommand(id: string, name: string, description: string, parameters: Parameter[], handler?: Handler) {
         const command = new Command(id, name, description, parameters);
         this.registerCommand(command)
         if (handler) {
-            this.handlerRegistry.registerHandler(id, handler)
+            this.registerHandler(id, handler)
         }
     }
 
@@ -101,22 +98,22 @@ export class CommandRegistry {
     }
 
     hasCommand(commandId: string): boolean {
-        return commandId in this.commands;
+        return commandId in this.commands || !!this.parentCommandRegistry?.hasCommand(commandId);
     }
 
     listCommands(): Commands {
-        return this.commands;
+        return {...this.parentCommandRegistry?.listCommands(), ...this.commands};
     }
 
     getCommand(commandId: string): Command {
-        return <Command>this.commands[commandId];
+        return <Command>this.commands[commandId] || this.parentCommandRegistry?.getCommand(commandId);
     }
 
     registerAll(options: RegisterOptions) {
         const commandId = options.command.id
         this.registerCommand(options.command)
         if (options.handler) {
-            this.getHandlerRegistry().registerHandler(commandId, options.handler)
+            this.registerHandler(commandId, options.handler)
         }
         if (options.contribution && options.contribution.target) {
             contributionRegistry.registerContribution(options.contribution.target, {

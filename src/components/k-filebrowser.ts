@@ -34,7 +34,7 @@ export class KFileBrowser extends KPart {
         if (workspaceDir) {
             await this.loadWorkspace(workspaceDir!)
         } else {
-            commandRegistry.getHandlerRegistry().execute("help")
+            commandRegistry.execute("help")
         }
     }
 

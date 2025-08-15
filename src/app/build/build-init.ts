@@ -6,6 +6,7 @@ import {GsMapEditor} from "../geo/gs-map-editor.ts";
 import {toastError, toastInfo} from "../../core/toast.ts";
 import {File} from "../../core/filesys.ts";
 import {loadEnvs} from "../geo/utils.ts";
+import {taskService} from "../../core/taskservice.ts";
 
 registerAll({
     command: {
@@ -26,13 +27,14 @@ registerAll({
             const env = await loadEnvs(".env", "envs/.env", "env", "envs/env",
                 "default.env", "envs/default.env", "prod.env", "envs/prod.env")
             env["BUILD_TIME"] = new Date()
-            buildService.build({
+            taskService.runAsync("Building map", () => buildService.build({
                 title: file.getName(),
                 gsMap: gsMap,
                 env: env
-            }).then(() => {
-                toastInfo("🚀 Map files copied to 'dist' folder in your workspace!")
-            }).catch(err => {
+            }))
+                .then(() => {
+                    toastInfo("🚀 Map files copied to 'dist' folder in your workspace!")
+                }).catch(err => {
                 toastError(`💥 Map could not be built: ${err}`)
             })
         }

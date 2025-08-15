@@ -104,7 +104,7 @@ export class ChatService {
                 source: this,
                 params: params
             }
-            currentCommandRegistry.getHandlerRegistry().execute(commandId, context)
+            currentCommandRegistry.execute(commandId, context)
         }
     }
 
