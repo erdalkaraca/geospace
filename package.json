@@ -10,7 +10,7 @@
     "build-gslib": "esbuild src/app/rt/gs-lib.ts --outfile=public/lib/gs-lib.js --bundle --minify --format=esm"
   },
   "dependencies": {
-    "@awesome.me/webawesome": "^3.0.0-beta.2",
+    "@awesome.me/webawesome": "^3.0.0-beta.4",
     "@fortawesome/fontawesome-free": "^6.7.2",
     "@fortawesome/fontawesome-svg-core": "^6.7.2",
     "@fortawesome/free-solid-svg-icons": "^6.7.2",
@@ -37,7 +37,8 @@
     "@mlc-ai/web-llm": "^0.2.79",
     "font-gis": "^1.0.6",
     "dotenv": "^16.5.0",
-    "pace-js": "^1.2.4"
+    "pace-js": "^1.2.4",
+    "osmtogeojson": "^3.0.0-beta.5"
   },
   "devDependencies": {
     "@types/node": "^22.15.3",
