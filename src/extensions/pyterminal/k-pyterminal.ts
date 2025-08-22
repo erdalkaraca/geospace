@@ -1,11 +1,11 @@
 import {css, html, unsafeCSS} from 'lit'
 import {customElement} from 'lit/decorators.js'
-import {KElement} from "../parts/k-element.ts";
 import {createRef, ref} from "lit/directives/ref.js";
 import {Terminal} from '@xterm/xterm';
 import styles from "@xterm/xterm/css/xterm.css?raw";
-import {workspaceService} from "../core/filesys.ts";
-import {PyEnv} from "../core/pyservice.ts";
+import {KElement} from "../../parts/k-element.ts";
+import {PyEnv} from "../../core/pyservice.ts";
+import {workspaceService} from "../../core/filesys.ts";
 
 @customElement('k-pyterminal')
 export class KPyTerminal extends KElement {

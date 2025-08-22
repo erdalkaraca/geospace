@@ -11,6 +11,7 @@ import './geo/gs-catalog.ts'
 import '../editors/k-md-editor.ts'
 import "../editors/monaco-init.ts"
 import "./build/build-init.ts"
+import "./../extensions"
 
 import {TABS_LEFT_END, TABS_LEFT_START, TABS_RIGHT, TOOLBAR_MAIN} from "../core/constants.ts";
 
@@ -51,4 +52,12 @@ contributionRegistry.registerContribution(TABS_LEFT_END, {
     icon: "fg map-options",
     component: () => html`
         <gs-map-props></gs-map-props>`
+} as TabContribution)
+
+contributionRegistry.registerContribution(TABS_RIGHT, {
+    name: "extensions",
+    label: "Extensions",
+    icon: "puzzle-piece",
+    component: () => html`
+        <k-extensions></k-extensions>`
 } as TabContribution)

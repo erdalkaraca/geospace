@@ -18,12 +18,13 @@ export const observeOverflow = (child: HTMLElement) => {
         }).observe(child)
 }
 
-export const icon = (name: string) => {
+export const icon = (name?: string) => {
     if (!name) {
         return ""
     }
     const parts = name.trim().split(/ +/)
     const iconName = parts.pop()
     const lib = parts.pop()
-    return html`<wa-icon library="${lib || nothing}" name="${iconName}"></wa-icon>`
+    return html`
+        <wa-icon library="${lib || nothing}" name="${iconName}"></wa-icon>`
 }
