@@ -453,7 +453,10 @@ export const registerCommands = (commandRegistry: CommandRegistry) => {
         command: {
             "id": "overpass",
             "name": "OpenStreetMap Overpass",
-            "description": "Runs a query against the OpenStreetMap Overpass API to download geodata (hint: use boundary=administrative; use [out:json]; use nwr to select all nodes, ways and relations; use out geom to include geometries",
+            "description": "Runs a query against the OpenStreetMap Overpass API to download geodata",
+            "llm": {
+                "prompt": "use boundary=administrative; use [out:json]; use nwr to select all nodes, ways and relations; use out geom to include geometries"
+            },
             "parameters": [
                 {
                     "name": "query",

@@ -15,6 +15,11 @@ export interface Variable {
     type?: string;
 }
 
+export interface LLMOptions {
+    prompt?: string;
+    model?: string;
+}
+
 export class Command {
     id: string;
     name: string;
@@ -22,6 +27,7 @@ export class Command {
     icon?: string;
     parameters?: Parameter[];
     output?: Variable[];
+    llm?: LLMOptions;
 
     constructor(id: string, name: string, description: string, parameters?: Parameter[], output?: Variable[]) {
         this.id = id;
