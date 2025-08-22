@@ -1,3 +1,6 @@
+import { registerGitCommands } from "./gitcommands.ts";
+// Register git commands
+registerGitCommands();
 import {commandRegistry, registerAll} from "./commandregistry.ts";
 import {Resource, workspaceService} from "./filesys.ts";
 import {TOOLBAR_MAIN, TOOLBAR_MAIN_RIGHT} from "./constants.ts";
