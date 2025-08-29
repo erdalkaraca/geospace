@@ -33,7 +33,7 @@ export class GsMapProps extends KPart {
 
     private toggleVisible(event: Event) {
         // @ts-ignore
-        const layer: BaseLayer = event.target.model
+        const layer: BaseLayer = event.currentTarget.model
         layer.setVisible(!layer.getVisible())
         this.updateLater()
     }

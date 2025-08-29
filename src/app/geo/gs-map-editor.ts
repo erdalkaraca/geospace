@@ -19,6 +19,7 @@ import {loadEnvs, replaceUris, revertBlobUris} from "./utils.ts";
 import {File} from '../../core/filesys.ts';
 import {commandRegistry as globalCommandRegistry} from "../../core/commandregistry.ts";
 import {taskService} from "../../core/taskservice.ts";
+import {toastError, toastInfo} from "../../core/toast.ts";
 
 @customElement('gs-map')
 export class GsMapEditor extends KPart implements ChatContextProvider {
@@ -36,10 +37,6 @@ export class GsMapEditor extends KPart implements ChatContextProvider {
         label: "Map",
         icon: "map-location-dot",
         messageArrived: this.onMessageArrived.bind(this)
-    }
-
-    fillActionbar() {
-
     }
 
     protected async doInitUI() {
@@ -70,9 +67,12 @@ export class GsMapEditor extends KPart implements ChatContextProvider {
         })
 
         this.olMap.setTarget(this.mapContainer.value)
-        this.olMap.getView().addEventListener("change", () => {
+        const dirtySetter = () => {
             this.markDirty(true)
-        })
+        }
+        this.olMap.getView().addEventListener("change", dirtySetter)
+        this.olMap.getLayers().on("add", dirtySetter)
+        this.olMap.getLayers().on("remove", dirtySetter)
 
         mapChangedSignal.set({part: this, event: MapEvents.LOADED})
     }
@@ -124,7 +124,12 @@ export class GsMapEditor extends KPart implements ChatContextProvider {
             params: params,
             source: this
         }
-        this.commandRegistry.execute(id, execContext);
+
+        try {
+            this.commandRegistry.execute(id, execContext);
+        } catch (e: any) {
+            toastError(e.message)
+        }
     }
 
     async save() {
@@ -142,7 +147,7 @@ export class GsMapEditor extends KPart implements ChatContextProvider {
     }
 
     edit() {
-        alert("not yet implemented")
+        toastInfo("not yet implemented")
     }
 
     render() {
