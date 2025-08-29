@@ -1,5 +1,5 @@
 import {ChatCompletionMessageParam, MLCEngine} from "@mlc-ai/web-llm";
-import {ChatMessage, FetcherParams} from "./chatservice.ts";
+import {chatService, ChatMessage, FetcherParams} from "../../core/chatservice.ts";
 
 export class WebLLMService {
     private engine?: MLCEngine;
@@ -18,7 +18,7 @@ export class WebLLMService {
         if (!this.engine) {
             await this.init(options.model, options.chatConfig.parameters)
         }
-        const internalMessages = options.messages.map(message => {
+        const internalMessages = options.messages.map((message: ChatMessage) => {
             return {...message} as ChatCompletionMessageParam
         })
         const result = await this.engine!.chat.completions.create({
@@ -28,4 +28,10 @@ export class WebLLMService {
     }
 }
 
-export const webLLMService = new WebLLMService();
+const webLLMService = new WebLLMService();
+
+chatService.registerFetcher({
+    name: "webllm",
+    canHandle: chatProvider => chatProvider.name === "webllm",
+    completionApi: webLLMService.complete.bind(webLLMService)
+})

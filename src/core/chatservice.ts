@@ -3,7 +3,6 @@ import {CommandRegistry, commandRegistry as globalCommandRegistry, ExecutionCont
 import {persistenceService} from "./persistenceservice.ts";
 import "./globalcommands.ts"
 import {appSettings, TOPIC_SETTINGS_CHANGED} from "./settingsservice.ts";
-import {webLLMService} from "./webllmservice.ts";
 import AI_CONFIG_TEMPLATE from "../assets/settings.json"
 import {publish, subscribe} from "./events.ts";
 
@@ -69,9 +68,44 @@ export interface FetcherParams {
     chatConfig: ChatProvider
 }
 
+export interface Fetcher {
+    name: string,
+    canHandle: (chatProvider: ChatProvider) => boolean,
+    completionApi: (fetcherParams: FetcherParams) => Promise<ChatMessage>;
+}
+
+const onlineFetcher = {
+    name: "openai-api",
+    canHandle: (_chatProvider: ChatProvider) => true,
+    completionApi: async (fetcherParams: FetcherParams) => {
+        const response = await fetch(fetcherParams.chatConfig.chatApiEndpoint, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${fetcherParams.chatConfig.apiKey}`,
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            body: JSON.stringify({
+                model: fetcherParams.model,
+                stream: fetcherParams.stream,
+                messages: fetcherParams.messages,
+                ...fetcherParams.chatConfig.parameters
+            })
+        });
+        return response.json().then(json => {
+            const content = json["choices"][0]["message"]["content"];
+            return {
+                role: "assistant",
+                content: content
+            } as ChatMessage;
+        });
+    }
+}
+
 export class ChatService {
     private commandsHistory: Promise<string[]>;
     private aiConfig?: AIConfig;
+    private fetchers: Fetcher[] = [];
 
     constructor() {
         this.commandsHistory = persistenceService.getObject(ID_COMMANDS_HISTORY).then(h => h || [])
@@ -79,6 +113,10 @@ export class ChatService {
             this.aiConfig = undefined
             this.checkAIConfig().then()
         })
+    }
+
+    public registerFetcher(fetcher: Fetcher) {
+        this.fetchers.push(fetcher)
     }
 
     private async updateCommandsHistory(prompt: string) {
@@ -184,11 +222,9 @@ export class ChatService {
             chatConfig: currentChatConfig
         } as FetcherParams
 
-        const fetcher = currentChatConfig.name == "webllm"
-            ? webLLMService.complete.bind(webLLMService)
-            : this.onlineFetcher
+        const fetcher = this.fetchers.find((f) => f.canHandle(currentChatConfig)) || onlineFetcher
 
-        return fetcher(requestBodyObj).then(message => {
+        return fetcher.completionApi(requestBodyObj).then(message => {
             currentContext.history.push(message)
             if (currentContext.messageArrived) {
                 currentContext.messageArrived(message)
@@ -199,30 +235,6 @@ export class ChatService {
 
     getCommandsHistory(): Promise<string[]> {
         return this.commandsHistory
-    }
-
-    protected async onlineFetcher(fetcherParams: FetcherParams) {
-        const response = await fetch(fetcherParams.chatConfig.chatApiEndpoint, {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${fetcherParams.chatConfig.apiKey}`,
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            },
-            body: JSON.stringify({
-                model: fetcherParams.model,
-                stream: fetcherParams.stream,
-                messages: fetcherParams.messages,
-                ...fetcherParams.chatConfig.parameters
-            })
-        });
-        return response.json().then(json => {
-            const content = json["choices"][0]["message"]["content"];
-            return {
-                role: "assistant",
-                content: content
-            } as ChatMessage;
-        });
     }
 }
 

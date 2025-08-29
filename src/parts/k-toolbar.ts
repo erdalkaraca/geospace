@@ -2,9 +2,16 @@ import {css, html} from 'lit'
 import {customElement, property, state} from 'lit/decorators.js'
 import {KElement} from "./k-element.ts";
 import {styleMap} from 'lit/directives/style-map.js';
-import {CommandContribution, Contribution, contributionRegistry, HTMLContribution} from "../core/contributionregistry.ts";
+import {
+    CommandContribution,
+    Contribution,
+    contributionRegistry,
+    HTMLContribution,
+    TOPIC_CONTRIBUTEIONS_CHANGED
+} from "../core/contributionregistry.ts";
 import {Signal, SignalWatcher} from '@lit-labs/signals';
 import {unsafeHTML} from "lit/directives/unsafe-html.js";
+import {subscribe} from "../core/events.ts";
 
 @customElement('k-toolbar')
 export class KToolbar extends SignalWatcher(KElement) {
@@ -19,6 +26,12 @@ export class KToolbar extends SignalWatcher(KElement) {
             const id = this.getAttribute("id")!
             this.contributions = contributionRegistry.getContributions(id)
         }
+    }
+
+    protected doInitUI() {
+        subscribe(TOPIC_CONTRIBUTEIONS_CHANGED, () => {
+            this.requestUpdate()
+        })
     }
 
     contributionCreator(contribution: Contribution) {

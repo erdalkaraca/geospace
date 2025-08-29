@@ -25,3 +25,4 @@ dist-ssr
 /lib/
 /public/lib/gs-lib.css
 /public/lib/gs-lib.js
+/stats.html

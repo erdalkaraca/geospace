@@ -44,6 +44,7 @@ export class KLinuxTerminal extends KElement {
         await cx.run("/bin/bash", ["--login"], {
             env: [
                 "HOME=/home/user",
+                "HOME=/home/user",
                 "USER=user",
                 "SHELL=/bin/bash",
                 "EDITOR=vim",

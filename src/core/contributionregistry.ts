@@ -1,5 +1,8 @@
 import {Signal} from "@lit-labs/signals";
 import {TemplateResult} from "lit";
+import {publish} from "./events.ts";
+
+export const TOPIC_CONTRIBUTEIONS_CHANGED = "events/contributionregistry/contributionsChanged"
 
 export interface Contribution {
     target?: string;
@@ -37,6 +40,7 @@ class ContributionRegistry {
             contribution.disabled = new Signal.Computed<boolean>(callback)
         }
         targetSlot.push(contribution);
+        publish(TOPIC_CONTRIBUTEIONS_CHANGED, this.contributions)
     }
 
 

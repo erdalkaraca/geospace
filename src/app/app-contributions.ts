@@ -10,8 +10,8 @@ import './geo/gs-catalog.ts'
 
 import '../editors/k-md-editor.ts'
 import "../editors/monaco-init.ts"
-import "./build/build-init.ts"
 import "./../extensions"
+import "./build/build-extension.ts"
 
 import {TABS_LEFT_END, TABS_LEFT_START, TABS_RIGHT, TOOLBAR_MAIN} from "../core/constants.ts";
 

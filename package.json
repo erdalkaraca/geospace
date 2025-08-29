@@ -50,6 +50,7 @@
     "vite-plugin-static-copy": "^2.3.1",
     "vite-plugin-mkcert": "^1.17.8",
     "vite-plugin-cross-origin-isolation": "^0.1.6",
-    "vite-plugin-zip": "^1.0.1"
+    "vite-plugin-zip": "^1.0.1",
+    "rollup-plugin-visualizer": "^6.0.3"
   }
 }
