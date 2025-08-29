@@ -35,8 +35,8 @@ jobs:
 
       - name: Build app
         run: |
-          REPO=${GITHUB_REPOSITORY##*/}
-          export VITE_BASE_PATH="/$REPO/"
+          #REPO=${GITHUB_REPOSITORY##*/}
+          #export VITE_BASE_PATH="/$REPO/"
           npm run build
 
       - name: Deploy to GitHub Pages branch
