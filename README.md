@@ -58,27 +58,44 @@ The AI assistant is configured through the `settings.json` file, automatically g
 
 ```json
 {
-  "defaultProvider": "groq",
-  "providers": [
-    {
-      "name": "groq",
-      "model": "llama-3.3-70b-versatile",
-      "chatApiEndpoint": "https://api.groq.com/openai/v1/chat",
-      "apiKey": "<your api key>"
-    },
-    {
-      "name": "cerebras",
-      "model": "llama-3.3-70b",
-      "chatApiEndpoint": "https://api.cerebras.ai/v1/chat",
-      "apiKey": "<your api key>"
-    },
-    {
-      "name": "openai",
-      "model": "gpt-4.1-mini",
-      "chatApiEndpoint": "https://api.openai.com/v1/chat",
-      "apiKey": "<your api key>"
-    }
-  ]
+  "aiConfig": {
+    "defaultProvider": "ollama",
+    "providers": [
+      {
+        "name": "ollama",
+        "model": "gemma3:12b",
+        "chatApiEndpoint": "http://localhost:11434/v1/chat/completions",
+        "apiKey": ""
+      },
+      {
+        "name": "openai",
+        "model": "gpt-4.1-mini",
+        "chatApiEndpoint": "https://api.openai.com/v1/chat/completions",
+        "apiKey": "<your api key>"
+      },
+      {
+        "name": "groq",
+        "model": "llama-3.1-8b-instant",
+        "chatApiEndpoint": "https://api.groq.com/openai/v1/chat/completions",
+        "apiKey": "<your api key>"
+      },
+      {
+        "name": "cerebras",
+        "model": "llama3.1-8b",
+        "chatApiEndpoint": "https://api.cerebras.ai/v1/chat/completions",
+        "apiKey": "<your api key>"
+      },
+      {
+        "name": "webllm",
+        "model": "gemma-2-9b-it-q4f16_1-MLC",
+        "chatApiEndpoint": "",
+        "apiKey": "",
+        "parameters": {
+          "context_window_size": 4096
+        }
+      }
+    ]
+  }
 }
 ```
 Important: Replace `<your api key>` with your actual API keys for each provider that you want to use.

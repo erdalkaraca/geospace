@@ -20,11 +20,16 @@ export interface ChatMessage {
     content: string;
 }
 
+export interface ModelParams {
+    [key: string]: any
+}
+
 export interface ChatProvider {
     name: string
     model: string
     apiKey: string
-    chatApiEndpoint: string
+    chatApiEndpoint: string,
+    parameters?: ModelParams
 }
 
 export interface ChatContext {
@@ -61,7 +66,7 @@ export interface FetcherParams {
     model: string;
     stream: boolean;
     messages: ChatMessage[],
-    chatConfig: ChatProvider,
+    chatConfig: ChatProvider
 }
 
 export class ChatService {
@@ -206,7 +211,8 @@ export class ChatService {
             body: JSON.stringify({
                 model: fetcherParams.model,
                 stream: fetcherParams.stream,
-                messages: fetcherParams.messages
+                messages: fetcherParams.messages,
+                ...fetcherParams.chatConfig.parameters
             })
         });
         return response.json().then(json => {

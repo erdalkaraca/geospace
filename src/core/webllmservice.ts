@@ -4,19 +4,19 @@ import {ChatMessage, FetcherParams} from "./chatservice.ts";
 export class WebLLMService {
     private engine?: MLCEngine;
 
-    public async init(model: string = "Llama-3.1-8B-Instruct-q4f16_1-MLC") {
+    public async init(model: string = "Llama-3.1-8B-Instruct-q4f16_1-MLC", parameters?: any) {
         // Initialize with a progress callback
         const initProgressCallback = (progress: any) => {
             console.log("Model loading progress:", progress);
         };
 
         this.engine = new MLCEngine({initProgressCallback});
-        await this.engine.reload(model);
+        await this.engine.reload(model, parameters);
     }
 
     public async complete(options: FetcherParams) {
         if (!this.engine) {
-            await this.init(options.model)
+            await this.init(options.model, options.chatConfig.parameters)
         }
         const internalMessages = options.messages.map(message => {
             return {...message} as ChatCompletionMessageParam
