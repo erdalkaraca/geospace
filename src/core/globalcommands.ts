@@ -8,7 +8,6 @@ import README from "../../README.md?raw"
 import {toastError, toastInfo} from "./toast.ts";
 import {activePartSignal, activeSelectionSignal} from "./appstate.ts";
 import {SETTINGS_FILE_PATH} from "./settingsservice.ts";
-import {GsMapEditor} from "../app/geo/gs-map-editor.ts";
 
 registerAll({
     command: {

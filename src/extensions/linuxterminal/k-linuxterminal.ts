@@ -1,8 +1,8 @@
 import {css, html, unsafeCSS} from 'lit'
 import {customElement} from 'lit/decorators.js'
-import {KElement} from "../parts/k-element.ts";
 import {createRef, ref} from "lit/directives/ref.js";
 import styles from "@xterm/xterm/css/xterm.css?raw";
+import {KElement} from "../../parts/k-element.ts";
 
 // @ts-ignore
 const CheerpX = window.CheerpX;

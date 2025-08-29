@@ -2,12 +2,12 @@
 // https://github.com/petersalomonsen/wasm-git
 
 
-import {workspaceService} from "./filesys.ts";
-import type {WorkspaceService} from "./filesys.ts";
 // @ts-ignore
 import * as lgMod from "wasm-git/lg2_async.js";
 
 import wasmUrl from '../../node_modules/wasm-git/lg2_async.wasm?url'
+import type {WorkspaceService} from "../../core/filesys.ts";
+import {workspaceService} from "../../core/filesys.ts";
 
 // Custom FS interface for wasm-git that delegates to workspaceService
 
@@ -18,7 +18,7 @@ class WorkspaceFS {
         this.workspaceService = workspaceServiceInstance;
     }
 
-    async readFile({dir, filepath}: { dir: string, filepath: string }) {
+    async readFile({filepath}: { filepath: string }) {
         const ws = await this.workspaceService.getWorkspace();
         const file = await ws?.getResource(filepath);
         if (!file) throw new Error(`File not found: ${filepath}`);
@@ -26,7 +26,7 @@ class WorkspaceFS {
         return await file.getContents();
     }
 
-    async writeFile({dir, filepath, content}: { dir: string, filepath: string, content: any }) {
+    async writeFile({filepath, content}: { filepath: string, content: any }) {
         const ws = await this.workspaceService.getWorkspace();
         // @ts-ignore
         let file = await ws?.getResource(filepath, {create: true});
@@ -70,7 +70,7 @@ class GitCommands {
         // TODO PULL
     }
 
-    async commitAndPush(message: string, author: { name: string, email: string }) {
+    async commitAndPush(_message: string, _author: { name: string, email: string }) {
         await this.gitService.init();
         // TODO add, commit, push
     }
