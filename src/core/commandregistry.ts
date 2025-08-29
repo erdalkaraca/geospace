@@ -75,8 +75,12 @@ export class CommandRegistry {
         (this.handlers.get(commandId) as any[]).push(handler);
     }
 
+    getHandler(commandId: string): Handler[] | undefined {
+        return this.handlers.get(commandId) || this.parentCommandRegistry?.getHandler(commandId)
+    }
+
     execute(commandId: string, context: ExecutionContext = {}) {
-        const handlers = this.handlers.get(commandId);
+        const handlers = this.getHandler(commandId);
 
         if (!handlers) {
             throw new Error(`No handlers registered for command: ${commandId}`);

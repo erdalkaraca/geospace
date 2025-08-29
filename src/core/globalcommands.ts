@@ -8,6 +8,7 @@ import README from "../../README.md?raw"
 import {toastError, toastInfo} from "./toast.ts";
 import {activePartSignal, activeSelectionSignal} from "./appstate.ts";
 import {SETTINGS_FILE_PATH} from "./settingsservice.ts";
+import {GsMapEditor} from "../app/geo/gs-map-editor.ts";
 
 registerAll({
     command: {
@@ -367,5 +368,37 @@ registerAll({
         target: TOOLBAR_MAIN_RIGHT,
         icon: "gear",
         label: "Open Settings",
+    }
+})
+
+commandRegistry.registerAll({
+    command: {
+        "id": "toast_message",
+        "name": "Toast message to user",
+        "description": "Shows a toast message",
+        "parameters": [
+            {
+                "name": "message",
+                "description": "the message to toast",
+                "required": true
+            },
+            {
+                "name": "type",
+                "description": "the toast type: info (default), or error",
+                "required": false
+            }
+        ]
+    },
+    handler: {
+        execute: ({params: {message, type}}: any) => {
+            if (!message) {
+                return
+            }
+            if (type === "error") {
+                toastError(message)
+            } else {
+                toastInfo(message)
+            }
+        }
     }
 })

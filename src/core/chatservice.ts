@@ -165,7 +165,8 @@ export class ChatService {
         const currentContext = options?.chatContext || defaultChatContext
         const currentChatConfig = options?.chatConfig || await this.getDefaultProvider()
 
-        const messages = [...currentContext.history]
+        // make a copy rather than destructing the history array as we modify the last message
+        const messages = structuredClone(currentContext.history)
         if (currentContext.sysPrompt) {
             let content = currentContext.sysPrompt instanceof Function ? currentContext.sysPrompt() : currentContext.sysPrompt
             const sysPrompt = {role: "system", content: content}
