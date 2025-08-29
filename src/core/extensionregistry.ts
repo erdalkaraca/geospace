@@ -10,7 +10,8 @@ export interface Extension {
     id: string;
     name: string;
     description?: string;
-    url: string;
+    url?: string;
+    loader?: () => any;
     icon?: string;
 }
 
@@ -62,7 +63,7 @@ class ExtensionRegistry {
     }
 
     public isEnabled(extensionId: string) {
-        this.checkExtensionsConfig().then()
+        this.checkExtensionsConfig()
         return !!this.extensionsSettings?.find((setting) => setting.id === extensionId && setting.enabled)
     }
 
@@ -90,7 +91,11 @@ class ExtensionRegistry {
             throw new Error("Extension not found: " + extensionId)
         }
         return taskService.runAsync("Loading extension: " + extension.name, () => {
-            return import(extension.url)
+            if (extension.loader) {
+                return extension.loader()
+            } else if (extension.url) {
+                return import(extension.url)
+            }
         })
     }
 
