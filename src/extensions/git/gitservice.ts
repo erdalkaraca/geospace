@@ -5,7 +5,7 @@
 // @ts-ignore
 import * as lgMod from "wasm-git/lg2_async.js";
 
-import wasmUrl from '../../node_modules/wasm-git/lg2_async.wasm?url'
+import wasmUrl from 'wasm-git/lg2_async.wasm?url'
 import type {WorkspaceService} from "../../core/filesys.ts";
 import {workspaceService} from "../../core/filesys.ts";
 
