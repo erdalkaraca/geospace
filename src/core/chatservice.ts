@@ -3,11 +3,48 @@ import {CommandRegistry, commandRegistry as globalCommandRegistry, ExecutionCont
 import {persistenceService} from "./persistenceservice.ts";
 import "./globalcommands.ts"
 import {appSettings, TOPIC_SETTINGS_CHANGED} from "./settingsservice.ts";
-import AI_CONFIG_TEMPLATE from "../assets/settings.json"
 import {publish, subscribe} from "./events.ts";
 
 export const TOPIC_AICONFIG_CHANGED = "events/chatservice/aiConfigChanged"
 const KEY_AI_CONFIG = "aiConfig";
+const AI_CONFIG_TEMPLATE = {
+    "defaultProvider": "ollama",
+    "providers": [
+        {
+            "name": "ollama",
+            "model": "gemma3:12b",
+            "chatApiEndpoint": "http://localhost:11434/v1/chat/completions",
+            "apiKey": ""
+        },
+        {
+            "name": "openai",
+            "model": "gpt-4.1-mini",
+            "chatApiEndpoint": "https://api.openai.com/v1/chat/completions",
+            "apiKey": "<your api key>"
+        },
+        {
+            "name": "groq",
+            "model": "llama-3.1-8b-instant",
+            "chatApiEndpoint": "https://api.groq.com/openai/v1/chat/completions",
+            "apiKey": "<your api key>"
+        },
+        {
+            "name": "cerebras",
+            "model": "llama3.1-8b",
+            "chatApiEndpoint": "https://api.cerebras.ai/v1/chat/completions",
+            "apiKey": "<your api key>"
+        },
+        {
+            "name": "webllm",
+            "model": "gemma-2-9b-it-q4f16_1-MLC",
+            "chatApiEndpoint": "",
+            "apiKey": "",
+            "parameters": {
+                "context_window_size": 4096
+            }
+        }
+    ]
+}
 
 export interface AIConfig {
     defaultProvider?: string;
@@ -155,7 +192,7 @@ export class ChatService {
         if (!this.aiConfig) {
             this.aiConfig = await appSettings.get(KEY_AI_CONFIG)
             if (!this.aiConfig) {
-                await appSettings.set(KEY_AI_CONFIG, AI_CONFIG_TEMPLATE.aiConfig)
+                await appSettings.set(KEY_AI_CONFIG, AI_CONFIG_TEMPLATE)
                 this.aiConfig = await appSettings.get(KEY_AI_CONFIG)
             }
             publish(TOPIC_AICONFIG_CHANGED, this.aiConfig)

@@ -7,7 +7,7 @@ import {html} from "lit";
 import README from "../../README.md?raw"
 import {toastError, toastInfo} from "./toast.ts";
 import {activePartSignal, activeSelectionSignal} from "./appstate.ts";
-import {SETTINGS_FILE_PATH} from "./settingsservice.ts";
+import {appSettings} from "./settingsservice.ts";
 
 registerAll({
     command: {
@@ -356,11 +356,28 @@ registerAll({
     },
     handler: {
         execute: _context => {
-            commandRegistry.execute("open_editor", {
-                params: {
-                    path: SETTINGS_FILE_PATH
-                }
-            })
+            const editorInput = {
+                title: "settings.json",
+                data: {
+                    async getContents() {
+                        const obj = await appSettings.getAll()
+                        return JSON.stringify(obj, undefined, 2)
+                    },
+                    getName() {
+                        return editorInput.key
+                    },
+                    saveContents(contents: string) {
+                        const obj = JSON.parse(contents)
+                        return appSettings.setAll(obj)
+                    }
+                },
+                key: "setting.json",
+                icon: "gear",
+                state: {},
+            } as EditorInput
+            editorInput.widgetFactory = () => html`
+                <k-monaco-editor .input=${editorInput}></k-monaco-editor>`
+            editorRegistry.loadEditor(editorInput).then()
         }
     },
     contribution: {

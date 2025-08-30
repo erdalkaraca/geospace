@@ -87,6 +87,41 @@ export abstract class Directory extends Resource {
     public abstract touch(): void;
 }
 
+export class StringFile extends File {
+    private contents: string;
+    private name: string;
+
+    constructor(contents: string, name: string) {
+        super();
+        this.contents = contents
+        this.name = name
+    }
+
+    async getContents(_options?: FileContentsOptions): Promise<any> {
+        return this.contents
+    }
+
+    async saveContents(contents: any, _options?: FileContentsOptions): Promise<void> {
+        this.contents = contents
+    }
+
+    async copyTo(_targetPath: string): Promise<void> {
+        throw Error(`Not supported`);
+    }
+
+    delete(_name?: string, _recursive?: boolean): Promise<void> {
+        throw Error(`Not supported`);
+    }
+
+    getName(): string {
+        return this.name;
+    }
+
+    getParent(): Directory | undefined {
+        return undefined;
+    }
+}
+
 export class FileSysFileHandleResource extends File {
     private fileHandle: FileSystemFileHandle;
     private parent: Directory;

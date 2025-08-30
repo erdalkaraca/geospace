@@ -1,5 +1,6 @@
-import {File, TOPIC_WORKSPACE_CONNECTED, WORKSPACE_METADATA_DIR, workspaceService} from "./filesys.ts";
-import {publish, subscribe} from "./events.ts";
+import {publish} from "./events.ts";
+import {persistenceService} from "./persistenceservice.ts";
+import {WORKSPACE_METADATA_DIR} from "./filesys.ts";
 
 export const SETTINGS_FILE_PATH = `${WORKSPACE_METADATA_DIR}/settings.json`
 
@@ -13,37 +14,14 @@ class SettingsService {
 
     private appSettings?: AppSettings;
 
-    constructor() {
-        subscribe(TOPIC_WORKSPACE_CONNECTED, () => {
-            this.appSettings = undefined
-            this.checkSettings().then()
-        })
-    }
-
-    private async getSettingsFile(create: boolean = true) {
-        const workspace = await workspaceService.getWorkspace()
-        if (workspace) {
-            const file = await workspace.getResource(SETTINGS_FILE_PATH, {
-                create: create
-            })
-            if (file instanceof File) {
-                return file
-            }
-        }
-        throw new Error("Settings file not found: " + SETTINGS_FILE_PATH)
-    }
-
     private async checkSettings() {
         if (!this.appSettings) {
-            const file = await this.getSettingsFile()
-            const contents = await file.getContents()
-            try {
-                this.appSettings = JSON.parse(contents)
-            } catch (error) {
+            this.appSettings = await persistenceService.getObject(SETTINGS_FILE_PATH)
+            if (!this.appSettings) {
                 this.appSettings = {}
-            } finally {
-                publish(TOPIC_SETTINGS_CHANGED, this.appSettings)
+                await persistenceService.persistObject(SETTINGS_FILE_PATH, this.appSettings)
             }
+            publish(TOPIC_SETTINGS_CHANGED, this.appSettings)
         }
     }
 
@@ -55,9 +33,17 @@ class SettingsService {
     public async set(key: string, value: any) {
         await this.checkSettings()
         this.appSettings![key] = value
+        await persistenceService.persistObject(SETTINGS_FILE_PATH, this.appSettings)
+    }
 
-        const file = await this.getSettingsFile()
-        await file.saveContents(JSON.stringify(this.appSettings!, null, 2))
+    public async getAll() {
+        await this.checkSettings()
+        return this.appSettings!;
+    }
+
+    public async setAll(settings: AppSettings) {
+        this.appSettings = settings
+        await persistenceService.persistObject(SETTINGS_FILE_PATH, this.appSettings)
     }
 }
 
