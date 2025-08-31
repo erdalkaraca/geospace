@@ -11,10 +11,9 @@ For more details, see [File System API](https://developer.mozilla.org/en-US/docs
 
 1.  **Connect a Workspace:**
     *   In the Workspace tab click on the folder icon "Load workspace folder" and choose a local folder to use as your workspace. This folder will be saved and restored when you reload geo!space.
-    *   Connecting a workspace will automatically generate a project structure if it is not recognized as a geo!space workspace.
 
 2.  **Configure AI Assistant (Optional):**
-    *   Edit the generated `.geospace/settings.json` file within your workspace. This file allows you to configure the AI assistant's behavior.
+    *   Open settings editor using the settings button in the upper right corner. This editor allows you to configure the AI assistant's behavior.
 
 3.  **Opening Files:**
     *   `.geospace` files: These are map files. Double-click to open them in the map editor.
@@ -54,10 +53,13 @@ The various assistants do not know of each other. You can identify the role of t
 * Code editor: brackets icon and "Code: Interact with code" appear
 * Mapping editor: map icon and "Map: Interact with map" appear
 
-The AI assistant is configured through the `settings.json` file, automatically generated within the `.geospace` folder in your workspace.  Here's an example of the file structure:
+The AI assistant configuration can be opened as part of the app's settings and has its own section `aiConfig`:
 
 ```json
 {
+  "otherSetting": {
+    
+  },
   "aiConfig": {
     "defaultProvider": "ollama",
     "providers": [
@@ -95,7 +97,10 @@ The AI assistant is configured through the `settings.json` file, automatically g
         }
       }
     ]
-  }
+  },
+  "yetAnotherSetting": {
+
+  },
 }
 ```
 Important: Replace `<your api key>` with your actual API keys for each provider that you want to use.
