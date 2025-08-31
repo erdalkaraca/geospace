@@ -39,6 +39,9 @@ jobs:
           #export VITE_BASE_PATH="/$REPO/"
           npm run build
 
+      - name: Add CNAME file
+        run: echo "geo.kispace.de" > CNAME
+
       - name: Deploy to GitHub Pages branch
         uses: peaceiris/actions-gh-pages@v4
         with:
