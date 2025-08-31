@@ -72,14 +72,7 @@ class ExtensionRegistry {
             return
         }
         this.load(extensionId).then(() => {
-            this.checkExtensionsConfig().then(() => {
-                this.extensionsSettings?.push({id: extensionId, enabled: true})
-                appSettings.set(KEY_EXTENSIONS_CONFIG, this.extensionsSettings).then(() => {
-                    if (informUser) {
-                        toastInfo("Extension enabled: " + extensionId)
-                    }
-                })
-            })
+            this.updateEnablement(extensionId, true, informUser)
         }).catch(_e => {
             toastError("Could not load extension: " + extensionId)
         })
@@ -103,12 +96,27 @@ class ExtensionRegistry {
         if (!this.isEnabled(extensionId)) {
             return
         }
+        this.updateEnablement(extensionId, false, informUser)
+    }
+
+    private updateEnablement(extensionId: string, enabled: boolean, informUser: boolean) {
         this.checkExtensionsConfig().then(() => {
-            this.extensionsSettings?.push({id: extensionId, enabled: false})
+            const extension = this.extensionsSettings?.find(e => e.id == extensionId)
+            if (extension) {
+                extension.enabled = enabled
+            } else {
+                this.extensionsSettings?.push({id: extensionId, enabled: enabled})
+            }
             appSettings.set(KEY_EXTENSIONS_CONFIG, this.extensionsSettings).then(() => {
                 if (informUser) {
-                    toastInfo("Extension disabled: " + extensionId + " - Please restart to take effect")
+                    const extObj = this.extensions[extensionId]
+                    if (enabled) {
+                        toastInfo(extObj.name + " enabled.")
+                    } else {
+                        toastInfo(extObj.name + " disabled " + " - Please restart to take effect")
+                    }
                 }
+                publish(TOPIC_EXTENSIONS_CHANGED, this.extensionsSettings)
             })
         })
     }
