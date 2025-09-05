@@ -1,6 +1,7 @@
 import {ChatCompletionMessageParam, MLCEngine} from "@mlc-ai/web-llm";
+import type {ChatMessage, ChatProvider, ChatService, FetcherParams} from "../../core/chatservice.ts";
 
-export default ({chatService}) => {
+export default ({chatService}: { chatService: ChatService }) => {
     let engine: MLCEngine;
 
     const init = async (model: string = "Llama-3.1-8B-Instruct-q4f16_1-MLC", parameters?: any) => {
@@ -28,7 +29,7 @@ export default ({chatService}) => {
 
     chatService.registerFetcher({
         name: "webllm",
-        canHandle: chatProvider => chatProvider.name === "webllm",
+        canHandle: (chatProvider: ChatProvider) => chatProvider.name === "webllm",
         completionApi: complete
     })
 }

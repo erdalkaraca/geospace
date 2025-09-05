@@ -1,7 +1,6 @@
 import logger from "./logging.ts";
 import {CommandContribution, Contribution, contributionRegistry} from "./contributionregistry.ts";
 import {rootContext} from "./di.ts";
-import {toastInfo} from "./toast.ts";
 
 export interface Parameter {
     name: string;

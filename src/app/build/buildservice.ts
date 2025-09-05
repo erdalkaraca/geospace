@@ -214,7 +214,7 @@ export class BuildService {
             await gsMapEditor.save()
             toastInfo("Map saved automatically to run build.")
         }
-        const file = gsMapEditor.input.data as File
+        const file = gsMapEditor.input!.data as File
         const gsMap = JSON.parse(await file.getContents())
         const env = await loadEnvs(".env", "envs/.env", "env", "envs/env",
             "default.env", "envs/default.env", "prod.env", "envs/prod.env")
