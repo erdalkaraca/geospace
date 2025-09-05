@@ -5,6 +5,12 @@ import {GsMap, GsScript} from "../rt";
 import wasmUrl from '../../../node_modules/esbuild-wasm/esbuild.wasm?url'
 
 import manifestJson from "../../../public/pwa/manifest.json"
+import {activePartSignal} from "../../core/appstate.ts";
+import {GsMapEditor} from "../geo/gs-map-editor.ts";
+import {toastError, toastInfo} from "../../core/toast.ts";
+import {loadEnvs} from "../geo/utils.ts";
+import {taskService} from "../../core/taskservice.ts";
+import {rootContext} from "../../core/di.ts";
 
 const indexHtml = (vars: any) => `
 <!doctype html>
@@ -201,6 +207,30 @@ export class BuildService {
         }))! as File
         await entryFile.saveContents(contentCreator(vars))
     }
+
+    public async buildActiveMap() {
+        const gsMapEditor = activePartSignal.get() as GsMapEditor
+        if (gsMapEditor.isDirty()) {
+            await gsMapEditor.save()
+            toastInfo("Map saved automatically to run build.")
+        }
+        const file = gsMapEditor.input.data as File
+        const gsMap = JSON.parse(await file.getContents())
+        const env = await loadEnvs(".env", "envs/.env", "env", "envs/env",
+            "default.env", "envs/default.env", "prod.env", "envs/prod.env")
+        env["BUILD_TIME"] = new Date()
+        taskService.runAsync("Building map", () => buildService.build({
+            title: file.getName(),
+            gsMap: gsMap,
+            env: env
+        }))
+            .then(() => {
+                toastInfo("🚀 Map files copied to 'dist' folder in your workspace!")
+            }).catch(err => {
+            toastError(`💥 Map could not be built: ${err}`)
+        })
+    }
 }
 
 export const buildService = new BuildService();
+rootContext.put("buildService", buildService);

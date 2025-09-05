@@ -1,10 +1,11 @@
 import {customElement, state} from "lit/decorators.js";
 import {css, html} from "lit";
 import {KContainer} from "./k-container.ts";
-import {contributionRegistry, TabContribution} from "../core/contributionregistry.ts";
+import {contributionRegistry, TabContribution, TOPIC_CONTRIBUTEIONS_CHANGED} from "../core/contributionregistry.ts";
 import {when} from "lit/directives/when.js";
 import {icon, observeOverflow} from "../core/k-utils.ts";
 import {createRef, ref} from "lit/directives/ref.js";
+import {subscribe} from "../core/events.ts";
 
 @customElement('k-tabs')
 export class KTabs extends KContainer {
@@ -26,12 +27,22 @@ export class KTabs extends KContainer {
         })
     }
 
+    protected doInitUI() {
+        subscribe(TOPIC_CONTRIBUTEIONS_CHANGED, () => {
+            this.requestUpdate()
+        })
+    }
+
     has(key: string) {
         return !!this.getTabPanel(key)
     }
 
     activate(key: string) {
         this.tabGroup.value!.setAttribute("active", key)
+    }
+
+    public getActiveEditor() {
+        return this.tabGroup.value!.getAttribute("active")
     }
 
     closeTab(event: Event, tabName: string) {

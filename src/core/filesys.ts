@@ -1,5 +1,6 @@
 import {persistenceService} from "./persistenceservice.ts";
 import {publish} from "./events.ts";
+import {rootContext} from "./di.ts";
 
 export let WORKSPACE_METADATA_DIR = ".geospace";
 
@@ -338,3 +339,4 @@ export class WorkspaceService {
 }
 
 export const workspaceService = new WorkspaceService();
+rootContext.put("workspaceService", workspaceService)

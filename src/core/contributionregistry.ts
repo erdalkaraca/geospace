@@ -1,6 +1,7 @@
 import {Signal} from "@lit-labs/signals";
 import {TemplateResult} from "lit";
 import {publish} from "./events.ts";
+import {rootContext} from "./di.ts";
 
 export const TOPIC_CONTRIBUTEIONS_CHANGED = "events/contributionregistry/contributionsChanged"
 
@@ -31,10 +32,7 @@ class ContributionRegistry {
     private contributions: Map<string, Contribution[]> = new Map();
 
     registerContribution<T extends Contribution>(target: string, contribution: T) {
-        if (!this.contributions.has(target)) {
-            this.contributions.set(target, [])
-        }
-        const targetSlot = this.contributions.get(target)!
+        const targetSlot = this.getContributions(target)!
         if (contribution.disabled instanceof Function) {
             const callback = contribution.disabled as () => boolean
             contribution.disabled = new Signal.Computed<boolean>(callback)
@@ -45,8 +43,12 @@ class ContributionRegistry {
 
 
     getContributions(target: string): Contribution[] {
-        return (this.contributions.get(target) || []);
+        if (!this.contributions.has(target)) {
+            this.contributions.set(target, [])
+        }
+        return this.contributions.get(target)!
     }
 }
 
 export const contributionRegistry = new ContributionRegistry()
+rootContext.put("contributionRegistry", contributionRegistry)

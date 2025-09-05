@@ -1,6 +1,7 @@
 import {publish} from "./events.ts";
 import {persistenceService} from "./persistenceservice.ts";
 import {WORKSPACE_METADATA_DIR} from "./filesys.ts";
+import {rootContext} from "./di.ts";
 
 export const SETTINGS_FILE_PATH = `${WORKSPACE_METADATA_DIR}/settings.json`
 
@@ -48,3 +49,4 @@ class SettingsService {
 }
 
 export const appSettings = new SettingsService();
+rootContext.put("appSettings", appSettings)

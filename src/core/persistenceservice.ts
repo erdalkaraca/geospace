@@ -1,4 +1,5 @@
 import {get, set} from 'idb-keyval';
+import {rootContext} from "./di.ts";
 
 export class PersistenceService {
     async persistObject(key: string, value: any) {
@@ -11,3 +12,4 @@ export class PersistenceService {
 }
 
 export const persistenceService = new PersistenceService()
+rootContext.put("persistenceService", persistenceService)

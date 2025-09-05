@@ -5,7 +5,7 @@ import {activePartSignal, activeSelectionSignal} from "../../core/appstate.ts";
 import {GsCatalog} from "./gs-catalog.ts";
 import {toastError, toastInfo} from "../../core/toast.ts";
 
-import gsCatalog from "../../assets/geospace-catalog.json";
+import gsCatalog from "../assets/geospace-catalog.json";
 import {registerCatalog} from "./utils.ts";
 
 registerAll({

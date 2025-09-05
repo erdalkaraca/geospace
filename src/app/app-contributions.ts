@@ -6,16 +6,24 @@ import "./geo/gs-map-editor-contributions.ts"
 import './geo/gs-map-editor.ts'
 import './geo/gs-map-props.ts'
 import './geo/gs-catalog-contributions.ts'
+import './geo/gs-command-handlers.ts'
 import './geo/gs-catalog.ts'
 
 import '../editors/k-md-editor.ts'
 import "../editors/monaco-init.ts"
 import "./../extensions"
-import "./build/build-extension.ts"
+import "./../sysprompts"
+
+import APP_SYS_PROMPT from "../app/geospace-sysprompt.txt?raw"
+import {CID_PROMPTS, SysPromptContribution} from "../core/chatservice.ts";
 
 import {TABS_LEFT_END, TABS_LEFT_START, TABS_RIGHT, TOOLBAR_MAIN} from "../core/constants.ts";
 
 import {contributionRegistry, HTMLContribution, TabContribution} from "../core/contributionregistry.ts";
+import {extensionRegistry} from "../core/extensionregistry.ts";
+import {workspaceService} from "../core/filesys.ts";
+import {editorRegistry} from "../core/editorregistry.ts";
+import {KPart} from "../parts/k-part.ts";
 
 contributionRegistry.registerContribution(TOOLBAR_MAIN, {
     slot: "start",
@@ -54,10 +62,37 @@ contributionRegistry.registerContribution(TABS_LEFT_END, {
         <gs-map-props></gs-map-props>`
 } as TabContribution)
 
-contributionRegistry.registerContribution(TABS_RIGHT, {
-    name: "extensions",
-    label: "Extensions",
-    icon: "puzzle-piece",
-    component: () => html`
-        <k-extensions></k-extensions>`
-} as TabContribution)
+extensionRegistry.registerExtension({
+    id: "geospace.mapBuilder",
+    name: "geo!space Map Builder",
+    description: "Compile a geo!space file to an interactive website",
+    loader: () => import("./extensions/mapbuilder-extension.ts"),
+    icon: "earth",
+})
+
+extensionRegistry.registerExtension({
+    id: "geospace.overpass",
+    name: "OpenStreetMap Overpass",
+    description: "OpenStreetMap Overpass API Integration for use with LLMs",
+    loader: () => import("./extensions/overpass-extension.ts"),
+    icon: "table",
+})
+
+contributionRegistry.registerContribution(CID_PROMPTS, {
+    label: "App Support",
+    description: "General app support",
+    role: "appsupport",
+    sysPrompt: APP_SYS_PROMPT,
+    canHandle: ({activeEditor}: { activeEditor: KPart }) => {
+        return activeEditor === undefined
+    },
+    promptDecorator: async ({userPrompt}: any) => {
+        return workspaceService.getWorkspace().then(workspace => {
+            const appState = {
+                workspace: workspace?.getName(),
+                activeEditor: editorRegistry.getEditorArea().getActiveEditor()
+            }
+            return `${userPrompt}\n\n***App's state:***\n${JSON.stringify(appState, null, 2)}`
+        })
+    }
+} as SysPromptContribution)

@@ -1,9 +1,8 @@
-import {toastError} from "./toast.ts";
-import {CommandRegistry, commandRegistry as globalCommandRegistry, ExecutionContext} from "./commandregistry.ts";
-import {persistenceService} from "./persistenceservice.ts";
 import "./globalcommands.ts"
 import {appSettings, TOPIC_SETTINGS_CHANGED} from "./settingsservice.ts";
 import {publish, subscribe} from "./events.ts";
+import {DependencyContext, rootContext} from "./di.ts";
+import {Contribution, contributionRegistry} from "./contributionregistry.ts";
 
 export const TOPIC_AICONFIG_CHANGED = "events/chatservice/aiConfigChanged"
 const KEY_AI_CONFIG = "aiConfig";
@@ -46,14 +45,23 @@ const AI_CONFIG_TEMPLATE = {
     ]
 }
 
+export const CID_PROMPTS = "chatservice.prompts"
+
 export interface AIConfig {
     defaultProvider?: string;
     providers: ChatProvider[];
 }
 
+export interface ChatMessageAction {
+    icon: any;
+    label: string;
+    action: () => Promise<void>;
+}
+
 export interface ChatMessage {
     role: string;
     content: string;
+    actions?: ChatMessageAction[]
 }
 
 export interface ModelParams {
@@ -69,31 +77,13 @@ export interface ChatProvider {
 }
 
 export interface ChatContext {
-    chatConfig?: ChatProvider;
     history: ChatMessage[]
-    sysPrompt?: string | (() => string),
-    additionalContext?: () => string,
-    userHelp: string
-    label: string,
-    icon?: string,
-    messageArrived?: (message: ChatMessage) => void
-}
-
-export interface ChatContextProvider {
-    chatContext: ChatContext;
-}
-
-export const defaultChatContext: ChatContext = {
-    history: [],
-    userHelp: "What is your goal?",
-    label: "App",
-    icon: "question"
 }
 
 export interface HandlePromptOptions {
-    chatContext?: ChatContext,
+    chatContext: ChatContext,
     chatConfig?: ChatProvider,
-    commandRegistry?: CommandRegistry,
+    callContext: DependencyContext
 }
 
 export const ID_COMMANDS_HISTORY = "gs-maps-commands-history"
@@ -139,53 +129,32 @@ const onlineFetcher = {
     }
 }
 
+export interface SysPromptContribution extends Contribution {
+    description: string,
+    role: string;
+    sysPrompt: string;
+    canHandle?: (context: any) => boolean;
+    promptDecorator?: (context: any) => Promise<string>;
+    messageDecorator?: (context: any) => void;
+}
+
 export class ChatService {
-    private commandsHistory: Promise<string[]>;
     private aiConfig?: AIConfig;
     private fetchers: Fetcher[] = [];
+    private promptContributions: SysPromptContribution[] = []
 
     constructor() {
-        this.commandsHistory = persistenceService.getObject(ID_COMMANDS_HISTORY).then(h => h || [])
         subscribe(TOPIC_SETTINGS_CHANGED, () => {
             this.aiConfig = undefined
             this.checkAIConfig().then()
         })
+
+        // this is a reference to the original/mutable list, i.e. new additions will be automatically available
+        this.promptContributions = contributionRegistry.getContributions(CID_PROMPTS) as SysPromptContribution[]
     }
 
     public registerFetcher(fetcher: Fetcher) {
         this.fetchers.push(fetcher)
-    }
-
-    private async updateCommandsHistory(prompt: string) {
-        const history = await this.getCommandsHistory()
-        if (prompt in history) {
-            return
-        }
-        history.unshift(prompt);
-        await persistenceService.persistObject(ID_COMMANDS_HISTORY, history)
-    }
-
-    async runCommand(prompt: string, commandRegistry?: CommandRegistry) {
-        const currentCommandRegistry = commandRegistry || globalCommandRegistry
-        await this.updateCommandsHistory(prompt)
-        const splits = prompt.trim().split(/\s+/)
-        if (splits.length > 0) {
-            const commandId = splits.shift()!
-            const command = currentCommandRegistry.getCommand(commandId)
-            if (!command) {
-                toastError("Command not found: " + commandId)
-            }
-            const params = {}
-            splits.forEach((c, i) => {
-                // @ts-ignore
-                params[command.parameters[i].name] = c
-            })
-            const context: ExecutionContext = {
-                source: this,
-                params: params
-            }
-            currentCommandRegistry.execute(commandId, context)
-        }
     }
 
     private async checkAIConfig() {
@@ -230,49 +199,78 @@ export class ChatService {
         }
     }
 
-    async handleUserPrompt(message: ChatMessage, options?: HandlePromptOptions) {
-        const prompt = message.content
-        if (prompt && prompt.trim().startsWith("/")) {
-            const currentCommandRegistry = options?.commandRegistry || globalCommandRegistry
-            await this.runCommand(prompt.substring(1), currentCommandRegistry);
-            return
-        }
-        const currentContext = options?.chatContext || defaultChatContext
-        const currentChatConfig = options?.chatConfig || await this.getDefaultProvider()
-
-        // make a copy rather than destructing the history array as we modify the last message
-        const messages = structuredClone(currentContext.history)
-        if (currentContext.sysPrompt) {
-            let content = currentContext.sysPrompt instanceof Function ? currentContext.sysPrompt() : currentContext.sysPrompt
-            const sysPrompt = {role: "system", content: content}
-            messages.unshift(sysPrompt)
-        }
-
-        if (currentContext.additionalContext) {
-            messages[messages.length - 1].content += `\n\n${currentContext.additionalContext()}`
-        }
-
-        const requestBodyObj = {
-            model: currentChatConfig.model,
-            stream: false,
-            messages: messages,
-            chatConfig: currentChatConfig
-        } as FetcherParams
-
-        const fetcher = this.fetchers.find((f) => f.canHandle(currentChatConfig)) || onlineFetcher
-
-        return fetcher.completionApi(requestBodyObj).then(message => {
-            currentContext.history.push(message)
-            if (currentContext.messageArrived) {
-                currentContext.messageArrived(message)
-            }
-            return message
-        })
+    public getPromptContribution(role: string) {
+        return this.promptContributions.find(pc => pc.role === role)
     }
 
-    getCommandsHistory(): Promise<string[]> {
-        return this.commandsHistory
+    async handleUserPrompt(options: HandlePromptOptions) {
+        const currentChatConfig = options.chatConfig || await this.getDefaultProvider()
+        const chatContext = options.chatContext
+        const all = this.promptContributions.map(promptContribution => {
+            // for each request, create a new DI context to capture the current system state for later evaluations
+            const diContext = options.callContext.createChild({
+                userPrompt: chatContext.history[chatContext.history.length - 1].content
+            })
+            if (promptContribution.canHandle instanceof Function && !promptContribution.canHandle(diContext.getProxy())) {
+                return undefined
+            }
+
+            // since LLMs do not support multi-roles in a single chat, we have to rewrite the chat history,
+            // so the LLM does not get confused by replies from different roles
+            const messagesCopy = chatContext.history.map(m => {
+                let role = m.role
+                let content = m.content
+                if (role !== "user") {
+                    if (role !== promptContribution.role) {
+                        // pretend the user is citing other assistant's role
+                        role = "user"
+                        content = `***Another Assistant '${m.role}' replied:***\n${content}`
+                    } else {
+                        role = "assistant"
+                    }
+                }
+                return {role: role, content: content} as ChatMessage
+            })
+            let lastUserPrompt = messagesCopy[messagesCopy.length - 1]
+
+
+            const sysPrompt = {role: "system", content: promptContribution.sysPrompt}
+            messagesCopy.unshift(sysPrompt)
+
+            const handleFinalPrompt = async () => {
+                const requestBodyObj = {
+                    model: currentChatConfig.model,
+                    stream: false,
+                    messages: messagesCopy,
+                    chatConfig: currentChatConfig
+                } as FetcherParams
+
+                const fetcher = this.fetchers.find((f) => f.canHandle(currentChatConfig)) || onlineFetcher
+                return fetcher.completionApi(requestBodyObj).then(message => {
+                    return message
+                })
+            }
+            if (promptContribution.promptDecorator instanceof Function) {
+                return promptContribution.promptDecorator(diContext.getProxy()).then(decoratedPrompt => {
+                    if (decoratedPrompt) {
+                        lastUserPrompt.content = decoratedPrompt
+                    }
+                }).then(handleFinalPrompt).then(async message => {
+                    message.role = promptContribution.role
+                    if (promptContribution.messageDecorator) {
+                        diContext.put("message", message)
+                        promptContribution.messageDecorator(diContext.getProxy())
+                    }
+                    return message
+                })
+            }
+
+            return handleFinalPrompt()
+        })
+        const messages = (await Promise.all(all.filter(m => !!m)))
+        chatContext.history.push(...messages)
     }
 }
 
 export const chatService = new ChatService();
+rootContext.put("chatService", chatService);

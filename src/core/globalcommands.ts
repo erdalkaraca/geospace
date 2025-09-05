@@ -1,5 +1,5 @@
 import {commandRegistry, registerAll} from "./commandregistry.ts";
-import {Resource, workspaceService} from "./filesys.ts";
+import {File, Resource, workspaceService} from "./filesys.ts";
 import {TOOLBAR_MAIN, TOOLBAR_MAIN_RIGHT} from "./constants.ts";
 import {PyEnv} from "./pyservice.ts";
 import {EditorInput, editorRegistry} from "./editorregistry.ts";
@@ -62,12 +62,16 @@ registerAll({
                 "name": "path",
                 "description": "the path including name of the file to be created, must be relative to the workspace",
                 "required": true
+            },
+            {
+                "name": "contents",
+                "description": "the textual contents of the file",
+                "required": false
             }
         ]
     },
     handler: {
-        execute: async context => {
-            const path: string = context.params!["path"]
+        execute: async ({params: {path, contents}}: any) => {
             if (!path) {
                 return
             }
@@ -75,6 +79,10 @@ registerAll({
             const createdResource = await workspaceDir!.getResource(path, {create: true})
             if (!createdResource) {
                 console.log("could not create file: " + path)
+            } else {
+                if (contents) {
+                    await (createdResource as File).saveContents(contents)
+                }
             }
         }
     }
@@ -384,6 +392,35 @@ registerAll({
         target: TOOLBAR_MAIN_RIGHT,
         icon: "gear",
         label: "Open Settings",
+    }
+})
+
+registerAll({
+    command: {
+        "id": "open_extensions",
+        "name": "Open Extensions",
+        "description": "Opens the extensions registry",
+        "parameters": []
+    },
+    handler: {
+        execute: _context => {
+            const editorInput = {
+                title: "Extensions",
+                data: {},
+                key: "system.extensions",
+                icon: "puzzle-piece",
+                state: {},
+                noOverflow: true,
+            } as EditorInput
+            editorInput.widgetFactory = () => html`
+                <k-extensions></k-extensions>`
+            editorRegistry.loadEditor(editorInput).then()
+        }
+    },
+    contribution: {
+        target: TOOLBAR_MAIN_RIGHT,
+        icon: "puzzle-piece",
+        label: "Open Extensions",
     }
 })
 

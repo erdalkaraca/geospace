@@ -2,6 +2,7 @@ import {appSettings, TOPIC_SETTINGS_CHANGED} from "./settingsservice.ts";
 import {publish, subscribe} from "./events.ts";
 import {toastError, toastInfo} from "./toast.ts";
 import {taskService} from "./taskservice.ts";
+import {rootContext, uiContext} from "./di.ts";
 
 export const TOPIC_EXTENSIONS_CHANGED = "events/extensionsregistry/extensionsConfigChanged"
 const KEY_EXTENSIONS_CONFIG = "extensions"
@@ -13,6 +14,7 @@ export interface Extension {
     url?: string;
     loader?: () => any;
     icon?: string;
+    experimental?: boolean;
 }
 
 export interface ExtensionSetting {
@@ -83,13 +85,17 @@ class ExtensionRegistry {
         if (!extension) {
             throw new Error("Extension not found: " + extensionId)
         }
-        return taskService.runAsync("Loading extension: " + extension.name, () => {
+        const module = await taskService.runAsync("Loading extension: " + extension.name, () => {
             if (extension.loader) {
                 return extension.loader()
             } else if (extension.url) {
                 return import(extension.url)
             }
         })
+
+        if (module?.default instanceof Function) {
+            module?.default(uiContext.getProxy())
+        }
     }
 
     public disable(extensionId: string, informUser: boolean = false) {
@@ -123,3 +129,4 @@ class ExtensionRegistry {
 }
 
 export const extensionRegistry = new ExtensionRegistry()
+rootContext.put("extensionRegistry", extensionRegistry)

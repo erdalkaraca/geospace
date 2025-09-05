@@ -12,13 +12,7 @@ import {
     TOOLBAR_MAIN_RIGHT
 } from "../core/constants.ts";
 
-import APP_SYS_PROMPT from "../app/sysprompt-appsupport.txt?raw"
-import {defaultChatContext} from "../core/chatservice.ts";
-import {commandRegistry} from "../core/commandregistry.ts";
-
 import {version as appVersion} from "../../package.json"
-
-defaultChatContext.sysPrompt = APP_SYS_PROMPT.replace("${commandsJson}", JSON.stringify(commandRegistry.listCommands(), null, 2))
 
 render(html`
     <k-app id="gs-app">

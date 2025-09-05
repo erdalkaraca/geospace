@@ -1,4 +1,5 @@
 import {activeTasksSignal} from "./appstate.ts";
+import {rootContext} from "./di.ts";
 
 export interface ProgressMonitor {
     name: string
@@ -6,8 +7,8 @@ export interface ProgressMonitor {
     progress: number
 }
 
-export type Task = (progressMonitor: ProgressMonitor) => void
-export type AsyncTask = (progressMonitor: ProgressMonitor) => Promise<void>
+export type Task = (progressMonitor: ProgressMonitor) => any
+export type AsyncTask = (progressMonitor: ProgressMonitor) => Promise<any>
 
 export class TaskService {
     private tasks: ProgressMonitor[] = []
@@ -26,7 +27,7 @@ export class TaskService {
         }
     }
 
-    public runAsync(name: string, task: AsyncTask) {
+    public async runAsync(name: string, task: AsyncTask) {
         const progressMonitor = {
             name: name
         } as ProgressMonitor
@@ -44,3 +45,4 @@ export class TaskService {
 }
 
 export const taskService = new TaskService()
+rootContext.put("taskService", taskService)

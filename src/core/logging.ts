@@ -1,3 +1,5 @@
+import {rootContext} from "./di.ts";
+
 enum LogLevel {
  DEBUG,
  INFO,
@@ -42,3 +44,5 @@ class Logger {
 const logger = new Logger();
 logger.setLevel(LogLevel.DEBUG);
 export default logger;
+
+rootContext.put("logger", logger)

@@ -5,8 +5,9 @@ import {KPart} from "../parts/k-part.ts";
 export const EMPTY_SIGNALPORT = {} as SignalPort
 
 export const activePartSignal = signal<KPart>(null as unknown as KPart)
+export const activeEditorSignal = signal<KPart>(null as unknown as KPart)
 
-export const activePartDirtySignal = signal<KPart>(null as unknown as KPart)
+export const partDirtySignal = signal<KPart>(null as unknown as KPart)
 
 export const activeTasksSignal = signal<number>(0)
 

@@ -1,6 +1,6 @@
 import {css, html} from 'lit'
 import {when} from "lit/directives/when.js";
-import {customElement} from 'lit/decorators.js'
+import {customElement, state} from 'lit/decorators.js'
 import {KPart} from "../parts/k-part.ts";
 import {Extension, extensionRegistry, TOPIC_EXTENSIONS_CHANGED} from "../core/extensionregistry.ts";
 import {icon} from "../core/k-utils.ts";
@@ -9,6 +9,8 @@ import {subscribe} from "../core/events.ts";
 
 @customElement('k-extensions')
 export class KExtensions extends KPart {
+    @state()
+    private selectedExtension?: Extension;
 
     protected doInitUI() {
         subscribe(TOPIC_EXTENSIONS_CHANGED, () => {
@@ -21,38 +23,58 @@ export class KExtensions extends KPart {
     }
 
     enable(extension: Extension) {
-        extensionRegistry.enable(extension.id);
+        extensionRegistry.enable(extension.id, true);
         this.requestUpdate()
     }
 
     disable(extension: Extension) {
-        extensionRegistry.disable(extension.id);
+        extensionRegistry.disable(extension.id, true);
         this.requestUpdate()
+    }
+
+    selectionChanged(e: CustomEvent) {
+        // @ts-ignore
+        this.selectedExtension = e.detail.selection[0].model
     }
 
     render() {
         return html`
-            <div>
-                <wa-tree style="--indent-guide-width: 1px;">
+            <wa-split-panel position="30" style="height: 100%">
+                <wa-tree style="--indent-guide-width: 1px;" slot="start"
+                         @wa-selection-change="${this.selectionChanged}">
                     ${extensionRegistry.getExtensions().map(e => html`
                         <wa-tree-item @dblclick=${this.nobubble(this.onExtensionDblClick)} .model=${e} expanded>
-                            <div>${icon(e.icon)} ${e.name}
-                            </div>
-                            <wa-tree-item>
-                                ${when(extensionRegistry.isEnabled(e.id), () => html`
-                                    <wa-button title="Disable this extension" @click="${() => this.disable(e)}"
-                                               size="small" variant="danger" appearance="plain">
-                                        <wa-icon name="xmark"></wa-icon>
-                                    </wa-button>`, () => html`
-                                    <wa-button title="Enable this extension" @click="${() => this.enable(e)}"
-                                               size="small" variant="brand" appearance="plain">
-                                        <wa-icon name="download"></wa-icon>
-                                    </wa-button>`)}
-                                <small><i>${e.description}</i></small>
-                            </wa-tree-item>
+                            <span>${icon(e.icon)} ${e.name}</span>
                         </wa-tree-item>`)}
                 </wa-tree>
-            </div>
+                <div slot="end" style="padding: 1em;">
+                    ${when(this.selectedExtension, (e) => html`
+                        <h1>${icon(e.icon)} ${e.name}</h1>
+                        <hr>
+                        <div>
+                            ${when(extensionRegistry.isEnabled(e.id), () => html`
+                                <wa-button title="Disable this extension" @click="${() => this.disable(e)}"
+                                           variant="danger" appearance="plain">
+                                    <wa-icon name="xmark"></wa-icon>&nbsp;Uninstall (requires restart)
+                                </wa-button>`, () => html`
+                                <wa-button title="Enable this extension" @click="${() => this.enable(e)}"
+                                           variant="brand" appearance="plain">
+                                    <wa-icon name="download"></wa-icon>&nbsp;Install
+                                </wa-button>`)}
+                        </div>
+
+                        ${when(e.experimental, () => html`
+                            <div>
+                                <wa-button size="small" variant="warning" appearance="plain">
+                                    <wa-icon name="triangle-exclamation"></wa-icon>
+                                </wa-button>
+                                <small><i>This is an experimental extension!</i></small>
+                            </div>
+                        `)}
+                        ${e.description}
+                    `)}
+                </div>
+            </wa-split-panel>
         `
     }
 

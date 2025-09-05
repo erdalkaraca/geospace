@@ -24,14 +24,19 @@ editorRegistry.registerEditorInputHandler({
 })
 
 @customElement('k-md-editor')
-export class KMonacoEditor extends KPart {
+export class KMDEditor extends KPart {
     @property({attribute: false})
-    public input!: EditorInput;
+    public input?: EditorInput;
     @state()
     private mdContents?: string
 
+    protected doClose() {
+        this.input = undefined
+        this.mdContents = undefined
+    }
+
     protected doAfterUI() {
-        const data: string = this.input.data
+        const data: string = this.input!.data
         if (data.startsWith("http")) {
             fetch(data).then(data => {
                 data.text().then(text => {

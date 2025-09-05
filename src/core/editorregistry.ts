@@ -1,11 +1,12 @@
 import {EDITOR_AREA_MAIN} from "./constants.ts";
 import {KPart} from "../parts/k-part.ts";
-import {activePartDirtySignal, activePartSignal} from "./appstate.ts";
+import {activeEditorSignal, activePartSignal, partDirtySignal} from "./appstate.ts";
 import {watchSignal} from "./signals.ts";
 import {subscribe} from "./events.ts";
 import {TOPIC_WORKSPACE_CONNECTED} from "./filesys.ts";
 import {KTabs} from "../parts/k-tabs.ts";
 import {TabContribution} from "./contributionregistry.ts";
+import {rootContext} from "./di.ts";
 
 export const EVENT_SHOW_EDITOR = "editors/showEditor";
 
@@ -37,6 +38,7 @@ class EditorRegistry {
                     const parts = Array.from(tabPanel.querySelectorAll(`*`)).filter(element => element instanceof KPart)
                     parts.forEach((part) => {
                         activePartSignal.set(part)
+                        activeEditorSignal.set(part)
                     })
                 }
             }
@@ -47,20 +49,22 @@ class EditorRegistry {
                 const tabPanel: HTMLElement = event.detail
                 const parts = Array.from(tabPanel.querySelectorAll(`*`)).filter(element => element instanceof KPart)
                 parts.forEach((part) => {
-                    part.close()
+                    // part.close() will be automatically called by disconnected callback of part
                     if (activePartSignal.get() == part) {
                         activePartSignal.set(null as unknown as KPart)
+                        activeEditorSignal.set(null as unknown as KPart)
                     }
                 })
             }
             // @ts-ignore
             editorArea.addEventListener("tab-closed", closed)
 
-            watchSignal(activePartDirtySignal, (targetPart: KPart) => {
+            const dirtyHandler = (targetPart: KPart) => {
                 const tabPanel = targetPart.closest("wa-tab-panel") as HTMLElement
                 const name = tabPanel.getAttribute("name") as string
                 editorArea.markDirty(name, targetPart.isDirty())
-            })
+            }
+            watchSignal(partDirtySignal, dirtyHandler)
         })
         subscribe(TOPIC_WORKSPACE_CONNECTED, () => {
             // TODO close all editors
@@ -117,3 +121,4 @@ class EditorRegistry {
 }
 
 export const editorRegistry = new EditorRegistry();
+rootContext.put("editorRegistry", editorRegistry);

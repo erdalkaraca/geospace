@@ -1,11 +1,18 @@
 import {KContainer} from "./k-container.ts";
 import {property} from "lit/decorators.js";
 import {PropertyValues} from "lit";
-import {activePartDirtySignal, activePartSignal} from "../core/appstate.ts";
+import {partDirtySignal, activePartSignal} from "../core/appstate.ts";
+import {CommandStack} from "../core/commandregistry.ts";
 
 export abstract class KPart extends KContainer {
     @property()
     private dirty: boolean = false
+
+    protected commandStack?: CommandStack;
+
+    public getCommandStack(): CommandStack | undefined {
+        return this.commandStack;
+    }
 
     protected updated(_changedProperties: PropertyValues) {
         super.updated(_changedProperties);
@@ -46,8 +53,8 @@ export abstract class KPart extends KContainer {
 
     public markDirty(dirty: boolean) {
         this.dirty = dirty
-        activePartDirtySignal.set(null as unknown as KPart)
-        activePartDirtySignal.set(this)
+        partDirtySignal.set(null as unknown as KPart)
+        partDirtySignal.set(this)
         activePartSignal.set(null as unknown as KPart)
         activePartSignal.set(this)
     }

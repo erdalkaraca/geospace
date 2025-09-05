@@ -9,13 +9,15 @@ import {styleMap} from "lit/directives/style-map.js";
 import {toastError, toastInfo} from "../core/toast.ts";
 import {PyEnv} from "../core/pyservice.ts";
 import {workspaceService} from "../core/filesys.ts";
-import {ChatContext, ChatContextProvider, ChatMessage} from "../core/chatservice.ts";
-import SYS_PROMPT from "./SYS_PROMPT.txt?raw";
+import {ChatContext} from "../core/chatservice.ts";
+import {when} from "lit/directives/when.js";
 
 @customElement('k-monaco-editor')
-export class KMonacoEditor extends KPart implements ChatContextProvider {
+export class KMonacoEditor extends KPart {
     @property({attribute: false})
-    public input!: EditorInput;
+    public input?: EditorInput;
+    @property()
+    public readOnly: boolean = false;
 
     private editorRef = createRef();
     private editor?: any;
@@ -27,18 +29,12 @@ export class KMonacoEditor extends KPart implements ChatContextProvider {
     @state()
     private pyenv?: PyEnv;
 
-    public chatContext: ChatContext = {
-        history: [],
-        userHelp: "Interact with code",
-        label: "Code",
-        icon: "code",
-        sysPrompt: SYS_PROMPT,
-        additionalContext: this.additionalContext.bind(this),
-        messageArrived: this.onMessageArrived.bind(this),
+    chatContext: ChatContext = {
+        history: []
     }
 
     protected async doInitUI() {
-        const file = this.input.data
+        const file = this.input!.data
         const textContents = await file.getContents()
         const container = this.editorRef.value as HTMLElement
         const uri = monaco.Uri.file(file.getName())
@@ -48,20 +44,32 @@ export class KMonacoEditor extends KPart implements ChatContextProvider {
             automaticLayout: false,
         })
         this.model.onDidChangeContent((_event: Event) => {
+            if (this.readOnly) {
+                return
+            }
             this.markDirty(true)
         })
         this.editor.setModel(this.model)
         this.canExecute = file.getName().endsWith(".py")
     }
 
+    public getEditor() {
+        return this.editor
+    }
+
     save(): void {
         const value = this.model.getValue()
-        this.input.data.saveContents(value)
+        this.input?.data.saveContents(value)
         this.markDirty(false)
     }
 
     protected doClose() {
         this.model.dispose();
+        this.editor.dispose()
+        this.model = undefined
+        this.editor = undefined
+        this.pyenv?.close()
+        this.pyenv = undefined
     }
 
     private async onRunCode() {
@@ -76,18 +84,8 @@ export class KMonacoEditor extends KPart implements ChatContextProvider {
         toastInfo("Executed Python code!")
     }
 
-    additionalContext() {
-        const code = this.model.getValueInRange(this.editor.getSelection())
-        if (code) {
-            return `Code selection within file "${this.input.data.getWorkspacePath()}":\n
-            ${code}`
-        }
-        return `Code in file "${this.input.data.getWorkspacePath()}":\n
-            ${this.model.getValue()}`
-    }
-
-    onMessageArrived(_message: ChatMessage) {
-
+    public getLanguage() {
+        return this.model.getLanguageId()?.toLowerCase()
     }
 
     private async toggleConnection() {
@@ -109,19 +107,21 @@ export class KMonacoEditor extends KPart implements ChatContextProvider {
             <style>
                 ${styles}
             </style>
-            <k-toolbar>
-                <wa-button @click=${this.onRunCode} title="Run code"
-                           ?disabled="${!this.canExecute}" appearance="plain" size="small">
-                    <wa-icon name="play"></wa-icon>
-                </wa-button>
-                <wa-button @click=${this.toggleConnection}
-                           style="${styleMap({color: this.pyenv ? "var(--wa-color-success-fill-loud)" : "var(--wa-color-danger-fill-loud)"})}"
-                           title="(Re)Connect to execution environment"
-                           ?disabled="${!this.canExecute}"
-                           appearance="plain" size="small">
-                    <wa-icon name="circle"></wa-icon>
-                </wa-button>
-            </k-toolbar>
+            ${when(this.canExecute, () => html`
+                <k-toolbar>
+                    <wa-button @click=${this.onRunCode} title="Run code"
+                               ?disabled="${!this.canExecute}" appearance="plain" size="small">
+                        <wa-icon name="play"></wa-icon>
+                    </wa-button>
+                    <wa-button @click=${this.toggleConnection}
+                               style="${styleMap({color: this.pyenv ? "var(--wa-color-success-fill-loud)" : "var(--wa-color-danger-fill-loud)"})}"
+                               title="(Re)Connect to execution environment"
+                               ?disabled="${!this.canExecute}"
+                               appearance="plain" size="small">
+                        <wa-icon name="circle"></wa-icon>
+                    </wa-button>
+                </k-toolbar>
+            `)}
             <div class="monaco-editor-container" ${ref(this.editorRef)}>
             </div>
         `

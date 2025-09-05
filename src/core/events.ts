@@ -1,4 +1,5 @@
 import PubSub from 'pubsub-js'
+import {rootContext} from "./di.ts";
 
 export const subscribe = (topic: string, callback: (data: any) => any) => {
     PubSub.subscribe(topic, (_topic, data) => callback(data));
@@ -17,3 +18,6 @@ export const topic = (topic: string) => {
         return descriptor
     }
 }
+
+rootContext.put("subscribe", subscribe)
+rootContext.put("publish", publish)

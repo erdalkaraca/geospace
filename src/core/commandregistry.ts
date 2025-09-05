@@ -1,5 +1,7 @@
 import logger from "./logging.ts";
 import {CommandContribution, Contribution, contributionRegistry} from "./contributionregistry.ts";
+import {rootContext} from "./di.ts";
+import {toastInfo} from "./toast.ts";
 
 export interface Parameter {
     name: string;
@@ -59,14 +61,25 @@ export interface Commands {
     [commandId: string]: Command
 }
 
+export class CommandStack {
+    //private stack: any[] = []
+
+    public async execute(commandId: any, context: ExecutionContext) {
+        commandRegistry.execute(commandId, context);
+    }
+
+    public async undo() {
+        // TODO undo last command on stack
+    }
+
+    public async redo() {
+        // TODO redo last command on stack
+    }
+}
+
 export class CommandRegistry {
-    private parentCommandRegistry?: CommandRegistry;
     private commands: Commands = {};
     private handlers: Map<string, Handler[]> = new Map();
-
-    constructor(parentCommandRegistry?: CommandRegistry) {
-        this.parentCommandRegistry = parentCommandRegistry;
-    }
 
     registerHandler(commandId: string, handler: Handler) {
         if (!this.handlers.has(commandId)) {
@@ -76,7 +89,7 @@ export class CommandRegistry {
     }
 
     getHandler(commandId: string): Handler[] | undefined {
-        return this.handlers.get(commandId) || this.parentCommandRegistry?.getHandler(commandId)
+        return this.handlers.get(commandId)
     }
 
     execute(commandId: string, context: ExecutionContext = {}) {
@@ -108,15 +121,25 @@ export class CommandRegistry {
     }
 
     hasCommand(commandId: string): boolean {
-        return commandId in this.commands || !!this.parentCommandRegistry?.hasCommand(commandId);
+        return commandId in this.commands
     }
 
-    listCommands(): Commands {
-        return {...this.parentCommandRegistry?.listCommands(), ...this.commands};
+    listCommands(context?: ExecutionContext): Commands {
+        if (context) {
+            // filter by commands which have at least one executable handler
+            return Object.values(this.commands).filter(command => {
+                const handlers = commandRegistry.getHandler(command.id) || []
+                return handlers.some(handler => handler.canExecute === undefined || handler.canExecute(context))
+            }).reduce((acc: any, command) => {
+                acc[command.id] = command
+                return acc
+            }, {})
+        }
+        return this.commands
     }
 
     getCommand(commandId: string): Command {
-        return <Command>this.commands[commandId] || this.parentCommandRegistry?.getCommand(commandId);
+        return <Command>this.commands[commandId]
     }
 
     registerAll(options: RegisterOptions) {
@@ -135,6 +158,7 @@ export class CommandRegistry {
 }
 
 export const commandRegistry = new CommandRegistry();
+rootContext.put("commandRegistry", commandRegistry);
 
 export interface RegisterOptions {
     command: Command,

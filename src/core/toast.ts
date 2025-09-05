@@ -1,4 +1,5 @@
 import Toastify from "toastify-js";
+import {uiContext} from "./di.ts";
 
 export const toastInfo = (msg: string) => {
     console.info(msg)
@@ -24,3 +25,6 @@ export const toastError = (msg: string) => {
         }
     }).showToast();
 }
+
+uiContext.put("toastInfo", toastInfo)
+uiContext.put("toastError", toastError)
