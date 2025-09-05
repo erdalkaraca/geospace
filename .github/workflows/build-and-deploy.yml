@@ -40,7 +40,7 @@ jobs:
           npm run build
 
       - name: Add CNAME file
-        run: echo "geo.kispace.de" > .dist/CNAME
+        run: echo "geo.kispace.de" > ./dist/CNAME
 
       - name: Deploy to GitHub Pages branch
         uses: peaceiris/actions-gh-pages@v4
