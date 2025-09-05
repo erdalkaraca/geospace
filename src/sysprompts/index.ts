@@ -9,7 +9,6 @@ import {taskService} from "../core/taskservice.ts";
 import logger from "../core/logging.ts";
 import {KPart} from "../parts/k-part.ts";
 import {KMonacoEditor} from "../editors/k-monaco-editor.ts";
-import {toastError} from "../core/toast.ts";
 import {EditorInput, editorRegistry} from "../core/editorregistry.ts";
 import {html} from "lit";
 import {v4} from "uuid";
