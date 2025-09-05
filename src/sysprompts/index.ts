@@ -1,4 +1,4 @@
-import {commandRegistry, CommandRegistry, ExecutionContext} from "../core/commandregistry.ts";
+import {commandRegistry, CommandRegistry, CommandStack, ExecutionContext} from "../core/commandregistry.ts";
 import {ChatMessage, CID_PROMPTS, SysPromptContribution} from "../core/chatservice.ts";
 import {contributionRegistry} from "../core/contributionregistry.ts";
 
@@ -76,11 +76,7 @@ contributionRegistry.registerContribution(CID_PROMPTS, {
                 label: "Execute Commands",
                 icon: "play",
                 action: async () => {
-                    if (!activeEditor.isConnected) {
-                        toastError("Editor closed!")
-                        return
-                    }
-                    const commandStack = activeEditor.getCommandStack()!
+                    const commandStack = activeEditor?.getCommandStack() || new CommandStack()
                     await taskService.runAsync("Executing commands", async () => {
                         logger.debug("Executing commands: " + JSON.stringify(commands));
                         const context: ExecutionContext = {
