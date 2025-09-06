@@ -43,3 +43,12 @@ extensionRegistry.registerExtension({
     loader: () => import("./hello-world.js"),
     icon: "flask",
 })
+
+extensionRegistry.registerExtension({
+    id: "system.p12splitter",
+    name: ".p12 file splitter",
+    description: "Adds a command to split/separate a .p12 file into private/public and additional .pem files",
+    // @ts-ignore
+    loader: () => import("./certs/p12-splitter.ts"),
+    icon: "certificate",
+})

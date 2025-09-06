@@ -24,6 +24,7 @@ export class KTasks extends SignalWatcher(KPart) {
                     <wa-animation name="zoomIn" duration="1000" play>
                         <wa-icon name="hourglass" style="color: var(--wa-color-warning-fill-loud)"></wa-icon>
                     </wa-animation>
+                    Active tasks: ${activeTasksSignal.get()}
                 </div>
                 ${taskService.getActiveTasks().map(taskProgress => html`
                     <wa-dropdown-item>${taskProgress.name}: ${taskProgress.message}</wa-dropdown-item>

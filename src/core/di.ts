@@ -1,4 +1,4 @@
-import {html} from "lit";
+import {html, render} from "lit";
 
 export class DependencyContext {
     private variables: any;
@@ -56,3 +56,4 @@ export const rootContext = new DependencyContext({})
 export const uiContext = rootContext.createChild({})
 
 uiContext.put("html", html)
+uiContext.put("render", render)

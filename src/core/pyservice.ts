@@ -4,7 +4,11 @@ import {Directory, File, FileSysDirHandleResource, TOPIC_WORKSPACE_CHANGED, work
 import {parsePipRequirementsFile} from "pip-requirements-js";
 import {publish} from "./events.ts";
 
+const defaultGlobals = {
+    input: window.prompt
+}
 
+// FIXME run in a web worker as creating multiple instances does not guarantee "process isolation" in main thread
 export class PyEnv {
     private pyodide?: PyodideInterface;
     private workspaceMountFS?: any;
@@ -19,9 +23,31 @@ export class PyEnv {
         this.pyodide = await loadPyodide({
             indexURL: `https://cdn.jsdelivr.net/pyodide/v${poVersion}/full/`
         });
+        for (const [key, value] of Object.entries(defaultGlobals)) {
+            this.setGlobal(key, value)
+        }
+        this.pyodide.setStderr({
+            batched: s => console.error(s)
+        })
+        this.pyodide.setStdout({
+            batched: s => console.info(s)
+        })
 
         await this.mountWorkspace()
         await this.installDependencies()
+    }
+
+    public async runFunction(name: string, args: any) {
+        this.checkPy()
+        const func = this.pyodide!.globals.get(name)
+        func.callKwargs(args)
+        func.destroy()
+        await this.syncWorkspace()
+    }
+
+    public setGlobal(key: string, value: any) {
+        this.checkPy()
+        this.pyodide!.globals.set(key, value)
     }
 
     private checkPy() {
@@ -51,7 +77,7 @@ export class PyEnv {
 
     public async loadPackages(packages: string[]) {
         this.checkPy()
-        if (packages.length > 1) {
+        if (packages.length > 0) {
             await this.pyodide!.loadPackage(packages, {
                 checkIntegrity: false
             })

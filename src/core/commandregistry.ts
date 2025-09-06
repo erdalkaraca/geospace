@@ -64,7 +64,7 @@ export class CommandStack {
     //private stack: any[] = []
 
     public async execute(commandId: any, context: ExecutionContext) {
-        commandRegistry.execute(commandId, context);
+        return commandRegistry.execute(commandId, context);
     }
 
     public async undo() {
