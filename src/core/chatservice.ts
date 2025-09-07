@@ -132,7 +132,7 @@ const onlineFetcher = {
 export interface SysPromptContribution extends Contribution {
     description: string,
     role: string;
-    sysPrompt: string;
+    sysPrompt: string | (() => string);
     canHandle?: (context: any) => boolean;
     promptDecorator?: (context: any) => Promise<string>;
     messageDecorator?: (context: any) => void;
@@ -234,8 +234,11 @@ export class ChatService {
             let lastUserPrompt = messagesCopy[messagesCopy.length - 1]
 
 
-            const sysPrompt = {role: "system", content: promptContribution.sysPrompt}
-            messagesCopy.unshift(sysPrompt)
+            let sysPrompt = promptContribution.sysPrompt
+            if (typeof sysPrompt === "function") {
+                sysPrompt = sysPrompt()
+            }
+            messagesCopy.unshift({role: "system", content: sysPrompt} as ChatMessage)
 
             const handleFinalPrompt = async () => {
                 const requestBodyObj = {

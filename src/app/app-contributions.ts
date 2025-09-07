@@ -20,7 +20,7 @@ import {CID_PROMPTS, SysPromptContribution} from "../core/chatservice.ts";
 import {TABS_LEFT_END, TABS_LEFT_START, TABS_RIGHT, TOOLBAR_MAIN} from "../core/constants.ts";
 
 import {contributionRegistry, HTMLContribution, TabContribution} from "../core/contributionregistry.ts";
-import {extensionRegistry} from "../core/extensionregistry.ts";
+import {Extension, extensionRegistry} from "../core/extensionregistry.ts";
 import {workspaceService} from "../core/filesys.ts";
 import {editorRegistry} from "../core/editorregistry.ts";
 import {KPart} from "../parts/k-part.ts";
@@ -82,7 +82,19 @@ contributionRegistry.registerContribution(CID_PROMPTS, {
     label: "App Support",
     description: "General app support",
     role: "appsupport",
-    sysPrompt: APP_SYS_PROMPT,
+    sysPrompt: () => {
+        const extensions = extensionRegistry.getExtensions().map((e: Extension) => {
+            return {
+                id: e.id,
+                name: e.name,
+                description: e.description,
+                experimental: e.experimental,
+                installedAndEnabled: extensionRegistry.isEnabled(e.id)
+            }
+        })
+        const extensionsStr = `***Available Extensions:***\n${JSON.stringify(extensions, null, 2)}`
+        return `${APP_SYS_PROMPT}\n\n${extensionsStr}`
+    },
     canHandle: ({activeEditor}: { activeEditor: KPart }) => {
         return activeEditor === undefined
     },
@@ -92,7 +104,8 @@ contributionRegistry.registerContribution(CID_PROMPTS, {
                 workspace: workspace?.getName(),
                 activeEditor: editorRegistry.getEditorArea().getActiveEditor()
             }
-            return `${userPrompt}\n\n***App's state:***\n${JSON.stringify(appState, null, 2)}`
+            const appStateStr = `***App's state:***\n${JSON.stringify(appState, null, 2)}`
+            return `${appStateStr}\n\n${userPrompt}`
         })
     }
 } as SysPromptContribution)
