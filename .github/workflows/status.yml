@@ -1,0 +1,24 @@
+name: Status Badges
+
+on:
+  workflow_run:
+    workflows: ["Continuous Integration", "Pull Request Validation"]
+    types: [completed]
+
+jobs:
+  update-status:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion != 'skipped'
+    
+    steps:
+      - name: Status Summary
+        run: |
+          echo "## 🔄 CI/CD Status Update" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Workflow: ${{ github.event.workflow_run.name }}" >> $GITHUB_STEP_SUMMARY
+          echo "### Status: ${{ github.event.workflow_run.conclusion }}" >> $GITHUB_STEP_SUMMARY
+          echo "### Triggered by: ${{ github.event.workflow_run.head_branch }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Links" >> $GITHUB_STEP_SUMMARY
+          echo "- [View Workflow Run](${{ github.event.workflow_run.html_url }})" >> $GITHUB_STEP_SUMMARY
+          echo "- [View Commit](${{ github.event.workflow_run.head_commit.url }})" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,77 @@
+name: Reusable Build Workflow
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        description: 'Node.js version to use'
+        required: false
+        type: string
+        default: '20'
+      set-version:
+        description: 'Whether to set version from git tag'
+        required: false
+        type: boolean
+        default: false
+      upload-artifacts:
+        description: 'Whether to upload build artifacts'
+        required: false
+        type: boolean
+        default: true
+      artifact-name:
+        description: 'Name for build artifacts'
+        required: false
+        type: string
+        default: 'build-files'
+      artifact-retention-days:
+        description: 'Days to retain artifacts'
+        required: false
+        type: number
+        default: 7
+    outputs:
+      build-result:
+        description: 'Result of the build job'
+        value: ${{ jobs.build.outputs.result }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      result: ${{ steps.build-status.outcome }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js ${{ inputs.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Set package.json version from tag
+        if: inputs.set-version
+        run: |
+          VERSION=${GITHUB_REF_NAME}
+          npm version --no-commit-hooks --no-git-tag-version "$VERSION"
+
+      - name: Build runtime library
+        run: npm run build-gslib
+
+      - name: Build app
+        id: build-status
+        run: |
+          #REPO=${GITHUB_REPOSITORY##*/}
+          #export VITE_BASE_PATH="/$REPO/"
+          npm run build
+
+      - name: Upload build artifacts
+        if: inputs.upload-artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: dist/
+          retention-days: ${{ inputs.artifact-retention-days }}
