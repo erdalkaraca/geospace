@@ -50,7 +50,32 @@ const indexHtml = (vars: any) => `
 </script>
 <script>
     if ('serviceWorker' in navigator) {
-      window.onload = () => navigator.serviceWorker.register('/sw.js')
+      window.onload = () => {
+        navigator.serviceWorker.register('/sw.js').then(registration => {
+          // Check for updates
+          registration.addEventListener('updatefound', () => {
+            const newWorker = registration.installing;
+            if (newWorker) {
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  // New version available
+                  if (confirm('A new version of the app is available. Reload to update?')) {
+                    newWorker.postMessage({ type: 'SKIP_WAITING' });
+                    window.location.reload();
+                  }
+                }
+              });
+            }
+          });
+          
+          // Listen for service worker messages
+          navigator.serviceWorker.addEventListener('message', event => {
+            if (event.data && event.data.type === 'RELOAD') {
+              window.location.reload();
+            }
+          });
+        });
+      }
     }
   </script>
 </body>
@@ -83,7 +108,8 @@ export const renderMap = (mapContainerSelector) => gsLib({
 export interface BuildOptions {
     title: string,
     gsMap: GsMap,
-    env: any
+    env: any,
+    version: string
 }
 
 let workspacePlugin = {
@@ -152,16 +178,25 @@ export class BuildService {
         await this.downloadFile("/lib/gs-lib.css", "dist/app.css")
         await this.downloadFile("/pwa/staticwebapp.config.json", "dist/staticwebapp.config.json")
         await this.downloadFile("/pwa/sw.js", "dist/sw.js")
+
         const vars = {
             ...options,
             libPath: libPath
         }
+
+        // Read the downloaded service worker and inject version
+        const swFile = await workspace.getResource("dist/sw.js") as File
+        const swContent = await swFile.getContents()
+        await this.createFile("dist/sw.js", (vars: any) => {
+            return swContent.replace(/\$PWA_VERSION/g, vars["version"])
+        }, vars)
 
         await this.createFile("dist/manifest.json", (vars: any) => {
             const manifest = JSON.parse(JSON.stringify(manifestJson))
             manifest.name = vars["title"]
             manifest.short_name = vars["title"]
             manifest.description = vars["title"]
+            manifest.version = vars["version"]
             return JSON.stringify(manifest)
         }, vars)
 
@@ -222,7 +257,8 @@ export class BuildService {
         taskService.runAsync("Building map", () => buildService.build({
             title: file.getName(),
             gsMap: gsMap,
-            env: env
+            env: env,
+            version: env["VERSION"] || "0.0.0"
         }))
             .then(() => {
                 toastInfo("🚀 Map files copied to 'dist' folder in your workspace!")
