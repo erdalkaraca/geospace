@@ -14,10 +14,11 @@ import {rootContext} from "../../core/di.ts";
 
 const indexHtml = (vars: any) => `
 <!doctype html>
-<html lang="en">
+<html lang="en" translate="no">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="google" content="notranslate">
     
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="geospace-app" />
