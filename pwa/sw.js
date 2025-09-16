@@ -2,6 +2,10 @@ importScripts(
     'https://storage.googleapis.com/workbox-cdn/releases/7.3.0/workbox-sw.js'
 );
 
+// Version management for PWA updates
+const CACHE_VERSION = '$PWA_VERSION';
+const CACHE_NAME = `geospace-v${CACHE_VERSION}`;
+
 // This is your Service Worker, you can put any of your custom Service Worker
 // code in this file, above the `precacheAndRoute` line.
 
@@ -26,6 +30,51 @@ if (event.action == "updateName") {
 // When the widget is uninstalled/unpinned, clean up any unnecessary
 // periodic sync or widget-related state.
 self.addEventListener('widgetuninstall', (event) => {});
+
+// Handle service worker updates and version changes
+self.addEventListener('install', (event) => {
+    console.log(`Service Worker installing version ${CACHE_VERSION}`);
+    // Skip waiting to activate immediately
+    self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+    console.log(`Service Worker activating version ${CACHE_VERSION}`);
+    event.waitUntil(
+        // Clean up old caches
+        caches.keys().then((cacheNames) => {
+            return Promise.all(
+                cacheNames.map((cacheName) => {
+                    // Delete caches that don't match current version
+                    if (cacheName.startsWith('geospace-v') && cacheName !== CACHE_NAME) {
+                        console.log(`Deleting old cache: ${cacheName}`);
+                        return caches.delete(cacheName);
+                    }
+                })
+            );
+        }).then(() => {
+            // Take control of all clients immediately
+            return self.clients.claim().then(() => {
+                // Notify all clients about the new version
+                return self.clients.matchAll().then(clients => {
+                    clients.forEach(client => {
+                        client.postMessage({
+                            type: 'RELOAD',
+                            version: CACHE_VERSION
+                        });
+                    });
+                });
+            });
+        })
+    );
+});
+
+// Handle version change notifications
+self.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'SKIP_WAITING') {
+        self.skipWaiting();
+    }
+});
 
 const updateWidget = async (event) => {
 // The widget definition represents the fields specified in the manifest.
