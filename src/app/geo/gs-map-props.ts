@@ -4,11 +4,10 @@ import {KPart} from "../../parts/k-part.ts";
 import {when} from "lit/directives/when.js";
 import {GsMapEditor} from "./gs-map-editor.ts";
 import {activePartSignal} from "../../core/appstate.ts";
-import BaseLayer from "ol/layer/Base";
 import {SignalPort, watching} from "../../core/signals.ts";
 import {mapChangedSignal} from "./gs-signals.ts";
 import {icon} from "../../core/k-utils.ts";
-import {GsOlControl, GsOlOverlay, KEY_SRC} from "../rt";
+import {GsLayer, GsControl, GsOverlay} from "../rt/gs-model.ts";
 import {getOriginalUri} from "./utils.ts";
 
 @customElement('gs-map-props')
@@ -33,8 +32,13 @@ export class GsMapProps extends KPart {
 
     private toggleVisible(event: Event) {
         // @ts-ignore
-        const layer: BaseLayer = event.currentTarget.model
-        layer.setVisible(!layer.getVisible())
+        const layer: GsLayer = event.currentTarget.model
+        const index = this.mapEditor!.getLayers().indexOf(layer)
+        const newVisible = !layer.visible
+        
+        // Use operations directly to update both OpenLayers map and domain model
+        this.mapEditor?.mapOperations?.setLayerVisible(index, newVisible)
+        
         this.updateLater()
     }
 
@@ -45,16 +49,16 @@ export class GsMapProps extends KPart {
                 <wa-tree>
                     <wa-tree-item expanded>
                         ${icon("fg layers")} Layers
-                        ${this.mapEditor!.getLayers().map((layer: BaseLayer, i: number) => html`
+                        ${this.mapEditor!.getLayers().map((layer: GsLayer, i: number) => html`
                             <wa-tree-item>
                                 <wa-button .model="${layer}" @click="${this.toggleVisible}" appearance="plain"
                                            size="small">
-                                    <wa-icon name="${layer.getVisible() ? "eye" : "eye-slash"}"></wa-icon>
+                                    <wa-icon name="${layer.visible !== false ? "eye" : "eye-slash"}"></wa-icon>
                                 </wa-button>
-                                <span>${layer.get("name") ?? html`Layer ${i + 1}`}${i == 0 ? html`
+                                <span>${layer.name ?? html`Layer ${i + 1}`}${i == 0 ? html`
                                     <small>(basemap)</small>` : ""}</span>
                                 <wa-button appearance="plain" size="small"
-                                           @click="${() => this.withRefresh(() => this.mapEditor?.executeMapCommand("delete_layer", {index: i + 1}))}">
+                                           @click="${() => this.withRefresh(() => this.mapEditor?.mapOperations?.deleteLayer(i + 1))}">
                                     <wa-icon name="trash"></wa-icon>
                                 </wa-button>
                             </wa-tree-item>
@@ -62,11 +66,11 @@ export class GsMapProps extends KPart {
                     </wa-tree-item>
                     <wa-tree-item expanded>
                         ${icon("fg map-control")} Controls
-                        ${this.mapEditor?.olMap?.getControls().getArray().filter(c => c instanceof GsOlControl).map((control: GsOlControl, i: number) => html`
+                        ${this.mapEditor?.getGsMap().controls.map((control: GsControl, i: number) => html`
                             <wa-tree-item>
-                                <span>${getOriginalUri(control.get(KEY_SRC))}</span>
+                                <span>${getOriginalUri(control.src)}</span>
                                 <wa-button appearance="plain" size="small"
-                                           @click="${() => this.withRefresh(() => this.mapEditor?.executeMapCommand("remove_control", {index: i + 1}))}">
+                                           @click="${() => this.withRefresh(() => this.mapEditor?.mapOperations?.removeControl(i + 1))}">
                                     <wa-icon name="trash"></wa-icon>
                                 </wa-button>
                             </wa-tree-item>
@@ -74,11 +78,11 @@ export class GsMapProps extends KPart {
                     </wa-tree-item>
                     <wa-tree-item expanded>
                         ${icon("fg map-poi")} Overlays
-                        ${this.mapEditor?.olMap?.getOverlays().getArray().filter(c => c instanceof GsOlOverlay).map((overlay: GsOlOverlay, i: number) => html`
+                        ${this.mapEditor?.getGsMap().overlays.map((overlay: GsOverlay, i: number) => html`
                             <wa-tree-item>
-                                <span>${getOriginalUri(overlay.get(KEY_SRC))}</span>
+                                <span>${getOriginalUri(overlay.src)}</span>
                                 <wa-button appearance="plain" size="small"
-                                           @click="${() => this.withRefresh(() => this.mapEditor?.executeMapCommand("remove_overlay", {index: i + 1}))}">
+                                           @click="${() => this.withRefresh(() => this.mapEditor?.mapOperations?.removeOverlay(i + 1))}">
                                     <wa-icon name="trash"></wa-icon>
                                 </wa-button>
                             </wa-tree-item>

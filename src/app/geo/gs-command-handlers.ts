@@ -1,38 +1,40 @@
+// Command handlers use MapOperations directly via GsMapEditor.mapOperations
+
 import {commandRegistry, ExecutionContext} from "../../core/commandregistry.ts";
-import {fromLonLat, transformExtent} from "ol/proj";
-import VectorLayer from "ol/layer/Vector";
-import {GsMapEditor} from "./gs-map-editor.ts";
-import {findOlLayer, replaceUris} from "./utils.ts";
-import {stylesLoader} from "../rt";
+import {fromLonLat} from "ol/proj";
+
+/**
+ * Command handlers now directly use MapOperations
+ * This eliminates the translation layer between commands and operations
+ */
+import {MapOperations} from "./map-renderer.ts";
+import {replaceUris} from "./utils.ts";
 import {toastError} from "../../core/toast.ts";
 import {mapChangedSignal, MapEvents} from "./gs-signals.ts";
 import {
-    GsControl,
     GsGeometry,
     GsGeometryType,
-    GsIcon,
     GsLayer,
-    GsLayerType,
-    GsOverlay,
     GsSourceType,
-    GsStyle,
-    GsStyleType,
-    importControlSource,
-    importOverlaySource,
-    KEY_STYLES_PATH,
-    LAYER_GEOCODED_MARKERS,
-    olMapToGsMap,
     toGsLayerType,
     toGsSourceType,
-    toOlControl,
-    toOlFeature,
-    toOlLayer,
-    toOlOverlay,
     toSourceUrl
 } from "../rt";
 
 const canExecute = (context: ExecutionContext) => {
-    return context.source instanceof GsMapEditor;
+    return context.source && (context.source as any).mapOperations;
+}
+
+/**
+ * Helper method to extract MapOperations from GsMapEditor in context.source
+ * This ensures consistent access to map operations across all command handlers
+ * and provides proper error handling if MapOperations is not available
+ */
+const getMapOperations = (context: ExecutionContext): MapOperations => {
+    if (!context.source || !(context.source as any).mapOperations) {
+        throw new Error('GsMapEditor with MapOperations not available in context.source');
+    }
+    return (context.source as any).mapOperations as MapOperations;
 }
 
 commandRegistry.registerAll({
@@ -50,9 +52,10 @@ commandRegistry.registerAll({
     },
     handler: {
         canExecute,
-        execute: context => {
-            const controller: GsMapEditor = context.source;
-            controller.getView().setZoom(Number(context.params!["zoom"]).valueOf())
+        execute: async context => {
+            const operations = getMapOperations(context);
+            // Use MapOperations directly for clean domain model operations
+            await operations.setZoom(Number(context.params!["zoom"]).valueOf());
         }
     }
 })
@@ -77,10 +80,11 @@ commandRegistry.registerAll({
     },
     handler: {
         canExecute,
-        execute: context => {
-            const controller: GsMapEditor = context.source;
+        execute: async context => {
+            const operations = getMapOperations(context);
             const coords = fromLonLat([Number(context.params!["lon"]).valueOf(), Number(context.params!["lat"]).valueOf()]);
-            controller.getView().setCenter(coords)
+            // Use MapOperations directly for clean domain model operations
+            await operations.setCenter([coords[0], coords[1]]);
         }
     }
 })
@@ -115,16 +119,23 @@ commandRegistry.registerAll({
                 "name": "iconPath",
                 "description": "the path within the workspace to the icon file in any graphics format such as png, jpg or svg; if no icon path provided, a marker.png file will be assumed to be located in the root of the workspace",
                 "required": false
+            },
+            {
+                "name": "layerName",
+                "description": "the name of the layer to add the marker to; if not provided, markers will be added to the default 'geocoded-markers' layer",
+                "required": false
             }
         ]
     },
     handler: {
         canExecute,
-        execute: context => {
-            const controller: GsMapEditor = context.source;
+        execute: async context => {
+            const operations = getMapOperations(context);
             const coords = fromLonLat([Number(context.params!["lon"]).valueOf(), Number(context.params!["lat"]).valueOf()]);
             const iconPath = context.params!["iconPath"] || "marker.png"
-            const marker = toOlFeature({
+            
+            // Create marker in domain model format
+            const marker = {
                 state: {
                     name: context.params!["name"],
                     description: context.params!["description"],
@@ -134,38 +145,13 @@ commandRegistry.registerAll({
                     type: GsGeometryType.Point,
                     coordinates: [...coords]
                 } as GsGeometry
-            })
-
-            const olmap = controller.olMap!
-            const gsmap = controller.gsMap!
-            gsmap.styles[iconPath] = {
-                type: GsStyleType.IMAGE,
-                resource: {
-                    src: iconPath
-                } as GsIcon
-            } as GsStyle
-
-            const markersLayer = findOlLayer(LAYER_GEOCODED_MARKERS, olmap, () => {
-                const layer = toOlLayer({
-                    name: LAYER_GEOCODED_MARKERS,
-                    type: GsLayerType.VECTOR,
-                    source: {
-                        type: GsSourceType.Features,
-                        features: []
-                    }
-                }) as VectorLayer;
-                layer.setZIndex(olmap.getLayers().getLength())
-                olmap.addLayer(layer);
-                stylesLoader.bindToLayer(layer)
-                return layer
-            }) as VectorLayer
-            const source = (<VectorLayer>markersLayer).getSource()!
-            source.addFeature(marker)
-
-            stylesLoader.cacheStyle(iconPath, gsmap.styles[iconPath]).then(() => {
-                olmap.render()
-                mapChangedSignal.set({part: controller, event: MapEvents.LAYER_ADDED})
-            })
+            };
+            
+            // Use MapOperations directly for clean domain model operations
+            await operations.addMarker(marker, context.params!["layerName"]);
+            
+            // Trigger map change signal
+            mapChangedSignal.set({part: operations, event: MapEvents.LAYER_ADDED});
         }
     }
 })
@@ -200,11 +186,14 @@ commandRegistry.registerAll({
     },
     handler: {
         canExecute,
-        execute: context => {
-            const controller: GsMapEditor = context.source;
+        execute: async context => {
+            const operations = getMapOperations(context);
             const source = context.params!["source"]?.trim().toLowerCase()
             const url = context.params!["url"] as string
             const sourceType = toGsSourceType(source)
+            const isBasemap = context?.params && context.params["basemap"] == true
+            
+            // Create layer in domain model format
             const gsLayer = {
                 type: toGsLayerType(source),
                 source: {
@@ -212,26 +201,15 @@ commandRegistry.registerAll({
                     url: url ?? toSourceUrl(sourceType)
                 }
             } as GsLayer
-            replaceUris(gsLayer, "url").then(() => {
-                const newLayer = toOlLayer(gsLayer)
-                if (newLayer) {
-                    const olMap = controller.olMap!
-                    const basemap = context?.params && context.params["basemap"] == true
-                    if (basemap) {
-                        const layers = olMap.getLayers()
-                        if (layers.getLength() > 0) {
-                            olMap.removeLayer(layers.item(0))
-                        }
-                        layers.insertAt(0, newLayer)
-                    } else {
-                        olMap.addLayer(newLayer)
-                    }
-                    stylesLoader.bindToLayer(newLayer)
-                    const gsMap = controller.gsMap!
-                    olMapToGsMap(gsMap, olMap)
-                    olMap.render()
-                }
-            })
+            
+            // Replace URIs and then add layer
+            await replaceUris(gsLayer, "url");
+            
+            // Use MapOperations for clean domain model operations
+            await operations.addLayer(gsLayer, isBasemap);
+            
+            // Trigger map change signal
+            mapChangedSignal.set({part: operations, event: MapEvents.LAYER_ADDED});
         }
     }
 })
@@ -251,18 +229,16 @@ commandRegistry.registerAll({
     },
     handler: {
         canExecute,
-        execute: context => {
-            const controller: GsMapEditor = context.source;
-            const olMap = controller.olMap!
+        execute: async context => {
+            const operations = getMapOperations(context);
             const index = parseInt(context.params!["index"]) - 1
-
-            if (index < 0 || index >= olMap.getLayers().getLength()) {
+            
+            if (index < 0) {
                 return;
             }
-            const layer = olMap.getLayers().item(index)
-            olMap.removeLayer(layer)
-            const gsMap = controller.gsMap!
-            olMapToGsMap(gsMap, olMap)
+            
+            // Use MapOperations for clean domain model operations
+            await operations.deleteLayer(index);
         }
     }
 })
@@ -287,42 +263,21 @@ commandRegistry.registerAll({
     },
     handler: {
         canExecute,
-        execute: context => {
-            const controller: GsMapEditor = context.source;
+        execute: async context => {
+            const operations = getMapOperations(context);
             const layer = context.params!["layer"]
             const stylesPath = context.params!["stylesPath"]?.trim().toLowerCase()
-            const olmap = controller.olMap!
-            const gsmap = controller.gsMap!
-
-            let gsLayer = undefined
-            let olLayer: VectorLayer | undefined = undefined
-            if (typeof layer === "number" || layer?.trim().match(/\d+/)) {
-                const index = parseInt(layer) - 1
-                if (index >= 0 || index < gsmap.layers.length - 1) {
-                    gsLayer = gsmap.layers[index]
-                    olLayer = olmap.getLayers().item(index) as VectorLayer
-                }
-            } else {
-                const layerName = layer?.trim().toLowerCase()
-                gsLayer = gsmap.layers.find(l => l.name === layerName) as GsLayer
-                olLayer = findOlLayer(layer, olmap) as VectorLayer
+            
+            try {
+                // Use MapOperations for clean domain model operations
+                await operations.applyStyles(layer, stylesPath);
+            } catch (error: any) {
+                toastError(error.message);
             }
-
-            if (gsLayer === undefined || !gsLayer || !olLayer) {
-                toastError("Layer not found: " + layer)
-                return
-            }
-
-            gsLayer.stylesPath = stylesPath
-            olLayer.set(KEY_STYLES_PATH, stylesPath)
-            stylesLoader.cacheStylesFromPath(layer.stylesPath).then(() => {
-                olLayer.getSource()?.refresh()
-            })
         }
     }
 })
 
-const KEY_DARKMODELISTENER = "darkmodelistener"
 commandRegistry.registerAll({
     command: {
         "id": "switch_color_mode",
@@ -338,28 +293,16 @@ commandRegistry.registerAll({
     },
     handler: {
         canExecute,
-        execute: context => {
-            const controller: GsMapEditor = context.source!;
-            const olmap = controller.olMap!
-            let darkmode: boolean = olmap.get("darkmode") ?? false
-            if (!context.params || !("mode" in context.params)) {
-                darkmode = !darkmode
-            } else {
-                darkmode = context.params!["mode"] == "dark"
+        execute: async context => {
+            const operations: MapOperations = context.source!;
+            const mode = context.params?.["mode"];
+            
+            try {
+                // Use MapOperations for clean domain model operations
+                await operations.switchColorMode(mode);
+            } catch (error: any) {
+                toastError(error.message);
             }
-            olmap.set("darkmode", darkmode)
-            let listener = olmap.get(KEY_DARKMODELISTENER)
-            if (!listener) {
-                listener = () => {
-                    controller.renderRoot.querySelectorAll('canvas').forEach(canvas => {
-                        const darkMode = olmap.get("darkmode")
-                        canvas.style.filter = darkMode ? "invert(100%)" : "";
-                    })
-                }
-                olmap.set(KEY_DARKMODELISTENER, listener);
-                olmap.on("postcompose", listener)
-            }
-            olmap.render()
         }
     }
 })
@@ -379,17 +322,17 @@ commandRegistry.registerAll({
     },
     handler: {
         canExecute,
-        execute: context => {
-            const controller: GsMapEditor = context.source;
-            const olMap = controller.olMap!
+        execute: async context => {
+            const operations = getMapOperations(context);
             const src = context.params!["src"] as string
-            const pos = context.params!["position"]
-            const olOverlay = toOlOverlay({
-                src: src,
-                position: pos || "bottom-left"
-            } as GsOverlay)
-            olMap.addOverlay(olOverlay)
-            importOverlaySource(olOverlay, src)
+            const position = context.params!["position"]
+            
+            try {
+                // Use MapOperations for clean domain model operations
+                await operations.addOverlayFromModule(src, position);
+            } catch (error: any) {
+                toastError(error.message);
+            }
         }
     }
 })
@@ -409,15 +352,16 @@ commandRegistry.registerAll({
     },
     handler: {
         canExecute,
-        execute: context => {
-            const controller: GsMapEditor = context.source;
-            const olMap = controller.olMap!
+        execute: async context => {
+            const operations = getMapOperations(context);
             const src = context.params!["src"] as string
-            const olControl = toOlControl({
-                src: src,
-            } as GsControl)
-            olMap.addControl(olControl)
-            importControlSource(olControl, src)
+            
+            try {
+                // Use MapOperations for clean domain model operations
+                await operations.addControlFromModule(src);
+            } catch (error: any) {
+                toastError(error.message);
+            }
         }
     }
 })
@@ -444,16 +388,35 @@ commandRegistry.registerAll({
     },
     handler: {
         canExecute,
-        execute: context => {
+        execute: async context => {
             const latlon = context.params!["latlon"]
-            const controller: GsMapEditor = context.source;
-            const extent = controller.getView().calculateExtent();
-            let extent4326 = transformExtent(extent, controller.getView().getProjection(), 'EPSG:4326');
-            if (latlon || latlon === undefined) {
-                [extent4326[0], extent4326[1]] = [extent4326[1], extent4326[0]];
-                [extent4326[2], extent4326[3]] = [extent4326[3], extent4326[2]];
+            const operations = getMapOperations(context);
+            
+            try {
+                // Use MapOperations directly for clean domain model operations
+                const extent = await operations.getViewExtent();
+                
+                if (!extent) {
+                    throw new Error("Failed to get view extent");
+                }
+                
+                // Transform extent if latlon parameter is set
+                let extent4326 = extent;
+                if (latlon || latlon === undefined) {
+                    // Transform from map projection to WGS84 (EPSG:4326)
+                    const { transformExtent } = await import("ol/proj");
+                    extent4326 = transformExtent(extent, 'EPSG:3857', 'EPSG:4326');
+                    
+                    // Reverse coordinates to lat/lon if requested
+                    [extent4326[0], extent4326[1]] = [extent4326[1], extent4326[0]];
+                    [extent4326[2], extent4326[3]] = [extent4326[3], extent4326[2]];
+                }
+                
+                // Store the result in the context
+                context["viewExtent"] = extent4326;
+            } catch (error: any) {
+                toastError(error.message);
             }
-            context["viewExtent"] = extent4326;
         }
     }
 })

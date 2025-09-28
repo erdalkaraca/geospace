@@ -290,9 +290,9 @@ export const toOlMap = async (gsMap: GsMap, options?: MapOptions, env?: any, imp
     olMap.set(KEY_ENV, env)
     olMap.set(KEY_SETTINGS, {})
     olMap.setView(new View({
-        center: gsMap.center && gsMap.center.length == 2 ? gsMap.center : DEFAULT_GSMAP.center,
-        zoom: gsMap.zoom || DEFAULT_GSMAP.zoom,
-        projection: gsMap.projection || DEFAULT_GSMAP.projection
+        center: gsMap.view.center && gsMap.view.center.length == 2 ? gsMap.view.center : DEFAULT_GSMAP.view.center,
+        zoom: gsMap.view.zoom || DEFAULT_GSMAP.view.zoom,
+        projection: gsMap.view.projection || DEFAULT_GSMAP.view.projection
     }))
     for (const layer of gsMap.layers || []) {
         const olLayer = toOlLayer(layer)
