@@ -1,7 +1,6 @@
 import {MapRenderer, MapOperations} from "./map-renderer.ts";
-import {GsMap} from "../rt/gs-model.ts";
+import {GsLayer, GsMap} from "../rt/gs-model.ts";
 import {toOlMap, toOlLayer} from "../rt/gs-gs2ol.ts";
-import {olMapToGsMap} from "../rt/gs-ol2gs.ts";
 import {stylesLoader} from "../rt/gs-style-loader.ts";
 import {defaults as defaultInteractions} from 'ol/interaction/defaults.js';
 import {defaults as defaultControls} from 'ol/control/defaults';
@@ -73,8 +72,7 @@ export class OpenLayersMapRenderer implements MapRenderer {
         }
 
         const view = this.olMap.getView();
-        const extent = view.calculateExtent();
-        return extent;
+        return view.calculateExtent();
     }
 
     setOnDirty(callback: () => void): void {
@@ -215,23 +213,19 @@ export class OpenLayersMapOperations implements MapOperations {
         }
     }
 
-    async setLayerVisible(index: number, visible: boolean): Promise<void> {
+    async setLayerVisible(indexOrLayer: number | GsLayer, visible: boolean): Promise<void> {
         const gsMap = this.renderer.getGsMap();
-        console.log('setLayerVisible called:', { index, visible, layersLength: gsMap.layers.length });
+        const index = typeof(indexOrLayer) === "number" ? indexOrLayer : gsMap.layers.indexOf(indexOrLayer)
         
         if (index >= 0 && index < gsMap.layers.length) {
-            console.log('Before update:', gsMap.layers[index].visible);
             gsMap.layers[index].visible = visible;
-            console.log('After update:', gsMap.layers[index].visible);
-            
+
             if (this.renderer.olMap) {
                 const olLayers = this.renderer.olMap.getLayers();
                 if (index < olLayers.getLength()) {
                     olLayers.item(index).setVisible(visible);
                 }
             }
-        } else {
-            console.log('Invalid index:', index);
         }
     }
 

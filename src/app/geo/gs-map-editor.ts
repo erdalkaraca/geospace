@@ -40,10 +40,10 @@ export class GsMapEditor extends KPart {
 
         const textContents = await file.getContents();
         let gsMap = (textContents && textContents.trim() ? JSON.parse(textContents) : DEFAULT_GSMAP)! as GsMap
-        
+
         // Migrate old map structure to new view field
         gsMap = this.migrateGsMap(gsMap);
-        
+
         // Replace all workspace relative URLs with blob URLs
         await replaceUris(gsMap, "url");
         await replaceUris(gsMap, "src");
@@ -51,7 +51,7 @@ export class GsMapEditor extends KPart {
         // Create OpenLayers renderer with the gsMap and env
         this.renderer = new OpenLayersMapRenderer(gsMap, env);
         this.operations = new OpenLayersMapOperations(this.renderer as OpenLayersMapRenderer);
-        
+
         try {
             if (!this.mapContainer.value) {
                 throw new Error('Map container not available');
@@ -122,23 +122,9 @@ export class GsMapEditor extends KPart {
         return migratedMap as GsMap;
     }
 
-    public getView() {
+    getGsMap(): GsMap | undefined {
         if (!this.renderer) {
-            throw new Error('Map not initialized');
-        }
-        return this.renderer.getView();
-    }
-
-    getLayers() {
-        if (!this.renderer) {
-            return [];
-        }
-        return this.renderer.getLayers();
-    }
-
-    getGsMap(): GsMap {
-        if (!this.renderer) {
-            throw new Error('Map not initialized');
+            return undefined
         }
         return this.renderer.getGsMap();
     }

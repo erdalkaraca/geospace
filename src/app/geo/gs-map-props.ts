@@ -33,12 +33,11 @@ export class GsMapProps extends KPart {
     private toggleVisible(event: Event) {
         // @ts-ignore
         const layer: GsLayer = event.currentTarget.model
-        const index = this.mapEditor!.getLayers().indexOf(layer)
         const currentVisible = layer.visible !== false // true if undefined or true, false if false
         const newVisible = !currentVisible
         
         // Use operations directly to update both OpenLayers map and domain model
-        this.mapEditor?.mapOperations?.setLayerVisible(index, newVisible)
+        this.mapEditor?.mapOperations?.setLayerVisible(layer, newVisible)
         
         this.updateLater()
     }
@@ -50,7 +49,7 @@ export class GsMapProps extends KPart {
                 <wa-tree>
                     <wa-tree-item expanded>
                         ${icon("fg layers")} Layers
-                        ${this.mapEditor!.getLayers().map((layer: GsLayer, i: number) => html`
+                        ${this.mapEditor!.getGsMap()?.layers.map((layer: GsLayer, i: number) => html`
                             <wa-tree-item>
                                 <wa-button .model="${layer}" @click="${this.toggleVisible}" appearance="plain"
                                            size="small">
@@ -67,7 +66,7 @@ export class GsMapProps extends KPart {
                     </wa-tree-item>
                     <wa-tree-item expanded>
                         ${icon("fg map-control")} Controls
-                        ${this.mapEditor?.getGsMap().controls.map((control: GsControl, i: number) => html`
+                        ${this.mapEditor?.getGsMap()?.controls.map((control: GsControl, i: number) => html`
                             <wa-tree-item>
                                 <span>${getOriginalUri(control.src)}</span>
                                 <wa-button appearance="plain" size="small"
@@ -79,7 +78,7 @@ export class GsMapProps extends KPart {
                     </wa-tree-item>
                     <wa-tree-item expanded>
                         ${icon("fg map-poi")} Overlays
-                        ${this.mapEditor?.getGsMap().overlays.map((overlay: GsOverlay, i: number) => html`
+                        ${this.mapEditor?.getGsMap()?.overlays.map((overlay: GsOverlay, i: number) => html`
                             <wa-tree-item>
                                 <span>${getOriginalUri(overlay.src)}</span>
                                 <wa-button appearance="plain" size="small"

@@ -1,4 +1,4 @@
-import {GsMap} from "../rt/gs-model.ts";
+import {GsLayer, GsMap} from "../rt/gs-model.ts";
 
 /**
  * Abstract interface for map rendering
@@ -34,7 +34,7 @@ export interface MapOperations {
     // Layer operations
     addLayer(layer: any, isBasemap?: boolean): Promise<void>;
     deleteLayer(index: number): Promise<void>;
-    setLayerVisible(index: number, visible: boolean): Promise<void>;
+    setLayerVisible(index: number | GsLayer, visible: boolean): Promise<void>;
     applyStyles(layerIdentifier: string | number, stylesPath: string): Promise<void>;
     
     // Marker operations
