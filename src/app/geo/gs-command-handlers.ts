@@ -1,15 +1,8 @@
-// Command handlers use MapOperations directly via GsMapEditor.mapOperations
-
 import {commandRegistry, ExecutionContext} from "../../core/commandregistry.ts";
 import {fromLonLat} from "ol/proj";
 
-/**
- * Command handlers now directly use MapOperations
- * This eliminates the translation layer between commands and operations
- */
 import {MapOperations} from "./map-renderer.ts";
 import {replaceUris} from "./utils.ts";
-import {toastError} from "../../core/toast.ts";
 import {mapChangedSignal, MapEvents} from "./gs-signals.ts";
 import {
     GsGeometry,
@@ -54,7 +47,7 @@ commandRegistry.registerAll({
         canExecute,
         execute: async context => {
             const operations = getMapOperations(context);
-            // Use MapOperations directly for clean domain model operations
+
             await operations.setZoom(Number(context.params!["zoom"]).valueOf());
         }
     }
@@ -83,7 +76,7 @@ commandRegistry.registerAll({
         execute: async context => {
             const operations = getMapOperations(context);
             const coords = fromLonLat([Number(context.params!["lon"]).valueOf(), Number(context.params!["lat"]).valueOf()]);
-            // Use MapOperations directly for clean domain model operations
+
             await operations.setCenter([coords[0], coords[1]]);
         }
     }
@@ -133,7 +126,7 @@ commandRegistry.registerAll({
             const operations = getMapOperations(context);
             const coords = fromLonLat([Number(context.params!["lon"]).valueOf(), Number(context.params!["lat"]).valueOf()]);
             const iconPath = context.params!["iconPath"] || "marker.png"
-            
+
             // Create marker in domain model format
             const marker = {
                 state: {
@@ -146,10 +139,9 @@ commandRegistry.registerAll({
                     coordinates: [...coords]
                 } as GsGeometry
             };
-            
-            // Use MapOperations directly for clean domain model operations
+
             await operations.addMarker(marker, context.params!["layerName"]);
-            
+
             // Trigger map change signal
             mapChangedSignal.set({part: operations, event: MapEvents.LAYER_ADDED});
         }
@@ -192,7 +184,7 @@ commandRegistry.registerAll({
             const url = context.params!["url"] as string
             const sourceType = toGsSourceType(source)
             const isBasemap = context?.params && context.params["basemap"] == true
-            
+
             // Create layer in domain model format
             const gsLayer = {
                 type: toGsLayerType(source),
@@ -201,13 +193,10 @@ commandRegistry.registerAll({
                     url: url ?? toSourceUrl(sourceType)
                 }
             } as GsLayer
-            
-            // Replace URIs and then add layer
+
             await replaceUris(gsLayer, "url");
-            
-            // Use MapOperations for clean domain model operations
             await operations.addLayer(gsLayer, isBasemap);
-            
+
             // Trigger map change signal
             mapChangedSignal.set({part: operations, event: MapEvents.LAYER_ADDED});
         }
@@ -232,12 +221,11 @@ commandRegistry.registerAll({
         execute: async context => {
             const operations = getMapOperations(context);
             const index = parseInt(context.params!["index"]) - 1
-            
+
             if (index < 0) {
                 return;
             }
-            
-            // Use MapOperations for clean domain model operations
+
             await operations.deleteLayer(index);
         }
     }
@@ -267,13 +255,8 @@ commandRegistry.registerAll({
             const operations = getMapOperations(context);
             const layer = context.params!["layer"]
             const stylesPath = context.params!["stylesPath"]?.trim().toLowerCase()
-            
-            try {
-                // Use MapOperations for clean domain model operations
-                await operations.applyStyles(layer, stylesPath);
-            } catch (error: any) {
-                toastError(error.message);
-            }
+
+            await operations.applyStyles(layer, stylesPath);
         }
     }
 })
@@ -296,13 +279,8 @@ commandRegistry.registerAll({
         execute: async context => {
             const operations: MapOperations = context.source!;
             const mode = context.params?.["mode"];
-            
-            try {
-                // Use MapOperations for clean domain model operations
-                await operations.switchColorMode(mode);
-            } catch (error: any) {
-                toastError(error.message);
-            }
+
+            await operations.switchColorMode(mode);
         }
     }
 })
@@ -326,13 +304,8 @@ commandRegistry.registerAll({
             const operations = getMapOperations(context);
             const src = context.params!["src"] as string
             const position = context.params!["position"]
-            
-            try {
-                // Use MapOperations for clean domain model operations
-                await operations.addOverlayFromModule(src, position);
-            } catch (error: any) {
-                toastError(error.message);
-            }
+
+            await operations.addOverlayFromModule(src, position);
         }
     }
 })
@@ -355,13 +328,8 @@ commandRegistry.registerAll({
         execute: async context => {
             const operations = getMapOperations(context);
             const src = context.params!["src"] as string
-            
-            try {
-                // Use MapOperations for clean domain model operations
-                await operations.addControlFromModule(src);
-            } catch (error: any) {
-                toastError(error.message);
-            }
+
+            await operations.addControlFromModule(src);
         }
     }
 })
@@ -391,32 +359,27 @@ commandRegistry.registerAll({
         execute: async context => {
             const latlon = context.params!["latlon"]
             const operations = getMapOperations(context);
-            
-            try {
-                // Use MapOperations directly for clean domain model operations
-                const extent = await operations.getViewExtent();
-                
-                if (!extent) {
-                    throw new Error("Failed to get view extent");
-                }
-                
-                // Transform extent if latlon parameter is set
-                let extent4326 = extent;
-                if (latlon || latlon === undefined) {
-                    // Transform from map projection to WGS84 (EPSG:4326)
-                    const { transformExtent } = await import("ol/proj");
-                    extent4326 = transformExtent(extent, 'EPSG:3857', 'EPSG:4326');
-                    
-                    // Reverse coordinates to lat/lon if requested
-                    [extent4326[0], extent4326[1]] = [extent4326[1], extent4326[0]];
-                    [extent4326[2], extent4326[3]] = [extent4326[3], extent4326[2]];
-                }
-                
-                // Store the result in the context
-                context["viewExtent"] = extent4326;
-            } catch (error: any) {
-                toastError(error.message);
+
+            const extent = await operations.getViewExtent();
+
+            if (!extent) {
+                throw new Error("Failed to get view extent");
             }
+
+            // Transform extent if latlon parameter is set
+            let extent4326 = extent;
+            if (latlon || latlon === undefined) {
+                // Transform from map projection to WGS84 (EPSG:4326)
+                const {transformExtent} = await import("ol/proj");
+                extent4326 = transformExtent(extent, 'EPSG:3857', 'EPSG:4326');
+
+                // Reverse coordinates to lat/lon if requested
+                [extent4326[0], extent4326[1]] = [extent4326[1], extent4326[0]];
+                [extent4326[2], extent4326[3]] = [extent4326[3], extent4326[2]];
+            }
+
+            // Store the result in the context
+            context["viewExtent"] = extent4326;
         }
     }
 })

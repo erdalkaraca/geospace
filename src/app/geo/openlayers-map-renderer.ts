@@ -1,10 +1,21 @@
-import {MapRenderer, MapOperations} from "./map-renderer.ts";
-import {GsLayer, GsMap} from "../rt/gs-model.ts";
-import {toOlMap, toOlLayer} from "../rt/gs-gs2ol.ts";
-import {stylesLoader} from "../rt/gs-style-loader.ts";
+import {MapOperations, MapRenderer} from "./map-renderer.ts";
+import {
+    GsFeature,
+    GsLayer,
+    GsLayerType,
+    GsMap,
+    GsSource,
+    GsSourceType,
+    KEY_NAME,
+    toOlFeature,
+    toOlLayer,
+    toOlMap,
+    stylesLoader
+} from "../rt";
 import {defaults as defaultInteractions} from 'ol/interaction/defaults.js';
 import {defaults as defaultControls} from 'ol/control/defaults';
 import {Map} from "ol";
+import VectorLayer from "ol/layer/Vector";
 
 /**
  * OpenLayers map renderer that manages OpenLayers maps
@@ -30,30 +41,30 @@ export class OpenLayersMapRenderer implements MapRenderer {
                 interactions: defaultInteractions({keyboard: false}),
                 controls: defaultControls({zoom: false, attribution: false})
             }, this.env);
-            
+
             // Bind styles to layers
             this.olMap.getLayers().getArray().forEach((olLayer) => {
                 stylesLoader.bindToLayer(olLayer);
             });
-            
+
             // Set target
             this.olMap.setTarget(container);
-            
+
             this.olMap.once('rendercomplete', () => {
                 this.setupEventListeners();
             });
-            
+
         } catch (error) {
             console.error('Failed to render map:', error);
             throw error;
         }
     }
-    
+
     async modelToUI(): Promise<void> {
         if (!this.olMap) {
             throw new Error('Map not initialized');
         }
-        
+
         // Get the container before destroying the map
         const target = this.olMap.getTarget();
         if (!target || typeof target === 'string') {
@@ -70,15 +81,15 @@ export class OpenLayersMapRenderer implements MapRenderer {
         // Re-render the map with the updated domain model
         await this.render(target);
     }
-    
+
     getGsMap(): GsMap {
         return this.gsMap;
     }
-    
+
     getView(): any {
         return this.gsMap.view;
     }
-    
+
     getLayers(): any[] {
         return this.gsMap.layers;
     }
@@ -100,31 +111,31 @@ export class OpenLayersMapRenderer implements MapRenderer {
         if (this.isDestroyed || !this.onDirtyCallback) return;
         this.onDirtyCallback();
     }
-    
+
     private setupEventListeners(): void {
         if (!this.olMap) return;
-        
+
         this.olMap.getView().on('change:center', () => this.triggerDirty());
         this.olMap.getView().on('change:resolution', () => this.triggerDirty());
         this.olMap.getView().on('change:rotation', () => this.triggerDirty());
-        
+
         this.olMap.getLayers().on('add', () => this.triggerDirty());
         this.olMap.getLayers().on('remove', () => this.triggerDirty());
-        
+
         this.olMap.getLayers().getArray().forEach(layer => {
             layer.on('change:visible', () => this.triggerDirty());
             layer.on('change:opacity', () => this.triggerDirty());
             layer.on('change:zIndex', () => this.triggerDirty());
         });
-        
+
         this.olMap.getControls().on('add', () => this.triggerDirty());
         this.olMap.getControls().on('remove', () => this.triggerDirty());
-        
+
         this.olMap.getOverlays().on('add', () => this.triggerDirty());
         this.olMap.getOverlays().on('remove', () => this.triggerDirty());
     }
-    
-    
+
+
     destroy(): void {
         this.isDestroyed = true;
         this.olMap?.dispose();
@@ -146,7 +157,7 @@ export class OpenLayersMapOperations implements MapOperations {
     async setZoom(zoom: number): Promise<void> {
         const gsMap = this.renderer.getGsMap();
         gsMap.view.zoom = zoom;
-        
+
         if (this.renderer.olMap) {
             this.renderer.olMap.getView().setZoom(zoom);
         }
@@ -155,7 +166,7 @@ export class OpenLayersMapOperations implements MapOperations {
     async setCenter(center: [number, number]): Promise<void> {
         const gsMap = this.renderer.getGsMap();
         gsMap.view.center = center;
-        
+
         if (this.renderer.olMap) {
             this.renderer.olMap.getView().setCenter(center);
         }
@@ -220,7 +231,7 @@ export class OpenLayersMapOperations implements MapOperations {
         const gsMap = this.renderer.getGsMap();
         if (index >= 0 && index < gsMap.layers.length) {
             gsMap.layers.splice(index, 1);
-            
+
             if (this.renderer.olMap) {
                 const olLayers = this.renderer.olMap.getLayers();
                 if (index < olLayers.getLength()) {
@@ -232,8 +243,8 @@ export class OpenLayersMapOperations implements MapOperations {
 
     async setLayerVisible(indexOrLayer: number | GsLayer, visible: boolean): Promise<void> {
         const gsMap = this.renderer.getGsMap();
-        const index = typeof(indexOrLayer) === "number" ? indexOrLayer : gsMap.layers.indexOf(indexOrLayer)
-        
+        const index = typeof (indexOrLayer) === "number" ? indexOrLayer : gsMap.layers.indexOf(indexOrLayer)
+
         if (index >= 0 && index < gsMap.layers.length) {
             gsMap.layers[index].visible = visible;
 
@@ -278,7 +289,7 @@ export class OpenLayersMapOperations implements MapOperations {
         }
     }
 
-    async addMarker(marker: any, layerName?: string): Promise<void> {
+    async addMarker(marker: GsFeature, layerName?: string): Promise<void> {
         const gsMap = this.renderer.getGsMap();
 
         // Use provided layer name or default to 'geocoded-markers'
@@ -286,32 +297,31 @@ export class OpenLayersMapOperations implements MapOperations {
 
         // Find or create the markers layer
         let markersLayer = gsMap.layers.find(layer => layer.name === targetLayerName);
+        let olLayer: VectorLayer | undefined = undefined;
         if (!markersLayer) {
             markersLayer = {
                 name: targetLayerName,
-                type: 'vector' as any, // Will be converted to proper type by renderer
+                type: GsLayerType.VECTOR,
                 source: {
-                    type: 'features' as any, // Will be converted to proper type by renderer
+                    type: GsSourceType.Features,
                     features: []
-                },
+                } as GsSource,
                 visible: true
             };
             gsMap.layers.push(markersLayer);
+            olLayer = toOlLayer(markersLayer) as VectorLayer;
+            this.renderer.olMap?.addLayer(olLayer);
+        } else {
+            olLayer = this.renderer.olMap?.getLayers().getArray().find(layer => layer.get(KEY_NAME) === targetLayerName) as VectorLayer
         }
 
         if (markersLayer.source && (markersLayer.source as any).features) {
             (markersLayer.source as any).features.push(marker);
         }
 
-        if (this.renderer.olMap) {
-            // Find the corresponding OpenLayers layer and add the marker
-            const olLayers = this.renderer.olMap.getLayers();
-            const layerIndex = gsMap.layers.indexOf(markersLayer);
-            if (layerIndex >= 0 && layerIndex < olLayers.getLength()) {
-                const olLayer = olLayers.item(layerIndex);
-                // The marker will be added when the layer is re-rendered
-                olLayer.changed();
-            }
+        if (olLayer) {
+            const olFeature = toOlFeature(marker)
+            olLayer.getSource()?.addFeature(olFeature);
         }
     }
 
