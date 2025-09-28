@@ -9,7 +9,7 @@ import {GsLayer, GsMap} from "../rt/gs-model.ts";
  */
 export interface MapRenderer {
     render(container: HTMLElement): Promise<void>;
-    syncModels(): Promise<void>;
+    modelToUI(): Promise<void>;
     getGsMap(): GsMap;
     getView(): any;
     getLayers(): any[];

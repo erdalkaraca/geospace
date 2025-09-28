@@ -42,6 +42,12 @@ export class GsMapProps extends KPart {
         this.updateLater()
     }
 
+    private confirmAction(message: string, action: () => void) {
+        if (confirm(message)) {
+            action();
+        }
+    }
+
     render() {
         return when(!this.mapEditor, () => html`
                     <k-no-content message="Select a map."></k-no-content>`,
@@ -55,10 +61,10 @@ export class GsMapProps extends KPart {
                                            size="small">
                                     <wa-icon name="${layer.visible !== false ? "eye" : "eye-slash"}"></wa-icon>
                                 </wa-button>
-                                <span>${layer.name ?? html`Layer ${i + 1}`}${i == 0 ? html`
+                                <span>${layer.name ?? `Layer ${i + 1}`}${i == 0 ? html`
                                     <small>(basemap)</small>` : ""}</span>
                                 <wa-button appearance="plain" size="small"
-                                           @click="${() => this.withRefresh(() => this.mapEditor?.mapOperations?.deleteLayer(i + 1))}">
+                                           @click="${() => this.confirmAction(`Delete layer "${layer.name || `Layer ${i + 1}`}"?`, () => this.withRefresh(() => this.mapEditor?.mapOperations?.deleteLayer(i)))}">
                                     <wa-icon name="trash"></wa-icon>
                                 </wa-button>
                             </wa-tree-item>
@@ -70,7 +76,7 @@ export class GsMapProps extends KPart {
                             <wa-tree-item>
                                 <span>${getOriginalUri(control.src)}</span>
                                 <wa-button appearance="plain" size="small"
-                                           @click="${() => this.withRefresh(() => this.mapEditor?.mapOperations?.removeControl(i + 1))}">
+                                           @click="${() => this.confirmAction(`Delete control "${getOriginalUri(control.src)}"?`, () => this.withRefresh(() => this.mapEditor?.mapOperations?.removeControl(i)))}">
                                     <wa-icon name="trash"></wa-icon>
                                 </wa-button>
                             </wa-tree-item>
@@ -82,7 +88,7 @@ export class GsMapProps extends KPart {
                             <wa-tree-item>
                                 <span>${getOriginalUri(overlay.src)}</span>
                                 <wa-button appearance="plain" size="small"
-                                           @click="${() => this.withRefresh(() => this.mapEditor?.mapOperations?.removeOverlay(i + 1))}">
+                                           @click="${() => this.confirmAction(`Delete overlay "${getOriginalUri(overlay.src)}"?`, () => this.withRefresh(() => this.mapEditor?.mapOperations?.removeOverlay(i)))}">
                                     <wa-icon name="trash"></wa-icon>
                                 </wa-button>
                             </wa-tree-item>

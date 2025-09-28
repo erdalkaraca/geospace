@@ -24,7 +24,6 @@ export class OpenLayersMapRenderer implements MapRenderer {
     }
 
     async render(container: HTMLElement): Promise<void> {
-        
         try {
             // Convert GsMap to OpenLayers map
             this.olMap = await toOlMap(this.gsMap, {
@@ -50,8 +49,26 @@ export class OpenLayersMapRenderer implements MapRenderer {
         }
     }
     
-    async syncModels(): Promise<void> {
-        throw new Error('syncModels not yet implemented');
+    async modelToUI(): Promise<void> {
+        if (!this.olMap) {
+            throw new Error('Map not initialized');
+        }
+        
+        // Get the container before destroying the map
+        const target = this.olMap.getTarget();
+        if (!target || typeof target === 'string') {
+            throw new Error('Map container not found or invalid');
+        }
+
+        // Destroy the current OpenLayers map
+        this.olMap.dispose();
+        this.olMap = undefined;
+
+        // Clear the container
+        target.innerHTML = '';
+
+        // Re-render the map with the updated domain model
+        await this.render(target);
     }
     
     getGsMap(): GsMap {
@@ -301,7 +318,7 @@ export class OpenLayersMapOperations implements MapOperations {
     async addControl(control: any): Promise<void> {
         const gsMap = this.renderer.getGsMap();
         gsMap.controls.push(control);
-        await this.renderer.syncModels();
+        await this.renderer.modelToUI();
     }
 
     async addControlFromModule(src: string): Promise<void> {
@@ -324,14 +341,14 @@ export class OpenLayersMapOperations implements MapOperations {
         // Note: The actual OpenLayers control creation and module import
         // would need to be handled by the renderer or a specialized service
         // For now, we just update the domain model
-        await this.renderer.syncModels();
+        await this.renderer.modelToUI();
     }
 
     async removeControl(index: number): Promise<void> {
         const gsMap = this.renderer.getGsMap();
         if (index >= 0 && index < gsMap.controls.length) {
             gsMap.controls.splice(index, 1);
-            await this.renderer.syncModels();
+            await this.renderer.modelToUI();
             this.renderer.triggerDirty();
         }
     }
@@ -339,7 +356,7 @@ export class OpenLayersMapOperations implements MapOperations {
     async addOverlay(overlay: any): Promise<void> {
         const gsMap = this.renderer.getGsMap();
         gsMap.overlays.push(overlay);
-        await this.renderer.syncModels();
+        await this.renderer.modelToUI();
     }
 
     async addOverlayFromModule(src: string, position?: string): Promise<void> {
@@ -363,14 +380,14 @@ export class OpenLayersMapOperations implements MapOperations {
         // Note: The actual OpenLayers overlay creation and module import
         // would need to be handled by the renderer or a specialized service
         // For now, we just update the domain model
-        await this.renderer.syncModels();
+        await this.renderer.modelToUI();
     }
 
     async removeOverlay(index: number): Promise<void> {
         const gsMap = this.renderer.getGsMap();
         if (index >= 0 && index < gsMap.overlays.length) {
             gsMap.overlays.splice(index, 1);
-            await this.renderer.syncModels();
+            await this.renderer.modelToUI();
             this.renderer.triggerDirty();
         }
     }
