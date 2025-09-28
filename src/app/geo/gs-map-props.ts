@@ -34,7 +34,8 @@ export class GsMapProps extends KPart {
         // @ts-ignore
         const layer: GsLayer = event.currentTarget.model
         const index = this.mapEditor!.getLayers().indexOf(layer)
-        const newVisible = !layer.visible
+        const currentVisible = layer.visible !== false // true if undefined or true, false if false
+        const newVisible = !currentVisible
         
         // Use operations directly to update both OpenLayers map and domain model
         this.mapEditor?.mapOperations?.setLayerVisible(index, newVisible)
