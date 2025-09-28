@@ -33,7 +33,7 @@ export class OpenLayersMapRenderer implements MapRenderer {
         this.gsMap = gsMap;
         this.env = env;
     }
-
+        
     async render(container: HTMLElement): Promise<void> {
         try {
             // Convert GsMap to OpenLayers map
@@ -41,15 +41,15 @@ export class OpenLayersMapRenderer implements MapRenderer {
                 interactions: defaultInteractions({keyboard: false}),
                 controls: defaultControls({zoom: false, attribution: false})
             }, this.env);
-
+            
             // Bind styles to layers
             this.olMap.getLayers().getArray().forEach((olLayer) => {
                 stylesLoader.bindToLayer(olLayer);
             });
-
+            
             // Set target
             this.olMap.setTarget(container);
-
+            
             this.olMap.once('rendercomplete', () => {
                 this.setupEventListeners();
             });
@@ -59,12 +59,12 @@ export class OpenLayersMapRenderer implements MapRenderer {
             throw error;
         }
     }
-
+    
     async modelToUI(): Promise<void> {
         if (!this.olMap) {
             throw new Error('Map not initialized');
         }
-
+        
         // Get the container before destroying the map
         const target = this.olMap.getTarget();
         if (!target || typeof target === 'string') {
@@ -81,15 +81,15 @@ export class OpenLayersMapRenderer implements MapRenderer {
         // Re-render the map with the updated domain model
         await this.render(target);
     }
-
+    
     getGsMap(): GsMap {
         return this.gsMap;
     }
-
+    
     getView(): any {
         return this.gsMap.view;
     }
-
+    
     getLayers(): any[] {
         return this.gsMap.layers;
     }
@@ -112,12 +112,42 @@ export class OpenLayersMapRenderer implements MapRenderer {
         this.onDirtyCallback();
     }
 
+    private syncViewToModel(): void {
+        if (!this.olMap) return;
+        
+        const view = this.olMap.getView();
+        const center = view.getCenter();
+        const zoom = view.getZoom();
+        const projection = view.getProjection().getCode();
+        
+        // Update the domain model with current OpenLayers view state
+        if (center) {
+            this.gsMap.view.center = center;
+        }
+        if (zoom !== undefined) {
+            this.gsMap.view.zoom = zoom;
+        }
+        if (projection) {
+            this.gsMap.view.projection = projection;
+        }
+    }
+
     private setupEventListeners(): void {
         if (!this.olMap) return;
 
-        this.olMap.getView().on('change:center', () => this.triggerDirty());
-        this.olMap.getView().on('change:resolution', () => this.triggerDirty());
-        this.olMap.getView().on('change:rotation', () => this.triggerDirty());
+        // Sync view changes back to domain model before triggering dirty
+        this.olMap.getView().on('change:center', () => {
+            this.syncViewToModel();
+            this.triggerDirty();
+        });
+        this.olMap.getView().on('change:resolution', () => {
+            this.syncViewToModel();
+            this.triggerDirty();
+        });
+        this.olMap.getView().on('change:rotation', () => {
+            this.syncViewToModel();
+            this.triggerDirty();
+        });
 
         this.olMap.getLayers().on('add', () => this.triggerDirty());
         this.olMap.getLayers().on('remove', () => this.triggerDirty());
@@ -135,7 +165,7 @@ export class OpenLayersMapRenderer implements MapRenderer {
         this.olMap.getOverlays().on('remove', () => this.triggerDirty());
     }
 
-
+    
     destroy(): void {
         this.isDestroyed = true;
         this.olMap?.dispose();
