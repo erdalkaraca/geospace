@@ -1,21 +1,8 @@
 import {MapOperations, MapRenderer} from "./map-renderer.ts";
-import {
-    GsFeature,
-    GsLayer,
-    GsLayerType,
-    GsMap,
-    GsSource,
-    GsSourceType,
-    KEY_NAME,
-    toOlFeature,
-    toOlLayer,
-    toOlMap,
-    stylesLoader
-} from "../rt";
-import {defaults as defaultInteractions} from 'ol/interaction/defaults.js';
-import {defaults as defaultControls} from 'ol/control/defaults';
+import {GsFeature, gsLib, GsMap, KEY_NAME, stylesLoader, toOlFeature, toOlLayer} from "../rt/gs-lib.ts";
 import {Map} from "ol";
 import VectorLayer from "ol/layer/Vector";
+import VectorSource from "ol/source/Vector";
 
 /**
  * OpenLayers map renderer that manages OpenLayers maps
@@ -24,45 +11,59 @@ import VectorLayer from "ol/layer/Vector";
  */
 export class OpenLayersMapRenderer implements MapRenderer {
     public olMap?: Map; // Made public for backward compatibility
-    private gsMap: GsMap;
+    gsMap: GsMap;
     private env?: any;
     private onDirtyCallback?: () => void;
+    private onSyncCallback?: (gsMap: GsMap) => void;
     private isDestroyed: boolean = false;
+    private operations?: OpenLayersMapOperations;
 
     constructor(gsMap: GsMap, env?: any) {
         this.gsMap = gsMap;
         this.env = env;
     }
-        
-    async render(container: HTMLElement): Promise<void> {
+
+    async render(container: string | HTMLElement): Promise<void> {
         try {
-            // Convert GsMap to OpenLayers map
-            this.olMap = await toOlMap(this.gsMap, {
-                interactions: defaultInteractions({keyboard: false}),
-                controls: defaultControls({zoom: false, attribution: false})
-            }, this.env);
+            // Use the runtime library to render the map
+            this.olMap = await gsLib({
+                containerSelector: container,
+                gsMap: this.gsMap,
+                env: this.env,
+                mapOptions: {
+                    controls: { zoom: false, attribution: false }
+                }
+            });
+            
+            // Create operations after map is available
+            this.operations = new OpenLayersMapOperations(this.olMap);
             
             // Bind styles to layers
+            if (this.olMap) {
             this.olMap.getLayers().getArray().forEach((olLayer) => {
                 stylesLoader.bindToLayer(olLayer);
             });
             
-            // Set target
-            this.olMap.setTarget(container);
+                // Set up event listeners after the map is rendered
+                this.olMap.once('rendercomplete', () => {
+                    this.setupEventListeners();
+                });
+            }
             
-            this.olMap.once('rendercomplete', () => {
-                this.setupEventListeners();
-            });
-
         } catch (error) {
             console.error('Failed to render map:', error);
             throw error;
         }
     }
     
-    async modelToUI(): Promise<void> {
+    async modelToUI(updatedGsMap?: GsMap): Promise<void> {
         if (!this.olMap) {
             throw new Error('Map not initialized');
+        }
+        
+        // Update the gsMap if provided
+        if (updatedGsMap) {
+            this.gsMap = updatedGsMap;
         }
         
         // Get the container before destroying the map
@@ -71,27 +72,21 @@ export class OpenLayersMapRenderer implements MapRenderer {
             throw new Error('Map container not found or invalid');
         }
 
-        // Destroy the current OpenLayers map
-        this.olMap.dispose();
-        this.olMap = undefined;
+        this.destroy();
 
-        // Clear the container
+        // Clear the DOM container
         target.innerHTML = '';
 
-        // Re-render the map with the updated domain model
+        this.isDestroyed = false;
         await this.render(target);
     }
     
-    getGsMap(): GsMap {
-        return this.gsMap;
-    }
-    
-    getView(): any {
-        return this.gsMap.view;
-    }
-    
-    getLayers(): any[] {
-        return this.gsMap.layers;
+
+    getOperations(): MapOperations {
+        if (!this.operations) {
+            throw new Error("Operations not available - map not rendered yet");
+        }
+        return this.operations;
     }
 
     getViewExtent(): number[] {
@@ -107,19 +102,28 @@ export class OpenLayersMapRenderer implements MapRenderer {
         this.onDirtyCallback = callback;
     }
 
-    public triggerDirty(): void {
+    setOnSync(callback: (gsMap: GsMap) => void): void {
+        this.onSyncCallback = callback;
+    }
+
+    triggerDirty(): void {
         if (this.isDestroyed || !this.onDirtyCallback) return;
         this.onDirtyCallback();
     }
 
+    triggerSync(): void {
+        if (this.isDestroyed || !this.onSyncCallback) return;
+        this.onSyncCallback(this.gsMap);
+    }
+
     private syncViewToModel(): void {
         if (!this.olMap) return;
-        
+
         const view = this.olMap.getView();
         const center = view.getCenter();
         const zoom = view.getZoom();
         const projection = view.getProjection().getCode();
-        
+
         // Update the domain model with current OpenLayers view state
         if (center) {
             this.gsMap.view.center = center;
@@ -130,6 +134,9 @@ export class OpenLayersMapRenderer implements MapRenderer {
         if (projection) {
             this.gsMap.view.projection = projection;
         }
+
+        // Trigger sync callback to update the host's domain model
+        this.triggerSync();
     }
 
     private setupEventListeners(): void {
@@ -151,12 +158,6 @@ export class OpenLayersMapRenderer implements MapRenderer {
 
         this.olMap.getLayers().on('add', () => this.triggerDirty());
         this.olMap.getLayers().on('remove', () => this.triggerDirty());
-
-        this.olMap.getLayers().getArray().forEach(layer => {
-            layer.on('change:visible', () => this.triggerDirty());
-            layer.on('change:opacity', () => this.triggerDirty());
-            layer.on('change:zIndex', () => this.triggerDirty());
-        });
 
         this.olMap.getControls().on('add', () => this.triggerDirty());
         this.olMap.getControls().on('remove', () => this.triggerDirty());
@@ -180,43 +181,24 @@ export class OpenLayersMapRenderer implements MapRenderer {
  */
 export class OpenLayersMapOperations implements MapOperations {
     constructor(
-        private renderer: OpenLayersMapRenderer
+        private olMap: Map
     ) {
+        if (!olMap) {
+            throw new Error("OpenLayers map is required for operations");
+        }
     }
 
     async setZoom(zoom: number): Promise<void> {
-        const gsMap = this.renderer.getGsMap();
-        gsMap.view.zoom = zoom;
-
-        if (this.renderer.olMap) {
-            this.renderer.olMap.getView().setZoom(zoom);
-        }
+        this.olMap.getView().setZoom(zoom);
     }
 
     async setCenter(center: [number, number]): Promise<void> {
-        const gsMap = this.renderer.getGsMap();
-        gsMap.view.center = center;
-
-        if (this.renderer.olMap) {
-            this.renderer.olMap.getView().setCenter(center);
-        }
+        this.olMap.getView().setCenter(center);
     }
 
-    async getViewExtent(): Promise<number[]> {
-        if (!this.renderer.olMap) {
-            throw new Error("OpenLayers map not available for extent calculation");
-        }
-
-        // Use the renderer's getViewExtent method
-        return this.renderer.getViewExtent();
-    }
 
     async switchColorMode(mode?: 'dark' | 'light'): Promise<void> {
-        if (!this.renderer.olMap) {
-            throw new Error("OpenLayers map not available for color mode switching");
-        }
-
-        const olMap = this.renderer.olMap;
+        const olMap = this.olMap;
         let darkMode: boolean = olMap.get("darkmode") ?? false;
 
         // Determine new mode
@@ -243,192 +225,87 @@ export class OpenLayersMapOperations implements MapOperations {
     }
 
     async addLayer(layer: any, isBasemap?: boolean): Promise<void> {
-        const gsMap = this.renderer.getGsMap();
-
+        const olLayer = toOlLayer(layer);
         if (isBasemap) {
-            gsMap.layers.unshift(layer);
+            this.olMap.getLayers().insertAt(0, olLayer);
         } else {
-            gsMap.layers.push(layer);
+            this.olMap.getLayers().push(olLayer);
         }
-
-        if (this.renderer.olMap) {
-            const olLayer = toOlLayer(layer);
-            this.renderer.olMap.addLayer(olLayer);
-        }
+        stylesLoader.bindToLayer(olLayer);
     }
 
     async deleteLayer(index: number): Promise<void> {
-        const gsMap = this.renderer.getGsMap();
-        if (index >= 0 && index < gsMap.layers.length) {
-            gsMap.layers.splice(index, 1);
+        this.olMap.getLayers().removeAt(index);
+    }
 
-            if (this.renderer.olMap) {
-                const olLayers = this.renderer.olMap.getLayers();
-                if (index < olLayers.getLength()) {
-                    olLayers.removeAt(index);
-                }
-            }
+    async setLayerVisible(index: number, visible: boolean): Promise<void> {
+        const olLayers = this.olMap.getLayers();
+        if (index >= 0 && index < olLayers.getLength()) {
+            olLayers.item(index).setVisible(visible);
         }
     }
 
-    async setLayerVisible(indexOrLayer: number | GsLayer, visible: boolean): Promise<void> {
-        const gsMap = this.renderer.getGsMap();
-        const index = typeof (indexOrLayer) === "number" ? indexOrLayer : gsMap.layers.indexOf(indexOrLayer)
-
-        if (index >= 0 && index < gsMap.layers.length) {
-            gsMap.layers[index].visible = visible;
-
-            if (this.renderer.olMap) {
-                const olLayers = this.renderer.olMap.getLayers();
-                if (index < olLayers.getLength()) {
-                    olLayers.item(index).setVisible(visible);
-                }
-            }
-        }
-    }
-
-    async applyStyles(layerIdentifier: string | number, stylesPath: string): Promise<void> {
-        const gsMap = this.renderer.getGsMap();
-
-        let targetLayer: any = undefined;
+    async applyStyles(layerIdentifier: string | number, _stylesPath: string): Promise<void> {
+        const olLayers = this.olMap.getLayers();
+        let olLayer: any;
 
         // Find layer by index or name
         if (typeof layerIdentifier === "number" || (typeof layerIdentifier === "string" && layerIdentifier.trim().match(/\d+/))) {
             const index = parseInt(layerIdentifier.toString()) - 1; // Convert to 0-based index
-            if (index >= 0 && index < gsMap.layers.length) {
-                targetLayer = gsMap.layers[index];
+            if (index >= 0 && index < olLayers.getLength()) {
+                olLayer = olLayers.item(index);
             }
         } else {
             const layerName = layerIdentifier.toString().trim().toLowerCase();
-            targetLayer = gsMap.layers.find(layer => layer.name === layerName);
+            for (let i = 0; i < olLayers.getLength(); i++) {
+                const layer = olLayers.item(i);
+                if (layer.get(KEY_NAME) === layerName) {
+                    olLayer = layer;
+                    break;
+                }
+            }
         }
 
-        if (!targetLayer) {
+        if (!olLayer) {
             throw new Error(`Layer not found: ${layerIdentifier}`);
         }
 
-        targetLayer.stylesPath = stylesPath;
-
-        if (this.renderer.olMap) {
-            const olLayers = this.renderer.olMap.getLayers();
-            const layerIndex = gsMap.layers.indexOf(targetLayer);
-            if (layerIndex >= 0 && layerIndex < olLayers.getLength()) {
-                const olLayer = olLayers.item(layerIndex);
-                stylesLoader.bindToLayer(olLayer);
-            }
-        }
+        stylesLoader.bindToLayer(olLayer);
     }
 
     async addMarker(marker: GsFeature, layerName?: string): Promise<void> {
-        const gsMap = this.renderer.getGsMap();
-
-        // Use provided layer name or default to 'geocoded-markers'
         const targetLayerName = layerName || 'geocoded-markers';
-
-        // Find or create the markers layer
-        let markersLayer = gsMap.layers.find(layer => layer.name === targetLayerName);
-        let olLayer: VectorLayer | undefined = undefined;
-        if (!markersLayer) {
-            markersLayer = {
-                name: targetLayerName,
-                type: GsLayerType.VECTOR,
-                source: {
-                    type: GsSourceType.Features,
-                    features: []
-                } as GsSource,
-                visible: true
-            };
-            gsMap.layers.push(markersLayer);
-            olLayer = toOlLayer(markersLayer) as VectorLayer;
-            this.renderer.olMap?.addLayer(olLayer);
-        } else {
-            olLayer = this.renderer.olMap?.getLayers().getArray().find(layer => layer.get(KEY_NAME) === targetLayerName) as VectorLayer
+        const olLayers = this.olMap.getLayers();
+        
+        // Find existing markers layer
+        let olLayer = olLayers.getArray().find((layer: any) => layer.get(KEY_NAME) === targetLayerName) as VectorLayer;
+        
+        if (!olLayer) {
+            // Create new markers layer
+            olLayer = new VectorLayer({
+                source: new VectorSource(),
+                [KEY_NAME]: targetLayerName
+            } as any);
+            olLayers.push(olLayer);
         }
 
-        if (markersLayer.source && (markersLayer.source as any).features) {
-            (markersLayer.source as any).features.push(marker);
-        }
-
-        if (olLayer) {
-            const olFeature = toOlFeature(marker)
-            olLayer.getSource()?.addFeature(olFeature);
-        }
+        const olFeature = toOlFeature(marker);
+        olLayer.getSource()?.addFeature(olFeature);
     }
 
-    async addControl(control: any): Promise<void> {
-        const gsMap = this.renderer.getGsMap();
-        gsMap.controls.push(control);
-        await this.renderer.modelToUI();
+    async addControlFromModule(_src: string): Promise<void> {
+        // UI does not support control creation
     }
 
-    async addControlFromModule(src: string): Promise<void> {
-        if (!this.renderer.olMap) {
-            throw new Error("OpenLayers map not available for control creation");
-        }
-
-        // Create control from module source
-        // This is a simplified version - the actual implementation would need
-        // to import the module and create the OpenLayers control
-        const control = {
-            src: src,
-            type: 'module'
-        };
-
-        // Add to domain model
-        const gsMap = this.renderer.getGsMap();
-        gsMap.controls.push(control);
-
-        // Note: The actual OpenLayers control creation and module import
-        // would need to be handled by the renderer or a specialized service
-        // For now, we just update the domain model
-        await this.renderer.modelToUI();
+    async removeControl(_index: number): Promise<void> {
+        // UI does not support control removal
     }
 
-    async removeControl(index: number): Promise<void> {
-        const gsMap = this.renderer.getGsMap();
-        if (index >= 0 && index < gsMap.controls.length) {
-            gsMap.controls.splice(index, 1);
-            await this.renderer.modelToUI();
-            this.renderer.triggerDirty();
-        }
+    async addOverlayFromModule(_src: string, _position?: string): Promise<void> {
+        // UI does not support overlay creation
     }
 
-    async addOverlay(overlay: any): Promise<void> {
-        const gsMap = this.renderer.getGsMap();
-        gsMap.overlays.push(overlay);
-        await this.renderer.modelToUI();
-    }
-
-    async addOverlayFromModule(src: string, position?: string): Promise<void> {
-        if (!this.renderer.olMap) {
-            throw new Error("OpenLayers map not available for overlay creation");
-        }
-
-        // Create overlay from module source
-        // This is a simplified version - the actual implementation would need
-        // to import the module and create the OpenLayers overlay
-        const overlay = {
-            src: src,
-            position: (position || "bottom-left") as any, // Will be converted to proper type by renderer
-            type: 'module'
-        };
-
-        // Add to domain model
-        const gsMap = this.renderer.getGsMap();
-        gsMap.overlays.push(overlay);
-
-        // Note: The actual OpenLayers overlay creation and module import
-        // would need to be handled by the renderer or a specialized service
-        // For now, we just update the domain model
-        await this.renderer.modelToUI();
-    }
-
-    async removeOverlay(index: number): Promise<void> {
-        const gsMap = this.renderer.getGsMap();
-        if (index >= 0 && index < gsMap.overlays.length) {
-            gsMap.overlays.splice(index, 1);
-            await this.renderer.modelToUI();
-            this.renderer.triggerDirty();
-        }
+    async removeOverlay(_index: number): Promise<void> {
+        // UI does not support overlay removal
     }
 }

@@ -13,21 +13,24 @@ import {
     toGsSourceType,
     toSourceUrl
 } from "../rt";
+import {TOOLBAR_MAIN} from "../../core/constants.ts";
+import {activePartSignal} from "../../core/appstate.ts";
+import {GsMapEditor} from "./gs-map-editor.ts";
 
 const canExecute = (context: ExecutionContext) => {
-    return context.source && (context.source as any).mapOperations;
+    return context.source instanceof GsMapEditor;
 }
 
 /**
- * Helper method to extract MapOperations from GsMapEditor in context.source
+ * Helper method to extract MapOperations from GsMapEditor renderer in context.source
  * This ensures consistent access to map operations across all command handlers
- * and provides proper error handling if MapOperations is not available
+ * and provides proper error handling if renderer is not available
  */
 const getMapOperations = (context: ExecutionContext): MapOperations => {
-    if (!context.source || !(context.source as any).mapOperations) {
-        throw new Error('GsMapEditor with MapOperations not available in context.source');
+    if (!context.source || !(context.source as any).renderer) {
+        throw new Error('GsMapEditor with renderer not available in context.source');
     }
-    return (context.source as any).mapOperations as MapOperations;
+    return (context.source as any).renderer.getOperations();
 }
 
 commandRegistry.registerAll({
@@ -358,9 +361,9 @@ commandRegistry.registerAll({
         canExecute,
         execute: async context => {
             const latlon = context.params!["latlon"]
-            const operations = getMapOperations(context);
+            const renderer = (context.source as any).renderer;
 
-            const extent = await operations.getViewExtent();
+            const extent = renderer.getViewExtent();
 
             if (!extent) {
                 throw new Error("Failed to get view extent");
@@ -380,6 +383,35 @@ commandRegistry.registerAll({
 
             // Store the result in the context
             context["viewExtent"] = extent4326;
+        }
+    }
+})
+
+commandRegistry.registerAll({
+    command: {
+        "id": "toggle_mobile_view",
+        "name": "Toggle Mobile View",
+        "description": "Toggles between desktop and mobile view for the map",
+        "parameters": []
+    },
+    handler: {
+        canExecute: _context => activePartSignal.get() instanceof GsMapEditor,
+        execute: async _context => {
+            const renderer = (activePartSignal.get() as any).renderer;
+
+            if (!renderer || !('toggleMobileView' in renderer)) {
+                throw new Error('Mobile view toggle not available on this renderer');
+            }
+
+            (renderer as any).toggleMobileView();
+        }
+    },
+    contribution: {
+        target: TOOLBAR_MAIN,
+        icon: "mobile",
+        label: "Toggle mobile view",
+        disabled: () => {
+            return !(activePartSignal.get() instanceof GsMapEditor)
         }
     }
 })

@@ -1,4 +1,4 @@
-import {GsLayer, GsMap} from "../rt/gs-model.ts";
+import {GsMap} from "../rt";
 
 /**
  * Abstract interface for map rendering
@@ -8,13 +8,14 @@ import {GsLayer, GsMap} from "../rt/gs-model.ts";
  * For operations, use MapOperations interface instead.
  */
 export interface MapRenderer {
-    render(container: HTMLElement): Promise<void>;
-    modelToUI(): Promise<void>;
-    getGsMap(): GsMap;
-    getView(): any;
-    getLayers(): any[];
+    render(container: string | HTMLElement): Promise<void>;
+    modelToUI(updatedGsMap?: GsMap): Promise<void>;
     getViewExtent(): number[];
+    getOperations(): MapOperations;
     setOnDirty(callback: () => void): void;
+    triggerDirty(): void;
+    setOnSync(callback: (gsMap: GsMap) => void): void;
+    triggerSync(): void;
     destroy(): void;
 }
 
@@ -26,7 +27,6 @@ export interface MapOperations {
     // View operations
     setZoom(zoom: number): Promise<void>;
     setCenter(center: [number, number]): Promise<void>;
-    getViewExtent(): Promise<number[]>;
     
     // Display operations
     switchColorMode(mode?: 'dark' | 'light'): Promise<void>;
@@ -34,20 +34,30 @@ export interface MapOperations {
     // Layer operations
     addLayer(layer: any, isBasemap?: boolean): Promise<void>;
     deleteLayer(index: number): Promise<void>;
-    setLayerVisible(index: number | GsLayer, visible: boolean): Promise<void>;
+    setLayerVisible(index: number, visible: boolean): Promise<void>;
     applyStyles(layerIdentifier: string | number, stylesPath: string): Promise<void>;
     
     // Marker operations
     addMarker(marker: any, layerName?: string): Promise<void>;
     
     // Control operations
-    addControl(control: any): Promise<void>;
     addControlFromModule(src: string): Promise<void>;
     removeControl(index: number): Promise<void>;
     
     // Overlay operations
-    addOverlay(overlay: any): Promise<void>;
     addOverlayFromModule(src: string, position?: string): Promise<void>;
     removeOverlay(index: number): Promise<void>;
 }
 
+export const createProxy = (operations: MapOperations[]): MapOperations => {
+    return new Proxy({}, {
+        get: (_, prop: string) => {
+            return async (...args: any[]) => {
+                // Execute the operation on all registered operations
+                for (const operation of operations) {
+                    await (operation as any)[prop](...args);
+                }
+            };
+        }
+    }) as MapOperations;
+}

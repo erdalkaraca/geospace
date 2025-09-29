@@ -32,12 +32,14 @@ export class GsMapProps extends KPart {
 
     private toggleVisible(event: Event) {
         // @ts-ignore
-        const layer: GsLayer = event.currentTarget.model
+        const index: number = event.currentTarget.index
+        const gsMap = this.mapEditor!.getGsMap()
+        const layer = gsMap!.layers[index]
         const currentVisible = layer.visible !== false // true if undefined or true, false if false
         const newVisible = !currentVisible
         
         // Use operations directly to update both OpenLayers map and domain model
-        this.mapEditor?.mapOperations?.setLayerVisible(layer, newVisible)
+        this.mapEditor?.mapOperations?.setLayerVisible(index, newVisible)
         
         this.updateLater()
     }
@@ -57,7 +59,7 @@ export class GsMapProps extends KPart {
                         ${icon("fg layers")} Layers
                         ${this.mapEditor!.getGsMap()?.layers.map((layer: GsLayer, i: number) => html`
                             <wa-tree-item>
-                                <wa-button .model="${layer}" @click="${this.toggleVisible}" appearance="plain"
+                                <wa-button .index="${i}" @click="${this.toggleVisible}" appearance="plain"
                                            size="small">
                                     <wa-icon name="${layer.visible !== false ? "eye" : "eye-slash"}"></wa-icon>
                                 </wa-button>
