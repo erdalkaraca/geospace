@@ -5,7 +5,6 @@ import {rtUtils} from "../rt";
 import {toBlobUri} from "./utils.ts";
 import {html} from "lit";
 
-rtUtils.standalone = false
 rtUtils.resolveUrl = path => toBlobUri(path);
 
 editorRegistry.registerEditorInputHandler({

@@ -5,7 +5,6 @@ export * from "./gs-ol-adapters.ts"
 export * from "./gs-style-loader.ts"
 
 export const rtUtils = {
-    standalone: true,
     async resolveUrl(url: string) {
         return url
     }

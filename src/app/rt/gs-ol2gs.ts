@@ -181,9 +181,9 @@ export const toGsControl = (olControl: GsOlControl): GsControl => {
 
 export const olMapToGsMap = (gsMap: GsMap, olMap: Map) => {
     const view = olMap.getView()
-    gsMap.zoom = view.getZoom() || 0
-    gsMap.center = view.getCenter() || [0, 0]
-    gsMap.projection = view.getProjection().getCode()
+    gsMap.view.zoom = view.getZoom() || 0
+    gsMap.view.center = view.getCenter() || [0, 0]
+    gsMap.view.projection = view.getProjection().getCode()
     gsMap.layers = []
     gsMap.overlays = []
     gsMap.controls = []

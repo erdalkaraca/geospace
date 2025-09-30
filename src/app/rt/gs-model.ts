@@ -100,10 +100,14 @@ export interface GsInteraction extends GsState {
 
 }
 
-export interface GsMap extends GsState {
-    zoom: number,
+export interface GsView extends GsState {
     center: number[],
-    projection: string,
+    zoom: number,
+    projection: string
+}
+
+export interface GsMap extends GsState {
+    view: GsView,
     layers: GsLayer[],
     overlays: GsOverlay[],
     controls: GsControl[],
@@ -113,9 +117,11 @@ export interface GsMap extends GsState {
 }
 
 export const DEFAULT_GSMAP = {
-    center: [0, 0],
-    zoom: 0,
-    projection: 'EPSG:3857',
+    view: {
+        center: [0, 0],
+        zoom: 0,
+        projection: 'EPSG:3857'
+    } as GsView,
     layers: [{
         type: GsLayerType.TILE,
         source: {

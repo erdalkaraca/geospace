@@ -5,6 +5,7 @@ import {fileURLToPath} from "url";
 import mkcert from 'vite-plugin-mkcert'
 import {visualizer} from "rollup-plugin-visualizer";
 //import crossOriginIsolation from 'vite-plugin-cross-origin-isolation'
+import path from 'path';
 
 const PYODIDE_EXCLUDE = [
     "!**/*.{md,html}",
@@ -12,6 +13,8 @@ const PYODIDE_EXCLUDE = [
     "!**/*.whl",
     "!**/node_modules",
 ];
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
 
 export function viteStaticCopyPyodide() {
     const pyodideDir = dirname(fileURLToPath(import.meta.resolve("pyodide")));
@@ -37,4 +40,12 @@ export default defineConfig({
         }),
     ],
     base: process.env.VITE_BASE_PATH || '/',
+    build: {
+        rollupOptions: {
+            input: {
+                main: path.resolve(__dirname, 'index.html'),
+                iframe: path.resolve(__dirname, 'iframe-map-renderer.html')
+            }
+        }
+    }
 });
