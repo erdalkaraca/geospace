@@ -40,6 +40,9 @@ export default defineConfig({
         }),
     ],
     base: process.env.VITE_BASE_PATH || '/',
+    worker: {
+        format: 'es'  // Use ES module format for workers (required for code-splitting)
+    },
     build: {
         rollupOptions: {
             input: {
