@@ -23,6 +23,7 @@ export interface EditorInput {
 export interface EditorInputHandler {
     canHandle: (input: any) => boolean;
     handle: (input: any) => Promise<EditorInput>;
+    ranking?: number;  // Higher ranking = higher priority (default: 0)
 }
 
 class EditorRegistry {
@@ -73,9 +74,12 @@ class EditorRegistry {
 
     registerEditorInputHandler(editorInputHandler: EditorInputHandler) {
         this.editorInputHandlers.push(editorInputHandler);
+        // Sort by ranking (higher ranking first), default ranking is 0
+        this.editorInputHandlers.sort((a, b) => (b.ranking ?? 0) - (a.ranking ?? 0));
     }
 
     async handleInput(input: any) {
+        // Handlers are already sorted by ranking, so iterate in order
         for (let i = 0; i < this.editorInputHandlers.length; i++) {
             const editorInputHandler = this.editorInputHandlers[i];
             if (editorInputHandler.canHandle(input)) {

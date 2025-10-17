@@ -52,3 +52,11 @@ extensionRegistry.registerExtension({
     loader: () => import("./certs/p12-splitter.ts"),
     icon: "certificate",
 })
+
+extensionRegistry.registerExtension({
+    id: "system.notebook",
+    name: "Jupyter Notebook Editor",
+    description: "View and execute Jupyter notebooks (.ipynb) with Python code execution and markdown rendering",
+    loader: () => import("./notebook/notebook-extension.ts"),
+    icon: "book",
+})

@@ -1,0 +1,9 @@
+{
+  "recommendations": [
+    "ms-vscode.vscode-typescript-next",
+    "msjsdiag.debugger-for-chrome",
+    "firefox-devtools.vscode-firefox-debug",
+    "dbaeumer.vscode-eslint"
+  ]
+}
+
