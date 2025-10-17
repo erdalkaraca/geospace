@@ -185,6 +185,9 @@ export class KNotebookEditor extends KPart {
             if (workspace) {
                 await this.pyenv.init(workspace);
                 this.pyConnected = true;
+                
+                // Set up stdout/stderr callbacks for current cell execution
+                // Note: These will be set per execution in executeCell
             }
         }
     }
@@ -196,37 +199,6 @@ export class KNotebookEditor extends KPart {
         this.executingCells.add(cellIndex);
         this.requestUpdate();
 
-        // Capture console output
-        const consoleOutputs: string[] = [];
-        const originalConsole = {
-            log: console.log,
-            info: console.info,
-            error: console.error,
-            warn: console.warn
-        };
-        
-        const captureOutput = (...args: any[]) => {
-            const message = args.map(arg => {
-                // Better handling of objects and arrays
-                if (typeof arg === 'object') {
-                    try {
-                        return JSON.stringify(arg);
-                    } catch {
-                        return String(arg);
-                    }
-                }
-                return String(arg);
-            }).join(' ');
-            consoleOutputs.push(message);
-            // Also call original console for debugging
-            originalConsole.log(...args);
-        };
-        
-        console.log = captureOutput;
-        console.info = captureOutput;
-        console.error = captureOutput;
-        console.warn = captureOutput;
-
         try {
             await this.initPyodide();
             
@@ -234,12 +206,32 @@ export class KNotebookEditor extends KPart {
             const editor = this.monacoEditors.get(cellIndex);
             const code = editor ? editor.getValue() : this.getCellSource(cell);
             
-            const result = await this.pyenv!.execCode(code);
+            // PyEnv now runs in a worker and returns { result, console }
+            const response = await this.pyenv!.execCode(code);
             
-            // Build output
-            const outputParts: string[] = [...consoleOutputs];
+            // Build output from console output and result
+            const outputParts: string[] = [];
+            
+            // Add console output (stdout/stderr) if present
+            if (response && typeof response === 'object' && 'console' in response) {
+                const consoleOutput = response.console;
+                if (Array.isArray(consoleOutput) && consoleOutput.length > 0) {
+                    // Filter out empty strings and join
+                    const filteredOutput = consoleOutput.filter(s => s && s.trim());
+                    if (filteredOutput.length > 0) {
+                        outputParts.push(...filteredOutput);
+                    }
+                }
+            }
+            
+            // Add the return value if it exists
+            const result = response && typeof response === 'object' ? response.result : response;
             if (result !== undefined && result !== null && String(result) !== 'undefined') {
-                outputParts.push(String(result));
+                const resultStr = String(result);
+                // Only add if it's not empty and not the string 'undefined'
+                if (resultStr && resultStr !== 'undefined') {
+                    outputParts.push(resultStr);
+                }
             }
             
             this.cellOutputs.set(cellIndex, {
@@ -253,12 +245,6 @@ export class KNotebookEditor extends KPart {
                 data: String(error)
             });
         } finally {
-            // Always restore console
-            console.log = originalConsole.log;
-            console.info = originalConsole.info;
-            console.error = originalConsole.error;
-            console.warn = originalConsole.warn;
-            
             this.executingCells.delete(cellIndex);
             this.requestUpdate();
         }
@@ -371,16 +357,28 @@ export class KNotebookEditor extends KPart {
         const cellRef = this.cellRefs.get(index)!;
         
         return html`
-            <div class="cell code-cell">
+            <div class="cell code-cell ${isExecuting ? 'executing' : ''}">
                 <div class="cell-header">
-                    <span class="cell-label">In [${cell.execution_count ?? ' '}]:</span>
+                    <span class="cell-label">
+                        ${isExecuting ? html`
+                            In [<wa-animation name="pulse" duration="1000" iterations="Infinity" ?play=${isExecuting}>
+                                <span class="executing-indicator">*</span>
+                            </wa-animation>]:
+                        ` : html`
+                            In [${cell.execution_count ?? ' '}]:
+                        `}
+                    </span>
                     <wa-button 
                         size="small" 
                         appearance="plain"
                         @click=${() => this.executeCell(index)}
                         ?disabled=${isExecuting}
                         title="Run cell">
-                        <wa-icon name=${isExecuting ? 'spinner' : 'play'}></wa-icon>
+                        ${isExecuting ? html`
+                            <wa-icon name="spinner" class="spinning"></wa-icon>
+                        ` : html`
+                            <wa-icon name="play"></wa-icon>
+                        `}
                     </wa-button>
                 </div>
                 <div class="cell-actions">
@@ -724,6 +722,24 @@ export class KNotebookEditor extends KPart {
 
         .code-cell {
             border-left: 3px solid var(--wa-color-primary-500);
+            transition: all 0.3s ease;
+        }
+        
+        .code-cell.executing {
+            border-left: 4px solid var(--wa-color-primary-500);
+            box-shadow: 0 0 0 2px var(--wa-color-primary-500, rgba(59, 130, 246, 0.3));
+            animation: pulse-cell 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse-cell {
+            0%, 100% {
+                box-shadow: 0 0 0 2px var(--wa-color-primary-500, rgba(59, 130, 246, 0.3));
+                opacity: 1;
+            }
+            50% {
+                box-shadow: 0 0 0 4px var(--wa-color-primary-500, rgba(59, 130, 246, 0.5));
+                opacity: 0.95;
+            }
         }
 
         .cell-header {
@@ -737,6 +753,26 @@ export class KNotebookEditor extends KPart {
             font-family: monospace;
             font-weight: bold;
             flex: 1;
+        }
+        
+        .executing-indicator {
+            display: inline-block;
+            color: var(--wa-color-primary-500);
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        
+        .spinning {
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         .cell-input {

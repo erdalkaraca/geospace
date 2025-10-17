@@ -46,8 +46,10 @@ export class KPyTerminal extends KElement {
         const workspace = (await workspaceService.getWorkspace())!
         this.pyenv = new PyEnv()
         await this.pyenv.init(workspace)
-        this.prompt(`Pyodide v${this.pyenv.getVersion()}`)
-        this.prompt("Python implementation: " + this.pyenv.execCode("import sys;sys.version"))
+        this.prompt(`Pyodide v${await this.pyenv.getVersion()}`)
+        const versionResponse = await this.pyenv.execCode("import sys;sys.version")
+        const version = versionResponse && typeof versionResponse === 'object' ? versionResponse.result : versionResponse
+        this.prompt("Python implementation: " + version)
         this.prompt()
     }
 
