@@ -151,6 +151,30 @@ export class KNotebookEditor extends KPart {
         return cell.source;
     }
 
+    // Render common cell action buttons (add/delete)
+    private renderCellActions(index: number, additionalButton?: any) {
+        return html`
+            <div class="cell-actions">
+                <wa-button size="small" appearance="plain" @click=${() => this.addCellBefore(index, 'code')} title="Add code cell before">
+                    <wa-icon name="code"></wa-icon><wa-icon name="arrow-up" style="font-size: 0.7em;"></wa-icon>
+                </wa-button>
+                <wa-button size="small" appearance="plain" @click=${() => this.addCellBefore(index, 'markdown')} title="Add markdown cell before">
+                    <wa-icon name="font"></wa-icon><wa-icon name="arrow-up" style="font-size: 0.7em;"></wa-icon>
+                </wa-button>
+                <wa-button size="small" appearance="plain" @click=${() => this.addCellAfter(index, 'code')} title="Add code cell after">
+                    <wa-icon name="code"></wa-icon><wa-icon name="arrow-down" style="font-size: 0.7em;"></wa-icon>
+                </wa-button>
+                <wa-button size="small" appearance="plain" @click=${() => this.addCellAfter(index, 'markdown')} title="Add markdown cell after">
+                    <wa-icon name="font"></wa-icon><wa-icon name="arrow-down" style="font-size: 0.7em;"></wa-icon>
+                </wa-button>
+                <wa-button size="small" appearance="plain" @click=${() => this.deleteCell(index)} title="Delete cell" ?disabled=${this.notebook!.cells.length <= 1}>
+                    <wa-icon name="trash"></wa-icon>
+                </wa-button>
+                ${additionalButton || ''}
+            </div>
+        `;
+    }
+
     // Helper to convert string to Jupyter source format
     private stringToSourceArray(content: string): string[] {
         if (!content) return [''];
@@ -320,24 +344,21 @@ export class KNotebookEditor extends KPart {
         
         const rendered = marked.parse(source) as string;
         
+        const editButton = html`
+            <wa-button 
+                size="small" 
+                appearance="plain"
+                @click=${() => this.toggleMarkdownEdit(index)}
+                title="Edit markdown">
+                <wa-icon name="pencil"></wa-icon>
+            </wa-button>
+        `;
+
         return html`
             <div class="cell markdown-cell" @dblclick=${() => this.toggleMarkdownEdit(index)}>
-                <div class="cell-actions">
-                    <wa-button size="small" appearance="plain" @click=${() => this.addCellBefore(index, 'code')} title="Add code cell before">
-                        <wa-icon name="plus"></wa-icon> <wa-icon name="code"></wa-icon> ↑
-                    </wa-button>
-                    <wa-button size="small" appearance="plain" @click=${() => this.addCellBefore(index, 'markdown')} title="Add markdown cell before">
-                        <wa-icon name="plus"></wa-icon> <wa-icon name="font"></wa-icon> ↑
-                    </wa-button>
-                    <wa-button size="small" appearance="plain" @click=${() => this.addCellAfter(index, 'code')} title="Add code cell after">
-                        <wa-icon name="plus"></wa-icon> <wa-icon name="code"></wa-icon> ↓
-                    </wa-button>
-                    <wa-button size="small" appearance="plain" @click=${() => this.addCellAfter(index, 'markdown')} title="Add markdown cell after">
-                        <wa-icon name="plus"></wa-icon> <wa-icon name="font"></wa-icon> ↓
-                    </wa-button>
-                    <wa-button size="small" appearance="plain" @click=${() => this.deleteCell(index)} title="Delete cell" ?disabled=${this.notebook!.cells.length <= 1}>
-                        <wa-icon name="trash"></wa-icon>
-                    </wa-button>
+                <div class="cell-header">
+                    <span class="cell-label"></span>
+                    ${this.renderCellActions(index, editButton)}
                 </div>
                 <div class="cell-content">
                     ${unsafeHTML(rendered)}
@@ -356,6 +377,21 @@ export class KNotebookEditor extends KPart {
         }
         const cellRef = this.cellRefs.get(index)!;
         
+        const runButton = html`
+            <wa-button 
+                size="small" 
+                appearance="plain"
+                @click=${() => this.executeCell(index)}
+                ?disabled=${isExecuting}
+                title="Run cell">
+                ${isExecuting ? html`
+                    <wa-icon name="spinner" class="spinning"></wa-icon>
+                ` : html`
+                    <wa-icon name="play"></wa-icon>
+                `}
+            </wa-button>
+        `;
+        
         return html`
             <div class="cell code-cell ${isExecuting ? 'executing' : ''}">
                 <div class="cell-header">
@@ -368,35 +404,7 @@ export class KNotebookEditor extends KPart {
                             In [${cell.execution_count ?? ' '}]:
                         `}
                     </span>
-                    <wa-button 
-                        size="small" 
-                        appearance="plain"
-                        @click=${() => this.executeCell(index)}
-                        ?disabled=${isExecuting}
-                        title="Run cell">
-                        ${isExecuting ? html`
-                            <wa-icon name="spinner" class="spinning"></wa-icon>
-                        ` : html`
-                            <wa-icon name="play"></wa-icon>
-                        `}
-                    </wa-button>
-                </div>
-                <div class="cell-actions">
-                    <wa-button size="small" appearance="plain" @click=${() => this.addCellBefore(index, 'code')} title="Add code cell before">
-                        <wa-icon name="plus"></wa-icon> <wa-icon name="code"></wa-icon> ↑
-                    </wa-button>
-                    <wa-button size="small" appearance="plain" @click=${() => this.addCellBefore(index, 'markdown')} title="Add markdown cell before">
-                        <wa-icon name="plus"></wa-icon> <wa-icon name="font"></wa-icon> ↑
-                    </wa-button>
-                    <wa-button size="small" appearance="plain" @click=${() => this.addCellAfter(index, 'code')} title="Add code cell after">
-                        <wa-icon name="plus"></wa-icon> <wa-icon name="code"></wa-icon> ↓
-                    </wa-button>
-                    <wa-button size="small" appearance="plain" @click=${() => this.addCellAfter(index, 'markdown')} title="Add markdown cell after">
-                        <wa-icon name="plus"></wa-icon> <wa-icon name="font"></wa-icon> ↓
-                    </wa-button>
-                    <wa-button size="small" appearance="plain" @click=${() => this.deleteCell(index)} title="Delete cell" ?disabled=${this.notebook!.cells.length <= 1}>
-                        <wa-icon name="trash"></wa-icon>
-                    </wa-button>
+                    ${this.renderCellActions(index, runButton)}
                 </div>
                 <div class="cell-input monaco-container" ${ref(cellRef)} data-cell-index="${index}"></div>
                 ${output ? html`
@@ -455,45 +463,27 @@ export class KNotebookEditor extends KPart {
     private addCell(index: number, cellType: 'code' | 'markdown' = 'code') {
         if (!this.notebook) return;
         
-        const newCell = this.createCell(cellType);
-        this.notebook.cells.splice(index, 0, newCell);
-        
+        this.notebook.cells.splice(index, 0, this.createCell(cellType));
+        this.resetCellState();
+    }
+
+    private resetCellState() {
         // Clear Monaco editors and refs since indices have changed
-        // This is necessary because all cell indices shift after insertion
         this.monacoEditors.forEach(editor => editor.dispose());
         this.monacoEditors.clear();
         this.cellRefs.clear();
-        
         this.markDirty(true);
         this.requestUpdate();
     }
 
     private deleteCell(index: number) {
-        if (!this.notebook || this.notebook.cells.length <= 1) {
-            // Don't delete the last cell
-            return;
-        }
-        
-        // Dispose Monaco editor for this cell if it exists
-        const editor = this.monacoEditors.get(index);
-        if (editor) {
-            editor.dispose();
-        }
+        if (!this.notebook || this.notebook.cells.length <= 1) return;
         
         this.notebook.cells.splice(index, 1);
-        
-        // Clear all Monaco editors and refs since indices have changed
-        this.monacoEditors.forEach(editor => editor.dispose());
-        this.monacoEditors.clear();
-        this.cellRefs.clear();
-        
-        // Clean up all state for this cell and shift indices
         this.cleanupCellOutputs();
         this.executingCells.delete(index);
         this.editingMarkdownCells.delete(index);
-        
-        this.markDirty(true);
-        this.requestUpdate();
+        this.resetCellState();
     }
 
     // Clean up outputs for cells that no longer exist
@@ -671,26 +661,27 @@ export class KNotebookEditor extends KPart {
 
         .cell-actions {
             display: flex;
-            gap: 0.25rem;
-            padding: 0.5rem;
-            opacity: 0;
+            gap: 0.15rem;
+            align-items: center;
+            opacity: 0.5;
             transition: opacity 0.2s;
-            flex-wrap: wrap;
-            justify-content: center;
         }
 
-        .cell:hover .cell-actions {
+        .cell-header:hover .cell-actions {
             opacity: 1;
         }
 
         .markdown-cell {
-            padding: 1rem;
             cursor: pointer;
             transition: opacity 0.2s;
         }
 
         .markdown-cell:hover:not(.editing) {
-            opacity: 0.8;
+            opacity: 0.9;
+        }
+        
+        .markdown-cell .cell-content {
+            padding: 1rem;
         }
 
         .markdown-cell.editing {
@@ -745,14 +736,16 @@ export class KNotebookEditor extends KPart {
         .cell-header {
             display: flex;
             align-items: center;
+            justify-content: space-between;
             gap: 0.5rem;
             padding: 0.5rem 1rem;
+            flex-wrap: nowrap;
         }
 
         .cell-label {
             font-family: monospace;
             font-weight: bold;
-            flex: 1;
+            flex-shrink: 0;
         }
         
         .executing-indicator {
