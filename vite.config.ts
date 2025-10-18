@@ -4,7 +4,7 @@ import {dirname, join} from "path";
 import {fileURLToPath} from "url";
 import mkcert from 'vite-plugin-mkcert'
 import {visualizer} from "rollup-plugin-visualizer";
-//import crossOriginIsolation from 'vite-plugin-cross-origin-isolation'
+import crossOriginIsolation from 'vite-plugin-cross-origin-isolation'
 import path from 'path';
 
 const PYODIDE_EXCLUDE = [
@@ -32,6 +32,7 @@ export default defineConfig({
     optimizeDeps: {exclude: ["pyodide"]},
     plugins: [
         mkcert(),
+        crossOriginIsolation(),  // Enable SharedArrayBuffer support
         //viteStaticCopyPyodide(),
         visualizer({
             open: false,

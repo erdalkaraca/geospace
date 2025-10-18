@@ -2,6 +2,7 @@ import {Directory, File, FileSysDirHandleResource, TOPIC_WORKSPACE_CHANGED, work
 import {parsePipRequirementsFile} from "pip-requirements-js";
 import {publish} from "./events.ts";
 import type {PyWorkerMessage, PyWorkerResponse} from "./pyworker.ts";
+import PyWorker from "./pyworker.ts?worker";
 
 // Message counter for tracking requests/responses
 let messageId = 0;
@@ -14,15 +15,14 @@ export class PyEnv {
     private pendingMessages: Map<string, { resolve: (value: any) => void, reject: (error: any) => void }> = new Map();
     private stdoutCallback?: (text: string) => void;
     private stderrCallback?: (text: string) => void;
+    private interruptBuffer?: Uint8Array;
 
     public async init(workspace: Directory, vars?: any) {
         this.workspace = workspace;
         this.vars = vars ?? {};
 
-        // Create Web Worker
-        this.worker = new Worker(new URL('./pyworker.ts', import.meta.url), {
-            type: 'module'
-        });
+        // Create Web Worker using Vite's ?worker import
+        this.worker = new PyWorker();
 
         // Set up message handler
         this.worker.onmessage = (event: MessageEvent<PyWorkerResponse>) => {
@@ -42,6 +42,17 @@ export class PyEnv {
     }
 
     private handleWorkerMessage(response: PyWorkerResponse) {
+        // Handle interrupt buffer initialization
+        if (response.id === 'interrupt-buffer') {
+            if (response.type === 'success') {
+                this.interruptBuffer = new Uint8Array(response.payload);
+            } else {
+                // SharedArrayBuffer not available - interrupt buffer will be undefined
+                this.interruptBuffer = undefined;
+            }
+            return;
+        }
+        
         // Handle stdout/stderr streams
         if (response.type === 'stdout') {
             if (this.stdoutCallback) {
@@ -164,6 +175,25 @@ export class PyEnv {
 
     public async getVersion() {
         return await this.sendMessage('getVersion');
+    }
+
+    /**
+     * Check if interrupt functionality is available (requires SharedArrayBuffer).
+     */
+    public canInterrupt(): boolean {
+        return this.interruptBuffer !== undefined;
+    }
+
+    /**
+     * Interrupts any currently running Python code.
+     * This will cause a KeyboardInterrupt to be raised in the Python code.
+     * Only works if SharedArrayBuffer is available (check with canInterrupt()).
+     */
+    public interrupt() {
+        if (this.interruptBuffer) {
+            // Set the interrupt flag (2 = SIGINT)
+            this.interruptBuffer[0] = 2;
+        }
     }
 
     close() {

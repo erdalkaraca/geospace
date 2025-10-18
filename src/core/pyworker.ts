@@ -4,6 +4,7 @@ import {loadPyodide, PyodideInterface} from "pyodide";
 
 let pyodide: PyodideInterface | null = null;
 let workspaceMountFS: any = null;
+let interruptBuffer: Uint8Array | null = null;
 
 // Message types for worker communication
 export interface PyWorkerMessage {
@@ -31,6 +32,41 @@ async function initPyodide(payload: { vars?: any }) {
     pyodide = await loadPyodide({
         indexURL: `https://cdn.jsdelivr.net/pyodide/v${poVersion}/full/`
     });
+    
+    // Set up interrupt buffer for cancellation support (if available)
+    // SharedArrayBuffer requires cross-origin isolation headers:
+    // - Cross-Origin-Opener-Policy: same-origin
+    // - Cross-Origin-Embedder-Policy: require-corp
+    if (typeof SharedArrayBuffer !== 'undefined') {
+        try {
+            const interruptBufferShared = new SharedArrayBuffer(1);
+            interruptBuffer = new Uint8Array(interruptBufferShared);
+            pyodide.setInterruptBuffer(interruptBuffer);
+            
+            // Send the interrupt buffer to main thread
+            sendMessage({
+                id: 'interrupt-buffer',
+                type: 'success',
+                payload: interruptBufferShared
+            });
+        } catch (error) {
+            console.warn('Failed to set up interrupt buffer:', error);
+            // Send notification that interrupt buffer is not available
+            sendMessage({
+                id: 'interrupt-buffer',
+                type: 'error',
+                payload: { message: 'SharedArrayBuffer not available' }
+            });
+        }
+    } else {
+        console.warn('SharedArrayBuffer not available - interrupt functionality will be limited');
+        // Send notification that interrupt buffer is not available
+        sendMessage({
+            id: 'interrupt-buffer',
+            type: 'error',
+            payload: { message: 'SharedArrayBuffer not available' }
+        });
+    }
     
     // Set up default globals
     pyodide.globals.set('input', (_prompt?: string) => {
@@ -175,12 +211,26 @@ async function execCode(payload: { code: string }) {
     
     consoleBuffer.length = 0; // Clear buffer
     
+    // Reset interrupt buffer before execution
+    if (interruptBuffer) {
+        interruptBuffer[0] = 0;
+    }
+    
     let result;
     try {
         result = await pyodide.runPythonAsync(payload.code);
     } catch (error) {
+        // Reset interrupt buffer after error (including KeyboardInterrupt)
+        if (interruptBuffer) {
+            interruptBuffer[0] = 0;
+        }
         // Error will be caught by outer try-catch, but make sure console is captured
         throw error;
+    }
+    
+    // Reset interrupt buffer after successful execution
+    if (interruptBuffer) {
+        interruptBuffer[0] = 0;
     }
     
     await syncWorkspace();

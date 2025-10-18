@@ -4,6 +4,29 @@
   "contributionId": "catalog.root.geospace",
   "items": [
     {
+      "contributionId": "catalog.root.notebooks",
+      "label": "Notebooks",
+      "icon": "book",
+      "items": [
+        {
+          "label": "Welcome to Jupyter Notebooks",
+          "icon": "graduation-cap",
+          "state": {
+            "url": "${baseURL}/notebooks/welcome.ipynb",
+            "type": "file"
+          }
+        },
+        {
+          "label": "Sample Notebook",
+          "icon": "book",
+          "state": {
+            "url": "${baseURL}/sample-notebook.ipynb",
+            "type": "file"
+          }
+        }
+      ]
+    },
+    {
       "contributionId": "catalog.root.datasets",
       "label": "Datasets",
       "icon": "clone",
