@@ -2,7 +2,7 @@ import {Feature, Map, Overlay} from "ol";
 import BaseLayer from "ol/layer/Base";
 import TileLayer from "ol/layer/Tile";
 import VectorLayer from "ol/layer/Vector";
-import {OSM, Source} from "ol/source";
+import {OSM, Source, TileWMS, WMTS} from "ol/source";
 import VectorSource from "ol/source/Vector";
 import * as olGeom from "ol/geom";
 import {
@@ -37,6 +37,8 @@ export const toGsLayerType = (tag: string) => {
         case "bing":
         case "google":
         case "geotiff":
+        case "wms":
+        case "wmts":
             return GsLayerType.TILE
         case "bm":
         case "basemap.de":
@@ -96,6 +98,24 @@ const GS_SOURCES: Rule[] = [
         apply: (_context: VectorLayer): GsSource => {
             return {
                 type: GsSourceType.OSM
+            } as GsSource
+        }
+    } as Rule,
+    {
+        matches: (context: Source) => context instanceof TileWMS,
+        apply: (context: TileWMS): GsSource => {
+            return {
+                type: GsSourceType.WMS,
+                url: context.get(KEY_URL)
+            } as GsSource
+        }
+    } as Rule,
+    {
+        matches: (context: Source) => context instanceof WMTS,
+        apply: (context: WMTS): GsSource => {
+            return {
+                type: GsSourceType.WMTS,
+                url: context.get(KEY_URL)
             } as GsSource
         }
     } as Rule,

@@ -61,6 +61,70 @@
             "url": "${baseURL}/maps/bm.geospace",
             "type": "file"
           }
+        },
+        {
+          "label": "basemap.de WMS (Color)",
+          "icon": "earth",
+          "state": {
+            "url": "${baseURL}/maps/bm-wms.geospace",
+            "type": "file"
+          }
+        },
+        {
+          "label": "basemap.de WMS (Gray)",
+          "icon": "earth",
+          "state": {
+            "url": "${baseURL}/maps/bm-wms-gray.geospace",
+            "type": "file"
+          }
+        },
+        {
+          "label": "basemap.de WMTS (Color)",
+          "icon": "earth",
+          "state": {
+            "url": "${baseURL}/maps/bm-wmts.geospace",
+            "type": "file"
+          }
+        },
+        {
+          "label": "basemap.de WMTS (Gray)",
+          "icon": "earth",
+          "state": {
+            "url": "${baseURL}/maps/bm-wmts-gray.geospace",
+            "type": "file"
+          }
+        },
+        {
+          "label": "TopPlusOpen WMTS",
+          "icon": "earth",
+          "state": {
+            "url": "${baseURL}/maps/topplus-wmts.geospace",
+            "type": "file"
+          }
+        },
+        {
+          "label": "TopPlusOpen WMTS (Gray)",
+          "icon": "earth",
+          "state": {
+            "url": "${baseURL}/maps/topplus-wmts-gray.geospace",
+            "type": "file"
+          }
+        },
+        {
+          "label": "TopPlusOpen WMTS Light",
+          "icon": "earth",
+          "state": {
+            "url": "${baseURL}/maps/topplus-wmts-light.geospace",
+            "type": "file"
+          }
+        },
+        {
+          "label": "TopPlusOpen WMTS Light (Gray)",
+          "icon": "earth",
+          "state": {
+            "url": "${baseURL}/maps/topplus-wmts-light-gray.geospace",
+            "type": "file"
+          }
         }
       ]
     },

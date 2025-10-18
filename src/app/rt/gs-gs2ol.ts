@@ -29,8 +29,10 @@ import {MapOptions} from "ol/Map";
 import BaseObject from "ol/Object";
 import * as olGeom from "ol/geom";
 import {Icon, Style} from "ol/style";
-import {GeoTIFF, OSM, Source} from "ol/source";
+import {GeoTIFF, OSM, Source, TileWMS, WMTS} from "ol/source";
+import {optionsFromCapabilities} from "ol/source/WMTS";
 import FeatureFormat from "ol/format/Feature";
+import WMTSCapabilities from "ol/format/WMTSCapabilities";
 import VectorSource from "ol/source/Vector";
 import {GeoJSON, GPX} from "ol/format";
 import TileLayer from "ol/layer/Tile";
@@ -48,6 +50,7 @@ import {createRef, ref} from "lit/directives/ref.js";
 import {v4 as uuidv4} from 'uuid'
 import {GsControlAdapter, GsOverlayAdapter} from "./gs-ol-adapters.ts";
 import {rtUtils} from "./index.ts";
+import Layer from "ol/layer/Layer";
 
 const withState = <T extends BaseObject>(state: GsState, olObject: T): T => {
     if (state.state) {
@@ -88,6 +91,65 @@ export const OL_SOURCES: any = {}
 OL_SOURCES[GsSourceType.OSM] = (source: GsSource) => {
     const olSource = new OSM();
     olSource.set(KEY_LABEL, source.type)
+    return olSource
+}
+OL_SOURCES[GsSourceType.WMS] = (source: GsSource) => {
+    const olSource = new TileWMS({
+        url: source.url!,
+        params: {
+            'LAYERS': '',  // Will be overridden by source.state
+            ...source.state || {}
+        },
+        crossOrigin: 'anonymous'  // Required for COEP, same as OSM default
+    })
+    olSource.set(KEY_URL, source.url!)
+    olSource.set(KEY_LABEL, `${source.type}@${source.url}`)
+    return olSource
+}
+OL_SOURCES[GsSourceType.WMTS] = (source: GsSource, olLayer?: Layer) => {
+    const state = source.state || {}
+    const parser = new WMTSCapabilities()
+    
+    // Create a minimal placeholder source
+    const olSource = new WMTS({
+        url: source.url!,
+        layer: state['LAYER'] || '',
+        matrixSet: state['MATRIXSET'] || 'GLOBAL_WEBMERCATOR',
+        style: state['STYLE'] || 'default',
+        crossOrigin: 'anonymous'
+    } as any)
+
+    // Fetch and parse capabilities, then replace the source on the layer
+    fetch(source.url!)
+        .then(response => response.text())
+        .then(text => {
+            const result = parser.read(text)
+            const options = optionsFromCapabilities(result, {
+                layer: state['LAYER'] || '',
+                matrixSet: state['MATRIXSET'] || 'GLOBAL_WEBMERCATOR',
+            })
+            
+            if (options) {
+                // Create a new WMTS source with proper options
+                const newSource = new WMTS({
+                    ...options,
+                    crossOrigin: 'anonymous'
+                })
+                newSource.set(KEY_URL, source.url!)
+                newSource.set(KEY_LABEL, `${source.type}@${source.url}`)
+                
+                // Replace the source on the layer
+                if (olLayer && olLayer.setSource) {
+                    olLayer.setSource(newSource)
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Failed to fetch WMTS capabilities:', error)
+        })
+
+    olSource.set(KEY_URL, source.url!)
+    olSource.set(KEY_LABEL, `${source.type}@${source.url}`)
     return olSource
 }
 
@@ -132,15 +194,20 @@ OL_SOURCES[GsSourceType.Features] = (source: GsSource) => {
     return olSource
 }
 
-export const toOlSource = (source: GsSource) => {
-    return withState(source, OL_SOURCES[source.type](source))
+export const toOlSource = (source: GsSource, olLayer?: TileLayer<TileSource>) => {
+    return withState(source, OL_SOURCES[source.type](source, olLayer))
 }
 
 export const OL_LAYERS: any = {}
 OL_LAYERS[GsLayerType.TILE] = (layer: GsLayer) => {
-    return new TileLayer({
-        source: toOlSource(layer.source) as TileSource,
-    })
+    // Create the layer first
+    const tileLayer = new TileLayer()
+    
+    // Then create the source with the layer reference
+    const source = toOlSource(layer.source, tileLayer) as TileSource
+    tileLayer.setSource(source)
+    
+    return tileLayer
 }
 OL_LAYERS[GsLayerType.VECTOR] = (layer: GsLayer) => {
     return new VectorLayer({

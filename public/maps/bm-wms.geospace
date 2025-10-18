@@ -1,0 +1,40 @@
+{
+  "center": [
+    1113194,
+    6544245
+  ],
+  "zoom": 6,
+  "projection": "EPSG:3857",
+  "layers": [
+    {
+      "type": "TILE",
+      "source": {
+        "type": "WMTS",
+        "url": "https://sgx.geodatenzentrum.de/wmts_topplus_open/1.0.0/WMTSCapabilities.xml",
+        "state": {
+          "LAYER": "web_light_grau",
+          "MATRIXSET": "WEBMERCATOR"
+        }
+      },
+      "visible": true
+    },
+    {
+      "type": "TILE",
+      "source": {
+        "type": "WMS",
+        "url": "https://sgx.geodatenzentrum.de/wms_basemapde",
+        "state": {
+          "LAYERS": "de_basemapde_web_raster_farbe",
+          "VERSION": "1.3.0"
+        }
+      },
+      "visible": true
+    }
+  ],
+  "overlays": [],
+  "controls": [],
+  "interactions": [],
+  "state": {},
+  "styles": {}
+}
+
