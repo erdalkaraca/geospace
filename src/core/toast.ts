@@ -26,5 +26,20 @@ export const toastError = (msg: string) => {
     }).showToast();
 }
 
+export const toastWarning = (msg: string) => {
+    console.warn(msg)
+    Toastify({
+        text: msg,
+        duration: 3000,
+        close: true,
+        gravity: "bottom",
+        stopOnFocus: true,
+        style: {
+            background: "orange"
+        }
+    }).showToast();
+}
+
 uiContext.put("toastInfo", toastInfo)
 uiContext.put("toastError", toastError)
+uiContext.put("toastWarning", toastWarning)

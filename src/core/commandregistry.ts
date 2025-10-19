@@ -26,6 +26,7 @@ export class Command {
     name: string;
     description: string;
     icon?: string;
+    keyBinding?: string;
     parameters?: Parameter[];
     output?: Variable[];
     llm?: LLMOptions;

@@ -1,4 +1,5 @@
 import {html} from "lit";
+import '../core/init.ts'  // Initialize core services
 import '../parts/index.ts'
 import '../components'
 import '../widgets/index.ts'

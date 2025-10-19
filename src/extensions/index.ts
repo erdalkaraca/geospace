@@ -60,3 +60,11 @@ extensionRegistry.registerExtension({
     loader: () => import("./notebook/notebook-extension.ts"),
     icon: "book",
 })
+
+extensionRegistry.registerExtension({
+    id: "system.commandpalette",
+    name: "Command Palette",
+    description: "VS Code-style command palette at the top center for quick command execution (Ctrl+Shift+P)",
+    loader: () => import("./command-palette/command-palette-extension.ts"),
+    icon: "terminal",
+})
