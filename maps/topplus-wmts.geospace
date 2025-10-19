@@ -1,0 +1,28 @@
+{
+  "center": [
+    1113194,
+    6544245
+  ],
+  "zoom": 6,
+  "projection": "EPSG:3857",
+  "layers": [
+    {
+      "type": "TILE",
+      "source": {
+        "type": "WMTS",
+        "url": "https://sgx.geodatenzentrum.de/wmts_topplus_open/1.0.0/WMTSCapabilities.xml",
+        "state": {
+          "LAYER": "web",
+          "MATRIXSET": "WEBMERCATOR"
+        }
+      },
+      "visible": true
+    }
+  ],
+  "overlays": [],
+  "controls": [],
+  "interactions": [],
+  "state": {},
+  "styles": {}
+}
+
