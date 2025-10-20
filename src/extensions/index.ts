@@ -70,6 +70,14 @@ extensionRegistry.registerExtension({
 })
 
 extensionRegistry.registerExtension({
+    id: "system.download",
+    name: "Download Files",
+    description: "Download files from URLs to the workspace",
+    loader: () => import("./download/download-extension.ts"),
+    icon: "download",
+})
+
+extensionRegistry.registerExtension({
     id: "system.unzip",
     name: "Unzip Archives",
     description: "Extract zip archives to the workspace",

@@ -165,11 +165,18 @@ export class FileSysFileHandleResource extends File {
 
     async saveContents(contents: any, _options?: FileContentsOptions) {
         const writable = await this.fileHandle.createWritable()
-        const writer = writable.getWriter()
-        try {
-            await writer.write(contents)
-        } finally {
-            await writer.close()
+        
+        // Check if contents is a ReadableStream (for streaming large files)
+        if (contents && typeof contents.pipeTo === 'function') {
+            await contents.pipeTo(writable)
+        } else {
+            // Traditional approach for blobs, strings, etc.
+            const writer = writable.getWriter()
+            try {
+                await writer.write(contents)
+            } finally {
+                await writer.close()
+            }
         }
     }
 
