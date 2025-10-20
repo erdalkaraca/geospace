@@ -274,15 +274,27 @@ export class KCommandPalette extends KPart {
             display: flex;
             align-items: center;
             gap: 12px;
-            transition: background 0.1s;
+            transition: all 0.15s ease;
+            position: relative;
+            border-left: 3px solid transparent;
         }
 
         .command-item:hover {
             background: var(--wa-color-primary-900);
+            transform: translateX(4px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-left-color: var(--wa-color-primary-600);
         }
 
         .command-item.selected {
             background: var(--wa-color-primary-800);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            border-left-color: var(--wa-color-primary-600);
+        }
+
+        .command-item.selected:hover {
+            transform: translateX(4px);
+            border-left-color: var(--wa-color-primary-600);
         }
 
         .command-icon {

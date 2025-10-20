@@ -1,0 +1,6 @@
+---
+description: Consistent UX by using WebAwesome web components
+alwaysApply: false
+---
+Favor usage of WebAwesome components instead of native HTML elements where applicable and possible.
+Do not add manual CSS styles unless required.
