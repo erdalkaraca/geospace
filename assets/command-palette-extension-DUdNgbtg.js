@@ -1,11 +1,11 @@
-import{e as c,s as u,d as p,x as o,a as f,c as m,t as g}from"./index-BPeis-MP.js";import{g as x,d as v}from"./main-CAh0CO9j.js";var w=Object.defineProperty,C=Object.getOwnPropertyDescriptor,l=(t,e,a,i)=>{for(var s=i>1?void 0:i?C(e,a):e,d=t.length-1,r;d>=0;d--)(r=t[d])&&(s=(i?r(e,a,s):r(s))||s);return i&&s&&w(e,a,s),s};const h="commandpalette/open";let n=class extends v{constructor(){super(...arguments),this.inputValue="",this.filteredCommands=[],this.selectedIndex=0,this.allCommands=[],this.showParameterPrompt=!1,this.selectedCommand=null,this.parameterValues={},this.inputRef=c(),this.dialogRef=c()}async doInitUI(){this.commandRegistry=this.commandRegistry,this.updateCommandList(),u(h,()=>{this.openPalette()})}updateCommandList(){if(!this.commandRegistry)return;const t=this.commandRegistry.listCommands();this.allCommands=Object.values(t).filter(e=>e.id!=="commandpalette.open").map(e=>({id:e.id,name:e.name,description:e.description,icon:e.icon,keyBinding:e.keyBinding})),this.filteredCommands=[...this.allCommands]}togglePalette(){var t;(t=this.dialogRef.value)!=null&&t.open?this.closePalette():this.openPalette()}async openPalette(){var t;this.inputValue="",this.updateCommandList(),this.selectedIndex=0,this.showParameterPrompt=!1,await this.updateComplete,this.dialogRef.value&&(this.dialogRef.value.open=!0,await this.dialogRef.value.updateComplete,(t=this.inputRef.value)==null||t.focus())}closePalette(){this.dialogRef.value&&(this.dialogRef.value.open=!1),this.inputValue="",this.selectedIndex=0,this.showParameterPrompt=!1}handleInputChange(t){const e=t.target;this.inputValue=e.value,this.filterCommands()}filterCommands(){if(!this.inputValue.trim())this.filteredCommands=[...this.allCommands];else{const t=this.inputValue.toLowerCase();this.filteredCommands=this.allCommands.filter(e=>e.name.toLowerCase().includes(t)||e.id.toLowerCase().includes(t)||e.description&&e.description.toLowerCase().includes(t))}this.selectedIndex=0}handleKeyDown(t){t.key==="ArrowDown"?(t.preventDefault(),this.selectedIndex=Math.min(this.selectedIndex+1,this.filteredCommands.length-1)):t.key==="ArrowUp"?(t.preventDefault(),this.selectedIndex=Math.max(this.selectedIndex-1,0)):t.key==="Enter"?(t.preventDefault(),this.executeSelectedCommand()):t.key==="Escape"&&(t.preventDefault(),this.closePalette())}executeSelectedCommand(){const t=this.filteredCommands[this.selectedIndex];this.runCommand(t)}runCommand(t){var i;if(!t||!this.commandRegistry)return;const e=this.commandRegistry.getCommand(t.id);(((i=e==null?void 0:e.parameters)==null?void 0:i.filter(s=>s.required))||[]).length>0?(this.selectedCommand=e,this.parameterValues={},this.showParameterPrompt=!0):this.executeCommandWithParams(t.id,{})}executeCommandWithParams(t,e){try{if(this.commandRegistry.execute(t,{params:e}),this.closePalette(),this.closeParameterPrompt(),this.toastInfo){const a=this.commandRegistry.getCommand(t);this.toastInfo(`Executed: ${(a==null?void 0:a.name)||t}`)}}catch(a){if(console.error("Failed to execute command:",a),this.toastError){const i=this.commandRegistry.getCommand(t);this.toastError(`Failed to execute: ${(i==null?void 0:i.name)||t}`)}}}closeParameterPrompt(){this.showParameterPrompt=!1,this.selectedCommand=null,this.parameterValues={}}handleParameterInput(t,e){this.parameterValues={...this.parameterValues,[t]:e}}executeWithParameters(){var e;if(!this.selectedCommand)return;const t=(e=this.selectedCommand.parameters)==null?void 0:e.filter(a=>a.required&&!this.parameterValues[a.name]).map(a=>a.name);if(t&&t.length>0){this.toastError&&this.toastError(`Missing required parameters: ${t.join(", ")}`);return}this.executeCommandWithParams(this.selectedCommand.id,this.parameterValues)}doClose(){}render(){var t;return o`
+import{e as p,s as u,d as c,x as o,a as f,c as m,t as x}from"./index-DRpudhBi.js";import{g,d as v}from"./main-BTeV3ONx.js";var w=Object.defineProperty,C=Object.getOwnPropertyDescriptor,l=(t,e,a,i)=>{for(var n=i>1?void 0:i?C(e,a):e,d=t.length-1,r;d>=0;d--)(r=t[d])&&(n=(i?r(e,a,n):r(n))||n);return i&&n&&w(e,a,n),n};const h="commandpalette/open";let s=class extends v{constructor(){super(...arguments),this.inputValue="",this.filteredCommands=[],this.selectedIndex=0,this.allCommands=[],this.showParameterPrompt=!1,this.selectedCommand=null,this.parameterValues={},this.inputRef=p(),this.dialogRef=p()}async doInitUI(){this.commandRegistry=this.commandRegistry,this.updateCommandList(),u(h,()=>{this.openPalette()})}updateCommandList(){if(!this.commandRegistry)return;const t=this.commandRegistry.listCommands();this.allCommands=Object.values(t).filter(e=>e.id!=="commandpalette.open").map(e=>({id:e.id,name:e.name,description:e.description,icon:e.icon,keyBinding:e.keyBinding})),this.filteredCommands=[...this.allCommands]}togglePalette(){var t;(t=this.dialogRef.value)!=null&&t.open?this.closePalette():this.openPalette()}async openPalette(){var t;this.inputValue="",this.updateCommandList(),this.selectedIndex=0,this.showParameterPrompt=!1,await this.updateComplete,this.dialogRef.value&&(this.dialogRef.value.open=!0,await this.dialogRef.value.updateComplete,(t=this.inputRef.value)==null||t.focus())}closePalette(){this.dialogRef.value&&(this.dialogRef.value.open=!1),this.inputValue="",this.selectedIndex=0,this.showParameterPrompt=!1}handleInputChange(t){const e=t.target;this.inputValue=e.value,this.filterCommands()}filterCommands(){if(!this.inputValue.trim())this.filteredCommands=[...this.allCommands];else{const t=this.inputValue.toLowerCase();this.filteredCommands=this.allCommands.filter(e=>e.name.toLowerCase().includes(t)||e.id.toLowerCase().includes(t)||e.description&&e.description.toLowerCase().includes(t))}this.selectedIndex=0}handleKeyDown(t){t.key==="ArrowDown"?(t.preventDefault(),this.selectedIndex=Math.min(this.selectedIndex+1,this.filteredCommands.length-1)):t.key==="ArrowUp"?(t.preventDefault(),this.selectedIndex=Math.max(this.selectedIndex-1,0)):t.key==="Enter"?(t.preventDefault(),this.executeSelectedCommand()):t.key==="Escape"&&(t.preventDefault(),this.closePalette())}executeSelectedCommand(){const t=this.filteredCommands[this.selectedIndex];this.runCommand(t)}runCommand(t){if(!t||!this.commandRegistry)return;const e=this.commandRegistry.getCommand(t.id);(e==null?void 0:e.parameters)&&e.parameters.length>0?(this.selectedCommand=e,this.parameterValues={},this.showParameterPrompt=!0):this.executeCommandWithParams(t.id,{})}executeCommandWithParams(t,e){try{if(this.commandRegistry.execute(t,{params:e}),this.closePalette(),this.closeParameterPrompt(),this.toastInfo){const a=this.commandRegistry.getCommand(t);this.toastInfo(`Executed: ${(a==null?void 0:a.name)||t}`)}}catch(a){if(console.error("Failed to execute command:",a),this.toastError){const i=this.commandRegistry.getCommand(t);this.toastError(`Failed to execute: ${(i==null?void 0:i.name)||t}`)}}}closeParameterPrompt(){this.showParameterPrompt=!1,this.selectedCommand=null,this.parameterValues={}}handleParameterInput(t,e){this.parameterValues={...this.parameterValues,[t]:e}}executeWithParameters(){var e;if(!this.selectedCommand)return;const t=(e=this.selectedCommand.parameters)==null?void 0:e.filter(a=>a.required&&!this.parameterValues[a.name]).map(a=>a.name);if(t&&t.length>0){this.toastError&&this.toastError(`Missing required parameters: ${t.join(", ")}`);return}this.executeCommandWithParams(this.selectedCommand.id,this.parameterValues)}doClose(){}render(){var t;return o`
             <wa-button @click=${this.togglePalette} appearance="plain">
                 <wa-icon slot="start" name="terminal"></wa-icon>
-                Commands...
+                Run Command
             </wa-button>
 
             <wa-dialog 
-                ${p(this.dialogRef)}
+                ${c(this.dialogRef)}
                 label="Command Palette"
                 @wa-request-close=${this.handleDialogClose}
             >
@@ -13,7 +13,7 @@ import{e as c,s as u,d as p,x as o,a as f,c as m,t as g}from"./index-BPeis-MP.js
                     ${this.showParameterPrompt?"":o`
                         <div class="input-container">
                             <wa-input
-                                ${p(this.inputRef)}
+                                ${c(this.inputRef)}
                                 placeholder="Type a command name..."
                                 .value=${this.inputValue}
                                 @input=${this.handleInputChange}
@@ -94,7 +94,7 @@ import{e as c,s as u,d as p,x as o,a as f,c as m,t as g}from"./index-BPeis-MP.js
                     `}
                 </div>
             </wa-dialog>
-        `}handleDialogClose(t){t.preventDefault(),this.closePalette()}};n.styles=f`
+        `}handleDialogClose(t){t.preventDefault(),this.closePalette()}};s.styles=f`
         :host {
             display: block;
         }
@@ -142,15 +142,27 @@ import{e as c,s as u,d as p,x as o,a as f,c as m,t as g}from"./index-BPeis-MP.js
             display: flex;
             align-items: center;
             gap: 12px;
-            transition: background 0.1s;
+            transition: all 0.15s ease;
+            position: relative;
+            border-left: 3px solid transparent;
         }
 
         .command-item:hover {
             background: var(--wa-color-primary-900);
+            transform: translateX(4px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-left-color: var(--wa-color-primary-600);
         }
 
         .command-item.selected {
             background: var(--wa-color-primary-800);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            border-left-color: var(--wa-color-primary-600);
+        }
+
+        .command-item.selected:hover {
+            transform: translateX(4px);
+            border-left-color: var(--wa-color-primary-600);
         }
 
         .command-icon {
@@ -240,4 +252,4 @@ import{e as c,s as u,d as p,x as o,a as f,c as m,t as g}from"./index-BPeis-MP.js
             opacity: 0.5;
             border-bottom: 1px solid var(--wa-panel-border-color, #3e3e3e);
         }
-    `;l([m()],n.prototype,"inputValue",2);l([m()],n.prototype,"filteredCommands",2);l([m()],n.prototype,"selectedIndex",2);l([m()],n.prototype,"allCommands",2);l([m()],n.prototype,"showParameterPrompt",2);l([m()],n.prototype,"selectedCommand",2);l([m()],n.prototype,"parameterValues",2);n=l([g("k-command-palette")],n);const $=({contributionRegistry:t,commandRegistry:e,toastInfo:a,toastError:i,html:s,publish:d})=>{e.registerHandler("commandpalette.open",{execute:()=>{d(h,null)}}),e.registerCommand({id:"commandpalette.open",name:"Open Command Palette",description:"Opens the command palette to execute commands",icon:"terminal",keyBinding:"CTRL+SHIFT+P"}),t.registerContribution(x,{label:"Command Palette",icon:"terminal",html:()=>{const r=document.createElement("k-command-palette");return r.commandRegistry=e,r.toastInfo=a,r.toastError=i,s`${r}`}})};export{n as KCommandPalette,$ as default};
+    `;l([m()],s.prototype,"inputValue",2);l([m()],s.prototype,"filteredCommands",2);l([m()],s.prototype,"selectedIndex",2);l([m()],s.prototype,"allCommands",2);l([m()],s.prototype,"showParameterPrompt",2);l([m()],s.prototype,"selectedCommand",2);l([m()],s.prototype,"parameterValues",2);s=l([x("k-command-palette")],s);const b=({contributionRegistry:t,commandRegistry:e,toastInfo:a,toastError:i,html:n,publish:d})=>{e.registerHandler("commandpalette.open",{execute:()=>{d(h,null)}}),e.registerCommand({id:"commandpalette.open",name:"Open Command Palette",description:"Opens the command palette to execute commands",icon:"terminal",keyBinding:"CTRL+SHIFT+P"}),t.registerContribution(g,{label:"Command Palette",icon:"terminal",html:()=>{const r=document.createElement("k-command-palette");return r.commandRegistry=e,r.toastInfo=a,r.toastError=i,n`${r}`}})};export{s as KCommandPalette,b as default};
