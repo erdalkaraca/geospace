@@ -390,7 +390,7 @@ export class KCommandPalette extends KPart {
         return html`
             <wa-button @click=${this.togglePalette} appearance="plain">
                 <wa-icon slot="start" name="terminal"></wa-icon>
-                Commands...
+                Run Command
             </wa-button>
 
             <wa-dialog 
