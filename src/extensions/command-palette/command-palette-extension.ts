@@ -157,11 +157,11 @@ export class KCommandPalette extends KPart {
         // Get the full command details from registry
         const fullCommand = this.commandRegistry.getCommand(command.id);
         
-        // Check if command has required parameters
-        const requiredParams = fullCommand?.parameters?.filter((p: any) => p.required) || [];
+        // Check if command has any parameters (required or optional)
+        const hasParameters = fullCommand?.parameters && fullCommand.parameters.length > 0;
         
-        if (requiredParams.length > 0) {
-            // Show parameter prompt
+        if (hasParameters) {
+            // Show parameter prompt for any command with parameters
             this.selectedCommand = fullCommand;
             this.parameterValues = {};
             this.showParameterPrompt = true;

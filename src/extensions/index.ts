@@ -68,3 +68,11 @@ extensionRegistry.registerExtension({
     loader: () => import("./command-palette/command-palette-extension.ts"),
     icon: "terminal",
 })
+
+extensionRegistry.registerExtension({
+    id: "system.unzip",
+    name: "Unzip Archives",
+    description: "Extract zip archives to the workspace",
+    loader: () => import("./unzip/unzip-extension.ts"),
+    icon: "box-archive",
+})

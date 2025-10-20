@@ -164,6 +164,13 @@
           }
         }
       ]
+    },
+    {
+      "contributionId": "catalog.root.packages",
+      "label": "Asset Packages",
+      "icon": "box-archive",
+      "items": [
+      ]
     }
   ]
 }
