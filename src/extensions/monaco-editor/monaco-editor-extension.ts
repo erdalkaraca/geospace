@@ -1,16 +1,56 @@
 import * as monaco from 'monaco-editor';
 import styles from "monaco-editor/min/vs/editor/editor.main.css?raw";
+import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
+import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
+import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker';
+import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker';
+import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
 import {customElement, property, state} from "lit/decorators.js";
-import {KPart} from "../parts/k-part.ts";
+import {KPart} from "../../parts/k-part.ts";
 import {css, html} from "lit";
 import {createRef, ref} from "lit/directives/ref.js";
-import {EditorInput} from "../core/editorregistry.ts";
+import {EditorInput, editorRegistry} from "../../core/editorregistry.ts";
 import {styleMap} from "lit/directives/style-map.js";
-import {toastError, toastInfo} from "../core/toast.ts";
-import {PyEnv} from "../core/pyservice.ts";
-import {workspaceService} from "../core/filesys.ts";
-import {ChatContext} from "../core/chatservice.ts";
+import {toastError, toastInfo} from "../../core/toast.ts";
+import {PyEnv} from "../../core/pyservice.ts";
+import {File, workspaceService} from "../../core/filesys.ts";
+import {ChatContext} from "../../core/chatservice.ts";
 import {when} from "lit/directives/when.js";
+
+self.MonacoEnvironment = {
+    getWorker(_: any, label: string) {
+        if (label === 'json') {
+            return new jsonWorker();
+        }
+        if (label === 'css' || label === 'scss' || label === 'less') {
+            return new cssWorker();
+        }
+        if (label === 'html' || label === 'handlebars' || label === 'razor') {
+            return new htmlWorker();
+        }
+        if (label === 'typescript' || label === 'javascript') {
+            return new tsWorker();
+        }
+        return new editorWorker();
+    }
+};
+
+editorRegistry.registerEditorInputHandler({
+    canHandle: input => input instanceof File,
+    handle: async (input: File) => {
+        const editorInput = {
+            title: input.getName(),
+            data: input,
+            key: input.getName(),
+            icon: "file-pen",
+            noOverflow: false,
+            state: {},
+        } as EditorInput
+        editorInput.widgetFactory = () => html`
+            <k-monaco-editor .input=${editorInput}></k-monaco-editor>`
+        return editorInput;
+    }
+})
 
 @customElement('k-monaco-editor')
 export class KMonacoEditor extends KPart {
@@ -153,3 +193,4 @@ declare global {
         'k-monaco-editor': KMonacoEditor
     }
 }
+

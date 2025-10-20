@@ -8,10 +8,8 @@ import JAVASCRIPT_SYS_PROMPT from "./js-programming.txt?raw"
 import {taskService} from "../core/taskservice.ts";
 import logger from "../core/logging.ts";
 import {KPart} from "../parts/k-part.ts";
-import {KMonacoEditor} from "../editors/k-monaco-editor.ts";
-import {EditorInput, editorRegistry} from "../core/editorregistry.ts";
-import {html} from "lit";
-import {v4} from "uuid";
+import {editorRegistry} from "../core/editorregistry.ts";
+import {StringFile} from "../core/filesys.ts";
 
 let counter = 0
 
@@ -58,16 +56,9 @@ contributionRegistry.registerContribution(CID_PROMPTS, {
             icon: "list",
             action: async () => {
                 const currentIndex = counter++
-                const editorInput = {
-                    title: `Commands Execution Plan (${currentIndex})`,
-                    data: `\`\`\`json\n${JSON.stringify(commands, null, 2)}\n\`\`\``,
-                    key: `commands-${v4()}.json`,
-                    icon: "list",
-                    state: {},
-                } as EditorInput
-                editorInput.widgetFactory = () => html`
-                    <k-md-editor .input=${editorInput} .readOnly="true"></k-md-editor>`
-                await editorRegistry.loadEditor(editorInput)
+                const content = `\`\`\`json\n${JSON.stringify(commands, null, 2)}\n\`\`\``
+                const commandsPlanFile = new StringFile(content, `Commands Execution Plan (${currentIndex}).md`)
+                await editorRegistry.loadEditor(commandsPlanFile)
             }
         })
         if (valid) {
@@ -100,9 +91,14 @@ contributionRegistry.registerContribution(CID_PROMPTS, {
     }
 } as SysPromptContribution)
 
+// TODO remove dependency to specific editor
+const isMonacoEditor = (editor: any): boolean => {
+    return editor && typeof editor.getEditor === 'function' && typeof editor.getLanguage === 'function'
+}
+
 const programmingPromptDecorator = async ({userPrompt, activeEditor}: {
     userPrompt: string,
-    activeEditor: KMonacoEditor
+    activeEditor: any
 }) => {
     const editor = activeEditor.getEditor()
     const model = editor.getModel()
@@ -121,7 +117,7 @@ contributionRegistry.registerContribution(CID_PROMPTS, {
     role: "py-programmer",
     sysPrompt: PYODIDE_SYS_PROMPT,
     canHandle: ({activeEditor}: { activeEditor: KPart }) => {
-        return activeEditor instanceof KMonacoEditor && activeEditor.getLanguage() == "python"
+        return isMonacoEditor(activeEditor) && (activeEditor as any).getLanguage() == "python"
     },
     promptDecorator: programmingPromptDecorator
 } as SysPromptContribution)
@@ -132,7 +128,7 @@ contributionRegistry.registerContribution(CID_PROMPTS, {
     role: "js-programmer",
     sysPrompt: JAVASCRIPT_SYS_PROMPT,
     canHandle: ({activeEditor}: { activeEditor: KPart }) => {
-        return activeEditor instanceof KMonacoEditor && activeEditor.getLanguage() == "javascript"
+        return isMonacoEditor(activeEditor) && (activeEditor as any).getLanguage() == "javascript"
     },
     promptDecorator: programmingPromptDecorator
 } as SysPromptContribution)

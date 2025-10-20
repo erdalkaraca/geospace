@@ -27,6 +27,7 @@ export type ExtensionsConfig = ExtensionSetting[]
 class ExtensionRegistry {
     private extensionsSettings?: ExtensionsConfig;
     private extensions: { [key: string]: Extension } = {}
+    private loadedExtensions: Set<string> = new Set()
 
     constructor() {
         subscribe(TOPIC_SETTINGS_CHANGED, () => {
@@ -69,6 +70,10 @@ class ExtensionRegistry {
         return !!this.extensionsSettings?.find((setting) => setting.id === extensionId && setting.enabled)
     }
 
+    public isLoaded(extensionId: string) {
+        return this.loadedExtensions.has(extensionId)
+    }
+
     public enable(extensionId: string, informUser: boolean = false) {
         if (this.isEnabled(extensionId)) {
             return
@@ -81,10 +86,17 @@ class ExtensionRegistry {
     }
 
     public async load(extensionId: string) {
+        if (this.loadedExtensions.has(extensionId)) {
+            return
+        }
+        
         const extension = this.extensions[extensionId]
         if (!extension) {
             throw new Error("Extension not found: " + extensionId)
         }
+        
+        this.loadedExtensions.add(extensionId)
+        
         const module = await taskService.runAsync("Loading extension: " + extension.name, () => {
             if (extension.loader) {
                 return extension.loader()

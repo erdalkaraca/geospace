@@ -36,15 +36,6 @@ extensionRegistry.registerExtension({
 })
 
 extensionRegistry.registerExtension({
-    id: "system.helloworld",
-    name: "Hello World!",
-    description: "Hello World!",
-    // @ts-ignore
-    loader: () => import("./hello-world.js"),
-    icon: "flask",
-})
-
-extensionRegistry.registerExtension({
     id: "system.p12splitter",
     name: ".p12 file splitter",
     description: "Adds a command to split/separate a .p12 file into private/public and additional .pem files",
@@ -83,4 +74,20 @@ extensionRegistry.registerExtension({
     description: "Extract zip archives to the workspace",
     loader: () => import("./unzip/unzip-extension.ts"),
     icon: "box-archive",
+})
+
+extensionRegistry.registerExtension({
+    id: "system.mdeditor",
+    name: "Markdown Editor",
+    description: "View and render Markdown (.md) files",
+    loader: () => import("./md-editor/md-editor-extension.ts"),
+    icon: "book",
+})
+
+extensionRegistry.registerExtension({
+    id: "system.monaco",
+    name: "Monaco Code Editor",
+    description: "Code editor with syntax highlighting, IntelliSense, and Python execution support",
+    loader: () => import("./monaco-editor/monaco-editor-extension.ts"),
+    icon: "file-pen",
 })

@@ -1,10 +1,10 @@
 import {customElement, property, state} from "lit/decorators.js";
-import {KPart} from "../parts/k-part.ts";
+import {KPart} from "../../parts/k-part.ts";
 import {html} from "lit";
 import {marked} from "marked";
-import {EditorInput, editorRegistry} from "../core/editorregistry.ts";
+import {EditorInput, editorRegistry} from "../../core/editorregistry.ts";
 import {unsafeHTML} from "lit/directives/unsafe-html.js";
-import {File} from "../core/filesys.ts";
+import {File} from "../../core/filesys.ts";
 
 editorRegistry.registerEditorInputHandler({
     canHandle: input => input instanceof File && input.getName().toLowerCase().endsWith(".md"),
@@ -13,20 +13,21 @@ editorRegistry.registerEditorInputHandler({
             title: input.getName(),
             data: input,
             key: input.getName(),
-            icon: "markdown",
+            icon: "book",
             noOverflow: false,
             state: {},
         } as EditorInput
         editorInput.widgetFactory = () => html`
             <k-md-editor .input=${editorInput}></k-md-editor>`
         return editorInput;
-    }
+    },
+    ranking: 1000
 })
 
 @customElement('k-md-editor')
 export class KMDEditor extends KPart {
     @property({attribute: false})
-    public input?: EditorInput;
+    public input?: EditorInput
     @state()
     private mdContents?: string
 
@@ -35,15 +36,17 @@ export class KMDEditor extends KPart {
         this.mdContents = undefined
     }
 
-    protected doAfterUI() {
-        const data: string = this.input!.data
-        if (data.startsWith("http")) {
-            fetch(data).then(data => {
-                data.text().then(text => {
-                    this.updateContents(text)
-                })
-            })
-        } else {
+    protected async doAfterUI() {
+        const data = this.input!.data
+        
+        if (data instanceof File) {
+            const contents = await data.getContents()
+            this.updateContents(contents)
+        } else if (typeof data === 'string' && data.startsWith("http")) {
+            const response = await fetch(data)
+            const text = await response.text()
+            this.updateContents(text)
+        } else if (typeof data === 'string') {
             this.updateContents(data)
         }
     }

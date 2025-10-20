@@ -10,8 +10,6 @@ import './geo/gs-catalog-contributions.ts'
 import './geo/gs-command-handlers.ts'
 import './geo/gs-catalog.ts'
 
-import '../editors/k-md-editor.ts'
-import "../editors/monaco-init.ts"
 import "./../extensions"
 import "./../sysprompts"
 

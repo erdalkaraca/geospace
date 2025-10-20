@@ -13,6 +13,18 @@ import {
 } from "../core/constants.ts";
 
 import {version as appVersion} from "../../package.json"
+import {extensionRegistry} from "../core/extensionregistry.ts";
+
+const coreExtensions = [
+    "system.mdeditor",
+    "system.monaco",
+    "system.download",
+    "system.commandpalette"
+];
+
+coreExtensions.forEach(extId => {
+    extensionRegistry.enable(extId);
+});
 
 render(html`
     <k-app id="gs-app">

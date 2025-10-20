@@ -1,5 +1,5 @@
 import {commandRegistry, registerAll} from "./commandregistry.ts";
-import {File, Resource, workspaceService} from "./filesys.ts";
+import {File, Resource, StringFile, workspaceService} from "./filesys.ts";
 import {TOOLBAR_MAIN, TOOLBAR_MAIN_RIGHT} from "./constants.ts";
 import {PyEnv} from "./pyservice.ts";
 import {EditorInput, editorRegistry} from "./editorregistry.ts";
@@ -215,16 +215,8 @@ registerAll({
     },
     handler: {
         execute: async _context => {
-            const editorInput = {
-                title: "Welcome!",
-                data: README,
-                key: "readme.md",
-                icon: "bullhorn",
-                state: {},
-            } as EditorInput
-            editorInput.widgetFactory = () => html`
-                <k-md-editor .input=${editorInput}></k-md-editor>`
-            await editorRegistry.loadEditor(editorInput)
+            const readmeFile = new StringFile(README, "README.md")
+            await editorRegistry.loadEditor(readmeFile)
         }
     },
     contribution: {
@@ -233,7 +225,6 @@ registerAll({
         label: "Welcome"
     }
 })
-
 
 registerAll({
     command: {
