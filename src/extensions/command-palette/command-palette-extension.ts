@@ -59,9 +59,9 @@ export class KCommandPalette extends KPart {
     private updateCommandList() {
         if (!this.commandRegistry) return;
         
-        const commands = this.commandRegistry.listCommands();
+        const commands = this.commandRegistry.listCommands({});
         this.allCommands = Object.values(commands)
-            .filter((cmd: any) => cmd.id !== 'commandpalette.open') // Exclude command palette's own command
+            .filter((cmd: any) => cmd.id !== 'commandpalette.open')
             .map((cmd: any) => ({
                 id: cmd.id,
                 name: cmd.name,
