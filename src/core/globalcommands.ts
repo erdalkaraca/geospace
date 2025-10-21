@@ -58,6 +58,7 @@ registerAll({
         "id": "save",
         "name": "Save editor",
         "description": "Saves the active/focused editor",
+        "keyBinding": "CTRL+S",
         "parameters": []
     },
     handler: {
