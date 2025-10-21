@@ -38,27 +38,19 @@ contributionRegistry.registerContribution<PerspectiveContribution>(PERSPECTIVES_
     label: "Geo",
     icon: "earth",
     component: (editorArea) => html`
-        <div style="display: flex; flex-direction: row; height: 100%; width: 100%;">
-            <!-- Left: 20% -->
-            <div style="flex: 0 0 20%; display: flex; flex-direction: column; overflow: hidden;">
-                <div style="flex: 1; overflow: hidden;">
-                    <k-tabs id="${TABS_LEFT_START}"></k-tabs>
-                </div>
-                <div style="flex: 1; overflow: hidden;">
-                    <k-tabs id="${TABS_LEFT_END}"></k-tabs>
-                </div>
-            </div>
+        <k-resizable-grid orientation="horizontal" sizes="20%, 60%, 20%">
+            <!-- Left: 20% - nested vertical grid -->
+            <k-resizable-grid orientation="vertical" sizes="50%, 50%">
+                <k-tabs id="${TABS_LEFT_START}"></k-tabs>
+                <k-tabs id="${TABS_LEFT_END}"></k-tabs>
+            </k-resizable-grid>
             
             <!-- Center: 60% -->
-            <div style="flex: 0 0 60%; overflow: hidden;">
-                ${editorArea}
-            </div>
+            ${editorArea}
             
             <!-- Right: 20% -->
-            <div style="flex: 0 0 20%; overflow: hidden;">
-                <k-tabs id="${TABS_RIGHT}"></k-tabs>
-            </div>
-        </div>
+            <k-tabs id="${TABS_RIGHT}"></k-tabs>
+        </k-resizable-grid>
     `
 });
 
@@ -67,22 +59,11 @@ contributionRegistry.registerContribution<PerspectiveContribution>(PERSPECTIVES_
     label: "Editing",
     icon: "pencil",
     component: (editorArea) => html`
-        <div style="display: flex; flex-direction: row; height: 100%; width: 100%;">
-            <!-- Left: 20% -->
-            <div style="flex: 0 0 20%; overflow: hidden;">
-                <k-tabs id="${TABS_EDITING_LEFT}"></k-tabs>
-            </div>
-            
-            <!-- Center: 55% -->
-            <div style="flex: 0 0 55%; overflow: hidden;">
-                ${editorArea}
-            </div>
-            
-            <!-- Right: 25% -->
-            <div style="flex: 0 0 25%; overflow: hidden;">
-                <k-tabs id="${TABS_EDITING_RIGHT}"></k-tabs>
-            </div>
-        </div>
+        <k-resizable-grid orientation="horizontal" sizes="20%, 55%, 25%">
+            <k-tabs id="${TABS_EDITING_LEFT}"></k-tabs>
+            ${editorArea}
+            <k-tabs id="${TABS_EDITING_RIGHT}"></k-tabs>
+        </k-resizable-grid>
     `
 });
 

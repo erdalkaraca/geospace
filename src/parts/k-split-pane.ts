@@ -163,8 +163,13 @@ export class KSplitPane extends SignalWatcher(KElement) {
             ? this.containerRef.value.offsetWidth 
             : this.containerRef.value.offsetHeight;
         
+        // Account for splitter widths: available space = container - (splitters * 4px)
+        const splitterCount = this.panes.length - 1;
+        const splitterTotalPx = splitterCount * 4;
+        const availableSpace = containerSize - splitterTotalPx;
+        
         const delta = currentPos - this.resizing.startPos;
-        const deltaPercent = (delta / containerSize) * 100;
+        const deltaPercent = (delta / availableSpace) * 100;
 
         const newSize = this.resizing.startSize + deltaPercent;
         const nextNewSize = this.resizing.nextStartSize - deltaPercent;
@@ -188,6 +193,14 @@ export class KSplitPane extends SignalWatcher(KElement) {
                 }
                 return p;
             });
+            
+            // Ensure total is exactly 100% to prevent rounding errors
+            const total = this.panes.reduce((sum, p) => sum + p.size, 0);
+            if (Math.abs(total - 100) > 0.01) {
+                // Adjust the last pane to compensate for rounding errors
+                const lastPane = this.panes[this.panes.length - 1];
+                lastPane.size += (100 - total);
+            }
         }
     }
 

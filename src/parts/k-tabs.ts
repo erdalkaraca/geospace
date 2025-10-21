@@ -36,11 +36,13 @@ export class KTabs extends KContainer {
             this.requestUpdate();
         }
 
-        // @ts-ignore
-        this.tabGroup.value!.addEventListener("wa-tab-show", (event: CustomEvent) => {
-            const tabPanel = this.getTabPanel(event.detail.name)
-            this.dispatchEvent(new CustomEvent('tab-shown', {detail: tabPanel}))
-        })
+        if (this.tabGroup.value) {
+            // @ts-ignore
+            this.tabGroup.value.addEventListener("wa-tab-show", (event: CustomEvent) => {
+                const tabPanel = this.getTabPanel(event.detail.name)
+                this.dispatchEvent(new CustomEvent('tab-shown', {detail: tabPanel}))
+            })
+        }
     }
 
     protected doInitUI() {
@@ -69,11 +71,13 @@ export class KTabs extends KContainer {
     }
 
     activate(key: string) {
-        this.tabGroup.value!.setAttribute("active", key)
+        if (!this.tabGroup.value) return;
+        this.tabGroup.value.setAttribute("active", key)
     }
 
     public getActiveEditor() {
-        return this.tabGroup.value!.getAttribute("active")
+        if (!this.tabGroup.value) return null;
+        return this.tabGroup.value.getAttribute("active")
     }
 
     closeTab(event: Event, tabName: string) {
@@ -81,23 +85,47 @@ export class KTabs extends KContainer {
         if (this.isDirty(tabName) && !confirm("Unsaved changes will be lost: Do you really want to close?")) {
             return
         }
+        
         const tab = (<HTMLElement>event.currentTarget!).parentElement!
         tab.remove();
         const tabPanel = this.getTabPanel(tabName)
         
-        // Explicitly close the component inside the tab before removing
-        const contentDiv = tabPanel.querySelector('.tab-content');
-        if (contentDiv && contentDiv.firstElementChild) {
-            const component = contentDiv.firstElementChild;
-            if ('close' in component && typeof component.close === 'function') {
-                component.close();
+        if (!tabPanel) return;
+        
+        // Find the contribution and remove its instance from the manager
+        const contribution = this.contributions.find(c => c.name === tabName);
+        if (contribution && this.getAttribute("id")) {
+            const containerId = this.getAttribute("id")!;
+            const instanceKey = tabInstanceManager.getInstanceKey(contribution, containerId);
+            
+            // Explicitly close the component inside the tab before removing
+            const contentDiv = tabPanel.querySelector('.tab-content');
+            if (contentDiv && contentDiv.firstElementChild) {
+                const component = contentDiv.firstElementChild;
+                if ('close' in component && typeof component.close === 'function') {
+                    component.close();
+                }
+            }
+            
+            // Remove the instance from the manager so it can be recreated next time
+            tabInstanceManager.removeInstance(instanceKey);
+            
+            // Remove the contribution from the array
+            const index = this.contributions.indexOf(contribution);
+            if (index > -1) {
+                this.contributions.splice(index, 1);
             }
         }
         
         this.dispatchEvent(new CustomEvent('tab-closed', {detail: tabPanel}))
         tabPanel.remove()
+        
+        // Trigger re-render after removing contribution
+        this.requestUpdate();
 
-        const tabGroup = this.tabGroup.value!
+        if (!this.tabGroup.value) return;
+        
+        const tabGroup = this.tabGroup.value
         const allRemainingTabs = tabGroup.querySelectorAll("wa-tab")
         if (allRemainingTabs.length > 0) {
             const newActive = allRemainingTabs.item(0).getAttribute("panel")!
@@ -108,10 +136,18 @@ export class KTabs extends KContainer {
     }
 
     private getTabPanel(name: string) {
-        return <HTMLElement>this.tabGroup.value!.querySelector(`wa-tab-panel[name='${name}']`)
+        if (!this.tabGroup.value) return null;
+        return <HTMLElement>this.tabGroup.value.querySelector(`wa-tab-panel[name='${name}']`)
     }
 
     open(contribution: TabContribution) {
+        // Check if contribution already exists, if so just activate it
+        const existing = this.contributions.find(c => c.name === contribution.name);
+        if (existing) {
+            this.activate(contribution.name);
+            return;
+        }
+        
         this.contributions.push(contribution)
         this.requestUpdate()
         this.updateComplete.then(() => {
@@ -119,14 +155,18 @@ export class KTabs extends KContainer {
             // FIXME this is not optimal, find better way to handle overflow
             if (contribution.noOverflow === undefined || contribution.noOverflow) {
                 const tabPanel = this.getTabPanel(contribution.name)
-                observeOverflow(tabPanel)
+                if (tabPanel) {
+                    observeOverflow(tabPanel)
+                }
             }
             this.activate(contribution.name)
         })
     }
 
     markDirty(name: string, dirty: boolean) {
-        const tab = this.tabGroup.value!.querySelector(`wa-tab[panel='${name}']`) as HTMLElement
+        if (!this.tabGroup.value) return;
+        const tab = this.tabGroup.value.querySelector(`wa-tab[panel='${name}']`) as HTMLElement
+        if (!tab) return;
         if (dirty) {
             tab.classList.add("part-dirty")
         } else {
@@ -135,7 +175,8 @@ export class KTabs extends KContainer {
     }
 
     isDirty(name: string) {
-        const tab = this.tabGroup.value!.querySelector(`wa-tab[panel='${name}']`) as HTMLElement
+        if (!this.tabGroup.value) return false;
+        const tab = this.tabGroup.value.querySelector(`wa-tab[panel='${name}']`) as HTMLElement
         return !!tab && tab.classList.contains("part-dirty")
     }
 
@@ -145,37 +186,40 @@ export class KTabs extends KContainer {
         if (this.getAttribute("id")) {
             const containerId = this.getAttribute("id")!;
             
-            this.contributions.forEach(c => {
-                const instanceKey = tabInstanceManager.getInstanceKey(c, containerId);
-                let instance = tabInstanceManager.getInstance(instanceKey);
-                const tabPanel = this.getTabPanel(c.name);
-                
-                if (!tabPanel) return;
-                
-                const contentDiv = tabPanel.querySelector('.tab-content') as HTMLElement;
-                if (!contentDiv) return;
-                
-                if (!instance) {
-                    // First time rendering - capture the content as instance
-                    const content = contentDiv.firstElementChild as HTMLElement;
-                    if (content) {
-                        instance = tabInstanceManager.createInstance(instanceKey, c);
-                        instance.element = content;
+            // Use requestAnimationFrame to ensure DOM is fully updated
+            requestAnimationFrame(() => {
+                this.contributions.forEach(c => {
+                    const instanceKey = tabInstanceManager.getInstanceKey(c, containerId);
+                    let instance = tabInstanceManager.getInstance(instanceKey);
+                    const tabPanel = this.getTabPanel(c.name);
+                    
+                    if (!tabPanel) return;
+                    
+                    const contentDiv = tabPanel.querySelector('.tab-content') as HTMLElement;
+                    if (!contentDiv) return;
+                    
+                    if (!instance) {
+                        // First time rendering - capture the content as instance
+                        const content = contentDiv.firstElementChild as HTMLElement;
+                        if (content) {
+                            instance = tabInstanceManager.createInstance(instanceKey, c);
+                            instance.element = content;
+                            tabInstanceManager.moveToContainer(instanceKey, containerId);
+                        }
+                    } else {
+                        // Instance exists - move it to this container
+                        if (instance.element && !contentDiv.contains(instance.element)) {
+                            contentDiv.appendChild(instance.element);
+                            instance.element.style.display = '';
+                            
+                            // Request update on the moved element if it's a Lit component
+                            if ('requestUpdate' in instance.element && typeof instance.element.requestUpdate === 'function') {
+                                instance.element.requestUpdate();
+                            }
+                        }
                         tabInstanceManager.moveToContainer(instanceKey, containerId);
                     }
-                } else {
-                    // Instance exists - move it to this container
-                    if (instance.element && !contentDiv.contains(instance.element)) {
-                        contentDiv.appendChild(instance.element);
-                        instance.element.style.display = '';
-                        
-                        // Request update on the moved element if it's a Lit component
-                        if ('requestUpdate' in instance.element && typeof instance.element.requestUpdate === 'function') {
-                            instance.element.requestUpdate();
-                        }
-                    }
-                    tabInstanceManager.moveToContainer(instanceKey, containerId);
-                }
+                });
             });
         }
     }
