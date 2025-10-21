@@ -17,10 +17,10 @@
           }
         },
         {
-          "label": "Sample Notebook",
-          "icon": "book",
+          "label": "Simple Notebook",
+          "icon": "circle-info",
           "state": {
-            "url": "${baseURL}/sample-notebook.ipynb",
+            "url": "${baseURL}/notebooks/simple-notebook.ipynb",
             "type": "file"
           }
         }
