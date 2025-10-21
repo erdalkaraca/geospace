@@ -276,25 +276,39 @@ class CustomConsole(PyodideConsole):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Ensure displayhook is set
-        if sys.displayhook is sys.__displayhook__:
-            sys.displayhook = self._displayhook
+        sys.displayhook = self._displayhook
     
     def _displayhook(self, value):
         if value is not None:
+            import builtins
             builtins._ = value
             print(repr(value))
     
-    def push(self, line):
-        # Temporarily ensure our displayhook is active
-        old_hook = sys.displayhook
+    async def runcode(self, source, code):
+        # Override runcode to handle both statements and expressions
+        # Set displayhook before execution
+        old_hook = sys.displayhook  
         sys.displayhook = self._displayhook
+        
         try:
-            result = super().push(line)
-            return result
+            # Try to compile as eval first (for expressions)
+            try:
+                compiled = compile(source, '<console>', 'eval')
+                result = eval(compiled, self.globals)
+                # For expressions, manually call displayhook
+                if result is not None:
+                    self._displayhook(result)
+            except SyntaxError:
+                # If it fails, it's a statement, use the parent's runcode
+                return await super().runcode(source, code)
+        except SystemExit:
+            raise
+        except:
+            # Print exception
+            import traceback
+            traceback.print_exc()
         finally:
-            # Restore displayhook (though it should stay ours)
-            if old_hook != self._displayhook:
-                sys.displayhook = self._displayhook
+            sys.displayhook = old_hook
 
 # Create console with persistent stream redirection
 __console__ = CustomConsole(
@@ -324,10 +338,6 @@ __console__ = CustomConsole(
 import asyncio
 import sys
 
-# Debug: print before execution
-print(f"DEBUG: About to push line: {${JSON.stringify(line)}!r}")
-print(f"DEBUG: sys.displayhook is: {sys.displayhook}")
-
 # Push the line to the console
 fut = __console__.push(${JSON.stringify(line)})
 
@@ -337,14 +347,14 @@ if asyncio.iscoroutine(fut) or hasattr(fut, '__await__'):
 else:
     needs_more = fut
 
-print(f"DEBUG: Needs more: {needs_more}")
+# Convert None to False (PyodideConsole returns None for successful execution)
+if needs_more is None:
+    needs_more = False
 
 needs_more
 `)
             
-            console.log("Execute result:", result)
-            
-            // push() returns True if more input is needed, False otherwise
+            // push() returns True if more input is needed, False/None otherwise
             const needsMore = result?.result === true
             this.isMultiline = needsMore
             
