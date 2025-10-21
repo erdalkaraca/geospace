@@ -28,48 +28,53 @@ export interface EditorInputHandler {
 
 class EditorRegistry {
     private editorInputHandlers: EditorInputHandler[] = [];
-
+    private listenersAttached = false;
 
     constructor() {
-        document.addEventListener("readystatechange", () => {
-            const editorArea = this.getEditorArea()
-            const handler = (event: CustomEvent) => {
-                const tabPanel = event.detail
-                if (tabPanel) {
-                    const parts = Array.from(tabPanel.querySelectorAll(`*`)).filter(element => element instanceof KPart)
-                    parts.forEach((part) => {
-                        activePartSignal.set(part)
-                        activeEditorSignal.set(part)
-                    })
-                }
-            }
-            // @ts-ignore
-            editorArea.addEventListener("tab-shown", handler)
-
-            const closed = (event: CustomEvent) => {
-                const tabPanel: HTMLElement = event.detail
-                const parts = Array.from(tabPanel.querySelectorAll(`*`)).filter(element => element instanceof KPart)
-                parts.forEach((part) => {
-                    // part.close() will be automatically called by disconnected callback of part
-                    if (activePartSignal.get() == part) {
-                        activePartSignal.set(null as unknown as KPart)
-                        activeEditorSignal.set(null as unknown as KPart)
-                    }
-                })
-            }
-            // @ts-ignore
-            editorArea.addEventListener("tab-closed", closed)
-
-            const dirtyHandler = (targetPart: KPart) => {
-                const tabPanel = targetPart.closest("wa-tab-panel") as HTMLElement
-                const name = tabPanel.getAttribute("name") as string
-                editorArea.markDirty(name, targetPart.isDirty())
-            }
-            watchSignal(partDirtySignal, dirtyHandler)
-        })
         subscribe(TOPIC_WORKSPACE_CONNECTED, () => {
             // TODO close all editors
         })
+    }
+
+    private setupEventListeners(editorArea: KTabs) {
+        if (this.listenersAttached) {
+            return;
+        }
+        this.listenersAttached = true;
+
+        const handler = (event: CustomEvent) => {
+            const tabPanel = event.detail
+            if (tabPanel) {
+                const parts = Array.from(tabPanel.querySelectorAll(`*`)).filter((element): element is KPart => element instanceof KPart)
+                parts.forEach((part) => {
+                    activePartSignal.set(part)
+                    activeEditorSignal.set(part)
+                })
+            }
+        }
+        // @ts-ignore
+        editorArea.addEventListener("tab-shown", handler)
+
+        const closed = (event: CustomEvent) => {
+            const tabPanel: HTMLElement = event.detail
+            const parts = Array.from(tabPanel.querySelectorAll(`*`)).filter((element): element is KPart => element instanceof KPart)
+            parts.forEach((part) => {
+                // part.close() will be automatically called by disconnected callback of part
+                if (activePartSignal.get() == part) {
+                    activePartSignal.set(null as unknown as KPart)
+                    activeEditorSignal.set(null as unknown as KPart)
+                }
+            })
+        }
+        // @ts-ignore
+        editorArea.addEventListener("tab-closed", closed)
+
+        const dirtyHandler = (targetPart: KPart) => {
+            const tabPanel = targetPart.closest("wa-tab-panel") as HTMLElement
+            const name = tabPanel.getAttribute("name") as string
+            editorArea.markDirty(name, targetPart.isDirty())
+        }
+        watchSignal(partDirtySignal, dirtyHandler)
     }
 
     registerEditorInputHandler(editorInputHandler: EditorInputHandler) {
@@ -88,25 +93,31 @@ class EditorRegistry {
         }
     }
 
-    getEditorArea(): KTabs {
-        return document.querySelector(`k-tabs#${EDITOR_AREA_MAIN}`)! as KTabs
+    getEditorArea(): KTabs | null {
+        return document.querySelector(`k-tabs#${EDITOR_AREA_MAIN}`) as KTabs | null
     }
 
     async loadEditor(editorInput: EditorInput | any) {
         if (!editorInput) {
-            return // silently
+            return
         }
 
         if (!("widgetFactory" in editorInput)) {
-            // adapt to EditorInput
             editorInput = await this.handleInput(editorInput)
         }
 
         if (!editorInput || !("widgetFactory" in editorInput)) {
-            return // silently
+            return
         }
 
-        const editorArea = this.getEditorArea()
+        const editorArea = this.getEditorArea();
+        
+        if (!editorArea) {
+            console.error("Editor area not found. The split pane system may not be initialized yet.");
+            return;
+        }
+
+        this.setupEventListeners(editorArea);
 
         if (editorArea.has(editorInput.key)) {
             editorArea.activate(editorInput.key)

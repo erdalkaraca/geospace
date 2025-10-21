@@ -28,6 +28,15 @@ export interface TabContribution extends Contribution {
     component: (id: string) => TemplateResult;
 }
 
+export interface PaneContribution extends Contribution {
+    name: string;
+    size?: number;
+    minSize?: number;
+    maxSize?: number;
+    order?: number;
+    component: () => TemplateResult;
+}
+
 class ContributionRegistry {
     private contributions: Map<string, Contribution[]> = new Map();
 

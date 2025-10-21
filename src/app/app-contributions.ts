@@ -16,7 +16,7 @@ import "./../sysprompts"
 import APP_SYS_PROMPT from "../app/geospace-sysprompt.txt?raw"
 import {CID_PROMPTS, SysPromptContribution} from "../core/chatservice.ts";
 
-import {TABS_LEFT_END, TABS_LEFT_START, TABS_RIGHT, TOOLBAR_MAIN} from "../core/constants.ts";
+import {TABS_LEFT_END, TABS_LEFT_START, TABS_RIGHT, TOOLBAR_MAIN, TOOLBAR_BOTTOM, TOOLBAR_BOTTOM_END} from "../core/constants.ts";
 
 import {contributionRegistry, HTMLContribution, TabContribution} from "../core/contributionregistry.ts";
 import {Extension, extensionRegistry} from "../core/extensionregistry.ts";
@@ -101,10 +101,39 @@ contributionRegistry.registerContribution(CID_PROMPTS, {
         return workspaceService.getWorkspace().then(workspace => {
             const appState = {
                 workspace: workspace?.getName(),
-                activeEditor: editorRegistry.getEditorArea().getActiveEditor()
+                activeEditor: editorRegistry.getEditorArea()?.getActiveEditor()
             }
             const appStateStr = `***App's state:***\n${JSON.stringify(appState, null, 2)}`
             return `${appStateStr}\n\n${userPrompt}`
         })
     }
 } as SysPromptContribution)
+
+import {version as appVersion} from "../../package.json"
+import {registerAll} from "../core/commandregistry.ts";
+
+contributionRegistry.registerContribution(TOOLBAR_BOTTOM, {
+    target: TOOLBAR_BOTTOM,
+    slot: "start",
+    label: "Workspace",
+    html: `<k-workspace-name></k-workspace-name>`
+} as HTMLContribution)
+
+registerAll({
+    command: {
+        "id": "show_version_info",
+        "name": "Show Version Info",
+        "description": "Shows application version information",
+        "parameters": []
+    },
+    handler: {
+        execute: async _context => {
+            alert(`geo!space\nVersion: ${appVersion}\nAlpha Release\n\nA geospatial IDE for working with spatial data.`)
+        }
+    },
+    contribution: {
+        target: TOOLBAR_BOTTOM_END,
+        label: `v${appVersion}`,
+        icon: "circle-info"
+    }
+})

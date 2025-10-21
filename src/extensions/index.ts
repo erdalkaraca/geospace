@@ -91,3 +91,11 @@ extensionRegistry.registerExtension({
     loader: () => import("./monaco-editor/monaco-editor-extension.ts"),
     icon: "file-pen",
 })
+
+extensionRegistry.registerExtension({
+    id: "system.memoryusage",
+    name: "Memory Usage Monitor",
+    description: "Displays JavaScript heap memory usage in the bottom toolbar",
+    loader: () => import("./memory-usage/memory-usage-extension.ts"),
+    icon: "microchip",
+})

@@ -1,5 +1,5 @@
 import {contributionRegistry, HTMLContribution} from "../core/contributionregistry.ts";
-import {TOOLBAR_MAIN_CENTER} from "../core/constants.ts";
+import {TOOLBAR_BOTTOM_CENTER} from "../core/constants.ts";
 import {customElement} from "lit/decorators.js";
 import {KPart} from "../parts/k-part.ts";
 import {html} from "lit";
@@ -7,7 +7,7 @@ import {activeTasksSignal} from "../core/appstate.ts";
 import {SignalWatcher} from "@lit-labs/signals";
 import {taskService} from "../core/taskservice.ts";
 
-contributionRegistry.registerContribution(TOOLBAR_MAIN_CENTER, {
+contributionRegistry.registerContribution(TOOLBAR_BOTTOM_CENTER, {
     html: "<k-tasks></k-tasks>"
 } as HTMLContribution)
 
