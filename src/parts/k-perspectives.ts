@@ -119,89 +119,55 @@ export class KPerspectives extends KContainer {
     updated(changedProperties: Map<string, any>) {
         super.updated(changedProperties);
         
-        // Only render the active perspective when contributions change
-        if (changedProperties.has('contributions')) {
-            const container = this.containerRef.value as HTMLElement;
-            if (container && this.activePerspective) {
-                const activePerspectiveContrib = this.contributions.find(p => p.name === this.activePerspective);
-                if (activePerspectiveContrib && !this.perspectiveElements.has(this.activePerspective)) {
-                    this.renderPerspective(activePerspectiveContrib, container);
-                }
-            }
-        }
-        
-        if (changedProperties.has('activePerspective')) {
+        if (changedProperties.has('contributions') || changedProperties.has('activePerspective')) {
             this.updatePerspectiveVisibility();
         }
     }
 
     private updatePerspectiveVisibility() {
-        this.contributions.forEach(p => {
-            const element = this.perspectiveElements.get(p.name);
-            if (element) {
-                const isActive = p.name === this.activePerspective;
-                element.style.display = isActive ? 'flex' : 'none';
-                
-                // When making a perspective visible, trigger updates on all k-tabs
-                // so they can reclaim their singleton instances
-                if (isActive) {
-                    const tabComponents = element.querySelectorAll('k-tabs');
-                    tabComponents.forEach(tab => {
-                        if ('requestUpdate' in tab && typeof tab.requestUpdate === 'function') {
-                            tab.requestUpdate();
-                        }
-                    });
-                }
-            }
-        });
-    }
-
-    firstUpdated(changedProperties: Map<string, any>) {
-        super.firstUpdated(changedProperties);
-        
-        // Only render the active perspective initially
-        // Inactive perspectives will be rendered lazily when first activated
         const container = this.containerRef.value as HTMLElement;
-        if (container) {
-            const activePerspectiveContrib = this.contributions.find(p => p.name === this.activePerspective);
-            if (activePerspectiveContrib) {
-                this.renderPerspective(activePerspectiveContrib, container);
-            }
+        if (!container) return;
+        
+        // Clear all perspectives and render only the active one
+        // This ensures the editor area moves to the active perspective
+        container.innerHTML = '';
+        this.perspectiveElements.clear();
+        
+        const activePerspectiveContrib = this.contributions.find(p => p.name === this.activePerspective);
+        if (activePerspectiveContrib) {
+            this.renderPerspective(activePerspectiveContrib, container);
         }
     }
+
 
     private renderPerspective(p: PerspectiveContribution, container: HTMLElement) {
-        if (!this.perspectiveElements.has(p.name)) {
-            const wrapper = document.createElement('div');
-            wrapper.className = 'perspective-content';
-            wrapper.setAttribute('data-perspective', p.name);
-            wrapper.style.display = p.name === this.activePerspective ? 'flex' : 'none';
-            wrapper.style.flexDirection = 'column';
-            wrapper.style.height = '100%';
-            wrapper.style.width = '100%';
-            
-            container.appendChild(wrapper);
-            this.perspectiveElements.set(p.name, wrapper);
-            
-            // Render the perspective content into the wrapper
-            const template = p.component(this.editorArea);
-            litRender(template, wrapper);
-            
-            // Give tabs time to initialize their content
-            if (p.name === this.activePerspective) {
-                requestAnimationFrame(() => {
-                    this.updateComplete.then(() => {
-                        // Trigger updates on all tab components in this perspective
-                        const tabComponents = wrapper.querySelectorAll('k-tabs');
-                        tabComponents.forEach(tab => {
-                            if ('requestUpdate' in tab && typeof tab.requestUpdate === 'function') {
-                                tab.requestUpdate();
-                            }
-                        });
-                    });
+        const wrapper = document.createElement('div');
+        wrapper.className = 'perspective-content';
+        wrapper.setAttribute('data-perspective', p.name);
+        wrapper.style.display = 'flex';
+        wrapper.style.flexDirection = 'column';
+        wrapper.style.height = '100%';
+        wrapper.style.width = '100%';
+        
+        container.appendChild(wrapper);
+        this.perspectiveElements.set(p.name, wrapper);
+        
+        // Render the perspective content into the wrapper
+        const template = p.component(this.editorArea);
+        litRender(template, wrapper);
+        
+        // Give tabs time to initialize their content
+        requestAnimationFrame(() => {
+            this.updateComplete.then(() => {
+                // Trigger updates on all tab components in this perspective
+                const tabComponents = wrapper.querySelectorAll('k-tabs');
+                tabComponents.forEach(tab => {
+                    if ('requestUpdate' in tab && typeof tab.requestUpdate === 'function') {
+                        tab.requestUpdate();
+                    }
                 });
-            }
-        }
+            });
+        });
     }
 
     render() {
