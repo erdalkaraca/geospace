@@ -419,6 +419,29 @@ export class KNotebookEditor extends KPart {
         this.requestUpdate();
     }
 
+    private async restartKernel() {
+        if (!this.pyenv) return;
+
+        try {
+            // Close current environment
+            this.pyenv.close();
+            this.pyenv = undefined;
+            this.pyConnected = false;
+            this.pyVersion = undefined;
+
+            // Force re-render to show disconnected state
+            this.requestUpdate();
+
+            // Reinitialize
+            await this.initPyodide();
+
+            // Force re-render to show connected state
+            this.requestUpdate();
+        } catch (error) {
+            console.error("Failed to restart kernel:", error);
+        }
+    }
+
     private async runAllCells() {
         if (!this.notebook?.cells) return;
 
@@ -784,6 +807,15 @@ export class KNotebookEditor extends KPart {
                     title="Clear all outputs and reset execution counter">
                     <wa-icon name="eraser"></wa-icon>
                     Clear Outputs
+                </wa-button>
+                <wa-button 
+                    size="small" 
+                    appearance="plain"
+                    @click=${this.restartKernel}
+                    title="Restart Python kernel (clears all variables and state)"
+                    ?disabled=${!this.pyConnected}>
+                    <wa-icon name="arrows-rotate"></wa-icon>
+                    Restart Kernel
                 </wa-button>
             </div>
             <wa-scroller orientation="vertical" class="notebook-scroller">
