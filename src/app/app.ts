@@ -37,13 +37,13 @@ contributionRegistry.registerContribution<PerspectiveContribution>(PERSPECTIVES_
     name: "geospace",
     label: "Geo",
     icon: "earth",
-    component: () => html`
+    component: (editorArea) => html`
         <k-split-pane orientation="horizontal" ratios="20, 60, 20">
             <k-split-pane orientation="vertical" ratios="50, 50">
                 <k-tabs id="${TABS_LEFT_START}"></k-tabs>
                 <k-tabs id="${TABS_LEFT_END}"></k-tabs>
             </k-split-pane>
-            <k-tabs id="${EDITOR_AREA_MAIN}"></k-tabs>
+            ${editorArea}
             <k-tabs id="${TABS_RIGHT}"></k-tabs>
         </k-split-pane>
     `
@@ -53,10 +53,10 @@ contributionRegistry.registerContribution<PerspectiveContribution>(PERSPECTIVES_
     name: "editing",
     label: "Editing",
     icon: "pencil",
-    component: () => html`
+    component: (editorArea) => html`
         <k-split-pane orientation="horizontal" ratios="20, 55, 25">
             <k-tabs id="${TABS_EDITING_LEFT}"></k-tabs>
-            <k-tabs id="${EDITOR_AREA_MAIN}"></k-tabs>
+            ${editorArea}
             <k-tabs id="${TABS_EDITING_RIGHT}"></k-tabs>
         </k-split-pane>
     `
@@ -71,7 +71,11 @@ render(html`
             <k-toolbar style="justify-self: end;" id=${TOOLBAR_MAIN_RIGHT} align="right">
             </k-toolbar>
         </div>
-        <k-perspectives id="${PERSPECTIVES_MAIN}" style="flex: 1 1 auto; min-height: 0; overflow: hidden;"></k-perspectives>
+        <k-perspectives 
+            id="${PERSPECTIVES_MAIN}"
+            editor-id="${EDITOR_AREA_MAIN}"
+            style="flex: 1 1 auto; min-height: 0; overflow: hidden;">
+        </k-perspectives>
         <div style="width: 100%; border-top: solid 1px grey; display: grid; grid-template-columns: 1fr 2fr auto; align-items: center; flex-shrink: 0; min-height: 32px; padding: 0 0.5rem;">
             <k-toolbar id=${TOOLBAR_BOTTOM}></k-toolbar>
             <k-toolbar id=${TOOLBAR_BOTTOM_CENTER}></k-toolbar>

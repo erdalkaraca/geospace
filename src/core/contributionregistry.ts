@@ -42,7 +42,7 @@ export interface PaneContribution extends Contribution {
 
 export interface PerspectiveContribution extends Contribution {
     name: string;
-    component: () => TemplateResult;
+    component: (editorArea?: HTMLElement) => TemplateResult;
 }
 
 class ContributionRegistry {

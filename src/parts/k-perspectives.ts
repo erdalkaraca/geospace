@@ -45,9 +45,20 @@ export class KPerspectives extends KContainer {
 
     private containerRef = createRef();
     private perspectiveElements: Map<string, HTMLElement> = new Map();
+    private editorArea?: HTMLElement;  // Shared editor area created and managed internally
 
     createRenderRoot() {
         return this;
+    }
+    
+    protected doBeforeUI() {
+        // Create the shared editor area once
+        if (!this.editorArea) {
+            this.editorArea = document.createElement('k-tabs');
+            // Get editor area ID from first perspective or use a default
+            const editorId = this.getAttribute('editor-id') || 'editor-area-main';
+            this.editorArea.id = editorId;
+        }
     }
 
     protected doAfterUI() {
@@ -173,7 +184,7 @@ export class KPerspectives extends KContainer {
             this.perspectiveElements.set(p.name, wrapper);
             
             // Render the perspective content into the wrapper
-            const template = p.component();
+            const template = p.component(this.editorArea);
             litRender(template, wrapper);
             
             // Give tabs time to initialize their content

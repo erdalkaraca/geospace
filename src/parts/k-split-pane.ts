@@ -217,20 +217,28 @@ export class KSplitPane extends SignalWatcher(KElement) {
         const containerStyle = {
             display: 'flex',
             flexDirection: this.orientation === 'horizontal' ? 'row' : 'column',
+            flexWrap: 'nowrap',
             height: '100%',
             width: '100%',
             overflow: 'hidden'
         } as const;
 
+        // Calculate splitter adjustment for flex-basis
+        const splitterCount = this.panes.length - 1;
+        const splitterTotalPx = splitterCount * 4;
+        
         return html`
             <div ${ref(this.containerRef)} style=${styleMap(containerStyle)}>
                 ${this.panes.map((pane, index) => {
+                    // Adjust flex-basis to account for splitters: each pane loses its proportional share
+                    const adjustedBasis = `calc(${pane.size}% - ${(pane.size / 100) * splitterTotalPx}px)`;
+                    
                     const paneStyle = {
                         display: 'flex',
                         flexDirection: 'column',
                         flexGrow: 0,
                         flexShrink: 0,
-                        flexBasis: `${pane.size}%`,
+                        flexBasis: adjustedBasis,
                         overflow: 'hidden',
                         position: 'relative',
                         minWidth: this.orientation === 'horizontal' ? `${pane.minSize ?? 5}%` : undefined,
