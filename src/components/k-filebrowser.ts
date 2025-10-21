@@ -12,7 +12,6 @@ import {
 } from "../core/filesys.ts";
 import {when} from "lit/directives/when.js";
 import {topic} from "../core/events.ts";
-import {observeOverflow} from "../core/k-utils.ts";
 import {createRef, ref} from "lit/directives/ref.js";
 import {HIDE_DOT_RESOURCE} from "../core/constants.ts";
 
