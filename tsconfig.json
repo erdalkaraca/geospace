@@ -19,7 +19,6 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
   },
   "include": ["src"],
   "exclude": ["src/tests/**/*", "src/**/*.test.ts", "src/**/*.spec.ts"]

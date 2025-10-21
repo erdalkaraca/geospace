@@ -76,7 +76,6 @@ export class KToolbar extends SignalWatcher(KElement) {
         :host {
             display: flex;
             flex-direction: row;
-            margin: 4px;
         }
 
         .toolbar-items {

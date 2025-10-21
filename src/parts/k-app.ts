@@ -12,6 +12,8 @@ export class KApp extends KElement {
 
     static styles = css`
         :host {
+            display: flex;
+            flex-direction: column;
             height: 100%;
             width: 100%;
         }

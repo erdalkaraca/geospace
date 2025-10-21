@@ -113,7 +113,8 @@ export class KTabs extends KContainer {
                         `)}
                     </wa-tab>
                     <wa-tab-panel name="${c.name}">
-                        ${c.component()}
+                        <k-toolbar id="toolbar.${c.name}" class="tab-toolbar"></k-toolbar>
+                        ${c.component(c.name)}
                     </wa-tab-panel>
                 `)}
             </wa-tab-group>

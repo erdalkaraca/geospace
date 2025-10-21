@@ -4,7 +4,6 @@ export const observeOverflow = (child: HTMLElement) => {
     if (!child) {
         return
     }
-    child.style.overflow = "auto"
     child.style.height = "100%"
     new IntersectionObserver(
         (entries) => {

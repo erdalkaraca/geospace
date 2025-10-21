@@ -36,10 +36,45 @@ export class KFileBrowser extends KPart {
         } else {
             commandRegistry.execute("help")
         }
+        
+        this.registerToolbarActions()
+    }
+
+    private registerToolbarActions() {
+        this.registerToolbarContribution({
+            label: "Load workspace folder",
+            icon: "folder-open",
+            command: "load_workspace",
+            slot: "start"
+        })
+        
+        this.registerToolbarContribution({
+            label: "Reload workspace folder",
+            icon: "repeat",
+            command: "reload_workspace",
+            slot: "start"
+        })
+        
+        this.registerToolbarContribution({
+            label: "Create new file...",
+            icon: "plus",
+            command: "create_file",
+            slot: "start"
+        })
+        
+        this.registerToolbarContribution({
+            label: "Delete selected resource",
+            icon: "trash",
+            command: "delete_resource",
+            slot: "start",
+            disabled: () => {
+                return !(activeSelectionSignal.get() instanceof Resource)
+            }
+        })
     }
 
     protected doAfterUI() {
-        observeOverflow(this.treeRef.value!)
+        //observeOverflow(this.treeRef.value!)
     }
 
     @topic(TOPIC_WORKSPACE_CHANGED)

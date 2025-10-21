@@ -25,7 +25,7 @@ export interface TabContribution extends Contribution {
     name: string;
     closable?: boolean;
     noOverflow?: boolean;
-    component: () => TemplateResult;
+    component: (id: string) => TemplateResult;
 }
 
 class ContributionRegistry {

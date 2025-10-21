@@ -3,8 +3,9 @@ import {customElement, state} from 'lit/decorators.js'
 import {KPart} from "../../parts/k-part.ts";
 import {TreeContribution, TreeNode} from "../../core/tree-utils.ts";
 import {contributionRegistry} from "../../core/contributionregistry.ts";
-import {activeSelectionSignal} from "../../core/appstate.ts";
+import {activePartSignal, activeSelectionSignal} from "../../core/appstate.ts";
 import {icon} from "../../core/k-utils.ts";
+import {createRef, ref} from "lit/directives/ref.js";
 
 export const CID_CATALOG_ROOT = "catalog.root"
 
@@ -12,10 +13,46 @@ export const CID_CATALOG_ROOT = "catalog.root"
 export class GsCatalog extends KPart {
     @state()
     private rootNodes?: TreeNode[];
+    
+    private treeRef = createRef<HTMLElement>();
 
     protected doAfterUI() {
         const contributions = contributionRegistry.getContributions(CID_CATALOG_ROOT) as TreeContribution[]
         this.rootNodes = this.toTreeNodes(contributions)
+        this.registerToolbarActions()
+    }
+    
+    private registerToolbarActions() {
+        this.registerToolbarContribution({
+            label: "Checkout",
+            icon: "file-arrow-down",
+            command: "checkout",
+            slot: "start",
+            disabled: () => {
+                return !(activePartSignal.get() instanceof GsCatalog) || activeSelectionSignal.get() === undefined
+            }
+        })
+        
+        this.registerToolbarContribution({
+            label: "Refresh Catalog",
+            icon: "arrows-rotate",
+            command: "refresh_catalog",
+            slot: "start"
+        })
+        
+        this.registerToolbarContribution({
+            label: "Expand All",
+            icon: "angles-down",
+            command: "catalog_expand_all",
+            slot: "end"
+        })
+        
+        this.registerToolbarContribution({
+            label: "Collapse All",
+            icon: "angles-up",
+            command: "catalog_collapse_all",
+            slot: "end"
+        })
     }
 
     private toTreeNodes(contributions: TreeContribution[]) {
@@ -50,6 +87,19 @@ export class GsCatalog extends KPart {
         activeSelectionSignal.set(node.data)
     }
 
+    public setAllExpanded(expanded: boolean) {
+        const tree = this.treeRef.value
+        if (tree) {
+            tree.querySelectorAll("wa-tree-item").forEach((item: any) => {
+                item.expanded = expanded
+            })
+        }
+    }
+
+    public refresh() {
+        this.requestUpdate()
+    }
+
     createTreeItems(node: TreeNode, expanded = false): TemplateResult {
         if (!node) {
             return html``
@@ -64,7 +114,7 @@ export class GsCatalog extends KPart {
 
     render() {
         return html`
-            <wa-tree @wa-selection-change=${this.nobubble(this.onSelectionChanged)} style="--indent-guide-width: 1px;">
+            <wa-tree ${ref(this.treeRef)} @wa-selection-change=${this.nobubble(this.onSelectionChanged)} style="--indent-guide-width: 1px;">
                 ${this.rootNodes?.map(node => this.createTreeItems(node, true))}
             </wa-tree>
         `

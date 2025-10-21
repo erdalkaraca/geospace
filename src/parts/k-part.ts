@@ -3,6 +3,7 @@ import {property} from "lit/decorators.js";
 import {PropertyValues} from "lit";
 import {partDirtySignal, activePartSignal} from "../core/appstate.ts";
 import {CommandStack} from "../core/commandregistry.ts";
+import {CommandContribution, contributionRegistry} from "../core/contributionregistry.ts";
 
 export abstract class KPart extends KContainer {
     @property()
@@ -57,5 +58,17 @@ export abstract class KPart extends KContainer {
         partDirtySignal.set(this)
         activePartSignal.set(null as unknown as KPart)
         activePartSignal.set(this)
+    }
+
+    protected registerToolbarContribution(contribution: Omit<CommandContribution, 'target'>) {
+        const id = this.getAttribute('id')
+        if (!id) {
+            return
+        }
+        const toolbarTarget = `toolbar.${id}`
+        contributionRegistry.registerContribution(toolbarTarget, {
+            ...contribution,
+            target: toolbarTarget
+        } as CommandContribution)
     }
 }

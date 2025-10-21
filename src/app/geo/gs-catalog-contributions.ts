@@ -1,6 +1,5 @@
 import {registerAll} from "../../core/commandregistry.ts";
 import {File, FileContentType, workspaceService} from "../../core/filesys.ts";
-import {TOOLBAR_MAIN} from "../../core/constants.ts";
 import {activePartSignal, activeSelectionSignal} from "../../core/appstate.ts";
 import {GsCatalog} from "./gs-catalog.ts";
 import {toastError, toastInfo} from "../../core/toast.ts";
@@ -56,13 +55,56 @@ registerAll({
                 toastError(err)
             })
         }
+    }
+})
+
+registerAll({
+    command: {
+        "id": "refresh_catalog",
+        "name": "Refresh Catalog",
+        "description": "Refreshes the catalog view",
+        "parameters": []
     },
-    contribution: {
-        target: TOOLBAR_MAIN,
-        icon: "file-arrow-down",
-        label: "Checkout",
-        disabled: () => {
-            return !(activePartSignal.get() instanceof GsCatalog) || activeSelectionSignal.get() === undefined
+    handler: {
+        execute: async _context => {
+            const part = activePartSignal.get()
+            if (part instanceof GsCatalog) {
+                part.refresh()
+            }
+        }
+    }
+})
+
+registerAll({
+    command: {
+        "id": "catalog_expand_all",
+        "name": "Expand All Catalog Items",
+        "description": "Expands all items in the catalog tree",
+        "parameters": []
+    },
+    handler: {
+        execute: async _context => {
+            const part = activePartSignal.get()
+            if (part instanceof GsCatalog) {
+                part.setAllExpanded(true)
+            }
+        }
+    }
+})
+
+registerAll({
+    command: {
+        "id": "catalog_collapse_all",
+        "name": "Collapse All Catalog Items",
+        "description": "Collapses all items in the catalog tree",
+        "parameters": []
+    },
+    handler: {
+        execute: async _context => {
+            const part = activePartSignal.get()
+            if (part instanceof GsCatalog) {
+                part.setAllExpanded(false)
+            }
         }
     }
 })
