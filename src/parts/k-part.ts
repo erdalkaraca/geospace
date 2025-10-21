@@ -31,7 +31,8 @@ export abstract class KPart extends KContainer {
 
     disconnectedCallback() {
         super.disconnectedCallback();
-        this.doClose()
+        // Don't automatically close when disconnected - the element might just be moving
+        // Call close() explicitly when actually closing the part
     }
 
     public close() {

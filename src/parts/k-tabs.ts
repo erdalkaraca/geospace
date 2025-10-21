@@ -84,6 +84,16 @@ export class KTabs extends KContainer {
         const tab = (<HTMLElement>event.currentTarget!).parentElement!
         tab.remove();
         const tabPanel = this.getTabPanel(tabName)
+        
+        // Explicitly close the component inside the tab before removing
+        const contentDiv = tabPanel.querySelector('.tab-content');
+        if (contentDiv && contentDiv.firstElementChild) {
+            const component = contentDiv.firstElementChild;
+            if ('close' in component && typeof component.close === 'function') {
+                component.close();
+            }
+        }
+        
         this.dispatchEvent(new CustomEvent('tab-closed', {detail: tabPanel}))
         tabPanel.remove()
 

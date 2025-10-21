@@ -104,8 +104,8 @@ export class KMonacoEditor extends KPart {
     }
 
     protected doClose() {
-        this.model.dispose();
-        this.editor.dispose()
+        this.model?.dispose();
+        this.editor?.dispose()
         this.model = undefined
         this.editor = undefined
         this.pyenv?.close()

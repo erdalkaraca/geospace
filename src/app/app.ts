@@ -38,14 +38,27 @@ contributionRegistry.registerContribution<PerspectiveContribution>(PERSPECTIVES_
     label: "Geo",
     icon: "earth",
     component: (editorArea) => html`
-        <k-split-pane orientation="horizontal" ratios="20, 60, 20">
-            <k-split-pane orientation="vertical" ratios="50, 50">
-                <k-tabs id="${TABS_LEFT_START}"></k-tabs>
-                <k-tabs id="${TABS_LEFT_END}"></k-tabs>
-            </k-split-pane>
-            ${editorArea}
-            <k-tabs id="${TABS_RIGHT}"></k-tabs>
-        </k-split-pane>
+        <div style="display: flex; flex-direction: row; height: 100%; width: 100%;">
+            <!-- Left: 20% -->
+            <div style="flex: 0 0 20%; display: flex; flex-direction: column; overflow: hidden;">
+                <div style="flex: 1; overflow: hidden;">
+                    <k-tabs id="${TABS_LEFT_START}"></k-tabs>
+                </div>
+                <div style="flex: 1; overflow: hidden;">
+                    <k-tabs id="${TABS_LEFT_END}"></k-tabs>
+                </div>
+            </div>
+            
+            <!-- Center: 60% -->
+            <div style="flex: 0 0 60%; overflow: hidden;">
+                ${editorArea}
+            </div>
+            
+            <!-- Right: 20% -->
+            <div style="flex: 0 0 20%; overflow: hidden;">
+                <k-tabs id="${TABS_RIGHT}"></k-tabs>
+            </div>
+        </div>
     `
 });
 
@@ -54,11 +67,22 @@ contributionRegistry.registerContribution<PerspectiveContribution>(PERSPECTIVES_
     label: "Editing",
     icon: "pencil",
     component: (editorArea) => html`
-        <k-split-pane orientation="horizontal" ratios="20, 55, 25">
-            <k-tabs id="${TABS_EDITING_LEFT}"></k-tabs>
-            ${editorArea}
-            <k-tabs id="${TABS_EDITING_RIGHT}"></k-tabs>
-        </k-split-pane>
+        <div style="display: flex; flex-direction: row; height: 100%; width: 100%;">
+            <!-- Left: 20% -->
+            <div style="flex: 0 0 20%; overflow: hidden;">
+                <k-tabs id="${TABS_EDITING_LEFT}"></k-tabs>
+            </div>
+            
+            <!-- Center: 55% -->
+            <div style="flex: 0 0 55%; overflow: hidden;">
+                ${editorArea}
+            </div>
+            
+            <!-- Right: 25% -->
+            <div style="flex: 0 0 25%; overflow: hidden;">
+                <k-tabs id="${TABS_EDITING_RIGHT}"></k-tabs>
+            </div>
+        </div>
     `
 });
 
