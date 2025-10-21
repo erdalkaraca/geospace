@@ -1,7 +1,7 @@
 # 🌐 geo!space
 
 **The Interactive Mapping IDE in Your Browser**
-
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/erdalkaraca/geospace)
 [![Browser Support](https://img.shields.io/badge/Chrome%20%7C%20Opera-Supported-brightgreen)](#-browser-compatibility)
 [![AI Providers](https://img.shields.io/badge/AI%20Providers-5-blue)](#-ai-configuration)
 [![PWA Ready](https://img.shields.io/badge/PWA-Ready-purple)](#-key-features)

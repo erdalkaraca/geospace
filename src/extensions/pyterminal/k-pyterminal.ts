@@ -23,33 +23,345 @@ export class KPyTerminal extends KElement {
     })
     private pyenv?: PyEnv
     private currentLine: string = ""
+    private cursorPosition: number = 0
+    private inputBuffer: string[] = []
+    private isMultiline: boolean = false
+    private consoleReady: boolean = false
+    private history: string[] = []
+    private historyIndex: number = -1
+    private isExecuting: boolean = false
 
     private prompt(message: string = "") {
-        this.terminal.write(!!message ? message + "\n\r" : "\n\r>> ")
+        if (message) {
+            this.terminal.write(message + "\r\n")
+        } else {
+            this.terminal.write(this.isMultiline ? "... " : ">>> ")
+        }
+    }
+    
+    private clearLine() {
+        // Clear the entire line using ANSI escape codes
+        // \x1b[2K clears the entire line
+        // \r moves cursor to beginning
+        this.terminal.write('\r\x1b[2K')
+        this.terminal.write(this.isMultiline ? '... ' : '>>> ')
     }
 
     protected async doInitUI() {
         this.terminal.open(<HTMLElement>this.terminalDiv.value!)
-        this.terminal.onKey(({key}) => {
-            this.currentLine += key;
-
-            if (key.charCodeAt(0) === 13) {
-                console.log("Running command: " + this.currentLine)
+        
+        this.pyenv = new PyEnv()
+        this.pyenv.setStdoutCallback((text) => {
+            // Ensure output ends with newline for proper display
+            if (!text.endsWith('\n')) {
+                text += '\n'
+            }
+            this.terminal.write(text.replace(/\n/g, '\r\n'))
+        })
+        this.pyenv.setStderrCallback((text) => {
+            // Ensure output ends with newline for proper display
+            if (!text.endsWith('\n')) {
+                text += '\n'
+            }
+            this.terminal.write('\x1b[31m' + text.replace(/\n/g, '\r\n') + '\x1b[0m')
+        })
+        
+        this.terminal.onKey(async ({key, domEvent}) => {
+            // Prevent input while executing
+            if (this.isExecuting) return
+            
+            const code = key.charCodeAt(0)
+            
+            // Ctrl+C to interrupt
+            if (domEvent.ctrlKey && domEvent.key === 'c') {
+                this.terminal.write('^C\r\n')
                 this.currentLine = ""
+                this.cursorPosition = 0
+                this.inputBuffer = []
+                this.isMultiline = false
+                this.historyIndex = -1
                 this.prompt()
-            } else {
-                this.terminal.write(key)
+                return
+            }
+            
+            // Backspace
+            if (domEvent.key === 'Backspace') {
+                domEvent.preventDefault()
+                if (this.cursorPosition > 0) {
+                    // Remove character before cursor
+                    this.currentLine = 
+                        this.currentLine.slice(0, this.cursorPosition - 1) + 
+                        this.currentLine.slice(this.cursorPosition)
+                    this.cursorPosition--
+                    
+                    // Redraw: move back, write remaining chars + space, move cursor back
+                    const remaining = this.currentLine.slice(this.cursorPosition)
+                    this.terminal.write('\b' + remaining + ' ')
+                    
+                    // Move cursor back to correct position (remaining chars + space)
+                    const moveBack = remaining.length + 1
+                    this.terminal.write('\x1b[' + moveBack + 'D')
+                }
+                return
+            }
+            
+            // Delete key
+            if (domEvent.key === 'Delete') {
+                domEvent.preventDefault()
+                if (this.cursorPosition < this.currentLine.length) {
+                    // Remove character at cursor
+                    this.currentLine = 
+                        this.currentLine.slice(0, this.cursorPosition) + 
+                        this.currentLine.slice(this.cursorPosition + 1)
+                    
+                    // Redraw: write remaining chars + space, move cursor back
+                    const remaining = this.currentLine.slice(this.cursorPosition)
+                    this.terminal.write(remaining + ' ')
+                    
+                    // Move cursor back to correct position (remaining chars + space)
+                    const moveBack = remaining.length + 1
+                    this.terminal.write('\x1b[' + moveBack + 'D')
+                }
+                return
+            }
+            
+            // Arrow Up - history previous
+            if (domEvent.key === 'ArrowUp') {
+                domEvent.preventDefault()
+                if (this.history.length > 0 && this.historyIndex < this.history.length - 1) {
+                    // Clear current line
+                    this.clearLine()
+                    
+                    this.historyIndex++
+                    this.currentLine = this.history[this.history.length - 1 - this.historyIndex]
+                    this.cursorPosition = this.currentLine.length
+                    this.terminal.write(this.currentLine)
+                }
+                return
+            }
+            
+            // Arrow Down - history next
+            if (domEvent.key === 'ArrowDown') {
+                domEvent.preventDefault()
+                if (this.historyIndex > 0) {
+                    // Clear current line
+                    this.clearLine()
+                    
+                    this.historyIndex--
+                    this.currentLine = this.history[this.history.length - 1 - this.historyIndex]
+                    this.cursorPosition = this.currentLine.length
+                    this.terminal.write(this.currentLine)
+                } else if (this.historyIndex === 0) {
+                    this.clearLine()
+                    this.historyIndex = -1
+                    this.currentLine = ""
+                    this.cursorPosition = 0
+                }
+                return
+            }
+            
+            // Arrow Left - move cursor left
+            if (domEvent.key === 'ArrowLeft') {
+                domEvent.preventDefault()
+                if (this.cursorPosition > 0) {
+                    this.cursorPosition--
+                    this.terminal.write('\x1b[D')  // Move cursor left
+                }
+                return
+            }
+            
+            // Arrow Right - move cursor right
+            if (domEvent.key === 'ArrowRight') {
+                domEvent.preventDefault()
+                if (this.cursorPosition < this.currentLine.length) {
+                    this.cursorPosition++
+                    this.terminal.write('\x1b[C')  // Move cursor right
+                }
+                return
+            }
+            
+            // Home - move cursor to beginning
+            if (domEvent.key === 'Home') {
+                domEvent.preventDefault()
+                if (this.cursorPosition > 0) {
+                    this.terminal.write('\x1b[' + this.cursorPosition + 'D')
+                    this.cursorPosition = 0
+                }
+                return
+            }
+            
+            // End - move cursor to end
+            if (domEvent.key === 'End') {
+                domEvent.preventDefault()
+                const charsToMove = this.currentLine.length - this.cursorPosition
+                if (charsToMove > 0) {
+                    this.terminal.write('\x1b[' + charsToMove + 'C')
+                    this.cursorPosition = this.currentLine.length
+                }
+                return
+            }
+
+            // Enter key
+            if (code === 13 || domEvent.key === 'Enter') {
+                domEvent.preventDefault()
+                this.terminal.write('\r\n')
+                
+                // Add to history if not empty
+                if (this.currentLine.trim() !== '') {
+                    this.history.push(this.currentLine)
+                }
+                this.historyIndex = -1
+                
+                await this.executeInput(this.currentLine)
+                this.currentLine = ""
+                this.cursorPosition = 0
+                return
+            }
+            
+            // Regular character input
+            if (!domEvent.altKey && !domEvent.ctrlKey && !domEvent.metaKey && key.length === 1) {
+                // Insert character at cursor position
+                this.currentLine = 
+                    this.currentLine.slice(0, this.cursorPosition) + 
+                    key + 
+                    this.currentLine.slice(this.cursorPosition)
+                this.cursorPosition++
+                
+                // Redraw from cursor position
+                const rest = this.currentLine.slice(this.cursorPosition)
+                this.terminal.write(key + rest)
+                
+                // Move cursor back if needed
+                if (rest.length > 0) {
+                    this.terminal.write('\x1b[' + rest.length + 'D')
+                }
             }
         });
 
         this.prompt("Loading Python...")
         const workspace = (await workspaceService.getWorkspace())!
-        this.pyenv = new PyEnv()
         await this.pyenv.init(workspace)
-        this.prompt(`Pyodide v${await this.pyenv.getVersion()}`)
-        const versionResponse = await this.pyenv.execCode("import sys;sys.version")
-        const version = versionResponse && typeof versionResponse === 'object' ? versionResponse.result : versionResponse
-        this.prompt("Python implementation: " + version)
+        
+        // Get both Pyodide and Python versions
+        const pyodideVersion = await this.pyenv.getVersion()
+        const pythonVersionResponse = await this.pyenv.execCode("import sys; sys.version.split()[0]")
+        const pythonVersion = pythonVersionResponse?.result || "3.12"
+        
+        this.prompt(`Pyodide v${pyodideVersion} (Python v${pythonVersion})`)
+        
+        await this.initConsole()
+        
+        this.consoleReady = true
+        this.prompt()
+    }
+    
+    private async initConsole() {
+        await this.pyenv!.execCode(`
+from pyodide.console import PyodideConsole
+import sys
+import os
+import code
+import builtins as __builtins__
+
+# Disable pager for help() to avoid stdin issues in browser
+os.environ['PAGER'] = 'cat'
+sys.stdin = None  # Disable stdin to prevent interactive prompts
+
+# Override help to work without pager
+import pydoc
+pydoc.pager = pydoc.plainpager
+
+# Create custom console that displays expression results like standard Python REPL
+class CustomConsole(PyodideConsole):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Ensure displayhook is set
+        if sys.displayhook is sys.__displayhook__:
+            sys.displayhook = self._displayhook
+    
+    def _displayhook(self, value):
+        if value is not None:
+            builtins._ = value
+            print(repr(value))
+    
+    def push(self, line):
+        # Temporarily ensure our displayhook is active
+        old_hook = sys.displayhook
+        sys.displayhook = self._displayhook
+        try:
+            result = super().push(line)
+            return result
+        finally:
+            # Restore displayhook (though it should stay ours)
+            if old_hook != self._displayhook:
+                sys.displayhook = self._displayhook
+
+# Create console with persistent stream redirection
+__console__ = CustomConsole(
+    persistent_stream_redirection=True
+)
+`)
+    }
+    
+    private async executeInput(line: string) {
+        if (!this.consoleReady) return
+        
+        // Handle empty lines in multiline mode
+        if (line.trim() === '' && this.isMultiline) {
+            this.inputBuffer.push(line)
+        } else if (line.trim() !== '') {
+            this.inputBuffer.push(line)
+        } else if (!this.isMultiline) {
+            // Empty line in single-line mode, just show prompt
+            this.prompt()
+            return
+        }
+        
+        this.isExecuting = true
+        
+        try {
+            const result = await this.pyenv!.execCode(`
+import asyncio
+import sys
+
+# Debug: print before execution
+print(f"DEBUG: About to push line: {${JSON.stringify(line)}!r}")
+print(f"DEBUG: sys.displayhook is: {sys.displayhook}")
+
+# Push the line to the console
+fut = __console__.push(${JSON.stringify(line)})
+
+# The push method returns a Future, await it
+if asyncio.iscoroutine(fut) or hasattr(fut, '__await__'):
+    needs_more = await fut
+else:
+    needs_more = fut
+
+print(f"DEBUG: Needs more: {needs_more}")
+
+needs_more
+`)
+            
+            console.log("Execute result:", result)
+            
+            // push() returns True if more input is needed, False otherwise
+            const needsMore = result?.result === true
+            this.isMultiline = needsMore
+            
+            // Clear buffer if code was complete and executed
+            if (!needsMore) {
+                this.inputBuffer = []
+            }
+        } catch (error) {
+            // Display error and reset
+            const errorMsg = error instanceof Error ? error.message : String(error)
+            this.terminal.write(`\x1b[31m${errorMsg}\x1b[0m\r\n`)
+            this.inputBuffer = []
+            this.isMultiline = false
+        } finally {
+            this.isExecuting = false
+        }
+        
         this.prompt()
     }
 

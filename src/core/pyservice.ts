@@ -53,6 +53,23 @@ export class PyEnv {
             return;
         }
         
+        // Handle input requests
+        if (response.type === 'inputRequest') {
+            const promptText = response.payload.prompt || 'Input:';
+            const userInput = window.prompt(promptText);
+            
+            // Send response back to worker
+            this.worker!.postMessage({
+                id: response.id,
+                type: 'inputResponse',
+                payload: {
+                    value: userInput,
+                    cancelled: userInput === null
+                }
+            } as PyWorkerMessage);
+            return;
+        }
+        
         // Handle stdout/stderr streams
         if (response.type === 'stdout') {
             if (this.stdoutCallback) {
@@ -133,7 +150,7 @@ export class PyEnv {
             const reqContents: string = ((await reqFile.getContents()) as string).replaceAll("\r", "");
             const packages = parsePipRequirementsFile(reqContents)
                 .filter(p => "name" in p)
-                .map(p => p.name);
+                .map(p => (p as any).name);
             await this.loadPackages(packages);
         }
     }

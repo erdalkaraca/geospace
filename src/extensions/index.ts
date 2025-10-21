@@ -13,7 +13,7 @@ extensionRegistry.registerExtension({
     id: "system.pyterminal",
     name: "Python terminal",
     description: "Python terminal view",
-    loader: () => import("./pyterminal/k-pyterminal.ts"),
+    loader: () => import("./pyterminal/pyterminal-extension.ts"),
     icon: "terminal",
     experimental: true,
 })

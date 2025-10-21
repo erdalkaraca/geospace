@@ -5,17 +5,19 @@ import {loadPyodide, PyodideInterface} from "pyodide";
 let pyodide: PyodideInterface | null = null;
 let workspaceMountFS: any = null;
 let interruptBuffer: Uint8Array | null = null;
+let inputCounter = 0;
+const pendingInputRequests: Map<string, { resolve: (value: string) => void, reject: (error: any) => void }> = new Map();
 
 // Message types for worker communication
 export interface PyWorkerMessage {
     id: string;
-    type: 'init' | 'execCode' | 'execModule' | 'runFunction' | 'setGlobal' | 'loadPackages' | 'syncWorkspace' | 'getVersion' | 'mountWorkspace' | 'installDependencies';
+    type: 'init' | 'execCode' | 'execModule' | 'runFunction' | 'setGlobal' | 'loadPackages' | 'syncWorkspace' | 'getVersion' | 'mountWorkspace' | 'installDependencies' | 'inputResponse';
     payload?: any;
 }
 
 export interface PyWorkerResponse {
     id: string;
-    type: 'success' | 'error' | 'stdout' | 'stderr';
+    type: 'success' | 'error' | 'stdout' | 'stderr' | 'inputRequest';
     payload?: any;
 }
 
@@ -68,11 +70,21 @@ async function initPyodide(payload: { vars?: any }) {
         });
     }
     
-    // Set up default globals
-    pyodide.globals.set('input', (_prompt?: string) => {
-        // Can't use window.prompt in worker, would need to send message to main thread
-        console.warn('input() not supported in worker environment');
-        return '';
+    // Set up input() function to request input from main thread
+    pyodide.globals.set('input', (promptText?: string) => {
+        const inputId = `input-${inputCounter++}`;
+        
+        // Send input request to main thread
+        sendMessage({
+            id: inputId,
+            type: 'inputRequest',
+            payload: { prompt: promptText || '' }
+        });
+        
+        // Return a promise that will be resolved when main thread responds
+        return new Promise<string>((resolve, reject) => {
+            pendingInputRequests.set(inputId, { resolve, reject });
+        });
     });
     
     // Set up stdout/stderr capture
@@ -305,6 +317,20 @@ async function getVersion() {
 // Message handler
 self.onmessage = async (event: MessageEvent<PyWorkerMessage>) => {
     const { id, type, payload } = event.data;
+    
+    // Handle input response separately (doesn't follow normal request/response pattern)
+    if (type === 'inputResponse') {
+        const pending = pendingInputRequests.get(id);
+        if (pending) {
+            pendingInputRequests.delete(id);
+            if (payload.cancelled) {
+                pending.resolve('');  // Return empty string if cancelled
+            } else {
+                pending.resolve(payload.value || '');
+            }
+        }
+        return;
+    }
     
     try {
         let result;
