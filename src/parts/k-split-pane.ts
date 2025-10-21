@@ -12,9 +12,12 @@ import {styleMap} from 'lit/directives/style-map.js';
 import {ref, createRef, Ref} from 'lit/directives/ref.js';
 
 interface PaneState {
-    contribution: PaneContribution;
-    size: number;
+    contribution?: PaneContribution;
     element?: HTMLElement;
+    size: number;
+    minSize?: number;
+    maxSize?: number;
+    name: string;
 }
 
 @customElement('k-split-pane')
@@ -22,8 +25,14 @@ export class KSplitPane extends SignalWatcher(KElement) {
     @property()
     orientation: 'horizontal' | 'vertical' = 'horizontal';
 
+    @property()
+    ratios?: string;
+
     @state()
     private panes: PaneState[] = [];
+
+    private useDirectChildren = false;
+    private childObserver?: MutationObserver;
 
     private containerRef: Ref<HTMLDivElement> = createRef();
     private resizing: {
@@ -45,15 +54,42 @@ export class KSplitPane extends SignalWatcher(KElement) {
     }
 
     protected doAfterUI() {
-        if (this.getAttribute("id")) {
+        if (this.ratios) {
+            this.useDirectChildren = true;
+            this.checkAndLoadChildren();
+        } else if (this.getAttribute("id")) {
             const id = this.getAttribute("id")!
             this.loadPanes(id);
         }
     }
 
+    private checkAndLoadChildren() {
+        // Try immediately first
+        if (this.children.length > 0) {
+            this.loadPanesFromChildren();
+            return;
+        }
+        
+        // If no children yet, wait for next tick
+        requestAnimationFrame(() => {
+            if (this.children.length > 0) {
+                this.loadPanesFromChildren();
+            } else {
+                // Still no children, use MutationObserver
+                this.childObserver = new MutationObserver(() => {
+                    if (this.children.length > 0) {
+                        this.loadPanesFromChildren();
+                        this.childObserver?.disconnect();
+                    }
+                });
+                this.childObserver.observe(this, { childList: true });
+            }
+        });
+    }
+
     protected doInitUI() {
         subscribe(TOPIC_CONTRIBUTEIONS_CHANGED, () => {
-            if (this.getAttribute("id")) {
+            if (!this.useDirectChildren && this.getAttribute("id")) {
                 this.loadPanes(this.getAttribute("id")!);
             }
         });
@@ -70,9 +106,31 @@ export class KSplitPane extends SignalWatcher(KElement) {
 
         this.panes = sortedContributions.map(contribution => ({
             contribution,
-            size: contribution.size ?? 100 / sortedContributions.length
+            size: contribution.size ?? 100 / sortedContributions.length,
+            minSize: contribution.minSize,
+            maxSize: contribution.maxSize,
+            name: contribution.name
         }));
         
+        this.requestUpdate();
+    }
+
+    private loadPanesFromChildren() {
+        const childElements = Array.from(this.children) as HTMLElement[];
+        if (childElements.length === 0) return;
+
+        const ratioValues = this.ratios 
+            ? this.ratios.split(',').map(r => parseFloat(r.trim()))
+            : childElements.map(() => 100 / childElements.length);
+
+        this.panes = childElements.map((element, index) => ({
+            element,
+            size: ratioValues[index] || 100 / childElements.length,
+            minSize: 5,
+            maxSize: 95,
+            name: `pane-${index}`
+        }));
+
         this.requestUpdate();
     }
 
@@ -114,10 +172,10 @@ export class KSplitPane extends SignalWatcher(KElement) {
         const pane = this.panes[this.resizing.paneIndex];
         const nextPane = this.panes[this.resizing.paneIndex + 1];
 
-        const minSize = pane.contribution.minSize ?? 5;
-        const maxSize = pane.contribution.maxSize ?? 95;
-        const nextMinSize = nextPane.contribution.minSize ?? 5;
-        const nextMaxSize = nextPane.contribution.maxSize ?? 95;
+        const minSize = pane.minSize ?? 5;
+        const maxSize = pane.maxSize ?? 95;
+        const nextMinSize = nextPane.minSize ?? 5;
+        const nextMaxSize = nextPane.maxSize ?? 95;
 
         if (newSize >= minSize && newSize <= maxSize && 
             nextNewSize >= nextMinSize && nextNewSize <= nextMaxSize) {
@@ -146,6 +204,9 @@ export class KSplitPane extends SignalWatcher(KElement) {
         if (this.resizing) {
             this.stopResize();
         }
+        if (this.childObserver) {
+            this.childObserver.disconnect();
+        }
     }
 
     render() {
@@ -172,10 +233,10 @@ export class KSplitPane extends SignalWatcher(KElement) {
                         flexBasis: `${pane.size}%`,
                         overflow: 'hidden',
                         position: 'relative',
-                        minWidth: this.orientation === 'horizontal' ? `${pane.contribution.minSize ?? 5}%` : undefined,
-                        minHeight: this.orientation === 'vertical' ? `${pane.contribution.minSize ?? 5}%` : undefined,
-                        maxWidth: this.orientation === 'horizontal' ? `${pane.contribution.maxSize ?? 95}%` : undefined,
-                        maxHeight: this.orientation === 'vertical' ? `${pane.contribution.maxSize ?? 95}%` : undefined,
+                        minWidth: this.orientation === 'horizontal' ? `${pane.minSize ?? 5}%` : undefined,
+                        minHeight: this.orientation === 'vertical' ? `${pane.minSize ?? 5}%` : undefined,
+                        maxWidth: this.orientation === 'horizontal' ? `${pane.maxSize ?? 95}%` : undefined,
+                        maxHeight: this.orientation === 'vertical' ? `${pane.maxSize ?? 95}%` : undefined,
                     } as const;
 
                     const splitterStyle = {
@@ -192,8 +253,8 @@ export class KSplitPane extends SignalWatcher(KElement) {
                     const splitterHoverStyle = 'background-color: var(--wa-color-primary-fill, rgba(0, 102, 204, 0.4));';
 
                     return html`
-                        <div style=${styleMap(paneStyle)} data-pane-name="${pane.contribution.name}">
-                            ${pane.contribution.component()}
+                        <div style=${styleMap(paneStyle)} data-pane-name="${pane.name}">
+                            ${this.useDirectChildren ? nothing : pane.contribution?.component()}
                         </div>
                         ${index < this.panes.length - 1 ? html`
                             <div 
@@ -207,6 +268,25 @@ export class KSplitPane extends SignalWatcher(KElement) {
                 })}
             </div>
         `;
+    }
+
+    updated(changedProperties: Map<string, any>) {
+        super.updated(changedProperties);
+        
+        if (this.useDirectChildren && this.panes.length > 0) {
+            this.panes.forEach((pane) => {
+                if (pane.element) {
+                    const paneDiv = this.querySelector(`[data-pane-name="${pane.name}"]`);
+                    if (paneDiv && !paneDiv.contains(pane.element)) {
+                        const element = pane.element as HTMLElement;
+                        element.style.height = '100%';
+                        element.style.width = '100%';
+                        element.style.display = 'block';
+                        paneDiv.appendChild(element);
+                    }
+                }
+            });
+        }
     }
 
     connectedCallback() {

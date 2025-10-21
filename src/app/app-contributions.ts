@@ -16,7 +16,18 @@ import "./../sysprompts"
 import APP_SYS_PROMPT from "../app/geospace-sysprompt.txt?raw"
 import {CID_PROMPTS, SysPromptContribution} from "../core/chatservice.ts";
 
-import {TABS_LEFT_END, TABS_LEFT_START, TABS_RIGHT, TOOLBAR_MAIN, TOOLBAR_BOTTOM, TOOLBAR_BOTTOM_END} from "../core/constants.ts";
+import {
+    TABS_LEFT_END,
+    TABS_LEFT_START,
+    TABS_RIGHT,
+    TABS_EDITING_LEFT,
+    TABS_EDITING_RIGHT,
+    TOOLBAR_MAIN,
+    TOOLBAR_BOTTOM,
+    TOOLBAR_BOTTOM_END,
+    TOOLBAR_MAIN_RIGHT,
+    SYSTEM_VIEWS
+} from "../core/constants.ts";
 
 import {contributionRegistry, HTMLContribution, TabContribution} from "../core/contributionregistry.ts";
 import {Extension, extensionRegistry} from "../core/extensionregistry.ts";
@@ -29,36 +40,70 @@ contributionRegistry.registerContribution(TOOLBAR_MAIN, {
     html: `<span style="margin-right: 1rem;"><span><nobr>🌐<i><b>geo!</b></i><small>space</small></nobr></span></span>`
 } as HTMLContribution)
 
-contributionRegistry.registerContribution(TABS_RIGHT, {
+contributionRegistry.registerContribution(TOOLBAR_MAIN_RIGHT, {
+    slot: "end",
+    html: `<k-perspective-switcher></k-perspective-switcher>`
+} as HTMLContribution)
+
+// Register views (shared across perspectives)
+contributionRegistry.registerContribution(SYSTEM_VIEWS, {
     name: "assistant",
     label: "AI",
     icon: "robot",
-    component: (id) => html`
-        <k-aiassist id="${id}"></k-aiassist>`
+    component: (id) => html`<k-aiassist id="${id}"></k-aiassist>`
 } as TabContribution)
 
-contributionRegistry.registerContribution(TABS_LEFT_START, {
+contributionRegistry.registerContribution(SYSTEM_VIEWS, {
     name: "filebrowser",
     label: "Workspace",
     icon: "folder-open",
-    component: (id) => html`
-        <k-filebrowser id="${id}"></k-filebrowser>`
+    component: (id) => html`<k-filebrowser id="${id}"></k-filebrowser>`
+} as TabContribution)
+
+contributionRegistry.registerContribution(SYSTEM_VIEWS, {
+    name: "catalog",
+    label: "Catalog",
+    icon: "book",
+    component: (id) => html`<gs-catalog id="${id}"></gs-catalog>`
+} as TabContribution)
+
+contributionRegistry.registerContribution(SYSTEM_VIEWS, {
+    name: "map-props",
+    label: "Map Properties",
+    icon: "fg map-options",
+    component: (id) => html`<gs-map-props id="${id}"></gs-map-props>`
+} as TabContribution)
+
+// Geospace perspective - reference views
+contributionRegistry.registerContribution(TABS_LEFT_START, {
+    name: "filebrowser",
+    view: "filebrowser"
 } as TabContribution)
 
 contributionRegistry.registerContribution(TABS_LEFT_START, {
     name: "catalog",
-    label: "Catalog",
-    icon: "book",
-    component: (id) => html`
-        <gs-catalog id="${id}"></gs-catalog>`
+    view: "catalog"
 } as TabContribution)
 
 contributionRegistry.registerContribution(TABS_LEFT_END, {
     name: "map-props",
-    label: "Map Properties",
-    icon: "fg map-options",
-    component: (id) => html`
-        <gs-map-props id="${id}"></gs-map-props>`
+    view: "map-props"
+} as TabContribution)
+
+contributionRegistry.registerContribution(TABS_RIGHT, {
+    name: "assistant",
+    view: "assistant"
+} as TabContribution)
+
+// Editing perspective - reference views
+contributionRegistry.registerContribution(TABS_EDITING_LEFT, {
+    name: "filebrowser",
+    view: "filebrowser"
+} as TabContribution)
+
+contributionRegistry.registerContribution(TABS_EDITING_RIGHT, {
+    name: "assistant",
+    view: "assistant"
 } as TabContribution)
 
 extensionRegistry.registerExtension({

@@ -1,11 +1,12 @@
 import {customElement, state} from "lit/decorators.js";
-import {css, html} from "lit";
+import {css, html, nothing} from "lit";
 import {KContainer} from "./k-container.ts";
 import {contributionRegistry, TabContribution, TOPIC_CONTRIBUTEIONS_CHANGED} from "../core/contributionregistry.ts";
 import {when} from "lit/directives/when.js";
 import {icon, observeOverflow} from "../core/k-utils.ts";
 import {createRef, ref} from "lit/directives/ref.js";
 import {subscribe} from "../core/events.ts";
+import {tabInstanceManager} from "../core/tabinstancemanager.ts";
 
 @customElement('k-tabs')
 export class KTabs extends KContainer {
@@ -17,7 +18,22 @@ export class KTabs extends KContainer {
     protected doAfterUI() {
         if (this.getAttribute("id")) {
             const id = this.getAttribute("id")!
-            this.contributions = contributionRegistry.getContributions(id) as TabContribution[]
+            const rawContributions = contributionRegistry.getContributions(id) as TabContribution[]
+            
+            // Resolve view references
+            this.contributions = rawContributions.map(c => {
+                if (c.view) {
+                    const view = contributionRegistry.getView(c.view);
+                    if (view) {
+                        // Merge view with contribution (contribution properties override view)
+                        return { ...view, ...c, name: c.name || view.name };
+                    }
+                }
+                return c;
+            });
+            
+            // Trigger re-render after contributions are loaded
+            this.requestUpdate();
         }
 
         // @ts-ignore
@@ -29,6 +45,21 @@ export class KTabs extends KContainer {
 
     protected doInitUI() {
         subscribe(TOPIC_CONTRIBUTEIONS_CHANGED, () => {
+            if (this.getAttribute("id")) {
+                const id = this.getAttribute("id")!
+                const rawContributions = contributionRegistry.getContributions(id) as TabContribution[]
+                
+                // Resolve view references
+                this.contributions = rawContributions.map(c => {
+                    if (c.view) {
+                        const view = contributionRegistry.getView(c.view);
+                        if (view) {
+                            return { ...view, ...c, name: c.name || view.name };
+                        }
+                    }
+                    return c;
+                });
+            }
             this.requestUpdate()
         })
     }
@@ -98,25 +129,75 @@ export class KTabs extends KContainer {
         return !!tab && tab.classList.contains("part-dirty")
     }
 
+    updated(changedProperties: Map<string, any>) {
+        super.updated(changedProperties);
+        
+        if (this.getAttribute("id")) {
+            const containerId = this.getAttribute("id")!;
+            
+            this.contributions.forEach(c => {
+                const instanceKey = tabInstanceManager.getInstanceKey(c, containerId);
+                let instance = tabInstanceManager.getInstance(instanceKey);
+                const tabPanel = this.getTabPanel(c.name);
+                
+                if (!tabPanel) return;
+                
+                const contentDiv = tabPanel.querySelector('.tab-content') as HTMLElement;
+                if (!contentDiv) return;
+                
+                if (!instance) {
+                    // First time rendering - capture the content as instance
+                    const content = contentDiv.firstElementChild as HTMLElement;
+                    if (content) {
+                        instance = tabInstanceManager.createInstance(instanceKey, c);
+                        instance.element = content;
+                        tabInstanceManager.moveToContainer(instanceKey, containerId);
+                    }
+                } else {
+                    // Instance exists - move it to this container
+                    if (instance.element && !contentDiv.contains(instance.element)) {
+                        contentDiv.appendChild(instance.element);
+                        instance.element.style.display = '';
+                        
+                        // Request update on the moved element if it's a Lit component
+                        if ('requestUpdate' in instance.element && typeof instance.element.requestUpdate === 'function') {
+                            instance.element.requestUpdate();
+                        }
+                    }
+                    tabInstanceManager.moveToContainer(instanceKey, containerId);
+                }
+            });
+        }
+    }
+
     render() {
+        const containerId = this.getAttribute("id") || "";
+        
         return html`
             <wa-tab-group ${ref(this.tabGroup)}>
-                ${this.contributions.map(c => html`
-                    <wa-tab panel="${c.name}">
-                        ${icon(c.icon!)}
-                        ${c.label}
-                        ${when(c.closable, () => html`
-                            <wa-button for="${c.name}" tabindex="-1" title="Close Tab" appearance="plain" size="small"
-                                       @click="${(e: Event) => this.closeTab(e, c.name)}">
-                                <wa-icon name="xmark"></wa-icon>
-                            </wa-button>
-                        `)}
-                    </wa-tab>
-                    <wa-tab-panel name="${c.name}">
-                        <k-toolbar id="toolbar.${c.name}" class="tab-toolbar"></k-toolbar>
-                        ${c.component(c.name)}
-                    </wa-tab-panel>
-                `)}
+                ${this.contributions.map(c => {
+                    const instanceKey = tabInstanceManager.getInstanceKey(c, containerId);
+                    const existingInstance = tabInstanceManager.getInstance(instanceKey);
+                    
+                    return html`
+                        <wa-tab panel="${c.name}">
+                            ${icon(c.icon!)}
+                            ${c.label}
+                            ${when(c.closable, () => html`
+                                <wa-button for="${c.name}" tabindex="-1" title="Close Tab" appearance="plain" size="small"
+                                           @click="${(e: Event) => this.closeTab(e, c.name)}">
+                                    <wa-icon name="xmark"></wa-icon>
+                                </wa-button>
+                            `)}
+                        </wa-tab>
+                        <wa-tab-panel name="${c.name}">
+                            <k-toolbar id="toolbar.${c.name}" class="tab-toolbar"></k-toolbar>
+                            <div class="tab-content" style="height: 100%; width: 100%;">
+                                ${existingInstance ? nothing : (c.component ? c.component(c.name) : nothing)}
+                            </div>
+                        </wa-tab-panel>
+                    `;
+                })}
             </wa-tab-group>
         `;
     }
