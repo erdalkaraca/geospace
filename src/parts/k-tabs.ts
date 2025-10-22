@@ -3,6 +3,7 @@ import {css, html, nothing} from "lit";
 import {KContainer} from "./k-container.ts";
 import {contributionRegistry, TabContribution, TOPIC_CONTRIBUTEIONS_CHANGED} from "../core/contributionregistry.ts";
 import {when} from "lit/directives/when.js";
+import {repeat} from "lit/directives/repeat.js";
 import {icon, observeOverflow} from "../core/k-utils.ts";
 import {createRef, ref} from "lit/directives/ref.js";
 import {subscribe} from "../core/events.ts";
@@ -118,30 +119,26 @@ export class KTabs extends KContainer {
             return;
         }
         
-        const tab = (event.currentTarget as HTMLElement).parentElement;
-        if (!tab) return;
-        
-        tab.remove();
         const tabPanel = this.getTabPanel(tabName);
         if (!tabPanel) return;
         
-        // Find and cleanup the contribution
         const contribution = this.contributions.find(c => c.name === tabName);
-        if (contribution && this.containerId) {
-            this.cleanupTabInstance(tabPanel);
-            
-            // Remove the contribution from the array
-            const index = this.contributions.indexOf(contribution);
-            if (index > -1) {
-                this.contributions.splice(index, 1);
-            }
+        if (!contribution) return;
+        
+        this.cleanupTabInstance(tabPanel);
+        
+        const index = this.contributions.indexOf(contribution);
+        if (index > -1) {
+            this.contributions.splice(index, 1);
         }
         
         this.dispatchEvent(new CustomEvent('tab-closed', {detail: tabPanel}));
-        tabPanel.remove();
+        
         this.requestUpdate();
         
-        this.activateNextAvailableTab();
+        this.updateComplete.then(() => {
+            this.activateNextAvailableTab();
+        });
     }
 
     markDirty(name: string, dirty: boolean): void {
@@ -211,24 +208,28 @@ export class KTabs extends KContainer {
     render() {
         return html`
             <wa-tab-group ${ref(this.tabGroup)}>
-                ${this.contributions.map(c => html`
-                    <wa-tab panel="${c.name}">
-                        ${icon(c.icon!)}
-                        ${c.label}
-                        ${when(c.closable, () => html`
-                            <wa-button for="${c.name}" tabindex="-1" title="Close Tab" appearance="plain" size="small"
-                                       @click="${(e: Event) => this.closeTab(e, c.name)}">
-                                <wa-icon name="xmark" label="Close"></wa-icon>
-                            </wa-button>
-                        `)}
-                    </wa-tab>
-                    <wa-tab-panel name="${c.name}">
-                        <k-toolbar id="toolbar.${c.name}" class="tab-toolbar"></k-toolbar>
-                        <div class="tab-content" style="height: 100%; width: 100%;">
-                            ${c.component ? c.component(c.name) : nothing}
-                        </div>
-                    </wa-tab-panel>
-                `)}
+                ${repeat(
+                    this.contributions,
+                    (c) => c.name,
+                    (c) => html`
+                        <wa-tab panel="${c.name}">
+                            ${icon(c.icon!)}
+                            ${c.label}
+                            ${when(c.closable, () => html`
+                                <wa-button for="${c.name}" tabindex="-1" title="Close Tab" appearance="plain" size="small"
+                                           @click="${(e: Event) => this.closeTab(e, c.name)}">
+                                    <wa-icon name="xmark" label="Close"></wa-icon>
+                                </wa-button>
+                            `)}
+                        </wa-tab>
+                        <wa-tab-panel name="${c.name}">
+                            <k-toolbar id="toolbar.${c.name}" class="tab-toolbar"></k-toolbar>
+                            <div class="tab-content" style="height: 100%; width: 100%;">
+                                ${c.component ? c.component(c.name) : nothing}
+                            </div>
+                        </wa-tab-panel>
+                    `
+                )}
             </wa-tab-group>
         `;
     }
