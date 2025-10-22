@@ -30,7 +30,8 @@ export class GsMapEditor extends KPart {
         history: []
     }
 
-    protected doBeforeUI() {
+    constructor() {
+        super();
         this.commandStack = new CommandStack()
     }
 
