@@ -1,9 +1,9 @@
 import {html} from "lit";
-import {TABS_RIGHT} from "../../core/constants.ts";
+import {PANEL_BOTTOM} from "../../core/constants.ts";
 import "./k-pyterminal.ts";
 
 export default ({ contributionRegistry }: any) => {
-    contributionRegistry.registerContribution(TABS_RIGHT, {
+    contributionRegistry.registerContribution(PANEL_BOTTOM, {
         name: "pyterminal",
         label: "Python",
         icon: "terminal",

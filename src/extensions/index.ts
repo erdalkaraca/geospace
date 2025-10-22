@@ -87,7 +87,7 @@ extensionRegistry.registerExtension({
 extensionRegistry.registerExtension({
     id: "system.monaco",
     name: "Monaco Code Editor",
-    description: "Code editor with syntax highlighting, IntelliSense, and Python execution support",
+    description: "Code editor with syntax highlighting, code completion, and Python execution support",
     loader: () => import("./monaco-editor/monaco-editor-extension.ts"),
     icon: "file-pen",
 })

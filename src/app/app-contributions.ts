@@ -75,7 +75,7 @@ contributionRegistry.registerContribution(SIDEBAR_AUXILIARY, {
 contributionRegistry.registerContribution(PANEL_BOTTOM, {
     name: "log-terminal",
     label: "Log",
-    icon: "terminal",
+    icon: "list",
     component: (id) => html`<k-log-terminal id="${id}"></k-log-terminal>`
 } as TabContribution)
 
