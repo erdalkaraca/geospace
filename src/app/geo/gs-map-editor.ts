@@ -14,8 +14,6 @@ import { ChatContext } from "../../core/chatservice.ts";
 import {MapRenderer, MapOperations, createProxy} from "./map-renderer.ts";
 import { IFrameMapRenderer } from "./proxy-map-renderer.ts";
 import { DomainMapOperations } from "./domain-map-operations.ts";
-import { watchSignal } from "../../core/signals.ts";
-import { perspectiveSwitchedSignal } from "../../core/appstate.ts";
 
 @customElement('gs-map')
 export class GsMapEditor extends KPart {
@@ -26,7 +24,7 @@ export class GsMapEditor extends KPart {
     private renderer?: MapRenderer;
     private operations?: MapOperations;
     private gsMap?: GsMap;
-
+    private isFirstConnection = true;
 
     chatContext: ChatContext = {
         history: []
@@ -35,14 +33,21 @@ export class GsMapEditor extends KPart {
     constructor() {
         super();
         this.commandStack = new CommandStack()
+    }
+
+    async connectedCallback() {
+        super.connectedCallback();
         
-        // Watch for perspective switches and re-render if needed
-        // This handles the case where iframe's JavaScript context is destroyed when moving between perspectives
-        watchSignal(perspectiveSwitchedSignal, async () => {
-            if (this.renderer?.reattached) {
-                await this.renderer.reattached();
-            }
-        });
+        // Skip on first connection (initial render)
+        if (this.isFirstConnection) {
+            this.isFirstConnection = false;
+            return;
+        }
+        
+        // On subsequent connections (perspective switches), recreate the iframe
+        if (this.renderer?.reattached) {
+            await this.renderer.reattached();
+        }
     }
 
     protected async doInitUI() {

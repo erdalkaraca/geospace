@@ -13,6 +13,30 @@
  * - Contribution-based registration
  * - Event dispatching on perspective switch
  * 
+ * IMPORTANT - IFrame Limitation:
+ * ================================
+ * When the shared editor area moves between perspectives, any iframes within it are detached 
+ * and reattached to the DOM. This causes browsers to destroy the iframe's JavaScript context 
+ * and reload the iframe content. This is a well-documented browser behavior (see WebKit bug 
+ * #32848, Mozilla bug #254144).
+ * 
+ * Current behavior:
+ * - When switching perspectives, iframes in the editor area reload (~1 second for OpenLayers)
+ * - The map state (GsMap model) is preserved, but the rendering context is recreated
+ * - The IFrameMapRenderer uses MutationObserver to automatically detect and handle reattachment
+ * - A perspectiveSwitchedSignal is emitted for components that need to react to switches
+ * 
+ * Potential optimization (not implemented):
+ * - Keep the editor area in a fixed DOM position (e.g., always as a direct child of <body>)
+ * - Only move the surrounding panels (left/right/bottom views) around it
+ * - Use absolute positioning or grid layout to visually arrange everything
+ * - This would eliminate iframe reloads during perspective switches
+ * 
+ * Caveat:
+ * - This optimization only helps if views (tabs) don't contain iframes
+ * - If individual tabs use iframes, moving tabs between perspectives would still trigger reloads
+ * - The current architecture is simpler and the reload delay is acceptable for typical usage
+ * 
  * Example usage:
  * 
  * // In HTML:

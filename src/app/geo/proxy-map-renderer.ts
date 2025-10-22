@@ -35,9 +35,18 @@ export class IFrameMapRenderer implements MapRenderer {
         }) as MapOperations;
     }
 
+    /**
+     * Handles perspective switches where the editor area (and this iframe) moves in the DOM.
+     * 
+     * Browser behavior: When an iframe is detached and reattached to the DOM, browsers destroy
+     * its JavaScript context and reload the content. This is documented in:
+     * - WebKit bug #32848: "avoiding iframe reload on reparenting between documents"
+     * - Mozilla bug #254144: "iframes reload when moved around DOM tree"
+     * 
+     * Solution: Accept the reload, preserve the data model (GsMap), recreate the iframe.
+     * This takes ~1 second (iframe initialization + OpenLayers setup), which is acceptable.
+     */
     async reattached(): Promise<void> {
-        // When the editor area moves between perspectives, the iframe's JavaScript context is destroyed
-        // We need to recreate the iframe with a fresh context
         if (!this.targetElement) {
             console.warn('No target element stored, cannot reattach');
             return;
@@ -48,7 +57,7 @@ export class IFrameMapRenderer implements MapRenderer {
             this.iframe.remove();
         }
         
-        // Re-render with a fresh iframe
+        // Re-render with a fresh iframe (preserves this.gsMap state)
         await this.render(this.targetElement);
     }
 
@@ -83,7 +92,7 @@ export class IFrameMapRenderer implements MapRenderer {
         // Send initial render command
         await this.sendMessage('render', { gsMap: this.gsMap, env: this.env });
     }
-
+    
     async modelToUI(updatedGsMap?: GsMap): Promise<void> {
         await this.sendMessage('modelToUI', updatedGsMap ?? this.gsMap);
     }
