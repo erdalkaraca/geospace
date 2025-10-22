@@ -8,6 +8,76 @@ let interruptBuffer: Uint8Array | null = null;
 let inputCounter = 0;
 const pendingInputRequests: Map<string, { resolve: (value: string) => void, reject: (error: any) => void }> = new Map();
 
+// Store original console methods before interception
+const originalConsole = {
+    log: console.log.bind(console),
+    info: console.info.bind(console),
+    warn: console.warn.bind(console),
+    error: console.error.bind(console),
+    debug: console.debug.bind(console)
+};
+
+// Helper to format console arguments
+function formatArg(arg: any): string {
+    if (arg === null) return 'null';
+    if (arg === undefined) return 'undefined';
+    if (typeof arg === 'string') return arg;
+    if (typeof arg === 'number' || typeof arg === 'boolean') return String(arg);
+    if (arg instanceof Error) return `${arg.name}: ${arg.message}`;
+    
+    try {
+        return JSON.stringify(arg);
+    } catch {
+        return String(arg);
+    }
+}
+
+// Intercept worker console and forward to main thread
+console.log = function(...args: any[]) {
+    originalConsole.log.apply(console, args);
+    self.postMessage({
+        id: 'console-log',
+        type: 'console',
+        payload: { level: 'info', message: args.map(a => formatArg(a)).join(' ') }
+    });
+};
+
+console.info = function(...args: any[]) {
+    originalConsole.info.apply(console, args);
+    self.postMessage({
+        id: 'console-log',
+        type: 'console',
+        payload: { level: 'info', message: args.map(a => formatArg(a)).join(' ') }
+    });
+};
+
+console.warn = function(...args: any[]) {
+    originalConsole.warn.apply(console, args);
+    self.postMessage({
+        id: 'console-log',
+        type: 'console',
+        payload: { level: 'warning', message: args.map(a => formatArg(a)).join(' ') }
+    });
+};
+
+console.error = function(...args: any[]) {
+    originalConsole.error.apply(console, args);
+    self.postMessage({
+        id: 'console-log',
+        type: 'console',
+        payload: { level: 'error', message: args.map(a => formatArg(a)).join(' ') }
+    });
+};
+
+console.debug = function(...args: any[]) {
+    originalConsole.debug.apply(console, args);
+    self.postMessage({
+        id: 'console-log',
+        type: 'console',
+        payload: { level: 'debug', message: args.map(a => formatArg(a)).join(' ') }
+    });
+};
+
 // Message types for worker communication
 export interface PyWorkerMessage {
     id: string;
@@ -17,7 +87,7 @@ export interface PyWorkerMessage {
 
 export interface PyWorkerResponse {
     id: string;
-    type: 'success' | 'error' | 'stdout' | 'stderr' | 'inputRequest';
+    type: 'success' | 'error' | 'stdout' | 'stderr' | 'inputRequest' | 'console';
     payload?: any;
 }
 

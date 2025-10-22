@@ -17,15 +17,13 @@ import APP_SYS_PROMPT from "../app/geospace-sysprompt.txt?raw"
 import {CID_PROMPTS, SysPromptContribution} from "../core/chatservice.ts";
 
 import {
-    TABS_LEFT_END,
-    TABS_LEFT_START,
-    TABS_RIGHT,
-    TABS_EDITING_LEFT,
-    TABS_EDITING_RIGHT,
+    SIDEBAR_MAIN,
+    SIDEBAR_MAIN_BOTTOM,
+    SIDEBAR_AUXILIARY,
+    PANEL_BOTTOM,
     TOOLBAR_MAIN,
     TOOLBAR_BOTTOM,
     TOOLBAR_BOTTOM_END,
-    TOOLBAR_MAIN_RIGHT,
     SYSTEM_VIEWS
 } from "../core/constants.ts";
 
@@ -43,12 +41,7 @@ contributionRegistry.registerContribution(TOOLBAR_MAIN, {
     html: `<span style="margin-right: 1rem;"><span><nobr>🌐<i><b>geo!</b></i><small>space</small></nobr></span></span>`
 } as HTMLContribution)
 
-contributionRegistry.registerContribution(TOOLBAR_MAIN_RIGHT, {
-    slot: "end",
-    html: `<k-perspective-switcher></k-perspective-switcher>`
-} as HTMLContribution)
-
-// Register views (shared across perspectives)
+// Register views (shared singleton tabs)
 contributionRegistry.registerContribution(SYSTEM_VIEWS, {
     name: "assistant",
     label: "AI",
@@ -77,36 +70,40 @@ contributionRegistry.registerContribution(SYSTEM_VIEWS, {
     component: (id) => html`<gs-map-props id="${id}"></gs-map-props>`
 } as TabContribution)
 
-// Geospace perspective - reference views
-contributionRegistry.registerContribution(TABS_LEFT_START, {
+contributionRegistry.registerContribution(SYSTEM_VIEWS, {
+    name: "log-terminal",
+    label: "Log",
+    icon: "terminal",
+    component: (id) => html`<k-log-terminal id="${id}"></k-log-terminal>`
+} as TabContribution)
+
+// Left sidebar tabs (top)
+contributionRegistry.registerContribution(SIDEBAR_MAIN, {
     name: "filebrowser",
     view: "filebrowser"
 } as TabContribution)
 
-contributionRegistry.registerContribution(TABS_LEFT_START, {
+contributionRegistry.registerContribution(SIDEBAR_MAIN, {
     name: "catalog",
     view: "catalog"
 } as TabContribution)
 
-contributionRegistry.registerContribution(TABS_LEFT_END, {
+// Left sidebar tabs (bottom)
+contributionRegistry.registerContribution(SIDEBAR_MAIN_BOTTOM, {
     name: "map-props",
     view: "map-props"
 } as TabContribution)
 
-contributionRegistry.registerContribution(TABS_RIGHT, {
+// Right sidebar (auxiliary) tabs
+contributionRegistry.registerContribution(SIDEBAR_AUXILIARY, {
     name: "assistant",
     view: "assistant"
 } as TabContribution)
 
-// Editing perspective - reference views
-contributionRegistry.registerContribution(TABS_EDITING_LEFT, {
-    name: "filebrowser",
-    view: "filebrowser"
-} as TabContribution)
-
-contributionRegistry.registerContribution(TABS_EDITING_RIGHT, {
-    name: "assistant",
-    view: "assistant"
+// Bottom panel tabs
+contributionRegistry.registerContribution(PANEL_BOTTOM, {
+    name: "log-terminal",
+    view: "log-terminal"
 } as TabContribution)
 
 extensionRegistry.registerExtension({

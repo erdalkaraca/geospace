@@ -88,6 +88,16 @@ export class PyEnv {
             }
             return;
         }
+        
+        // Handle console messages from worker
+        if (response.type === 'console') {
+            const { level, message } = response.payload;
+            // Forward to log terminal
+            if (typeof window !== 'undefined' && (window as any).logToTerminal) {
+                (window as any).logToTerminal('Python Worker', message, level);
+            }
+            return;
+        }
 
         // Handle regular responses
         const pending = this.pendingMessages.get(response.id);

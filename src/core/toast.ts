@@ -2,7 +2,7 @@ import Toastify from "toastify-js";
 import {uiContext} from "./di.ts";
 
 export const toastInfo = (msg: string) => {
-    console.info(msg)
+    console.info("[TOAST] INFO: ", msg)
     Toastify({
         text: msg,
         duration: 3000,
@@ -13,7 +13,7 @@ export const toastInfo = (msg: string) => {
 }
 
 export const toastError = (msg: string) => {
-    console.error(msg)
+    console.error("[TOAST] ERROR: ", msg)
     Toastify({
         text: msg,
         duration: 3000,
@@ -27,7 +27,7 @@ export const toastError = (msg: string) => {
 }
 
 export const toastWarning = (msg: string) => {
-    console.warn(msg)
+    console.warn("[TOAST] WARNING: ", msg)
     Toastify({
         text: msg,
         duration: 3000,
