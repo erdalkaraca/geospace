@@ -34,14 +34,16 @@ export class KTabs extends KContainer {
 
     // ============= Lifecycle Methods =============
 
-    protected doInitUI() {
+    protected doBeforeUI() {
         this.containerId = this.getAttribute("id");
         if (!this.containerId) {
             throw new Error("k-tabs requires an 'id' attribute to function");
         }
 
         this.loadAndResolveContributions();
-        
+    }
+
+    protected doInitUI() {
         this.updateComplete.then(() => {
             this.activateNextAvailableTab();
             

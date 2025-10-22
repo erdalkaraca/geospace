@@ -73,6 +73,12 @@ export class KMonacoEditor extends KPart {
         history: []
     }
 
+    protected doBeforeUI() {
+        // Initialize canExecute based on file type
+        const file = this.input!.data
+        this.canExecute = file.getName().endsWith(".py")
+    }
+
     protected async doInitUI() {
         const file = this.input!.data
         const textContents = await file.getContents()
@@ -90,7 +96,6 @@ export class KMonacoEditor extends KPart {
             this.markDirty(true)
         })
         this.editor.setModel(this.model)
-        this.canExecute = file.getName().endsWith(".py")
     }
 
     public getEditor() {

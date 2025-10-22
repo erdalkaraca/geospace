@@ -62,7 +62,7 @@ export class KSplitPane extends SignalWatcher(KElement) {
 
     // ============= Lifecycle Methods =============
 
-    protected doInitUI() {
+    protected doBeforeUI() {
         this.containerId = this.getAttribute("id");
         
         if (this.ratios) {
@@ -73,7 +73,9 @@ export class KSplitPane extends SignalWatcher(KElement) {
             // Contribution mode: load panes from registry
             this.loadPanes(this.containerId);
         }
-        
+    }
+
+    protected doInitUI() {
         subscribe(TOPIC_CONTRIBUTEIONS_CHANGED, () => {
             if (!this.useDirectChildren && this.containerId) {
                 this.loadPanes(this.containerId);

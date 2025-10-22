@@ -28,15 +28,19 @@ export class KFileBrowser extends KPart {
     private workspaceDir?: Directory
     private treeRef = createRef<HTMLElement>();
 
-    protected async doInitUI() {
+    protected doBeforeUI() {
+        // Start loading workspace asynchronously
+        this.initializeWorkspace();
+        this.registerToolbarActions();
+    }
+
+    private async initializeWorkspace() {
         const workspaceDir = await workspaceService.getWorkspace()
         if (workspaceDir) {
             await this.loadWorkspace(workspaceDir!)
         } else {
             commandRegistry.execute("help")
         }
-        
-        this.registerToolbarActions()
     }
 
     private registerToolbarActions() {

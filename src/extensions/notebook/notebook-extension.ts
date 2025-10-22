@@ -143,7 +143,17 @@ export class KNotebookEditor extends KPart {
         }
     }
 
-    protected async doInitUI() {
+    protected doBeforeUI() {
+        // Start loading notebook asynchronously
+        this.loadNotebook();
+    }
+
+    protected doInitUI() {
+        // Set up theme observer to update Monaco editors when theme changes
+        this.setupThemeObserver();
+    }
+
+    private async loadNotebook() {
         const file: File = this.input!.data;
         const contents = await file.getContents();
 
@@ -185,9 +195,6 @@ export class KNotebookEditor extends KPart {
                 }
             });
         }
-
-        // Set up theme observer to update Monaco editors when theme changes
-        this.setupThemeObserver();
     }
 
     private setupThemeObserver() {

@@ -21,7 +21,7 @@ export class KToolbar extends SignalWatcher(KElement) {
     @state()
     private contributions: Contribution[] = [];
 
-    protected doInitUI() {
+    protected doBeforeUI() {
         if (this.getAttribute("id")) {
             const id = this.getAttribute("id")!
             this.contributions = contributionRegistry.getContributions(id)

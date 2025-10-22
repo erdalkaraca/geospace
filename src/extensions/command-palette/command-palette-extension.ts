@@ -45,13 +45,15 @@ export class KCommandPalette extends KPart {
     private dialogRef: Ref<any> = createRef();
     private typingTimeout: any = null;
 
-    protected async doInitUI() {
+    protected doBeforeUI() {
         // Get command registry from context
         this.commandRegistry = (this as any).commandRegistry;
         
         // Load all commands
         this.updateCommandList();
-        
+    }
+
+    protected async doInitUI() {
         // Subscribe to open command palette event
         subscribe(TOPIC_OPEN_COMMAND_PALETTE, () => {
             this.openPalette();

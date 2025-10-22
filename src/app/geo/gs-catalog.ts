@@ -16,9 +16,12 @@ export class GsCatalog extends KPart {
     
     private treeRef = createRef<HTMLElement>();
 
-    protected doInitUI() {
+    protected doBeforeUI() {
         const contributions = contributionRegistry.getContributions(CID_CATALOG_ROOT) as TreeContribution[]
         this.rootNodes = this.toTreeNodes(contributions)
+    }
+
+    protected doInitUI() {
         this.registerToolbarActions()
     }
     
