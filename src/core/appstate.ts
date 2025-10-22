@@ -12,3 +12,5 @@ export const partDirtySignal = signal<KPart>(null as unknown as KPart)
 export const activeTasksSignal = signal<number>(0)
 
 export const activeSelectionSignal = signal<any>(undefined)
+
+export const perspectiveSwitchedSignal = signal<{name: string, timestamp: number}>({name: '', timestamp: 0})

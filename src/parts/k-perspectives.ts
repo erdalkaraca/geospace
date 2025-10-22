@@ -38,6 +38,7 @@ import {KContainer} from "./k-container.ts";
 import {contributionRegistry, PerspectiveContribution, TOPIC_CONTRIBUTEIONS_CHANGED} from "../core/contributionregistry.ts";
 import {createRef, ref} from "lit/directives/ref.js";
 import {subscribe} from "../core/events.ts";
+import {perspectiveSwitchedSignal} from "../core/appstate.ts";
 
 @customElement('k-perspectives')
 export class KPerspectives extends KContainer {
@@ -110,6 +111,13 @@ export class KPerspectives extends KContainer {
         }
         
         this.activePerspective = perspectiveName;
+        
+        // Emit signal for perspective switch
+        perspectiveSwitchedSignal.set({
+            name: perspectiveName,
+            timestamp: Date.now()
+        });
+        
         this.dispatchEvent(new CustomEvent('perspective-switched', {
             detail: {name: perspectiveName}
         }))

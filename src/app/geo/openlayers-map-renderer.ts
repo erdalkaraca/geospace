@@ -23,6 +23,11 @@ export class OpenLayersMapRenderer implements MapRenderer {
         this.env = env;
     }
 
+    async reattached(): Promise<void> {
+        // OpenLayers doesn't need special handling for reattachment
+        // The map stays attached to its container element
+    }
+
     async render(container: string | HTMLElement): Promise<void> {
         try {
             // Use the runtime library to render the map

@@ -9,6 +9,7 @@ import {GsMap} from "../rt";
  */
 export interface MapRenderer {
     render(container: string | HTMLElement): Promise<void>;
+    reattached?(): Promise<void>;
     modelToUI(updatedGsMap?: GsMap): Promise<void>;
     getViewExtent(): number[];
     getOperations(): MapOperations;

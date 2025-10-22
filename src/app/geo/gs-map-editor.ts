@@ -14,6 +14,8 @@ import { ChatContext } from "../../core/chatservice.ts";
 import {MapRenderer, MapOperations, createProxy} from "./map-renderer.ts";
 import { IFrameMapRenderer } from "./proxy-map-renderer.ts";
 import { DomainMapOperations } from "./domain-map-operations.ts";
+import { watchSignal } from "../../core/signals.ts";
+import { perspectiveSwitchedSignal } from "../../core/appstate.ts";
 
 @customElement('gs-map')
 export class GsMapEditor extends KPart {
@@ -33,6 +35,14 @@ export class GsMapEditor extends KPart {
     constructor() {
         super();
         this.commandStack = new CommandStack()
+        
+        // Watch for perspective switches and re-render if needed
+        // This handles the case where iframe's JavaScript context is destroyed when moving between perspectives
+        watchSignal(perspectiveSwitchedSignal, async () => {
+            if (this.renderer?.reattached) {
+                await this.renderer.reattached();
+            }
+        });
     }
 
     protected async doInitUI() {

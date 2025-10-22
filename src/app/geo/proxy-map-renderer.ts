@@ -17,6 +17,7 @@ export class IFrameMapRenderer implements MapRenderer {
     private onDirtyCallback?: () => void;
     private onSyncCallback?: (gsMap: GsMap) => void;
     private isMobileView: boolean = false;
+    private targetElement?: HTMLElement;
 
     constructor(gsMap: GsMap, env?: any) {
         this.gsMap = gsMap;
@@ -34,6 +35,23 @@ export class IFrameMapRenderer implements MapRenderer {
         }) as MapOperations;
     }
 
+    async reattached(): Promise<void> {
+        // When the editor area moves between perspectives, the iframe's JavaScript context is destroyed
+        // We need to recreate the iframe with a fresh context
+        if (!this.targetElement) {
+            console.warn('No target element stored, cannot reattach');
+            return;
+        }
+        
+        // Clean up the old broken iframe
+        if (this.iframe && this.iframe.parentElement) {
+            this.iframe.remove();
+        }
+        
+        // Re-render with a fresh iframe
+        await this.render(this.targetElement);
+    }
+
     async render(container: string | HTMLElement): Promise<void> {
         // Create iframe for isolated rendering
         this.iframe = document.createElement('iframe');
@@ -46,15 +64,16 @@ export class IFrameMapRenderer implements MapRenderer {
         this.iframe.src = iframeSrc;
 
         // Append to container
-        const targetElement = typeof container === 'string'
+        this.targetElement = typeof container === 'string'
             ? document.querySelector(container) as HTMLElement
             : container;
 
-        if (!targetElement) {
+        if (!this.targetElement) {
             throw new Error('Container element not found');
         }
 
-        targetElement.appendChild(this.iframe);
+        this.targetElement.innerHTML = '';
+        this.targetElement.appendChild(this.iframe);
 
         // Wait for iframe to load and initialize
         await this.waitRendererReady();
