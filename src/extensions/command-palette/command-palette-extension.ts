@@ -166,6 +166,8 @@ export class KCommandPalette extends KPart {
         const command = this.allCommands.find(cmd => cmd.id === commandId);
         if (command) {
             e.preventDefault();
+            this.inputValue = '';
+            this.filterCommands();
             this.runCommand(command);
         }
     }
@@ -256,7 +258,7 @@ export class KCommandPalette extends KPart {
         }
 
         wa-input {
-            width: 100%;
+            max-width: 300px;
         }
 
         wa-dropdown::part(menu) {
@@ -385,7 +387,7 @@ export class KCommandPalette extends KPart {
                     @wa-hide=${() => this.dropdownOpen = false}
                 >
                     <wa-button slot="trigger" appearance="plain" size="small">
-                        <wa-icon name="terminal"></wa-icon>
+                        <wa-icon name="list"></wa-icon>
                     </wa-button>
 
                     ${this.filteredCommands.length > 0 ? html`
