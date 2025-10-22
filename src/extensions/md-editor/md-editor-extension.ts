@@ -36,7 +36,7 @@ export class KMDEditor extends KPart {
         this.mdContents = undefined
     }
 
-    protected async doAfterUI() {
+    protected async doInitUI() {
         const data = this.input!.data
         
         if (data instanceof File) {

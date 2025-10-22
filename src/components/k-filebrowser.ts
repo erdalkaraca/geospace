@@ -72,10 +72,6 @@ export class KFileBrowser extends KPart {
         })
     }
 
-    protected doAfterUI() {
-        //observeOverflow(this.treeRef.value!)
-    }
-
     @topic(TOPIC_WORKSPACE_CHANGED)
     async onWorkspaceChanged(workspaceDir: Directory) {
         await this.loadWorkspace(workspaceDir)

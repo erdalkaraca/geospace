@@ -143,7 +143,7 @@ export class KNotebookEditor extends KPart {
         }
     }
 
-    protected async doAfterUI() {
+    protected async doInitUI() {
         const file: File = this.input!.data;
         const contents = await file.getContents();
 

@@ -21,12 +21,10 @@ export class KPerspectiveSwitcher extends KElement {
 
     private perspectivesContainer?: KPerspectives;
 
-    protected doAfterUI() {
+    protected doInitUI() {
         this.findPerspectivesContainer();
         this.updatePerspectives();
-    }
-
-    protected doInitUI() {
+        
         subscribe(TOPIC_CONTRIBUTEIONS_CHANGED, () => {
             this.updatePerspectives();
         });
