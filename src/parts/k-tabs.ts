@@ -34,14 +34,23 @@ export class KTabs extends KContainer {
             
             // Trigger re-render after contributions are loaded
             this.requestUpdate();
-        }
-
-        if (this.tabGroup.value) {
-            // @ts-ignore
-            this.tabGroup.value.addEventListener("wa-tab-show", (event: CustomEvent) => {
-                const tabPanel = this.getTabPanel(event.detail.name)
-                this.dispatchEvent(new CustomEvent('tab-shown', {detail: tabPanel}))
-            })
+            
+            // Wait for render to complete before accessing tabGroup
+            this.updateComplete.then(() => {
+                // Activate first tab if none is active
+                if (this.contributions.length > 0 && this.tabGroup.value && !this.tabGroup.value.getAttribute('active')) {
+                    this.activate(this.contributions[0].name);
+                }
+                
+                // Set up event listener after render is complete
+                if (this.tabGroup.value) {
+                    // @ts-ignore
+                    this.tabGroup.value.addEventListener("wa-tab-show", (event: CustomEvent) => {
+                        const tabPanel = this.getTabPanel(event.detail.name)
+                        this.dispatchEvent(new CustomEvent('tab-shown', {detail: tabPanel}))
+                    })
+                }
+            });
         }
     }
 
@@ -63,6 +72,13 @@ export class KTabs extends KContainer {
                 });
             }
             this.requestUpdate()
+            
+            // Activate first tab if none is active
+            this.updateComplete.then(() => {
+                if (this.contributions.length > 0 && this.tabGroup.value && !this.tabGroup.value.getAttribute('active')) {
+                    this.activate(this.contributions[0].name);
+                }
+            });
         })
     }
 
@@ -135,7 +151,7 @@ export class KTabs extends KContainer {
         }
     }
 
-    private getTabPanel(name: string) {
+    private getTabPanel(name: string): HTMLElement | null {
         if (!this.tabGroup.value) return null;
         return <HTMLElement>this.tabGroup.value.querySelector(`wa-tab-panel[name='${name}']`)
     }
