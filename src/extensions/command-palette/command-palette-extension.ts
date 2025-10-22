@@ -25,9 +25,6 @@ export class KCommandPalette extends KPart {
     private filteredCommands: any[] = [];
 
     @state()
-    private selectedIndex: number = 0;
-
-    @state()
     private allCommands: any[] = [];
 
     @state()
@@ -39,9 +36,14 @@ export class KCommandPalette extends KPart {
     @state()
     private parameterValues: { [key: string]: string } = {};
 
+    @state()
+    private dropdownOpen: boolean = false;
+
     private commandRegistry: any;
-    private inputRef: Ref<HTMLInputElement> = createRef();
+    private inputRef: Ref<any> = createRef();
+    private dropdownRef: Ref<any> = createRef();
     private dialogRef: Ref<any> = createRef();
+    private typingTimeout: any = null;
 
     protected async doInitUI() {
         // Get command registry from context
@@ -74,7 +76,7 @@ export class KCommandPalette extends KPart {
     }
 
     public togglePalette() {
-        if (this.dialogRef.value?.open) {
+        if (this.dropdownOpen) {
             this.closePalette();
         } else {
             this.openPalette();
@@ -84,36 +86,59 @@ export class KCommandPalette extends KPart {
     public async openPalette() {
         this.inputValue = '';
         this.updateCommandList();
-        this.selectedIndex = 0;
         this.showParameterPrompt = false;
         
-        // Wait for Lit to complete the render cycle
         await this.updateComplete;
         
-        // Open the dialog using the ref
-        if (this.dialogRef.value) {
-            this.dialogRef.value.open = true;
-            // Wait for dialog to open
-            await this.dialogRef.value.updateComplete;
-            // Focus the input
-            this.inputRef.value?.focus();
+        if (this.dropdownRef.value) {
+            this.dropdownRef.value.open = true;
+            this.dropdownOpen = true;
+        }
+        
+        if (this.inputRef.value) {
+            this.inputRef.value.focus();
         }
     }
 
     private closePalette() {
-        // Close the dialog using the ref
-        if (this.dialogRef.value) {
-            this.dialogRef.value.open = false;
+        if (this.dropdownRef.value) {
+            this.dropdownRef.value.open = false;
         }
+        this.dropdownOpen = false;
         this.inputValue = '';
-        this.selectedIndex = 0;
         this.showParameterPrompt = false;
+        
+        if (this.typingTimeout) {
+            clearTimeout(this.typingTimeout);
+            this.typingTimeout = null;
+        }
     }
 
     private handleInputChange(e: Event) {
         const input = e.target as any;
         this.inputValue = input.value;
         this.filterCommands();
+        
+        // Clear existing timeout
+        if (this.typingTimeout) {
+            clearTimeout(this.typingTimeout);
+        }
+        
+        // Close dropdown while typing
+        if (this.dropdownOpen && this.dropdownRef.value) {
+            this.dropdownRef.value.open = false;
+            this.dropdownOpen = false;
+        }
+        
+        // Open dropdown after user stops typing (300ms delay)
+        if (this.inputValue.trim()) {
+            this.typingTimeout = setTimeout(() => {
+                if (this.dropdownRef.value && !this.dropdownOpen) {
+                    this.dropdownRef.value.open = true;
+                    this.dropdownOpen = true;
+                }
+            }, 300);
+        }
     }
 
     private filterCommands() {
@@ -127,28 +152,22 @@ export class KCommandPalette extends KPart {
                 (cmd.description && cmd.description.toLowerCase().includes(searchLower))
             );
         }
-        this.selectedIndex = 0;
     }
 
     private handleKeyDown(e: KeyboardEvent) {
-        if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            this.selectedIndex = Math.min(this.selectedIndex + 1, this.filteredCommands.length - 1);
-        } else if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            this.selectedIndex = Math.max(this.selectedIndex - 1, 0);
-        } else if (e.key === 'Enter') {
-            e.preventDefault();
-            this.executeSelectedCommand();
-        } else if (e.key === 'Escape') {
+        if (e.key === 'Escape') {
             e.preventDefault();
             this.closePalette();
         }
     }
 
-    private executeSelectedCommand() {
-        const command = this.filteredCommands[this.selectedIndex];
-        this.runCommand(command);
+    private handleDropdownSelect(e: CustomEvent) {
+        const commandId = e.detail.item.value;
+        const command = this.allCommands.find(cmd => cmd.id === commandId);
+        if (command) {
+            e.preventDefault();
+            this.runCommand(command);
+        }
     }
 
     private runCommand(command: any) {
@@ -223,78 +242,43 @@ export class KCommandPalette extends KPart {
     }
 
     protected doClose() {
-        // Cleanup if needed
+        if (this.typingTimeout) {
+            clearTimeout(this.typingTimeout);
+            this.typingTimeout = null;
+        }
     }
 
     static styles = css`
         :host {
             display: block;
-        }
-
-        wa-dialog::part(panel) {
+            width: 100%;
             max-width: 600px;
-            width: 90vw;
         }
 
-        wa-dialog::part(body) {
-            padding: 0;
-        }
-
-        .dialog-content {
-            display: flex;
-            flex-direction: column;
-            max-height: 70vh;
-        }
-
-        .input-container {
-            padding: 12px;
-            border-bottom: 1px solid var(--wa-panel-border-color, #3e3e3e);
-            flex-shrink: 0;
-        }
-
-        .input-container wa-input {
+        wa-input {
             width: 100%;
         }
 
-        .command-list-scroller {
-            flex: 1;
-            min-height: 200px;
+        wa-dropdown::part(menu) {
+            max-width: 600px;
+            min-width: 400px;
             max-height: 400px;
+            overflow-y: auto;
         }
 
-        .command-list-content {
-            padding: 4px;
+        wa-dropdown-item {
+            --wa-spacing-medium: 12px;
         }
 
-        .command-item {
+        wa-dropdown-item::part(base) {
             padding: 10px 16px;
-            cursor: pointer;
-            border-radius: 4px;
-            margin-bottom: 2px;
+        }
+
+        .command-content {
             display: flex;
             align-items: center;
             gap: 12px;
-            transition: all 0.15s ease;
-            position: relative;
-            border-left: 3px solid transparent;
-        }
-
-        .command-item:hover {
-            background: var(--wa-color-primary-900);
-            transform: translateX(4px);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            border-left-color: var(--wa-color-primary-600);
-        }
-
-        .command-item.selected {
-            background: var(--wa-color-primary-800);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-            border-left-color: var(--wa-color-primary-600);
-        }
-
-        .command-item.selected:hover {
-            transform: translateX(4px);
-            border-left-color: var(--wa-color-primary-600);
+            width: 100%;
         }
 
         .command-icon {
@@ -316,7 +300,6 @@ export class KCommandPalette extends KPart {
             font-size: 14px;
             font-weight: 500;
             margin-bottom: 2px;
-            color: var(--wa-color-neutral-50);
         }
 
         .command-id {
@@ -329,9 +312,6 @@ export class KCommandPalette extends KPart {
         .command-description {
             font-size: 12px;
             opacity: 0.7;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
         }
 
         .command-keybinding {
@@ -347,12 +327,17 @@ export class KCommandPalette extends KPart {
         }
 
         .no-results {
-            padding: 40px 20px;
+            padding: 20px;
             text-align: center;
             color: var(--wa-color-neutral-400);
         }
 
-        .parameter-prompt {
+        wa-dialog::part(panel) {
+            max-width: 600px;
+            width: 90vw;
+        }
+
+        wa-dialog::part(body) {
             padding: 20px;
         }
 
@@ -360,7 +345,6 @@ export class KCommandPalette extends KPart {
             font-size: 16px;
             font-weight: 600;
             margin-bottom: 16px;
-            color: var(--wa-color-neutral-50);
         }
 
         .parameter-field {
@@ -377,118 +361,102 @@ export class KCommandPalette extends KPart {
             justify-content: flex-end;
             margin-top: 20px;
         }
-
-        .results-count {
-            padding: 8px 16px;
-            font-size: 11px;
-            opacity: 0.5;
-            border-bottom: 1px solid var(--wa-panel-border-color, #3e3e3e);
-        }
     `;
 
     render() {
         return html`
-            <wa-button @click=${this.togglePalette} appearance="plain">
-                <wa-icon slot="start" name="terminal"></wa-icon>
-                Run Command
-            </wa-button>
-
-            <wa-dialog 
-                ${ref(this.dialogRef)}
-                label="Command Palette"
-                @wa-request-close=${this.handleDialogClose}
+            <wa-input
+                ${ref(this.inputRef)}
+                placeholder="Type a command name..."
+                .value=${this.inputValue}
+                @input=${this.handleInputChange}
+                @keydown=${this.handleKeyDown}
+                autocomplete="off"
             >
-                <div class="dialog-content">
-                    ${!this.showParameterPrompt ? html`
-                        <div class="input-container">
-                            <wa-input
-                                ${ref(this.inputRef)}
-                                placeholder="Type a command name..."
-                                .value=${this.inputValue}
-                                @input=${this.handleInputChange}
-                                @keydown=${this.handleKeyDown}
-                            >
-                                <wa-icon slot="start" name="magnifying-glass"></wa-icon>
-                            </wa-input>
-                        </div>
-                    ` : ''}
-                    
-                    ${this.showParameterPrompt && this.selectedCommand ? html`
-                        <div class="parameter-prompt">
-                            <div class="parameter-prompt-title">
-                                ${this.selectedCommand.name} - Parameters
-                            </div>
-                            ${this.selectedCommand.parameters?.map((param: any) => html`
-                                <div class="parameter-field">
-                                    <wa-input
-                                        label="${param.name}${param.required ? ' *' : ''}"
-                                        hint=${param.description || ''}
-                                        placeholder=${param.description || `Enter ${param.name}`}
-                                        .value=${this.parameterValues[param.name] || ''}
-                                        @input=${(e: Event) => this.handleParameterInput(param.name, (e.target as any).value)}
-                                    ></wa-input>
-                                </div>
-                            `)}
-                            <div class="parameter-actions">
-                                <wa-button variant="default" @click=${this.closeParameterPrompt}>
-                                    Cancel
-                                </wa-button>
-                                <wa-button variant="primary" @click=${this.executeWithParameters}>
-                                    Execute
-                                </wa-button>
-                            </div>
-                        </div>
-                    ` : ''}
-                    
-                    ${!this.showParameterPrompt && this.filteredCommands.length > 0 ? html`
-                        <div class="results-count">
-                            ${this.filteredCommands.length} command${this.filteredCommands.length !== 1 ? 's' : ''}
-                        </div>
-                        <wa-scroller orientation="vertical" class="command-list-scroller">
-                            <div class="command-list-content">
-                                ${this.filteredCommands.map((cmd, index) => html`
-                                    <div 
-                                        class="command-item ${index === this.selectedIndex ? 'selected' : ''}"
-                                        @click=${(e: Event) => { e.preventDefault(); this.runCommand(cmd); }}
-                                        @mouseenter=${() => this.selectedIndex = index}
-                                    >
-                                        ${cmd.icon ? html`
-                                            <div class="command-icon">
-                                                <wa-icon name="${cmd.icon}"></wa-icon>
-                                            </div>
-                                        ` : html`
-                                            <div class="command-icon">
-                                                <wa-icon name="terminal"></wa-icon>
-                                            </div>
-                                        `}
-                                        <div class="command-info">
-                                            <div class="command-name">${cmd.name}</div>
-                                            <div class="command-id">${cmd.id}</div>
-                                            ${cmd.description ? html`
-                                                <div class="command-description">${cmd.description}</div>
-                                            ` : ''}
+                <wa-icon slot="start" name="terminal"></wa-icon>
+                
+                <wa-dropdown 
+                    slot="end"
+                    ${ref(this.dropdownRef)}
+                    placement="bottom-end"
+                    distance="4"
+                    @wa-select=${this.handleDropdownSelect}
+                    @wa-show=${() => this.dropdownOpen = true}
+                    @wa-hide=${() => this.dropdownOpen = false}
+                >
+                    <wa-button slot="trigger" appearance="plain" size="small">
+                        <wa-icon name="terminal"></wa-icon>
+                    </wa-button>
+
+                    ${this.filteredCommands.length > 0 ? html`
+                        ${this.filteredCommands.map(cmd => html`
+                            <wa-dropdown-item value="${cmd.id}">
+                                <div class="command-content">
+                                    ${cmd.icon ? html`
+                                        <div class="command-icon">
+                                            <wa-icon name="${cmd.icon}"></wa-icon>
                                         </div>
-                                        ${cmd.keyBinding ? html`
-                                            <div class="command-keybinding">${cmd.keyBinding}</div>
+                                    ` : html`
+                                        <div class="command-icon">
+                                            <wa-icon name="terminal"></wa-icon>
+                                        </div>
+                                    `}
+                                    <div class="command-info">
+                                        <div class="command-name">${cmd.name}</div>
+                                        <div class="command-id">${cmd.id}</div>
+                                        ${cmd.description ? html`
+                                            <div class="command-description">${cmd.description}</div>
                                         ` : ''}
                                     </div>
-                                `)}
+                                    ${cmd.keyBinding ? html`
+                                        <div class="command-keybinding">${cmd.keyBinding}</div>
+                                    ` : ''}
+                                </div>
+                            </wa-dropdown-item>
+                        `)}
+                    ` : html`
+                        <wa-dropdown-item disabled>
+                            <div class="no-results">
+                                <wa-icon name="search" style="font-size: 24px; margin-bottom: 4px; opacity: 0.3;"></wa-icon>
+                                <div>No commands found</div>
                             </div>
-                        </wa-scroller>
-                    ` : !this.showParameterPrompt ? html`
-                        <div class="no-results">
-                            <wa-icon name="search" style="font-size: 32px; margin-bottom: 8px; opacity: 0.3;"></wa-icon>
-                            <div>No commands found</div>
-                        </div>
-                    ` : ''}
-                </div>
-            </wa-dialog>
-        `;
-    }
+                        </wa-dropdown-item>
+                    `}
+                </wa-dropdown>
+            </wa-input>
 
-    private handleDialogClose(e: Event) {
-        e.preventDefault();
-        this.closePalette();
+            ${this.showParameterPrompt && this.selectedCommand ? html`
+                <wa-dialog 
+                    ${ref(this.dialogRef)}
+                    label="${this.selectedCommand.name} - Parameters"
+                    open
+                    @wa-request-close=${this.closeParameterPrompt}
+                >
+                    <div class="parameter-prompt-title">
+                        Enter parameters for ${this.selectedCommand.name}
+                    </div>
+                    ${this.selectedCommand.parameters?.map((param: any) => html`
+                        <div class="parameter-field">
+                            <wa-input
+                                label="${param.name}${param.required ? ' *' : ''}"
+                                hint=${param.description || ''}
+                                placeholder=${param.description || `Enter ${param.name}`}
+                                .value=${this.parameterValues[param.name] || ''}
+                                @input=${(e: Event) => this.handleParameterInput(param.name, (e.target as any).value)}
+                            ></wa-input>
+                        </div>
+                    `)}
+                    <div class="parameter-actions">
+                        <wa-button variant="default" @click=${this.closeParameterPrompt}>
+                            Cancel
+                        </wa-button>
+                        <wa-button variant="primary" @click=${this.executeWithParameters}>
+                            Execute
+                        </wa-button>
+                    </div>
+                </wa-dialog>
+            ` : ''}
+        `;
     }
 }
 
