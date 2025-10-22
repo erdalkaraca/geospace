@@ -137,15 +137,50 @@ export class KPerspectives extends KContainer {
         const container = this.containerRef.value as HTMLElement;
         if (!container) return;
         
-        // Clear all perspectives and render only the active one
-        // This ensures the editor area moves to the active perspective
-        container.innerHTML = '';
-        this.perspectiveElements.clear();
-        
-        const activePerspectiveContrib = this.contributions.find(p => p.name === this.activePerspective);
-        if (activePerspectiveContrib) {
-            this.renderPerspective(activePerspectiveContrib, container);
+        // Render only the active perspective (lazy loading)
+        const isNewPerspective = this.activePerspective && !this.perspectiveElements.has(this.activePerspective);
+        if (isNewPerspective) {
+            const activePerspectiveContrib = this.contributions.find(p => p.name === this.activePerspective);
+            if (activePerspectiveContrib) {
+                this.renderPerspective(activePerspectiveContrib, container);
+            }
         }
+        
+        // Move editor area to active perspective if needed
+        if (!isNewPerspective && this.activePerspective && this.editorArea) {
+            const activePerspectiveElement = this.perspectiveElements.get(this.activePerspective);
+            if (activePerspectiveElement && !activePerspectiveElement.contains(this.editorArea)) {
+                // Find the grid where editor should be
+                const grid = activePerspectiveElement.querySelector('k-resizable-grid');
+                if (grid) {
+                    // Find correct position: editor should be the middle child in the grid
+                    const children = Array.from(grid.children).filter(c => !c.hasAttribute('data-resize-handle'));
+                    if (children.length >= 2) {
+                        // Insert after first child (left panel)
+                        children[0].insertAdjacentElement('afterend', this.editorArea);
+                    }
+                }
+            }
+        }
+        
+        // Show only the active perspective, hide others
+        this.perspectiveElements.forEach((element, name) => {
+            const isActive = name === this.activePerspective;
+            element.style.display = isActive ? 'flex' : 'none';
+            
+            // When showing a perspective, trigger instance re-management on all k-tabs
+            if (isActive && !isNewPerspective) {
+                requestAnimationFrame(() => {
+                    const tabComponents = element.querySelectorAll('k-tabs');
+                    tabComponents.forEach(tab => {
+                        // Force re-management by creating a new array reference
+                        if ('contributions' in tab && Array.isArray(tab.contributions)) {
+                            tab.contributions = [...tab.contributions];
+                        }
+                    });
+                });
+            }
+        });
     }
 
 
