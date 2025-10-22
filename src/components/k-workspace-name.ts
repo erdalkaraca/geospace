@@ -3,6 +3,7 @@ import {KElement} from "../parts/k-element.ts";
 import {html} from "lit";
 import {workspaceService, TOPIC_WORKSPACE_CONNECTED} from "../core/filesys.ts";
 import {subscribe} from "../core/events.ts";
+import {commandRegistry} from "../core/commandregistry.ts";
 
 const NO_WORKSPACE_LABEL = "<no workspace>";
 
@@ -26,12 +27,22 @@ export class KWorkspaceName extends KElement {
         });
     }
 
+    private handleLoadWorkspace() {
+        commandRegistry.execute("load_workspace", {
+            source: this
+        });
+    }
+
     protected render() {
         return html`
-            <span style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.85em; color: var(--wa-color-neutral-text);">
-                <wa-icon name="folder-open"></wa-icon>
-                <span>${this.workspaceName}</span>
-            </span>
+            <wa-button 
+                appearance="plain"
+                size="small"
+                title="Load workspace"
+                @click=${this.handleLoadWorkspace}>
+                <wa-icon name="folder-open" slot="start"></wa-icon>
+                ${this.workspaceName}
+            </wa-button>
         `;
     }
 }
