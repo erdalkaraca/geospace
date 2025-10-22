@@ -8,123 +8,146 @@ import {createRef, ref} from "lit/directives/ref.js";
 import {subscribe} from "../core/events.ts";
 import {tabInstanceManager} from "../core/tabinstancemanager.ts";
 
+/**
+ * KTabs - A dynamic tab container component supporting the View Registry Pattern
+ * 
+ * Architecture Overview:
+ * ┌─────────────────────────────────────────────────────────────────┐
+ * │ View Registry Pattern (Define Once, Reference Everywhere)       │
+ * │  SYSTEM_VIEWS: { filebrowser, assistant, catalog, ... }         │
+ * │      ↓ resolve                                                   │
+ * │  Tab Containers: { view: "filebrowser" } → Full Definition      │
+ * └─────────────────────────────────────────────────────────────────┘
+ * ┌─────────────────────────────────────────────────────────────────┐
+ * │ Instance Management (Singleton Tabs Share DOM Elements)         │
+ * │  tabInstanceManager: Tracks instances by key                    │
+ * │    - singleton=true:  key = name (shared across containers)     │
+ * │    - singleton=false: key = containerId-name (per-container)    │
+ * └─────────────────────────────────────────────────────────────────┘
+ * 
+ * Lifecycle:
+ * 1. doAfterUI():     Load contributions, resolve view references, activate first tab
+ * 2. render():        Create tab UI from contributions
+ * 3. updated():       Manage instance lifecycle (capture or move DOM elements)
+ * 4. open/closeTab(): Dynamic tab operations
+ * 
+ * Key Features:
+ * - View reusability across multiple tab containers
+ * - Singleton tabs preserve state when moved between containers
+ * - Support for both static (views) and dynamic (editors) tabs
+ * - Integration with Eclipse RCP-style perspectives
+ */
 @customElement('k-tabs')
 export class KTabs extends KContainer {
+    /** Resolved tab contributions (view references expanded to full definitions) */
     @state()
     private contributions: TabContribution[] = [];
 
+    /** Reference to the underlying wa-tab-group element */
     private tabGroup = createRef()
+    
+    /** Cached container ID (this element's 'id' attribute) - used for instance management */
+    private containerId: string | null = null;
+
+    // ============= Lifecycle Methods =============
 
     protected doAfterUI() {
-        if (this.getAttribute("id")) {
-            const id = this.getAttribute("id")!
-            const rawContributions = contributionRegistry.getContributions(id) as TabContribution[]
-            
-            // Resolve view references
-            this.contributions = rawContributions.map(c => {
-                if (c.view) {
-                    const view = contributionRegistry.getView(c.view);
-                    if (view) {
-                        // Merge view with contribution (contribution properties override view)
-                        return { ...view, ...c, name: c.name || view.name };
-                    }
-                }
-                return c;
-            });
-            
-            // Trigger re-render after contributions are loaded
-            this.requestUpdate();
-            
-            // Wait for render to complete before accessing tabGroup
-            this.updateComplete.then(() => {
-                // Activate first tab if none is active
-                if (this.contributions.length > 0 && this.tabGroup.value && !this.tabGroup.value.getAttribute('active')) {
-                    this.activate(this.contributions[0].name);
-                }
-                
-                // Set up event listener after render is complete
-                if (this.tabGroup.value) {
-                    // @ts-ignore
-                    this.tabGroup.value.addEventListener("wa-tab-show", (event: CustomEvent) => {
-                        const tabPanel = this.getTabPanel(event.detail.name)
-                        this.dispatchEvent(new CustomEvent('tab-shown', {detail: tabPanel}))
-                    })
-                }
-            });
+        this.containerId = this.getAttribute("id");
+        if (!this.containerId) {
+            throw new Error("k-tabs requires an 'id' attribute to function");
         }
+
+        this.loadAndResolveContributions();
+        
+        this.updateComplete.then(() => {
+            this.activateNextAvailableTab();
+            
+            // @ts-ignore
+            this.tabGroup.value!.addEventListener("wa-tab-show", (event: CustomEvent) => {
+                const tabPanel = this.getTabPanel(event.detail.name);
+                this.dispatchEvent(new CustomEvent('tab-shown', {detail: tabPanel}));
+            });
+        });
     }
 
     protected doInitUI() {
         subscribe(TOPIC_CONTRIBUTEIONS_CHANGED, () => {
-            if (this.getAttribute("id")) {
-                const id = this.getAttribute("id")!
-                const rawContributions = contributionRegistry.getContributions(id) as TabContribution[]
-                
-                // Resolve view references
-                this.contributions = rawContributions.map(c => {
-                    if (c.view) {
-                        const view = contributionRegistry.getView(c.view);
-                        if (view) {
-                            return { ...view, ...c, name: c.name || view.name };
-                        }
-                    }
-                    return c;
-                });
-            }
-            this.requestUpdate()
+            if (!this.containerId) return;
             
-            // Activate first tab if none is active
+            this.loadAndResolveContributions();
+            this.requestUpdate();
+            
             this.updateComplete.then(() => {
-                if (this.contributions.length > 0 && this.tabGroup.value && !this.tabGroup.value.getAttribute('active')) {
-                    this.activate(this.contributions[0].name);
-                }
+                this.activateNextAvailableTab();
             });
-        })
+        });
     }
 
-    has(key: string) {
-        return !!this.getTabPanel(key)
+    updated(changedProperties: Map<string, any>) {
+        super.updated(changedProperties);
+        
+        // DOM is already fully updated - no need to defer
+        this.contributions.forEach(c => {
+            this.manageTabInstance(c);
+        });
     }
 
-    activate(key: string) {
-        if (!this.tabGroup.value) return;
-        this.tabGroup.value.setAttribute("active", key)
+    // ============= Public API Methods =============
+    
+    has(key: string): boolean {
+        return !!this.getTabPanel(key);
     }
 
-    public getActiveEditor() {
-        if (!this.tabGroup.value) return null;
-        return this.tabGroup.value.getAttribute("active")
+    activate(key: string): void {
+        this.tabGroup.value!.setAttribute("active", key);
     }
 
-    closeTab(event: Event, tabName: string) {
-        event.stopPropagation();
-        if (this.isDirty(tabName) && !confirm("Unsaved changes will be lost: Do you really want to close?")) {
-            return
+    public getActiveEditor(): string | null {
+        return this.tabGroup.value!.getAttribute("active");
+    }
+
+    open(contribution: TabContribution): void {
+        // Check if contribution already exists, if so just activate it
+        const existing = this.contributions.find(c => c.name === contribution.name);
+        if (existing) {
+            this.activate(contribution.name);
+            return;
         }
         
-        const tab = (<HTMLElement>event.currentTarget!).parentElement!
-        tab.remove();
-        const tabPanel = this.getTabPanel(tabName)
+        this.contributions.push(contribution);
+        this.requestUpdate();
         
-        if (!tabPanel) return;
-        
-        // Find the contribution and remove its instance from the manager
-        const contribution = this.contributions.find(c => c.name === tabName);
-        if (contribution && this.getAttribute("id")) {
-            const containerId = this.getAttribute("id")!;
-            const instanceKey = tabInstanceManager.getInstanceKey(contribution, containerId);
-            
-            // Explicitly close the component inside the tab before removing
-            const contentDiv = tabPanel.querySelector('.tab-content');
-            if (contentDiv && contentDiv.firstElementChild) {
-                const component = contentDiv.firstElementChild;
-                if ('close' in component && typeof component.close === 'function') {
-                    component.close();
+        this.updateComplete.then(() => {
+            // Make sure the panel contents do not overflow
+            // FIXME: Find better way to handle overflow
+            if (contribution.noOverflow !== false) {
+                const tabPanel = this.getTabPanel(contribution.name);
+                if (tabPanel) {
+                    observeOverflow(tabPanel);
                 }
             }
-            
-            // Remove the instance from the manager so it can be recreated next time
-            tabInstanceManager.removeInstance(instanceKey);
+            this.activate(contribution.name);
+        });
+    }
+
+    closeTab(event: Event, tabName: string): void {
+        event.stopPropagation();
+        
+        if (this.isDirty(tabName) && !confirm("Unsaved changes will be lost: Do you really want to close?")) {
+            return;
+        }
+        
+        const tab = (event.currentTarget as HTMLElement).parentElement;
+        if (!tab) return;
+        
+        tab.remove();
+        const tabPanel = this.getTabPanel(tabName);
+        if (!tabPanel) return;
+        
+        // Find and cleanup the contribution
+        const contribution = this.contributions.find(c => c.name === tabName);
+        if (contribution && this.containerId) {
+            this.cleanupTabInstance(contribution, tabPanel);
             
             // Remove the contribution from the array
             const index = this.contributions.indexOf(contribution);
@@ -133,115 +156,180 @@ export class KTabs extends KContainer {
             }
         }
         
-        this.dispatchEvent(new CustomEvent('tab-closed', {detail: tabPanel}))
-        tabPanel.remove()
-        
-        // Trigger re-render after removing contribution
+        this.dispatchEvent(new CustomEvent('tab-closed', {detail: tabPanel}));
+        tabPanel.remove();
         this.requestUpdate();
-
-        if (!this.tabGroup.value) return;
         
-        const tabGroup = this.tabGroup.value
-        const allRemainingTabs = tabGroup.querySelectorAll("wa-tab")
-        if (allRemainingTabs.length > 0) {
-            const newActive = allRemainingTabs.item(0).getAttribute("panel")!
-            tabGroup.setAttribute("active", newActive)
+        this.activateNextAvailableTab();
+    }
+
+    markDirty(name: string, dirty: boolean): void {
+        const tab = this.getTab(name);
+        tab!.classList.toggle("part-dirty", dirty);
+    }
+
+    isDirty(name: string): boolean {
+        const tab = this.getTab(name);
+        return tab!.classList.contains("part-dirty");
+    }
+
+    // ============= Private Helper Methods =============
+    
+    /**
+     * Loads and resolves tab contributions using the View Registry Pattern.
+     * 
+     * View Registry Pattern:
+     * - Views are reusable tab templates registered once in SYSTEM_VIEWS
+     * - Tab containers reference views by name (lightweight)
+     * - This method resolves references by merging view definitions with contributions
+     * 
+     * Example:
+     * View definition (registered once):
+     *   { name: "filebrowser", label: "Workspace", icon: "folder-open", component: ... }
+     * 
+     * View reference (in multiple containers):
+     *   { name: "filebrowser", view: "filebrowser" }
+     * 
+     * After resolution:
+     *   { name: "filebrowser", label: "Workspace", icon: "folder-open", component: ..., view: "filebrowser" }
+     * 
+     * Benefits:
+     * - DRY: Define complex tabs once, reference everywhere
+     * - Consistency: All instances use same configuration
+     * - Flexibility: Can override properties per-instance
+     * - Works with singleton instance manager for memory efficiency
+     */
+    private loadAndResolveContributions(): void {
+        const rawContributions = contributionRegistry.getContributions(this.containerId!) as TabContribution[];
+        
+        // Resolve view references: transform lightweight references into full tab definitions
+        this.contributions = rawContributions.map(c => {
+            // Check if this contribution is a view reference
+            if (c.view) {
+                // Lookup the full view definition from the registry
+                const view = contributionRegistry.getView(c.view);
+                if (view) {
+                    // Merge: spread view first (base), then contribution (overrides)
+                    // This allows contributions to customize specific properties while keeping the rest
+                    // Example: { ...view, ...c } means c.label would override view.label if provided
+                    return { ...view, ...c, name: c.name || view.name };
+                }
+            }
+            // No view reference, return as-is (direct contribution)
+            return c;
+        });
+        
+        this.requestUpdate();
+    }
+
+    /**
+     * Manages tab instance lifecycle for singleton tabs (views).
+     * 
+     * Instance Management:
+     * - Singleton tabs (like filebrowser, AI assistant) should only exist once in DOM
+     * - When a tab appears in multiple containers (e.g., across perspectives), 
+     *   the same DOM element is reused by moving it between containers
+     * - Instance key determines uniqueness:
+     *   * For singleton=true (default): key = contribution.name (shared across containers)
+     *   * For singleton=false: key = containerId + name (unique per container)
+     * 
+     * Lifecycle:
+     * 1. First render: Capture the newly created element, register as instance
+     * 2. Subsequent renders: Move existing instance to new container
+     * 3. On close: Instance is removed from manager (see cleanupTabInstance)
+     * 
+     * Benefits:
+     * - Memory efficient: One filebrowser instance, not one per container
+     * - State preservation: Component state maintained when switching perspectives
+     * - Works seamlessly with View Registry Pattern
+     */
+    private manageTabInstance(contribution: TabContribution): void {
+        const instanceKey = tabInstanceManager.getInstanceKey(contribution, this.containerId!);
+        let instance = tabInstanceManager.getInstance(instanceKey);
+        const tabPanel = this.getTabPanel(contribution.name);
+        
+        if (!tabPanel) return;
+        
+        const contentDiv = tabPanel.querySelector('.tab-content') as HTMLElement;
+        if (!contentDiv) return;
+        
+        if (!instance) {
+            // First time rendering - capture the newly created element from Lit template
+            const content = contentDiv.firstElementChild as HTMLElement;
+            if (content) {
+                instance = tabInstanceManager.createInstance(instanceKey, contribution);
+                instance.element = content;
+                tabInstanceManager.moveToContainer(instanceKey, this.containerId!);
+            }
         } else {
-            tabGroup.removeAttribute("active")
+            // Instance exists - move the DOM element from previous container to this one
+            if (instance.element && !contentDiv.contains(instance.element)) {
+                contentDiv.appendChild(instance.element);
+                instance.element.style.display = '';
+                
+                // Trigger re-render on the moved element if it's a Lit component
+                // This ensures the component updates after being moved to new container
+                if ('requestUpdate' in instance.element && typeof instance.element.requestUpdate === 'function') {
+                    instance.element.requestUpdate();
+                }
+            }
+            tabInstanceManager.moveToContainer(instanceKey, this.containerId!);
+        }
+    }
+
+    /**
+     * Cleans up a tab instance when the tab is closed.
+     * 
+     * Cleanup Process:
+     * 1. Call component's close() method if available (disposes resources)
+     * 2. Remove instance from tabInstanceManager
+     * 3. DOM element is removed by caller (closeTab method)
+     * 
+     * Important: After cleanup, if the same view is opened again, a fresh
+     * instance will be created. This ensures proper initialization and prevents
+     * stale state from a previously closed tab.
+     */
+    private cleanupTabInstance(contribution: TabContribution, tabPanel: HTMLElement): void {
+        const instanceKey = tabInstanceManager.getInstanceKey(contribution, this.containerId!);
+        
+        // Explicitly close the component inside the tab before removing
+        // This allows components to dispose resources (e.g., Monaco editor models, event listeners)
+        const contentDiv = tabPanel.querySelector('.tab-content');
+        if (contentDiv && contentDiv.firstElementChild) {
+            const component = contentDiv.firstElementChild;
+            if ('close' in component && typeof component.close === 'function') {
+                component.close();
+            }
+        }
+        
+        // Remove the instance from the manager so it can be recreated next time
+        tabInstanceManager.removeInstance(instanceKey);
+    }
+
+    private activateNextAvailableTab(): void {
+        const allRemainingTabs = this.tabGroup.value!.querySelectorAll("wa-tab");
+        if (allRemainingTabs.length > 0) {
+            const newActive = allRemainingTabs.item(0).getAttribute("panel");
+            if (newActive) {
+                this.tabGroup.value!.setAttribute("active", newActive);
+            }
+        } else {
+            this.tabGroup.value!.removeAttribute("active");
         }
     }
 
     private getTabPanel(name: string): HTMLElement | null {
-        if (!this.tabGroup.value) return null;
-        return <HTMLElement>this.tabGroup.value.querySelector(`wa-tab-panel[name='${name}']`)
+        return this.tabGroup.value!.querySelector(`wa-tab-panel[name='${name}']`) as HTMLElement | null;
     }
 
-    open(contribution: TabContribution) {
-        // Check if contribution already exists, if so just activate it
-        const existing = this.contributions.find(c => c.name === contribution.name);
-        if (existing) {
-            this.activate(contribution.name);
-            return;
-        }
-        
-        this.contributions.push(contribution)
-        this.requestUpdate()
-        this.updateComplete.then(() => {
-            // make sure the panel contents do not overflow, but instead the scrollbar will handle it
-            // FIXME this is not optimal, find better way to handle overflow
-            if (contribution.noOverflow === undefined || contribution.noOverflow) {
-                const tabPanel = this.getTabPanel(contribution.name)
-                if (tabPanel) {
-                    observeOverflow(tabPanel)
-                }
-            }
-            this.activate(contribution.name)
-        })
+    private getTab(name: string): HTMLElement | null {
+        return this.tabGroup.value!.querySelector(`wa-tab[panel='${name}']`) as HTMLElement | null;
     }
 
-    markDirty(name: string, dirty: boolean) {
-        if (!this.tabGroup.value) return;
-        const tab = this.tabGroup.value.querySelector(`wa-tab[panel='${name}']`) as HTMLElement
-        if (!tab) return;
-        if (dirty) {
-            tab.classList.add("part-dirty")
-        } else {
-            tab.classList.remove("part-dirty")
-        }
-    }
-
-    isDirty(name: string) {
-        if (!this.tabGroup.value) return false;
-        const tab = this.tabGroup.value.querySelector(`wa-tab[panel='${name}']`) as HTMLElement
-        return !!tab && tab.classList.contains("part-dirty")
-    }
-
-    updated(changedProperties: Map<string, any>) {
-        super.updated(changedProperties);
-        
-        if (this.getAttribute("id")) {
-            const containerId = this.getAttribute("id")!;
-            
-            // Use requestAnimationFrame to ensure DOM is fully updated
-            requestAnimationFrame(() => {
-                this.contributions.forEach(c => {
-                    const instanceKey = tabInstanceManager.getInstanceKey(c, containerId);
-                    let instance = tabInstanceManager.getInstance(instanceKey);
-                    const tabPanel = this.getTabPanel(c.name);
-                    
-                    if (!tabPanel) return;
-                    
-                    const contentDiv = tabPanel.querySelector('.tab-content') as HTMLElement;
-                    if (!contentDiv) return;
-                    
-                    if (!instance) {
-                        // First time rendering - capture the content as instance
-                        const content = contentDiv.firstElementChild as HTMLElement;
-                        if (content) {
-                            instance = tabInstanceManager.createInstance(instanceKey, c);
-                            instance.element = content;
-                            tabInstanceManager.moveToContainer(instanceKey, containerId);
-                        }
-                    } else {
-                        // Instance exists - move it to this container
-                        if (instance.element && !contentDiv.contains(instance.element)) {
-                            contentDiv.appendChild(instance.element);
-                            instance.element.style.display = '';
-                            
-                            // Request update on the moved element if it's a Lit component
-                            if ('requestUpdate' in instance.element && typeof instance.element.requestUpdate === 'function') {
-                                instance.element.requestUpdate();
-                            }
-                        }
-                        tabInstanceManager.moveToContainer(instanceKey, containerId);
-                    }
-                });
-            });
-        }
-    }
+    // ============= Render Method =============
 
     render() {
-        const containerId = this.getAttribute("id") || "";
+        const containerId = this.containerId || "";
         
         return html`
             <wa-tab-group ${ref(this.tabGroup)}>
@@ -250,22 +338,22 @@ export class KTabs extends KContainer {
                     const existingInstance = tabInstanceManager.getInstance(instanceKey);
                     
                     return html`
-                        <wa-tab panel="${c.name}">
-                            ${icon(c.icon!)}
-                            ${c.label}
-                            ${when(c.closable, () => html`
-                                <wa-button for="${c.name}" tabindex="-1" title="Close Tab" appearance="plain" size="small"
-                                           @click="${(e: Event) => this.closeTab(e, c.name)}">
-                                    <wa-icon name="xmark"></wa-icon>
-                                </wa-button>
-                            `)}
-                        </wa-tab>
-                        <wa-tab-panel name="${c.name}">
-                            <k-toolbar id="toolbar.${c.name}" class="tab-toolbar"></k-toolbar>
+                    <wa-tab panel="${c.name}">
+                        ${icon(c.icon!)}
+                        ${c.label}
+                        ${when(c.closable, () => html`
+                            <wa-button for="${c.name}" tabindex="-1" title="Close Tab" appearance="plain" size="small"
+                                       @click="${(e: Event) => this.closeTab(e, c.name)}">
+                                <wa-icon name="xmark"></wa-icon>
+                            </wa-button>
+                        `)}
+                    </wa-tab>
+                    <wa-tab-panel name="${c.name}">
+                        <k-toolbar id="toolbar.${c.name}" class="tab-toolbar"></k-toolbar>
                             <div class="tab-content" style="height: 100%; width: 100%;">
                                 ${existingInstance ? nothing : (c.component ? c.component(c.name) : nothing)}
                             </div>
-                        </wa-tab-panel>
+                    </wa-tab-panel>
                     `;
                 })}
             </wa-tab-group>
@@ -310,10 +398,4 @@ export class KTabs extends KContainer {
             color: var(--wa-color-danger-fill-loud)
         }
     `
-}
-
-declare global {
-    interface HTMLElementTagNameMap {
-        'k-tabs': KTabs
-    }
 }
