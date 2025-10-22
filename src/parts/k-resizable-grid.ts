@@ -42,6 +42,7 @@ export class KResizableGrid extends KElement {
     } | null = null;
     
     private childrenLoaded = false;
+    private childStylesApplied = false;
     private mutationObserver?: MutationObserver;
 
     createRenderRoot() {
@@ -102,19 +103,22 @@ export class KResizableGrid extends KElement {
     updated(changedProperties: Map<string, any>) {
         super.updated(changedProperties);
         
-        // Only apply child styling when grid state changes
-        if (!changedProperties.has('gridChildren') && !changedProperties.has('gridSizes')) return;
-        
-        // Apply grid positioning and styling to children
-        this.gridChildren.forEach((child, index) => {
-            child.style.overflow = 'hidden';
-            child.style.height = '100%';
-            child.style.width = '100%';
-            child.style.gridColumn = this.orientation === 'horizontal' ? `${index * 2 + 1}` : '1';
-            child.style.gridRow = this.orientation === 'vertical' ? `${index * 2 + 1}` : '1';
-            child.style.display = 'flex';
-            child.style.flexDirection = 'column';
-        });
+        // Only apply child styles once when children are first loaded
+        // This prevents interfering with nested resizable grids during resize operations
+        if (changedProperties.has('gridChildren') && !this.childStylesApplied && this.gridChildren.length > 0) {
+            this.childStylesApplied = true;
+            
+            // Apply grid positioning and styling to children
+            this.gridChildren.forEach((child, index) => {
+                child.style.overflow = 'hidden';
+                child.style.height = '100%';
+                child.style.width = '100%';
+                child.style.gridColumn = this.orientation === 'horizontal' ? `${index * 2 + 1}` : '1';
+                child.style.gridRow = this.orientation === 'vertical' ? `${index * 2 + 1}` : '1';
+                child.style.display = 'flex';
+                child.style.flexDirection = 'column';
+            });
+        }
     }
 
     // ============= Resize Handling Methods =============
