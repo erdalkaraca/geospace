@@ -55,9 +55,9 @@ contributionRegistry.registerContribution<PerspectiveContribution>(PERSPECTIVES_
 });
 
 contributionRegistry.registerContribution<PerspectiveContribution>(PERSPECTIVES_MAIN, {
-    name: "editing",
-    label: "Editing",
-    icon: "pencil",
+    name: "files",
+    label: "Files",
+    icon: "folder-open",
     component: (editorArea) => html`
         <k-resizable-grid orientation="horizontal" sizes="20%, 55%, 25%">
             <k-tabs id="${TABS_EDITING_LEFT}"></k-tabs>

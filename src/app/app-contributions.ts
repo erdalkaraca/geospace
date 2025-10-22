@@ -35,6 +35,9 @@ import {workspaceService} from "../core/filesys.ts";
 import {editorRegistry} from "../core/editorregistry.ts";
 import {KPart} from "../parts/k-part.ts";
 
+import {version as appVersion} from "../../package.json"
+import {registerAll} from "../core/commandregistry.ts";
+
 contributionRegistry.registerContribution(TOOLBAR_MAIN, {
     slot: "start",
     html: `<span style="margin-right: 1rem;"><span><nobr>🌐<i><b>geo!</b></i><small>space</small></nobr></span></span>`
@@ -154,8 +157,6 @@ contributionRegistry.registerContribution(CID_PROMPTS, {
     }
 } as SysPromptContribution)
 
-import {version as appVersion} from "../../package.json"
-import {registerAll} from "../core/commandregistry.ts";
 
 contributionRegistry.registerContribution(TOOLBAR_BOTTOM, {
     target: TOOLBAR_BOTTOM,
