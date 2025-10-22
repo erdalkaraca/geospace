@@ -37,13 +37,12 @@ export class KCommandPalette extends KPart {
     private parameterValues: { [key: string]: string } = {};
 
     @state()
-    private dropdownOpen: boolean = false;
+    private isPaletteOpen: boolean = false;
 
     private commandRegistry: any;
     private inputRef: Ref<any> = createRef();
-    private dropdownRef: Ref<any> = createRef();
     private dialogRef: Ref<any> = createRef();
-    private typingTimeout: any = null;
+    private boundDocumentClickHandler?: (e: MouseEvent) => void;
 
     protected doBeforeUI() {
         // Get command registry from context
@@ -58,6 +57,59 @@ export class KCommandPalette extends KPart {
         subscribe(TOPIC_OPEN_COMMAND_PALETTE, () => {
             this.openPalette();
         });
+
+        // Add click-outside listener to close palette
+        this.boundDocumentClickHandler = this.handleDocumentClick.bind(this);
+        document.addEventListener('click', this.boundDocumentClickHandler);
+    }
+
+    private handleDocumentClick(e: MouseEvent) {
+        if (!this.isPaletteOpen && !this.showParameterPrompt) return;
+        
+        // Small delay to let other events process first
+        setTimeout(() => {
+            const target = e.target as Node;
+            
+            // Check if click is inside the component
+            if (this.contains(target)) return;
+            
+            // Check if click is inside the dialog element
+            if (this.dialogRef.value) {
+                const dialog = this.dialogRef.value as HTMLElement;
+                if (dialog.contains(target)) return;
+            }
+            
+            // Check if the target is inside any wa-dialog (in case of shadow DOM)
+            let element = target as HTMLElement;
+            while (element) {
+                if (element.tagName === 'WA-DIALOG') return;
+                element = element.parentElement as HTMLElement;
+            }
+            
+            // Click is outside, close everything
+            this.closePalette();
+            this.closeParameterPrompt();
+        }, 0);
+    }
+    
+    private handleDialogClick(e: Event) {
+        e.stopPropagation();
+    }
+    
+    private handleInputFocus() {
+        // Use requestAnimationFrame to prevent interrupting the focus
+        requestAnimationFrame(() => {
+            this.isPaletteOpen = true;
+        });
+    }
+    
+    private handleInputClick(e: Event) {
+        e.stopPropagation();
+        this.isPaletteOpen = true;
+    }
+    
+    private handleInputMouseDown(e: Event) {
+        e.stopPropagation();
     }
 
     private updateCommandList() {
@@ -78,7 +130,7 @@ export class KCommandPalette extends KPart {
     }
 
     public togglePalette() {
-        if (this.dropdownOpen) {
+        if (this.isPaletteOpen) {
             this.closePalette();
         } else {
             this.openPalette();
@@ -89,13 +141,9 @@ export class KCommandPalette extends KPart {
         this.inputValue = '';
         this.updateCommandList();
         this.showParameterPrompt = false;
+        this.isPaletteOpen = true;
         
         await this.updateComplete;
-        
-        if (this.dropdownRef.value) {
-            this.dropdownRef.value.open = true;
-            this.dropdownOpen = true;
-        }
         
         if (this.inputRef.value) {
             this.inputRef.value.focus();
@@ -103,44 +151,15 @@ export class KCommandPalette extends KPart {
     }
 
     private closePalette() {
-        if (this.dropdownRef.value) {
-            this.dropdownRef.value.open = false;
-        }
-        this.dropdownOpen = false;
+        this.isPaletteOpen = false;
         this.inputValue = '';
         this.showParameterPrompt = false;
-        
-        if (this.typingTimeout) {
-            clearTimeout(this.typingTimeout);
-            this.typingTimeout = null;
-        }
     }
 
     private handleInputChange(e: Event) {
         const input = e.target as any;
         this.inputValue = input.value;
         this.filterCommands();
-        
-        // Clear existing timeout
-        if (this.typingTimeout) {
-            clearTimeout(this.typingTimeout);
-        }
-        
-        // Close dropdown while typing
-        if (this.dropdownOpen && this.dropdownRef.value) {
-            this.dropdownRef.value.open = false;
-            this.dropdownOpen = false;
-        }
-        
-        // Open dropdown after user stops typing (300ms delay)
-        if (this.inputValue.trim()) {
-            this.typingTimeout = setTimeout(() => {
-                if (this.dropdownRef.value && !this.dropdownOpen) {
-                    this.dropdownRef.value.open = true;
-                    this.dropdownOpen = true;
-                }
-            }, 300);
-        }
     }
 
     private filterCommands() {
@@ -163,15 +182,16 @@ export class KCommandPalette extends KPart {
         }
     }
 
-    private handleDropdownSelect(e: CustomEvent) {
-        const commandId = e.detail.item.value;
-        const command = this.allCommands.find(cmd => cmd.id === commandId);
-        if (command) {
-            e.preventDefault();
-            this.inputValue = '';
-            this.filterCommands();
-            this.runCommand(command);
-        }
+    private handleCommandClick(e: Event, command: any) {
+        if (!command) return;
+        e.stopPropagation();
+        this.inputValue = '';
+        this.filterCommands();
+        this.runCommand(command);
+    }
+    
+    private handleContainerClick(e: Event) {
+        e.stopPropagation();
     }
 
     private runCommand(command: any) {
@@ -199,18 +219,8 @@ export class KCommandPalette extends KPart {
             this.commandRegistry.execute(commandId, { params });
             this.closePalette();
             this.closeParameterPrompt();
-            
-            // Show success toast if available
-            if ((this as any).toastInfo) {
-                const cmd = this.commandRegistry.getCommand(commandId);
-                (this as any).toastInfo(`Executed: ${cmd?.name || commandId}`);
-            }
         } catch (error: any) {
             console.error('Failed to execute command:', error);
-            if ((this as any).toastError) {
-                const cmd = this.commandRegistry.getCommand(commandId);
-                (this as any).toastError(`Failed to execute: ${cmd?.name || commandId}`);
-            }
         }
     }
 
@@ -246,9 +256,8 @@ export class KCommandPalette extends KPart {
     }
 
     protected doClose() {
-        if (this.typingTimeout) {
-            clearTimeout(this.typingTimeout);
-            this.typingTimeout = null;
+        if (this.boundDocumentClickHandler) {
+            document.removeEventListener('click', this.boundDocumentClickHandler);
         }
     }
 
@@ -257,32 +266,49 @@ export class KCommandPalette extends KPart {
             display: block;
             width: 100%;
             max-width: 600px;
+            position: relative;
         }
 
         wa-input {
-            max-width: 300px;
+            width: 100%;
         }
 
-        wa-dropdown::part(menu) {
-            max-width: 600px;
-            min-width: 400px;
+        .commands-container {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            margin-top: 4px;
+            background: var(--wa-color-neutral-900);
+            border: 1px solid var(--wa-color-neutral-700);
+            border-radius: 4px;
             max-height: 400px;
             overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            display: none;
         }
 
-        wa-dropdown-item {
-            --wa-spacing-medium: 12px;
+        .commands-container.open {
+            display: block;
         }
 
-        wa-dropdown-item::part(base) {
-            padding: 10px 16px;
-        }
-
-        .command-content {
+        .command-item {
             display: flex;
             align-items: center;
             gap: 12px;
-            width: 100%;
+            padding: 10px 16px;
+            cursor: pointer;
+            transition: background-color 0.15s;
+            border-bottom: 1px solid var(--wa-color-neutral-800);
+        }
+
+        .command-item:last-child {
+            border-bottom: none;
+        }
+
+        .command-item:hover {
+            background: var(--wa-color-neutral-800);
         }
 
         .command-icon {
@@ -375,59 +401,46 @@ export class KCommandPalette extends KPart {
                 .value=${this.inputValue}
                 @input=${this.handleInputChange}
                 @keydown=${this.handleKeyDown}
+                @focus=${this.handleInputFocus}
+                @click=${this.handleInputClick}
+                @mousedown=${this.handleInputMouseDown}
                 autocomplete="off"
             >
                 <wa-icon slot="start" name="terminal" label="Terminal"></wa-icon>
-                
-                <wa-dropdown 
-                    slot="end"
-                    ${ref(this.dropdownRef)}
-                    placement="bottom-end"
-                    distance="4"
-                    @wa-select=${this.handleDropdownSelect}
-                    @wa-show=${() => this.dropdownOpen = true}
-                    @wa-hide=${() => this.dropdownOpen = false}
-                >
-                    <wa-button slot="trigger" appearance="plain" size="small">
-                        <wa-icon name="list" label="Show all commands"></wa-icon>
-                    </wa-button>
-
-                    ${this.filteredCommands.length > 0 ? html`
-                        ${this.filteredCommands.map(cmd => html`
-                            <wa-dropdown-item value="${cmd.id}">
-                                <div class="command-content">
-                                    ${cmd.icon ? html`
-                                        <div class="command-icon">
-                                            <wa-icon name="${cmd.icon}" label="${cmd.name}"></wa-icon>
-                                        </div>
-                                    ` : html`
-                                        <div class="command-icon">
-                                            <wa-icon name="terminal" label="Command"></wa-icon>
-                                        </div>
-                                    `}
-                                    <div class="command-info">
-                                        <div class="command-name">${cmd.name}</div>
-                                        <div class="command-id">${cmd.id}</div>
-                                        ${cmd.description ? html`
-                                            <div class="command-description">${cmd.description}</div>
-                                        ` : ''}
-                                    </div>
-                                    ${cmd.keyBinding ? html`
-                                        <div class="command-keybinding">${cmd.keyBinding}</div>
-                                    ` : ''}
-                                </div>
-                            </wa-dropdown-item>
-                        `)}
-                    ` : html`
-                        <wa-dropdown-item disabled>
-                            <div class="no-results">
-                                <wa-icon name="search" label="No results" style="font-size: 24px; margin-bottom: 4px; opacity: 0.3;"></wa-icon>
-                                <div>No commands found</div>
-                            </div>
-                        </wa-dropdown-item>
-                    `}
-                </wa-dropdown>
             </wa-input>
+
+            <div class="commands-container ${this.isPaletteOpen ? 'open' : ''}" @click=${this.handleContainerClick}>
+                ${this.filteredCommands.length > 0 ? html`
+                    ${this.filteredCommands.map(cmd => html`
+                        <div class="command-item" @click=${(e: Event) => this.handleCommandClick(e, cmd)}>
+                            ${cmd.icon ? html`
+                                <div class="command-icon">
+                                    <wa-icon name="${cmd.icon}" label="${cmd.name}"></wa-icon>
+                                </div>
+                            ` : html`
+                                <div class="command-icon">
+                                    <wa-icon name="terminal" label="Command"></wa-icon>
+                                </div>
+                            `}
+                            <div class="command-info">
+                                <div class="command-name">${cmd.name}</div>
+                                <div class="command-id">${cmd.id}</div>
+                                ${cmd.description ? html`
+                                    <div class="command-description">${cmd.description}</div>
+                                ` : ''}
+                            </div>
+                            ${cmd.keyBinding ? html`
+                                <div class="command-keybinding">${cmd.keyBinding}</div>
+                            ` : ''}
+                        </div>
+                    `)}
+                ` : html`
+                    <div class="no-results">
+                        <wa-icon name="search" label="No results" style="font-size: 24px; margin-bottom: 4px; opacity: 0.3;"></wa-icon>
+                        <div>No commands found</div>
+                    </div>
+                `}
+            </div>
 
             ${this.showParameterPrompt && this.selectedCommand ? html`
                 <wa-dialog 
@@ -435,6 +448,7 @@ export class KCommandPalette extends KPart {
                     label="${this.selectedCommand.name} - Parameters"
                     open
                     @wa-request-close=${this.closeParameterPrompt}
+                    @click=${this.handleDialogClick}
                 >
                     <div class="parameter-prompt-title">
                         Enter parameters for ${this.selectedCommand.name}

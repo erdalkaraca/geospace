@@ -117,7 +117,7 @@ export class CommandRegistry {
 
     registerCommand(command: Command): void {
         this.commands[command.id] = command;
-        logger.info(`Command registered: ${command.id}`);
+        logger.debug(`Command registered: ${command.id}`);
     }
 
     hasCommand(commandId: string): boolean {

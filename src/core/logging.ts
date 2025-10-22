@@ -20,24 +20,24 @@ class Logger {
 
  debug(message: string): void {
   if (this.level === LogLevel.DEBUG) {
-   console.log(`[DEBUG] ${message}`);
+   console.debug(message);
   }
  }
 
  info(message: string): void {
   if (this.level === LogLevel.INFO || this.level === LogLevel.DEBUG) {
-   console.log(`[INFO] ${message}`);
+   console.info(message);
   }
  }
 
  warn(message: string): void {
   if (this.level === LogLevel.WARN || this.level === LogLevel.INFO || this.level === LogLevel.DEBUG) {
-   console.warn(`[WARN] ${message}`);
+   console.warn(message);
   }
  }
 
  error(message: string): void {
-  console.error(`[ERROR] ${message}`);
+  console.error(message);
  }
 }
 

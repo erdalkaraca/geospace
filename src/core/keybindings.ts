@@ -164,7 +164,7 @@ export class KeyBindingManager {
         const binding = this.parseKeyBinding(keyBindingString);
         
         if (!binding) {
-            logger.warn(`Invalid key binding: ${keyBindingString}`);
+            logger.error(`Invalid key binding: ${keyBindingString}`);
             return false;
         }
 
@@ -181,12 +181,12 @@ export class KeyBindingManager {
         // Check for conflicts
         const conflict = existing.find(b => b.commandId === commandId);
         if (conflict) {
-            logger.warn(`Key binding ${keyBindingString} already registered for command ${commandId}`);
+            logger.error(`Key binding ${keyBindingString} already registered for command ${commandId}`);
             return false;
         }
         
         existing.push(binding);
-        logger.info(`Key binding registered: ${keyBindingString} -> ${commandId}`);
+        logger.debug(`Key binding registered: ${keyBindingString} -> ${commandId}`);
         
         return true;
     }
