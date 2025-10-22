@@ -2,7 +2,6 @@ import {Signal} from "@lit-labs/signals";
 import {TemplateResult} from "lit";
 import {publish} from "./events.ts";
 import {rootContext} from "./di.ts";
-import {SYSTEM_VIEWS} from "./constants.ts";
 
 export const TOPIC_CONTRIBUTEIONS_CHANGED = "events/contributionregistry/contributionsChanged"
 
@@ -24,8 +23,6 @@ export interface HTMLContribution extends Contribution {
 
 export interface TabContribution extends Contribution {
     name: string;
-    view?: string;
-    singleton?: boolean;
     closable?: boolean;
     noOverflow?: boolean;
     component?: (id: string) => TemplateResult;
@@ -38,11 +35,6 @@ export interface PaneContribution extends Contribution {
     maxSize?: number;
     order?: number;
     component: () => TemplateResult;
-}
-
-export interface PerspectiveContribution extends Contribution {
-    name: string;
-    component: (editorArea?: HTMLElement) => TemplateResult;
 }
 
 class ContributionRegistry {
@@ -63,11 +55,6 @@ class ContributionRegistry {
             this.contributions.set(target, [])
         }
         return this.contributions.get(target)!
-    }
-
-    getView(name: string): TabContribution | undefined {
-        const views = this.getContributions(SYSTEM_VIEWS) as TabContribution[];
-        return views.find(v => v.name === name);
     }
 }
 

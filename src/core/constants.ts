@@ -13,9 +13,6 @@ export const SIDEBAR_MAIN_BOTTOM = "sidebar-main-bottom"
 export const SIDEBAR_AUXILIARY = "sidebar-auxiliary"
 export const PANEL_BOTTOM = "panel-bottom"
 
-// System views registry
-export const SYSTEM_VIEWS = "system.views"
-
 export const COMMAND_SAVE = "command-save"
 
 export const HIDE_DOT_RESOURCE = false

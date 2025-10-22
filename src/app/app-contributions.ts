@@ -23,8 +23,7 @@ import {
     PANEL_BOTTOM,
     TOOLBAR_MAIN,
     TOOLBAR_BOTTOM,
-    TOOLBAR_BOTTOM_END,
-    SYSTEM_VIEWS
+    TOOLBAR_BOTTOM_END
 } from "../core/constants.ts";
 
 import {contributionRegistry, HTMLContribution, TabContribution} from "../core/contributionregistry.ts";
@@ -41,69 +40,43 @@ contributionRegistry.registerContribution(TOOLBAR_MAIN, {
     html: `<span style="margin-right: 1rem;"><span><nobr>🌐<i><b>geo!</b></i><small>space</small></nobr></span></span>`
 } as HTMLContribution)
 
-// Register views (shared singleton tabs)
-contributionRegistry.registerContribution(SYSTEM_VIEWS, {
-    name: "assistant",
-    label: "AI",
-    icon: "robot",
-    component: (id) => html`<k-aiassist id="${id}"></k-aiassist>`
-} as TabContribution)
-
-contributionRegistry.registerContribution(SYSTEM_VIEWS, {
+// Left sidebar tabs (top)
+contributionRegistry.registerContribution(SIDEBAR_MAIN, {
     name: "filebrowser",
     label: "Workspace",
     icon: "folder-open",
     component: (id) => html`<k-filebrowser id="${id}"></k-filebrowser>`
 } as TabContribution)
 
-contributionRegistry.registerContribution(SYSTEM_VIEWS, {
+contributionRegistry.registerContribution(SIDEBAR_MAIN, {
     name: "catalog",
     label: "Catalog",
     icon: "book",
     component: (id) => html`<gs-catalog id="${id}"></gs-catalog>`
 } as TabContribution)
 
-contributionRegistry.registerContribution(SYSTEM_VIEWS, {
+// Left sidebar tabs (bottom)
+contributionRegistry.registerContribution(SIDEBAR_MAIN_BOTTOM, {
     name: "map-props",
     label: "Map Properties",
     icon: "fg map-options",
     component: (id) => html`<gs-map-props id="${id}"></gs-map-props>`
 } as TabContribution)
 
-contributionRegistry.registerContribution(SYSTEM_VIEWS, {
-    name: "log-terminal",
-    label: "Log",
-    icon: "terminal",
-    component: (id) => html`<k-log-terminal id="${id}"></k-log-terminal>`
-} as TabContribution)
-
-// Left sidebar tabs (top)
-contributionRegistry.registerContribution(SIDEBAR_MAIN, {
-    name: "filebrowser",
-    view: "filebrowser"
-} as TabContribution)
-
-contributionRegistry.registerContribution(SIDEBAR_MAIN, {
-    name: "catalog",
-    view: "catalog"
-} as TabContribution)
-
-// Left sidebar tabs (bottom)
-contributionRegistry.registerContribution(SIDEBAR_MAIN_BOTTOM, {
-    name: "map-props",
-    view: "map-props"
-} as TabContribution)
-
 // Right sidebar (auxiliary) tabs
 contributionRegistry.registerContribution(SIDEBAR_AUXILIARY, {
     name: "assistant",
-    view: "assistant"
+    label: "AI",
+    icon: "robot",
+    component: (id) => html`<k-aiassist id="${id}"></k-aiassist>`
 } as TabContribution)
 
 // Bottom panel tabs
 contributionRegistry.registerContribution(PANEL_BOTTOM, {
     name: "log-terminal",
-    view: "log-terminal"
+    label: "Log",
+    icon: "terminal",
+    component: (id) => html`<k-log-terminal id="${id}"></k-log-terminal>`
 } as TabContribution)
 
 extensionRegistry.registerExtension({
