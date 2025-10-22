@@ -55,18 +55,18 @@ export class KExtensions extends KPart {
                             ${when(extensionRegistry.isEnabled(e.id), () => html`
                                 <wa-button title="Disable this extension" @click="${() => this.disable(e)}"
                                            variant="danger" appearance="plain">
-                                    <wa-icon name="xmark"></wa-icon>&nbsp;Uninstall (requires restart)
+                                    <wa-icon name="xmark" label="Uninstall"></wa-icon>&nbsp;Uninstall (requires restart)
                                 </wa-button>`, () => html`
                                 <wa-button title="Enable this extension" @click="${() => this.enable(e)}"
                                            variant="brand" appearance="plain">
-                                    <wa-icon name="download"></wa-icon>&nbsp;Install
+                                    <wa-icon name="download" label="Install"></wa-icon>&nbsp;Install
                                 </wa-button>`)}
                         </div>
 
                         ${when(e.experimental, () => html`
                             <div>
                                 <wa-button size="small" variant="warning" appearance="plain">
-                                    <wa-icon name="triangle-exclamation"></wa-icon>
+                                    <wa-icon name="triangle-exclamation" label="Warning"></wa-icon>
                                 </wa-button>
                                 <small><i>This is an experimental extension!</i></small>
                             </div>

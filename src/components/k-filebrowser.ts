@@ -123,7 +123,7 @@ export class KFileBrowser extends KPart {
 
         return html`
             <wa-tree-item @dblclick=${this.nobubble(this.onFileDoubleClicked)} .model=${node} ?expanded=${expanded}>
-                <span><wa-icon name=${node.icon}></wa-icon> ${node.label}</span>
+                <span><wa-icon name=${node.icon} label="${node.leaf ? 'File' : 'Folder'}"></wa-icon> ${node.label}</span>
                 ${node.children.map(child => this.createTreeItems(child))}
             </wa-tree-item>`
     }

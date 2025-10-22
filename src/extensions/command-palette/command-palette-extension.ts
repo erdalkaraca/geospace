@@ -375,7 +375,7 @@ export class KCommandPalette extends KPart {
                 @keydown=${this.handleKeyDown}
                 autocomplete="off"
             >
-                <wa-icon slot="start" name="terminal"></wa-icon>
+                <wa-icon slot="start" name="terminal" label="Terminal"></wa-icon>
                 
                 <wa-dropdown 
                     slot="end"
@@ -387,7 +387,7 @@ export class KCommandPalette extends KPart {
                     @wa-hide=${() => this.dropdownOpen = false}
                 >
                     <wa-button slot="trigger" appearance="plain" size="small">
-                        <wa-icon name="list"></wa-icon>
+                        <wa-icon name="list" label="Show all commands"></wa-icon>
                     </wa-button>
 
                     ${this.filteredCommands.length > 0 ? html`
@@ -396,11 +396,11 @@ export class KCommandPalette extends KPart {
                                 <div class="command-content">
                                     ${cmd.icon ? html`
                                         <div class="command-icon">
-                                            <wa-icon name="${cmd.icon}"></wa-icon>
+                                            <wa-icon name="${cmd.icon}" label="${cmd.name}"></wa-icon>
                                         </div>
                                     ` : html`
                                         <div class="command-icon">
-                                            <wa-icon name="terminal"></wa-icon>
+                                            <wa-icon name="terminal" label="Command"></wa-icon>
                                         </div>
                                     `}
                                     <div class="command-info">
@@ -419,7 +419,7 @@ export class KCommandPalette extends KPart {
                     ` : html`
                         <wa-dropdown-item disabled>
                             <div class="no-results">
-                                <wa-icon name="search" style="font-size: 24px; margin-bottom: 4px; opacity: 0.3;"></wa-icon>
+                                <wa-icon name="search" label="No results" style="font-size: 24px; margin-bottom: 4px; opacity: 0.3;"></wa-icon>
                                 <div>No commands found</div>
                             </div>
                         </wa-dropdown-item>

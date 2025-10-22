@@ -37,7 +37,7 @@ export class KMemoryUsage extends KElement {
         
         return html`
             <span style="display: inline-flex; align-items: center; justify-content: center; height: 100%; padding-left: 0.5rem; gap: 0.25rem; font-size: 0.85em; color: var(--wa-color-neutral-text);" title="Main thread memory consumption only (excludes web workers)">
-                <wa-icon name="microchip"></wa-icon>
+                <wa-icon name="microchip" label="Memory usage"></wa-icon>
                 <span style="display: flex; align-items: center; gap: 0.25rem;">
                     <span>${usedMB} / ${limitMB} MB</span>
                     <span style="position: relative; display: inline-block; width: 60px; height: 14px; vertical-align: middle;">

@@ -22,7 +22,7 @@ export class KTasks extends SignalWatcher(KPart) {
             <wa-dropdown>
                 <div slot="trigger" title="Active tasks: ${activeTasksSignal.get()}">
                     <wa-animation name="zoomIn" duration="1000" play>
-                        <wa-icon name="hourglass" style="color: var(--wa-color-warning-fill-loud)"></wa-icon>
+                        <wa-icon name="hourglass" label="Active tasks" style="color: var(--wa-color-warning-fill-loud)"></wa-icon>
                     </wa-animation>
                     Active tasks: ${activeTasksSignal.get()}
                 </div>

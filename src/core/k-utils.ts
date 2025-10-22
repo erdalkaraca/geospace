@@ -17,7 +17,7 @@ export const observeOverflow = (child: HTMLElement) => {
         }).observe(child)
 }
 
-export const icon = (name?: string) => {
+export const icon = (name?: string, label?: string) => {
     if (!name) {
         return ""
     }
@@ -25,5 +25,5 @@ export const icon = (name?: string) => {
     const iconName = parts.pop()
     const lib = parts.pop()
     return html`
-        <wa-icon library="${lib || nothing}" name="${iconName}"></wa-icon>`
+        <wa-icon library="${lib || nothing}" name="${iconName}" label="${label || iconName || nothing}"></wa-icon>`
 }

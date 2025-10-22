@@ -121,28 +121,28 @@ export class KLogTerminal extends KWidget {
                                 appearance="plain"
                                 variant="${this.filter === 'info' ? 'primary' : 'default'}"
                                 @click=${() => this.filter = 'info'}>
-                                <wa-icon name="circle-info"></wa-icon> Info
+                                <wa-icon name="circle-info" label="Info"></wa-icon> Info
                             </wa-button>
                             <wa-button 
                                 size="small" 
                                 appearance="plain"
                                 variant="${this.filter === 'warning' ? 'primary' : 'default'}"
                                 @click=${() => this.filter = 'warning'}>
-                                <wa-icon name="triangle-exclamation"></wa-icon> Warnings
+                                <wa-icon name="triangle-exclamation" label="Warnings"></wa-icon> Warnings
                             </wa-button>
                             <wa-button 
                                 size="small" 
                                 appearance="plain"
                                 variant="${this.filter === 'error' ? 'primary' : 'default'}"
                                 @click=${() => this.filter = 'error'}>
-                                <wa-icon name="circle-xmark"></wa-icon> Errors
+                                <wa-icon name="circle-xmark" label="Errors"></wa-icon> Errors
                             </wa-button>
                             <wa-button 
                                 size="small" 
                                 appearance="plain"
                                 variant="${this.filter === 'debug' ? 'primary' : 'default'}"
                                 @click=${() => this.filter = 'debug'}>
-                                <wa-icon name="bug"></wa-icon> Debug
+                                <wa-icon name="bug" label="Debug"></wa-icon> Debug
                             </wa-button>
                         </wa-button-group>
                     </div>
@@ -153,14 +153,14 @@ export class KLogTerminal extends KWidget {
                             appearance="plain"
                             variant="${this.autoScroll ? 'primary' : 'default'}"
                             @click=${() => this.autoScroll = !this.autoScroll}>
-                            <wa-icon name="arrow-down"></wa-icon>
+                            <wa-icon name="arrow-down" label="Auto-scroll"></wa-icon>
                             ${this.autoScroll ? 'Auto-scroll' : 'Manual'}
                         </wa-button>
                         <wa-button 
                             size="small" 
                             appearance="plain"
                             @click=${() => this.clear()}>
-                            <wa-icon name="trash"></wa-icon>
+                            <wa-icon name="trash" label="Clear logs"></wa-icon>
                             Clear
                         </wa-button>
                     </div>
@@ -175,6 +175,7 @@ export class KLogTerminal extends KWidget {
                                 <span class="timestamp">${this.formatTimestamp(msg.timestamp)}</span>
                                 <wa-icon 
                                     name="${this.getLevelIcon(msg.level)}" 
+                                    label="${msg.level}"
                                     style="color: ${this.getLevelColor(msg.level)}">
                                 </wa-icon>
                                 <span class="source">[${msg.source}]</span>

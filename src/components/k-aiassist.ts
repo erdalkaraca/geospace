@@ -155,7 +155,7 @@ export class KAIAssist extends KPart {
                     return html`
                         <wa-card class="message ${message.role}">
                             <div slot="header">
-                                <wa-icon name=${message.role == "user" ? "user" : "robot"}></wa-icon>
+                                <wa-icon name=${message.role == "user" ? "user" : "robot"} label="${message.role}"></wa-icon>
                                 ${when(chatService.getPromptContribution(message.role), (pc) => pc.label, () => message.role)}
                             </div>
                             <wa-divider></wa-divider>
@@ -164,7 +164,7 @@ export class KAIAssist extends KPart {
                                 ${message.actions?.map(a => html`
                                     <wa-button @click="${() => a.action()}" size="small" variant="success"
                                                appearance="outlined" title="${a.label}">
-                                        <wa-icon name="${a.icon}"></wa-icon>
+                                        <wa-icon name="${a.icon}" label="${a.label}"></wa-icon>
                                     </wa-button>
                                 `)}
                             </div>
@@ -174,7 +174,7 @@ export class KAIAssist extends KPart {
                 ${when(this.busy, () => html`
                     <wa-card class="message">
                         <wa-animation name="flip" duration="2000" play>
-                            <wa-icon name="robot"></wa-icon>
+                            <wa-icon name="robot" label="AI Assistant"></wa-icon>
                         </wa-animation>
                         <span>Waiting for reply...</span>
                     </wa-card>
@@ -186,7 +186,7 @@ export class KAIAssist extends KPart {
 
                 <wa-dropdown slot="end">
                     <wa-button slot="trigger" appearance="plain" size="small">
-                        <wa-icon name="ellipsis-vertical"></wa-icon>
+                        <wa-icon name="ellipsis-vertical" label="Options"></wa-icon>
                     </wa-button>
                     ${this.providers?.map(provider => html`
                         <wa-dropdown-item type="checkbox"

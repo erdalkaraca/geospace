@@ -151,14 +151,14 @@ export class KMonacoEditor extends KPart {
                 <k-toolbar>
                     <wa-button @click=${this.onRunCode} title="Run code"
                                ?disabled="${!this.canExecute}" appearance="plain" size="small">
-                        <wa-icon name="play"></wa-icon>
+                        <wa-icon name="play" label="Run code"></wa-icon>
                     </wa-button>
                     <wa-button @click=${this.toggleConnection}
                                style="${styleMap({color: this.pyenv ? "var(--wa-color-success-fill-loud)" : "var(--wa-color-danger-fill-loud)"})}"
                                title="(Re)Connect to execution environment"
                                ?disabled="${!this.canExecute}"
                                appearance="plain" size="small">
-                        <wa-icon name="circle"></wa-icon>
+                        <wa-icon name="circle" label="Connection status"></wa-icon>
                     </wa-button>
                 </k-toolbar>
             `)}

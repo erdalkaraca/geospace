@@ -40,7 +40,7 @@ export class KWorkspaceName extends KElement {
                 size="small"
                 title="Load workspace"
                 @click=${this.handleLoadWorkspace}>
-                <wa-icon name="folder-open" slot="start"></wa-icon>
+                <wa-icon name="folder-open" slot="start" label="Workspace"></wa-icon>
                 ${this.workspaceName}
             </wa-button>
         `;

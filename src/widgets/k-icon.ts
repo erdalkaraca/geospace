@@ -15,13 +15,16 @@ export class KIcon extends KWidget {
     @property()
     private variant?: string;
 
+    @property()
+    private label?: string;
+
     render() {
         const parts = this.name?.trim().split(" ")
         const name = parts?.pop()
         const library = parts?.pop()
         return html`
             <wa-icon library="${library || nothing}" variant="${this.variant || nothing}"
-                     family="${this.family || nothing}" name=${name}></wa-icon>
+                     family="${this.family || nothing}" name=${name} label="${this.label || name || nothing}"></wa-icon>
         `
     }
 }

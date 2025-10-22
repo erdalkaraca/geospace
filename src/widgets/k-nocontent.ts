@@ -15,7 +15,7 @@ export class KNoContent extends KWidget {
     render() {
         return html`
             <h3>
-                <wa-icon name=${this.icon}></wa-icon>
+                <wa-icon name=${this.icon} label="${this.message}"></wa-icon>
                 ${this.message}
             </h3>
         `

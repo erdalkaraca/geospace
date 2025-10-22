@@ -221,10 +221,10 @@ export class KNotebookEditor extends KPart {
         return html`
             <div class="cell-actions-top">
                 <wa-button size="small" appearance="plain" @click=${() => this.addCellBefore(index, 'code')} title="Add code cell">
-                    <wa-icon name="code"></wa-icon>
+                    <wa-icon name="code" label="Add code cell"></wa-icon>
                 </wa-button>
                 <wa-button size="small" appearance="plain" @click=${() => this.addCellBefore(index, 'markdown')} title="Add markdown cell">
-                    <wa-icon name="font"></wa-icon>
+                    <wa-icon name="font" label="Add markdown cell"></wa-icon>
                 </wa-button>
             </div>
         `;
@@ -235,10 +235,10 @@ export class KNotebookEditor extends KPart {
         return html`
             <div class="cell-actions-bottom">
                 <wa-button size="small" appearance="plain" @click=${() => this.addCellAfter(index, 'code')} title="Add code cell">
-                    <wa-icon name="code"></wa-icon>
+                    <wa-icon name="code" label="Add code cell"></wa-icon>
                 </wa-button>
                 <wa-button size="small" appearance="plain" @click=${() => this.addCellAfter(index, 'markdown')} title="Add markdown cell">
-                    <wa-icon name="font"></wa-icon>
+                    <wa-icon name="font" label="Add markdown cell"></wa-icon>
                 </wa-button>
             </div>
         `;
@@ -250,7 +250,7 @@ export class KNotebookEditor extends KPart {
             <div class="cell-header-actions">
                 ${additionalButton || ''}
                 <wa-button size="small" appearance="plain" @click=${() => this.deleteCell(index)} title="Delete cell" ?disabled=${this.notebook!.cells.length <= 1}>
-                    <wa-icon name="trash"></wa-icon>
+                    <wa-icon name="trash" label="Delete cell"></wa-icon>
                 </wa-button>
             </div>
         `;
@@ -524,30 +524,30 @@ export class KNotebookEditor extends KPart {
                 <div class="cell-wrapper">
                     ${this.renderTopActions(index)}
                     <div class="cell markdown-cell editing">
-                        <div class="cell-header">
-                            <span class="cell-label">Markdown</span>
-                            <div class="markdown-edit-buttons">
-                                <wa-button 
-                                    size="small" 
-                                    appearance="plain"
-                                    @click=${() => this.toggleMarkdownEdit(index)}
-                                    title="Cancel editing">
-                                    <wa-icon name="xmark"></wa-icon>
-                                </wa-button>
-                                <wa-button 
-                                    size="small" 
-                                    appearance="plain"
-                                    @click=${(e: Event) => {
+                    <div class="cell-header">
+                        <span class="cell-label">Markdown</span>
+                        <div class="markdown-edit-buttons">
+                            <wa-button 
+                                size="small" 
+                                appearance="plain"
+                                @click=${() => this.toggleMarkdownEdit(index)}
+                                title="Cancel editing">
+                                <wa-icon name="xmark" label="Cancel"></wa-icon>
+                            </wa-button>
+                            <wa-button 
+                                size="small" 
+                                appearance="plain"
+                                @click=${(e: Event) => {
                             const textarea = (e.target as HTMLElement).closest('.markdown-cell')?.querySelector('textarea');
                             if (textarea) {
                                 this.saveMarkdownEdit(index, { target: textarea } as any);
                             }
                         }}
-                                    title="Save changes">
-                                    <wa-icon name="check"></wa-icon>
-                                </wa-button>
-                            </div>
+                                title="Save changes">
+                                <wa-icon name="check" label="Save"></wa-icon>
+                            </wa-button>
                         </div>
+                    </div>
                         <textarea 
                             class="markdown-editor"
                             .value=${source}
@@ -567,7 +567,7 @@ export class KNotebookEditor extends KPart {
                 appearance="plain"
                 @click=${() => this.toggleMarkdownEdit(index)}
                 title="Edit markdown">
-                <wa-icon name="pencil"></wa-icon>
+                <wa-icon name="pencil" label="Edit"></wa-icon>
             </wa-button>
         `;
 
@@ -582,7 +582,7 @@ export class KNotebookEditor extends KPart {
                     <div class="cell-content">
                         ${isEmpty ? html`
                             <div class="markdown-placeholder">
-                                <wa-icon name="font"></wa-icon>
+                                <wa-icon name="font" label="Markdown"></wa-icon>
                                 <span>Double-click or click the pencil icon to edit markdown</span>
                             </div>
                         ` : unsafeHTML(rendered)}
@@ -611,9 +611,9 @@ export class KNotebookEditor extends KPart {
                 title=${isExecuting ? "Stop execution" : "Run cell"}
                 class="run-button-left">
                 ${isExecuting ? html`
-                    <wa-icon name="stop" style="color: var(--wa-color-danger-500);"></wa-icon>
+                    <wa-icon name="stop" label="Stop" style="color: var(--wa-color-danger-500);"></wa-icon>
                 ` : html`
-                    <wa-icon name="play"></wa-icon>
+                    <wa-icon name="play" label="Run"></wa-icon>
                 `}
             </wa-button>
         `;
@@ -825,6 +825,7 @@ export class KNotebookEditor extends KPart {
                 <div class="python-status">
                     <wa-icon 
                         name="circle" 
+                        label="Python status"
                         @click=${this.connectPython}
                         style="${styleMap({
             color: this.pyConnected ?
@@ -844,7 +845,7 @@ export class KNotebookEditor extends KPart {
                         appearance="plain"
                         @click=${this.cancelAllCells}
                         title="Cancel running all cells">
-                        <wa-icon name="stop"></wa-icon>
+                        <wa-icon name="stop" label="Stop"></wa-icon>
                         Cancel All
                     </wa-button>
                 ` : html`
@@ -853,7 +854,7 @@ export class KNotebookEditor extends KPart {
                         appearance="plain"
                         @click=${this.runAllCells}
                         title="Run all code cells sequentially">
-                        <wa-icon name="play"></wa-icon>
+                        <wa-icon name="play" label="Run"></wa-icon>
                         Run All
                     </wa-button>
                 `}
@@ -862,7 +863,7 @@ export class KNotebookEditor extends KPart {
                     appearance="plain"
                     @click=${this.clearAllOutputs}
                     title="Clear all outputs and reset execution counter">
-                    <wa-icon name="eraser"></wa-icon>
+                    <wa-icon name="eraser" label="Clear"></wa-icon>
                     Clear Outputs
                 </wa-button>
                 <wa-button 
@@ -871,7 +872,7 @@ export class KNotebookEditor extends KPart {
                     @click=${this.restartKernel}
                     title="Restart Python kernel (clears all variables and state)"
                     ?disabled=${!this.pyConnected}>
-                    <wa-icon name="arrows-rotate"></wa-icon>
+                    <wa-icon name="arrows-rotate" label="Restart"></wa-icon>
                     Restart Kernel
                 </wa-button>
             </div>
