@@ -76,9 +76,7 @@ export abstract class KWidget extends LitElement {
 
     protected firstUpdated(_changedProperties: PropertyValues) {
         super.firstUpdated(_changedProperties);
-
         this.doInitUI()
-        requestAnimationFrame(this.doAfterUI.bind(this))
     }
 
     protected updateIdle() {
@@ -89,13 +87,10 @@ export abstract class KWidget extends LitElement {
         requestAnimationFrame(() => this.requestUpdate())
     }
 
-    protected doInitUI() {
-    }
-
     protected doBeforeUI() {
     }
 
-    protected doAfterUI() {
+    protected doInitUI() {
     }
 
     withRefresh(callback: () => void) {

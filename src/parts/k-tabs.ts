@@ -50,8 +50,8 @@ export class KTabs extends KContainer {
     private containerId: string | null = null;
 
     // ============= Lifecycle Methods =============
-
-    protected doAfterUI() {
+    
+    protected doInitUI() {
         this.containerId = this.getAttribute("id");
         if (!this.containerId) {
             throw new Error("k-tabs requires an 'id' attribute to function");
@@ -62,15 +62,15 @@ export class KTabs extends KContainer {
         this.updateComplete.then(() => {
             this.activateNextAvailableTab();
             
+            if (!this.tabGroup.value) return;
+            
             // @ts-ignore
-            this.tabGroup.value!.addEventListener("wa-tab-show", (event: CustomEvent) => {
+            this.tabGroup.value.addEventListener("wa-tab-show", (event: CustomEvent) => {
                 const tabPanel = this.getTabPanel(event.detail.name);
                 this.dispatchEvent(new CustomEvent('tab-shown', {detail: tabPanel}));
             });
         });
-    }
-
-    protected doInitUI() {
+        
         subscribe(TOPIC_CONTRIBUTEIONS_CHANGED, () => {
             if (!this.containerId) return;
             
@@ -86,7 +86,12 @@ export class KTabs extends KContainer {
     updated(changedProperties: Map<string, any>) {
         super.updated(changedProperties);
         
-        // DOM is already fully updated - no need to defer
+        // Only manage instances when contributions actually change
+        if (!changedProperties.has('contributions')) return;
+        
+        // And only after initialization is complete
+        if (!this.containerId || !this.tabGroup.value) return;
+        
         this.contributions.forEach(c => {
             this.manageTabInstance(c);
         });
@@ -307,14 +312,17 @@ export class KTabs extends KContainer {
     }
 
     private activateNextAvailableTab(): void {
-        const allRemainingTabs = this.tabGroup.value!.querySelectorAll("wa-tab");
+        // Guard: Component might not be fully initialized yet
+        if (!this.tabGroup.value) return;
+        
+        const allRemainingTabs = this.tabGroup.value.querySelectorAll("wa-tab");
         if (allRemainingTabs.length > 0) {
             const newActive = allRemainingTabs.item(0).getAttribute("panel");
             if (newActive) {
-                this.tabGroup.value!.setAttribute("active", newActive);
+                this.tabGroup.value.setAttribute("active", newActive);
             }
         } else {
-            this.tabGroup.value!.removeAttribute("active");
+            this.tabGroup.value.removeAttribute("active");
         }
     }
 

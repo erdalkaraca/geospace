@@ -1,8 +1,14 @@
 /**
- * k-resizable-grid: A simple resizable grid layout component
+ * KResizableGrid - A simple resizable grid layout component
  * 
  * Uses CSS Grid with explicit column/row templates and manual resize handles.
  * Much simpler and more predictable than flex-based layouts.
+ * 
+ * Features:
+ * - Horizontal or vertical orientation
+ * - Custom size distribution via 'sizes' attribute
+ * - Interactive resize handles between children
+ * - Min size constraints (5% of container)
  * 
  * Example usage:
  * <k-resizable-grid orientation="horizontal" sizes="20%, 60%, 20%">
@@ -42,7 +48,9 @@ export class KResizableGrid extends KElement {
         return this;
     }
 
-    protected doAfterUI() {
+    // ============= Lifecycle Methods =============
+
+    protected doInitUI() {
         // Only set up observer if children not yet loaded
         if (!this.childrenLoaded) {
             // Use MutationObserver to detect when children are added
@@ -90,6 +98,26 @@ export class KResizableGrid extends KElement {
 
         this.requestUpdate();
     }
+
+    updated(changedProperties: Map<string, any>) {
+        super.updated(changedProperties);
+        
+        // Only apply child styling when grid state changes
+        if (!changedProperties.has('gridChildren') && !changedProperties.has('gridSizes')) return;
+        
+        // Apply grid positioning and styling to children
+        this.gridChildren.forEach((child, index) => {
+            child.style.overflow = 'hidden';
+            child.style.height = '100%';
+            child.style.width = '100%';
+            child.style.gridColumn = this.orientation === 'horizontal' ? `${index * 2 + 1}` : '1';
+            child.style.gridRow = this.orientation === 'vertical' ? `${index * 2 + 1}` : '1';
+            child.style.display = 'flex';
+            child.style.flexDirection = 'column';
+        });
+    }
+
+    // ============= Resize Handling Methods =============
 
     private startResize(e: MouseEvent, handleIndex: number) {
         e.preventDefault();
@@ -163,6 +191,8 @@ export class KResizableGrid extends KElement {
         document.body.style.userSelect = '';
     }
 
+    // ============= Render Methods =============
+
     render() {
         if (this.gridChildren.length === 0 || this.gridSizes.length === 0) {
             // Show children with default styling while grid is initializing
@@ -189,21 +219,8 @@ export class KResizableGrid extends KElement {
         }
         this.style.overflow = 'hidden';
 
-        // Apply grid positioning to existing children AFTER render completes
-        // This prevents MutationObserver from triggering during render
-        setTimeout(() => {
-            this.gridChildren.forEach((child, index) => {
-                child.style.overflow = 'hidden';
-                child.style.height = '100%';
-                child.style.width = '100%';
-                child.style.gridColumn = this.orientation === 'horizontal' ? `${index * 2 + 1}` : '1';
-                child.style.gridRow = this.orientation === 'vertical' ? `${index * 2 + 1}` : '1';
-                child.style.display = 'flex';
-                child.style.flexDirection = 'column';
-            });
-        }, 0);
-
         // Render resize handles
+        // Child styling is applied in updated() when gridChildren/gridSizes change
         return html`
             ${this.gridChildren.map((_, index) => {
                 if (index < this.gridChildren.length - 1) {
@@ -234,6 +251,8 @@ export class KResizableGrid extends KElement {
             })}
         `;
     }
+
+    // ============= Cleanup Methods =============
 
     disconnectedCallback() {
         super.disconnectedCallback();

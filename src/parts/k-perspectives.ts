@@ -1,30 +1,34 @@
 /**
- * k-perspectives: A container component that allows dynamic perspective contributions
+ * KPerspectives - A container component for managing different UI layouts (perspectives)
  * 
- * Similar to k-tabs, this component allows contributions to be registered dynamically.
- * Each perspective is a container for other contributions such as split panes or k-tabs.
+ * Architecture:
+ * - Perspectives are registered as contributions via the contribution registry
+ * - Each perspective defines a complete UI layout using other components (k-tabs, k-split-pane, etc.)
+ * - Only the active perspective is rendered (lazy loading + memory efficiency)
+ * - Shared editor area is managed internally and injected into each perspective
+ * 
+ * Features:
+ * - Dynamic perspective switching with lazy loading
+ * - Shared editor area across all perspectives (preserves state)
+ * - Contribution-based registration
+ * - Event dispatching on perspective switch
  * 
  * Example usage:
  * 
  * // In HTML:
- * <k-perspectives id="perspectives-main"></k-perspectives>
+ * <k-perspectives id="perspectives-main" editor-id="editor-area-main"></k-perspectives>
  * 
  * // Register perspectives via contribution registry:
  * contributionRegistry.registerContribution<PerspectiveContribution>(PERSPECTIVES_MAIN, {
  *     name: "default",
  *     label: "Default Layout",
  *     icon: "grip",
- *     component: () => html`
- *         <k-split-pane id="my-split-pane" orientation="horizontal"></k-split-pane>
- *     `
- * });
- * 
- * contributionRegistry.registerContribution<PerspectiveContribution>(PERSPECTIVES_MAIN, {
- *     name: "editing",
- *     label: "Editing",
- *     icon: "pencil",
- *     component: () => html`
- *         <k-tabs id="editing-tabs"></k-tabs>
+ *     component: (editorArea) => html`
+ *         <k-split-pane id="my-split-pane" orientation="horizontal">
+ *             <k-tabs id="left-tabs"></k-tabs>
+ *             ${editorArea}
+ *             <k-tabs id="right-tabs"></k-tabs>
+ *         </k-split-pane>
  *     `
  * });
  */
@@ -43,6 +47,7 @@ export class KPerspectives extends KContainer {
     @state()
     private activePerspective: string = "";
 
+    private containerId: string | null = null;
     private containerRef = createRef();
     private perspectiveElements: Map<string, HTMLElement> = new Map();
     private editorArea?: HTMLElement;  // Shared editor area created and managed internally
@@ -51,6 +56,8 @@ export class KPerspectives extends KContainer {
         return this;
     }
     
+    // ============= Lifecycle Methods =============
+
     protected doBeforeUI() {
         // Create the shared editor area once
         if (!this.editorArea) {
@@ -61,28 +68,36 @@ export class KPerspectives extends KContainer {
         }
     }
 
-    protected doAfterUI() {
-        if (this.getAttribute("id")) {
-            const id = this.getAttribute("id")!
-            this.contributions = contributionRegistry.getContributions(id) as PerspectiveContribution[]
+    protected doInitUI() {
+        this.containerId = this.getAttribute("id");
+        if (!this.containerId) return;
+        
+        this.contributions = contributionRegistry.getContributions(this.containerId) as PerspectiveContribution[];
+        if (this.contributions.length > 0 && !this.activePerspective) {
+            this.activePerspective = this.contributions[0].name;
+        }
+        
+        subscribe(TOPIC_CONTRIBUTEIONS_CHANGED, () => {
+            if (!this.containerId) return;
+            
+            this.contributions = contributionRegistry.getContributions(this.containerId) as PerspectiveContribution[];
             if (this.contributions.length > 0 && !this.activePerspective) {
                 this.activePerspective = this.contributions[0].name;
             }
+            this.requestUpdate();
+        });
+    }
+
+    updated(changedProperties: Map<string, any>) {
+        super.updated(changedProperties);
+        
+        // Only update visibility when contributions or active perspective change
+        if (changedProperties.has('contributions') || changedProperties.has('activePerspective')) {
+            this.updatePerspectiveVisibility();
         }
     }
 
-    protected doInitUI() {
-        subscribe(TOPIC_CONTRIBUTEIONS_CHANGED, () => {
-            if (this.getAttribute("id")) {
-                const id = this.getAttribute("id")!
-                this.contributions = contributionRegistry.getContributions(id) as PerspectiveContribution[]
-                if (this.contributions.length > 0 && !this.activePerspective) {
-                    this.activePerspective = this.contributions[0].name;
-                }
-                this.requestUpdate()
-            }
-        })
-    }
+    // ============= Public API Methods =============
 
     switchPerspective(perspectiveName: string) {
         // Render the new perspective if it hasn't been rendered yet (lazy loading)
@@ -109,20 +124,14 @@ export class KPerspectives extends KContainer {
     }
 
     addPerspective(contribution: PerspectiveContribution) {
-        this.contributions.push(contribution)
-        this.requestUpdate()
+        this.contributions.push(contribution);
+        this.requestUpdate();
         if (!this.activePerspective) {
             this.activePerspective = contribution.name;
         }
     }
 
-    updated(changedProperties: Map<string, any>) {
-        super.updated(changedProperties);
-        
-        if (changedProperties.has('contributions') || changedProperties.has('activePerspective')) {
-            this.updatePerspectiveVisibility();
-        }
-    }
+    // ============= Private Helper Methods =============
 
     private updatePerspectiveVisibility() {
         const container = this.containerRef.value as HTMLElement;
@@ -156,19 +165,18 @@ export class KPerspectives extends KContainer {
         const template = p.component(this.editorArea);
         litRender(template, wrapper);
         
-        // Give tabs time to initialize their content
-        requestAnimationFrame(() => {
-            this.updateComplete.then(() => {
-                // Trigger updates on all tab components in this perspective
-                const tabComponents = wrapper.querySelectorAll('k-tabs');
-                tabComponents.forEach(tab => {
-                    if ('requestUpdate' in tab && typeof tab.requestUpdate === 'function') {
-                        tab.requestUpdate();
-                    }
-                });
+        // Trigger updates on all tab components in this perspective after render
+        this.updateComplete.then(() => {
+            const tabComponents = wrapper.querySelectorAll('k-tabs');
+            tabComponents.forEach(tab => {
+                if ('requestUpdate' in tab && typeof tab.requestUpdate === 'function') {
+                    tab.requestUpdate();
+                }
             });
         });
     }
+
+    // ============= Render Methods =============
 
     render() {
         return html`

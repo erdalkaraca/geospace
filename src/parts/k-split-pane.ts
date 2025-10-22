@@ -20,6 +20,19 @@ interface PaneState {
     name: string;
 }
 
+/**
+ * KSplitPane - A resizable split pane container
+ * 
+ * Supports two modes:
+ * 1. Contribution-based: Uses 'id' attribute to load panes from contributionRegistry
+ * 2. Direct children: Uses 'ratios' attribute to create panes from direct child elements
+ * 
+ * Features:
+ * - Interactive resize handles between panes
+ * - Configurable min/max sizes per pane
+ * - Horizontal or vertical orientation
+ * - Maintains proportions on resize
+ */
 @customElement('k-split-pane')
 export class KSplitPane extends SignalWatcher(KElement) {
     @property()
@@ -31,6 +44,7 @@ export class KSplitPane extends SignalWatcher(KElement) {
     @state()
     private panes: PaneState[] = [];
 
+    private containerId: string | null = null;
     private useDirectChildren = false;
     private childObserver?: MutationObserver;
 
@@ -46,54 +60,44 @@ export class KSplitPane extends SignalWatcher(KElement) {
         return this;
     }
 
-    protected doBeforeUI() {
-        if (this.getAttribute("id")) {
-            const id = this.getAttribute("id")!
-            this.loadPanes(id);
-        }
-    }
+    // ============= Lifecycle Methods =============
 
-    protected doAfterUI() {
+    protected doInitUI() {
+        this.containerId = this.getAttribute("id");
+        
         if (this.ratios) {
+            // Direct children mode: create panes from child elements
             this.useDirectChildren = true;
             this.checkAndLoadChildren();
-        } else if (this.getAttribute("id")) {
-            const id = this.getAttribute("id")!
-            this.loadPanes(id);
+        } else if (this.containerId) {
+            // Contribution mode: load panes from registry
+            this.loadPanes(this.containerId);
         }
+        
+        subscribe(TOPIC_CONTRIBUTEIONS_CHANGED, () => {
+            if (!this.useDirectChildren && this.containerId) {
+                this.loadPanes(this.containerId);
+            }
+        });
     }
 
     private checkAndLoadChildren() {
-        // Try immediately first
         if (this.children.length > 0) {
             this.loadPanesFromChildren();
             return;
         }
         
-        // If no children yet, wait for next tick
-        requestAnimationFrame(() => {
+        // No children yet - set up observer to wait for dynamic children
+        this.childObserver = new MutationObserver(() => {
             if (this.children.length > 0) {
                 this.loadPanesFromChildren();
-            } else {
-                // Still no children, use MutationObserver
-                this.childObserver = new MutationObserver(() => {
-                    if (this.children.length > 0) {
-                        this.loadPanesFromChildren();
-                        this.childObserver?.disconnect();
-                    }
-                });
-                this.childObserver.observe(this, { childList: true });
+                this.childObserver?.disconnect();
             }
         });
+        this.childObserver.observe(this, { childList: true });
     }
 
-    protected doInitUI() {
-        subscribe(TOPIC_CONTRIBUTEIONS_CHANGED, () => {
-            if (!this.useDirectChildren && this.getAttribute("id")) {
-                this.loadPanes(this.getAttribute("id")!);
-            }
-        });
-    }
+    // ============= Pane Loading Methods =============
 
     private loadPanes(id: string) {
         const contributions = contributionRegistry.getContributions(id) as PaneContribution[];
@@ -117,7 +121,6 @@ export class KSplitPane extends SignalWatcher(KElement) {
 
     private loadPanesFromChildren() {
         const childElements = Array.from(this.children) as HTMLElement[];
-        if (childElements.length === 0) return;
 
         const ratioValues = this.ratios 
             ? this.ratios.split(',').map(r => parseFloat(r.trim()))
@@ -133,6 +136,8 @@ export class KSplitPane extends SignalWatcher(KElement) {
 
         this.requestUpdate();
     }
+
+    // ============= Resize Handling Methods =============
 
     private startResize(e: MouseEvent, paneIndex: number) {
         e.preventDefault();
@@ -212,6 +217,8 @@ export class KSplitPane extends SignalWatcher(KElement) {
         document.body.style.userSelect = '';
     }
 
+    // ============= Cleanup Methods =============
+
     disconnectedCallback() {
         super.disconnectedCallback();
         if (this.resizing) {
@@ -221,6 +228,8 @@ export class KSplitPane extends SignalWatcher(KElement) {
             this.childObserver.disconnect();
         }
     }
+
+    // ============= Render Methods =============
 
     render() {
         if (this.panes.length === 0) {
@@ -293,6 +302,9 @@ export class KSplitPane extends SignalWatcher(KElement) {
 
     updated(changedProperties: Map<string, any>) {
         super.updated(changedProperties);
+        
+        // Only manage pane elements when panes actually change
+        if (!changedProperties.has('panes')) return;
         
         if (this.useDirectChildren && this.panes.length > 0) {
             this.panes.forEach((pane) => {

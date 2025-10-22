@@ -21,14 +21,12 @@ export class KToolbar extends SignalWatcher(KElement) {
     @state()
     private contributions: Contribution[] = [];
 
-    protected doAfterUI() {
+    protected doInitUI() {
         if (this.getAttribute("id")) {
             const id = this.getAttribute("id")!
             this.contributions = contributionRegistry.getContributions(id)
         }
-    }
-
-    protected doInitUI() {
+        
         subscribe(TOPIC_CONTRIBUTEIONS_CHANGED, () => {
             this.requestUpdate()
         })
