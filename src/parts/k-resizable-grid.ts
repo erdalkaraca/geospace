@@ -50,7 +50,7 @@ export class KResizableGrid extends KElement {
 
     // ============= Lifecycle Methods =============
 
-    protected doInitUI() {
+    protected doBeforeUI() {
         // Only set up observer if children not yet loaded
         if (!this.childrenLoaded) {
             // Use MutationObserver to detect when children are added
