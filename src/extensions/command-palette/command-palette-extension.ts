@@ -270,7 +270,7 @@ export class KCommandPalette extends KPart {
         }
 
         wa-input {
-            width: 100%;
+            max-width: 300px;
         }
 
         .commands-container {
