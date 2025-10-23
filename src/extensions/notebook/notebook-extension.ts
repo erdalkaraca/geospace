@@ -388,7 +388,7 @@ export class KNotebookEditor extends KPart {
                     this.pyVersion = 'Unknown';
                 }
 
-                // Set up matplotlib backend if matplotlib is installed
+                // Set up matplotlib backend and patch plt.show() if matplotlib is installed
                 try {
                     await this.pyenv.execCode(`
 try:
@@ -400,7 +400,29 @@ try:
     except (ImportError, ValueError):
         # Fallback to AGG backend if matplotlib-pyodide is not available
         matplotlib.use('agg')
-        print("Using matplotlib AGG backend (install matplotlib-pyodide for better integration)")
+    
+    # Patch plt.show() to capture and store figure for display
+    import matplotlib.pyplot as plt
+    import io
+    import base64
+    
+    _original_show = plt.show
+    _display_data = None
+    
+    def _patched_show(*args, **kwargs):
+        """Patched plt.show() that captures the current figure for notebook display."""
+        global _display_data
+        if plt.get_fignums():
+            fig = plt.gcf()
+            buffer = io.BytesIO()
+            fig.savefig(buffer, format='png', bbox_inches='tight', dpi=100)
+            buffer.seek(0)
+            _display_data = base64.b64encode(buffer.read()).decode('utf-8')
+            plt.close(fig)
+        # Don't call original show() as it would try to display in a window
+    
+    plt.show = _patched_show
+    
 except ImportError:
     # matplotlib not installed - skip configuration
     pass
@@ -443,36 +465,21 @@ except ImportError:
                 }
             }
 
-            // Automatically capture any matplotlib figures that were created
+            // Check if plt.show() was called (which stores data in _display_data)
             let imageData: string | undefined = undefined;
             try {
-                const captureCode = `
-import io
-import base64
-_captured_image = None
-try:
-    import matplotlib.pyplot as plt
-    if plt.get_fignums():
-        fig = plt.gcf()
-        buffer = io.BytesIO()
-        fig.savefig(buffer, format='png', bbox_inches='tight', dpi=100)
-        buffer.seek(0)
-        _captured_image = base64.b64encode(buffer.read()).decode('utf-8')
-        plt.close(fig)
-except ImportError:
-    pass
-_captured_image
-`;
-                const captureResponse = await this.pyenv!.execCode(captureCode);
-                const captureResult = captureResponse && typeof captureResponse === 'object' ? 
-                    captureResponse.result : captureResponse;
+                const checkDisplayData = await this.pyenv!.execCode('_display_data if "_display_data" in dir() else None');
+                const displayResult = checkDisplayData && typeof checkDisplayData === 'object' ? 
+                    checkDisplayData.result : checkDisplayData;
                 
-                if (captureResult && String(captureResult) !== 'None' && String(captureResult) !== 'undefined') {
-                    imageData = String(captureResult);
+                if (displayResult && String(displayResult) !== 'None' && String(displayResult) !== 'undefined') {
+                    imageData = String(displayResult);
+                    // Clear the display data for next execution
+                    await this.pyenv!.execCode('_display_data = None');
                 }
             } catch (e) {
-                // No matplotlib or no figures, which is fine
-                console.debug('No matplotlib figures to capture:', e);
+                // No display data, which is fine
+                console.debug('No display data to retrieve:', e);
             }
 
             // Add the return value if it exists, but only if we didn't capture a matplotlib figure
