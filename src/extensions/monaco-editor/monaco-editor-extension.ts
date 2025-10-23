@@ -11,10 +11,10 @@ import {css, html} from "lit";
 import {createRef, ref} from "lit/directives/ref.js";
 import {EditorInput, editorRegistry} from "../../core/editorregistry.ts";
 import {styleMap} from "lit/directives/style-map.js";
-import {toastError, toastInfo} from "../../core/toast.ts";
 import {PyEnv} from "../../core/pyservice.ts";
 import {File, workspaceService} from "../../core/filesys.ts";
 import {ChatContext} from "../../core/chatservice.ts";
+import logger from '../../core/logger.ts';
 
 self.MonacoEnvironment = {
     getWorker(_: any, label: string) {
@@ -165,7 +165,7 @@ export class KMonacoEditor extends KPart {
             this.pyenv = undefined
         }
         if (this.model.getLanguageId() !== "python") {
-            toastError("Language not supported: " + this.model.getLanguageId());
+            logger.error("Language not supported: " + this.model.getLanguageId());
             return
         }
         this.pyenv = new PyEnv()
