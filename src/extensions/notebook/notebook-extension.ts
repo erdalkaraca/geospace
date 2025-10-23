@@ -111,11 +111,16 @@ export class KNotebookEditor extends KPart {
                     if (output) {
                         // Convert our internal output format to Jupyter notebook format
                         if (output.type === 'execute_result') {
+                            const data: any = {};
+                            if (output.imageData) {
+                                data['image/png'] = output.imageData;
+                            }
+                            if (output.data) {
+                                data['text/plain'] = output.data;
+                            }
                             cell.outputs = [{
                                 output_type: 'execute_result',
-                                data: {
-                                    'text/plain': output.data
-                                },
+                                data: data,
                                 execution_count: cell.execution_count,
                                 metadata: {}
                             }];
@@ -263,7 +268,8 @@ export class KNotebookEditor extends KPart {
                     if (output.output_type === 'execute_result' && output.data) {
                         this.cellOutputs.set(index, {
                             type: 'execute_result',
-                            data: output.data['text/plain'] || ''
+                            data: output.data['text/plain'] || '',
+                            imageData: output.data['image/png'] || undefined
                         });
                     } else if (output.output_type === 'error') {
                         this.cellOutputs.set(index, {
@@ -382,8 +388,26 @@ export class KNotebookEditor extends KPart {
                     this.pyVersion = 'Unknown';
                 }
 
-                // Set up stdout/stderr callbacks for current cell execution
-                // Note: These will be set per execution in executeCell
+                // Set up matplotlib backend if matplotlib is installed
+                try {
+                    await this.pyenv.execCode(`
+try:
+    import matplotlib
+    # Try to use matplotlib-pyodide backend if available
+    try:
+        matplotlib.use("module://matplotlib_pyodide.wasm_backend")
+        print("Using matplotlib-pyodide wasm_backend")
+    except (ImportError, ValueError):
+        # Fallback to AGG backend if matplotlib-pyodide is not available
+        matplotlib.use('agg')
+        print("Using matplotlib AGG backend (install matplotlib-pyodide for better integration)")
+except ImportError:
+    # matplotlib not installed - skip configuration
+    pass
+`);
+                } catch (error) {
+                    console.error("Failed to configure matplotlib:", error);
+                }
             }
         }
     }
@@ -400,7 +424,7 @@ export class KNotebookEditor extends KPart {
 
             // Get code from Monaco editor if available, otherwise from cell source
             const editor = this.monacoEditors.get(cellIndex);
-            const code = editor ? editor.getValue() : this.getCellSource(cell);
+            let code = editor ? editor.getValue() : this.getCellSource(cell);
 
             // PyEnv now runs in a worker and returns { result, console }
             const response = await this.pyenv!.execCode(code);
@@ -412,7 +436,6 @@ export class KNotebookEditor extends KPart {
             if (response && typeof response === 'object' && 'console' in response) {
                 const consoleOutput = response.console;
                 if (Array.isArray(consoleOutput) && consoleOutput.length > 0) {
-                    // Filter out empty strings and join
                     const filteredOutput = consoleOutput.filter(s => s && s.trim());
                     if (filteredOutput.length > 0) {
                         outputParts.push(...filteredOutput);
@@ -420,19 +443,54 @@ export class KNotebookEditor extends KPart {
                 }
             }
 
-            // Add the return value if it exists
-            const result = response && typeof response === 'object' ? response.result : response;
-            if (result !== undefined && result !== null && String(result) !== 'undefined') {
-                const resultStr = String(result);
-                // Only add if it's not empty and not the string 'undefined'
-                if (resultStr && resultStr !== 'undefined') {
-                    outputParts.push(resultStr);
+            // Automatically capture any matplotlib figures that were created
+            let imageData: string | undefined = undefined;
+            try {
+                const captureCode = `
+import io
+import base64
+_captured_image = None
+try:
+    import matplotlib.pyplot as plt
+    if plt.get_fignums():
+        fig = plt.gcf()
+        buffer = io.BytesIO()
+        fig.savefig(buffer, format='png', bbox_inches='tight', dpi=100)
+        buffer.seek(0)
+        _captured_image = base64.b64encode(buffer.read()).decode('utf-8')
+        plt.close(fig)
+except ImportError:
+    pass
+_captured_image
+`;
+                const captureResponse = await this.pyenv!.execCode(captureCode);
+                const captureResult = captureResponse && typeof captureResponse === 'object' ? 
+                    captureResponse.result : captureResponse;
+                
+                if (captureResult && String(captureResult) !== 'None' && String(captureResult) !== 'undefined') {
+                    imageData = String(captureResult);
+                }
+            } catch (e) {
+                // No matplotlib or no figures, which is fine
+                console.debug('No matplotlib figures to capture:', e);
+            }
+
+            // Add the return value if it exists, but only if we didn't capture a matplotlib figure
+            // (matplotlib functions return objects like Text, Line2D etc that aren't useful to display)
+            if (!imageData) {
+                const result = response && typeof response === 'object' ? response.result : response;
+                if (result !== undefined && result !== null && String(result) !== 'undefined') {
+                    const resultStr = String(result);
+                    if (resultStr && resultStr !== 'undefined') {
+                        outputParts.push(resultStr);
+                    }
                 }
             }
 
             this.cellOutputs.set(cellIndex, {
                 type: 'execute_result',
-                data: outputParts.length > 0 ? outputParts.join('\n') : '(no output)'
+                data: outputParts.length > 0 ? outputParts.join('\n') : undefined,
+                imageData: imageData
             });
 
             // Update execution count
@@ -744,7 +802,10 @@ export class KNotebookEditor extends KPart {
                         ${output ? html`
                             <div class="cell-output ${output.type === 'error' ? 'output-error' : ''}">
                                 <div class="output-label">Out [${index + 1}]:</div>
-                                <pre><code>${output.data}</code></pre>
+                                ${output.imageData ? html`
+                                    <img src="data:image/png;base64,${output.imageData}" alt="Output image" class="output-image" />
+                                ` : ''}
+                                ${output.data ? html`<pre><code>${output.data}</code></pre>` : ''}
                             </div>
                         ` : ''}
                         ${this.renderFooterActions(index)}
@@ -1237,6 +1298,14 @@ export class KNotebookEditor extends KPart {
             font-family: 'Courier New', monospace;
             font-size: 0.9rem;
             line-height: 1.5;
+        }
+
+        .output-image {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 0.5rem 0;
+            border-radius: 4px;
         }
 
         .output-error {
