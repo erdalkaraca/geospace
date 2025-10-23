@@ -393,15 +393,8 @@ export class KNotebookEditor extends KPart {
                     await this.pyenv.execCode(`
 try:
     import matplotlib
-    # Try to use matplotlib-pyodide backend if available
-    try:
-        matplotlib.use("module://matplotlib_pyodide.wasm_backend")
-        print("Using matplotlib-pyodide wasm_backend")
-    except (ImportError, ValueError):
-        # Fallback to AGG backend if matplotlib-pyodide is not available
-        matplotlib.use('agg')
+    matplotlib.use('agg')
     
-    # Patch plt.show() to capture and store figure for display
     import matplotlib.pyplot as plt
     import io
     import base64
@@ -422,7 +415,6 @@ try:
         # Don't call original show() as it would try to display in a window
     
     plt.show = _patched_show
-    
 except ImportError:
     # matplotlib not installed - skip configuration
     pass
