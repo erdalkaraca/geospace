@@ -881,14 +881,32 @@ except ImportError:
     private scrollToCell(index: number) {
         // Find the cell wrapper element
         const cellWrapper = this.shadowRoot?.querySelectorAll('.cell-wrapper')[index];
-        if (cellWrapper) {
-            // Scroll into view with smooth animation
+        if (!cellWrapper) return;
+
+        // Find the wa-scroller container (parent of this component)
+        const scroller = this.closest('wa-scroller');
+        if (!scroller) {
+            // Fallback to default scrollIntoView if no scroller found
             cellWrapper.scrollIntoView({ 
                 behavior: 'smooth', 
                 block: 'center',
                 inline: 'nearest'
             });
+            return;
         }
+
+        // Manually scroll the wa-scroller to the cell position
+        const scrollerRect = scroller.getBoundingClientRect();
+        const cellRect = cellWrapper.getBoundingClientRect();
+        const scrollTop = scroller.scrollTop;
+        
+        // Calculate target scroll position (center the cell)
+        const targetScroll = scrollTop + (cellRect.top - scrollerRect.top) - (scrollerRect.height / 2) + (cellRect.height / 2);
+        
+        scroller.scrollTo({
+            top: targetScroll,
+            behavior: 'smooth'
+        });
     }
 
     private saveEditorContents() {
