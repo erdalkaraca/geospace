@@ -3,6 +3,7 @@ import {publish, subscribe} from "./events.ts";
 import {toastError, toastInfo} from "./toast.ts";
 import {taskService} from "./taskservice.ts";
 import {rootContext, uiContext} from "./di.ts";
+import logger from "./logger.ts";
 
 export const TOPIC_EXTENSIONS_CHANGED = "events/extensionsregistry/extensionsConfigChanged"
 const KEY_EXTENSIONS_CONFIG = "extensions"
@@ -78,10 +79,11 @@ class ExtensionRegistry {
         if (this.isEnabled(extensionId)) {
             return
         }
+        logger.debug(`Loading extension: ${extensionId}`)
         this.load(extensionId).then(() => {
             this.updateEnablement(extensionId, true, informUser)
         }).catch(_e => {
-            toastError("Could not load extension: " + extensionId)
+            logger.error(`Could not load extension: ${extensionId}`)
         })
     }
 
@@ -140,5 +142,7 @@ class ExtensionRegistry {
     }
 }
 
+logger.debug('ExtensionRegistry initializing...');
 export const extensionRegistry = new ExtensionRegistry()
 rootContext.put("extensionRegistry", extensionRegistry)
+logger.debug('ExtensionRegistry initialized');

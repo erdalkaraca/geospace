@@ -2,9 +2,7 @@ import { css, html } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { KWidget } from '../widgets/k-widget.ts';
 import { createRef, ref, Ref } from 'lit/directives/ref.js';
-import { flushLogBuffer } from '../core/logger.ts';
-
-export type LogLevel = 'info' | 'warning' | 'error' | 'debug';
+import { registerLogHandler, unregisterLogHandler, type LogLevel } from '../core/logger.ts';
 
 export interface LogMessage {
     timestamp: Date;
@@ -28,17 +26,14 @@ export class KLogTerminal extends KWidget {
 
     connectedCallback() {
         super.connectedCallback();
-        // Register global log function
-        (window as any).logToTerminal = this.log.bind(this);
-        
-        // Flush any buffered messages that occurred before terminal was ready
-        flushLogBuffer();
+        // Register this terminal as the log handler
+        registerLogHandler(this.log.bind(this));
     }
 
     disconnectedCallback() {
         super.disconnectedCallback();
-        // Clean up global function
-        delete (window as any).logToTerminal;
+        // Unregister log handler
+        unregisterLogHandler();
     }
 
     public log(source: string, message: string, level: LogLevel = 'info') {

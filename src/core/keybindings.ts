@@ -5,7 +5,7 @@
  * Supports standard modifiers: CTRL, ALT, SHIFT, META (CMD on Mac)
  */
 
-import logger from "./logging.ts";
+import logger from "./logger.ts";
 import { commandRegistry, ExecutionContext } from "./commandregistry.ts";
 import { rootContext } from "./di.ts";
 
@@ -25,16 +25,9 @@ export class KeyBindingManager {
     private enabled: boolean = true;
 
     constructor() {
-        // Listen for keyboard events globally
         document.addEventListener('keydown', this.handleKeyDown.bind(this), true);
-        
-        // Auto-register key bindings from existing commands
         this.registerExistingCommandBindings();
-        
-        // Watch for new commands being registered
         this.watchCommandRegistry();
-        
-        logger.info('KeyBindingManager initialized');
     }
 
     /**
@@ -356,6 +349,8 @@ export class KeyBindingManager {
     }
 }
 
+logger.debug('KeyBindingManager initializing...');
 export const keyBindingManager = new KeyBindingManager();
+logger.debug('KeyBindingManager initialized');
 rootContext.put("keyBindingManager", keyBindingManager);
 

@@ -1,4 +1,4 @@
-import logger from "./logging.ts";
+import logger from "./logger.ts";
 import {CommandContribution, Contribution, contributionRegistry} from "./contributionregistry.ts";
 import {rootContext} from "./di.ts";
 

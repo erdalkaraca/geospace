@@ -6,7 +6,7 @@ import COMMANDS_EXEC_PLAN_SYS_PROMPT from "./commands-exec-plan.txt?raw"
 import PYODIDE_SYS_PROMPT from "./py-programming.txt?raw"
 import JAVASCRIPT_SYS_PROMPT from "./js-programming.txt?raw"
 import {taskService} from "../core/taskservice.ts";
-import logger from "../core/logging.ts";
+import logger from "../core/logger.ts";
 import {KPart} from "../parts/k-part.ts";
 import {editorRegistry} from "../core/editorregistry.ts";
 import {StringFile} from "../core/filesys.ts";

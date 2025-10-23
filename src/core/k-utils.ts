@@ -1,5 +1,4 @@
 import {html, nothing} from "lit";
-import logger from "./logging";
 import {registerIconLibrary} from '@awesome.me/webawesome'
 
 export const observeOverflow = (child: HTMLElement) => {
@@ -33,7 +32,6 @@ export const icon = (name?: string, label?: string, family?: string, variant?: s
     if (!name) {
         return ""
     }
-    logger.debug(`icon: ${name}, ${label}, ${family}, ${variant}`)
     const parts = name.trim().split(/ +/)
     const iconName = parts.pop()
     const library = parts.pop()

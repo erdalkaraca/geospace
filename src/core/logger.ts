@@ -1,4 +1,16 @@
-import { LogLevel } from '../components/k-log-terminal.ts';
+import { rootContext } from './di.ts';
+
+export type LogLevel = 'info' | 'warning' | 'error' | 'debug';
+
+const LogLevelPriority: Record<LogLevel, number> = {
+    'debug': 0,
+    'info': 1,
+    'warning': 2,
+    'error': 3,
+};
+
+// Global log level filter
+let globalLogLevel: LogLevel = 'debug';
 
 // Store original console methods before any interception
 const originalConsole = {
@@ -9,7 +21,13 @@ const originalConsole = {
     debug: console.debug.bind(console)
 };
 
-// Message buffer for logs that occur before terminal is ready
+// Log handler type
+type LogHandler = (source: string, message: string, level: LogLevel) => void;
+
+// Registered log handler (set by UI components like k-log-terminal)
+let logHandler: LogHandler | null = null;
+
+// Message buffer for logs that occur before handler is registered
 const messageBuffer: Array<{source: string, message: string, level: LogLevel}> = [];
 
 // Format console arguments
@@ -28,7 +46,7 @@ function formatArg(arg: any): string {
 }
 
 /**
- * Global logger utility for logging messages to the log terminal
+ * Global logger utility for logging messages
  */
 export class Logger {
     constructor(private source: string) {}
@@ -41,6 +59,10 @@ export class Logger {
         this.log(message, 'warning');
     }
 
+    warn(message: string) {
+        this.log(message, 'warning');
+    }
+
     error(message: string) {
         this.log(message, 'error');
     }
@@ -50,18 +72,29 @@ export class Logger {
     }
 
     private log(message: string, level: LogLevel) {
-        sendToTerminal(this.source, message, level);
+        dispatch(this.source, message, level);
     }
 }
 
 /**
- * Send a log message to the terminal (or buffer it if terminal not ready)
+ * Check if a log level should be displayed based on current filter
  */
-function sendToTerminal(source: string, message: string, level: LogLevel) {
-    if (typeof window !== 'undefined' && (window as any).logToTerminal) {
-        (window as any).logToTerminal(source, message, level);
+function shouldLog(level: LogLevel): boolean {
+    return LogLevelPriority[level] >= LogLevelPriority[globalLogLevel];
+}
+
+/**
+ * Dispatch a log message to the registered handler (or buffer it if no handler registered)
+ */
+function dispatch(source: string, message: string, level: LogLevel) {
+    if (!shouldLog(level)) {
+        return;
+    }
+
+    if (logHandler) {
+        logHandler(source, message, level);
     } else {
-        // Buffer the message until terminal is ready
+        // Buffer the message until handler is registered
         messageBuffer.push({ source, message, level });
         // Also log to console as fallback
         originalConsole[level === 'error' ? 'error' : level === 'warning' ? 'warn' : level === 'debug' ? 'debug' : 'log'](
@@ -77,27 +110,27 @@ function sendToTerminal(source: string, message: string, level: LogLevel) {
 export function initializeConsoleInterception() {
     console.log = function(...args: any[]) {
         originalConsole.log.apply(console, args);
-        sendToTerminal('Console', args.map(a => formatArg(a)).join(' '), 'info');
+        dispatch('Console', args.map(a => formatArg(a)).join(' '), 'info');
     };
     
     console.info = function(...args: any[]) {
         originalConsole.info.apply(console, args);
-        sendToTerminal('Console', args.map(a => formatArg(a)).join(' '), 'info');
+        dispatch('Console', args.map(a => formatArg(a)).join(' '), 'info');
     };
     
     console.warn = function(...args: any[]) {
         originalConsole.warn.apply(console, args);
-        sendToTerminal('Console', args.map(a => formatArg(a)).join(' '), 'warning');
+        dispatch('Console', args.map(a => formatArg(a)).join(' '), 'warning');
     };
     
     console.error = function(...args: any[]) {
         originalConsole.error.apply(console, args);
-        sendToTerminal('Console', args.map(a => formatArg(a)).join(' '), 'error');
+        dispatch('Console', args.map(a => formatArg(a)).join(' '), 'error');
     };
     
     console.debug = function(...args: any[]) {
         originalConsole.debug.apply(console, args);
-        sendToTerminal('Console', args.map(a => formatArg(a)).join(' '), 'debug');
+        dispatch('Console', args.map(a => formatArg(a)).join(' '), 'debug');
     };
 }
 
@@ -105,18 +138,26 @@ export function initializeConsoleInterception() {
 initializeConsoleInterception();
 
 /**
- * Flush buffered messages to the terminal
- * Called by the log terminal component when it's ready
+ * Register a handler to receive log messages
+ * Also flushes any buffered messages to the new handler
  */
-export function flushLogBuffer() {
-    if (typeof window !== 'undefined' && (window as any).logToTerminal) {
-        while (messageBuffer.length > 0) {
-            const msg = messageBuffer.shift();
-            if (msg) {
-                (window as any).logToTerminal(msg.source, msg.message, msg.level);
-            }
+export function registerLogHandler(handler: LogHandler) {
+    logHandler = handler;
+    
+    // Flush buffered messages
+    while (messageBuffer.length > 0) {
+        const msg = messageBuffer.shift();
+        if (msg) {
+            handler(msg.source, msg.message, msg.level);
         }
     }
+}
+
+/**
+ * Unregister the current log handler
+ */
+export function unregisterLogHandler() {
+    logHandler = null;
 }
 
 /**
@@ -125,4 +166,22 @@ export function flushLogBuffer() {
 export function createLogger(source: string): Logger {
     return new Logger(source);
 }
+
+/**
+ * Set the global log level filter
+ */
+export function setLogLevel(level: LogLevel) {
+    globalLogLevel = level;
+}
+
+/**
+ * Default logger instance for backward compatibility
+ * This provides a simple logger similar to the old logging.ts
+ */
+const defaultLogger = createLogger('System');
+
+// Register default logger in DI container for backward compatibility
+rootContext.put('logger', defaultLogger);
+
+export default defaultLogger;
 
