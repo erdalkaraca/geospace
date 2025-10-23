@@ -132,9 +132,7 @@ export class KMonacoEditor extends KPart {
         if (!this.pyenv) {
             await this.toggleConnection();
         }
-        toastInfo("Executing Python code...")
         this.pyenv?.execCode(this.model.getValue())
-        toastInfo("Executed Python code!")
     }
 
     public getLanguage() {

@@ -264,7 +264,7 @@ export class KTabs extends KContainer {
                             <k-toolbar id="toolbar.${c.name}" class="tab-toolbar"></k-toolbar>
                             <wa-scroller class="tab-content" orientation="vertical">
                                 ${c.component ? c.component(c.name) : nothing}
-                            </div>
+                            </wa-scroller>
                         </wa-tab-panel>
                     `
                 )}

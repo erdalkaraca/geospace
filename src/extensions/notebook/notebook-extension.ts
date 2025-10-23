@@ -907,7 +907,6 @@ except ImportError:
         this.monacoEditors.clear();
         this.cellRefs.clear();
         this.markDirty(true);
-        this.requestUpdate();
     }
 
     private deleteCell(index: number) {
@@ -1084,25 +1083,20 @@ except ImportError:
             <style>
                 ${monacoStyles}
             </style>
-            <wa-scroller orientation="vertical" class="notebook-scroller">
-                <div class="notebook-cells">
-                    ${repeat(
-                        this.notebook.cells,
-                        (_cell, index) => index,
-                        (cell, index) => this.renderCell(cell, index)
-                    )}
-                </div>
-            </wa-scroller>
+            <div class="notebook-cells">
+                ${repeat(
+                    this.notebook.cells,
+                    (_cell, index) => index,
+                    (cell, index) => this.renderCell(cell, index)
+                )}
+            </div>
         `;
     }
 
     static styles = css`
         :host {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
+            display: block;
             width: 100%;
-            overflow: hidden;
         }
 
         .python-status {
@@ -1114,12 +1108,6 @@ except ImportError:
         .python-version {
             font-size: 0.9rem;
             opacity: 0.8;
-        }
-
-        .notebook-scroller {
-            flex: 1;
-            width: 100%;
-            min-height: 0;
         }
 
         .notebook-cells {
