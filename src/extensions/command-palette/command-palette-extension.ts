@@ -279,14 +279,20 @@ export class KCommandPalette extends KPart {
             left: 0;
             right: 0;
             margin-top: 4px;
-            background: var(--wa-color-neutral-900);
-            border: 1px solid var(--wa-color-neutral-700);
+            background: var(--wa-color-neutral-05);
+            border: 1px solid var(--wa-color-neutral-25);
             border-radius: 4px;
             max-height: 400px;
             overflow-y: auto;
             z-index: 1000;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8);
             display: none;
+        }
+
+        :host-context(.wa-light) .commands-container {
+            background: var(--wa-color-neutral-95);
+            border: 1px solid var(--wa-color-neutral-75);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
         }
 
         .commands-container.open {
@@ -300,7 +306,11 @@ export class KCommandPalette extends KPart {
             padding: 10px 16px;
             cursor: pointer;
             transition: background-color 0.15s;
-            border-bottom: 1px solid var(--wa-color-neutral-800);
+            border-bottom: 1px solid var(--wa-color-neutral-15);
+        }
+
+        :host-context(.wa-light) .command-item {
+            border-bottom: 1px solid var(--wa-color-neutral-85);
         }
 
         .command-item:last-child {
@@ -308,7 +318,11 @@ export class KCommandPalette extends KPart {
         }
 
         .command-item:hover {
-            background: var(--wa-color-neutral-800);
+            background: var(--wa-color-neutral-20);
+        }
+
+        :host-context(.wa-light) .command-item:hover {
+            background: var(--wa-color-neutral-80);
         }
 
         .command-icon {
@@ -348,18 +362,27 @@ export class KCommandPalette extends KPart {
             flex-shrink: 0;
             margin-left: auto;
             padding: 2px 8px;
-            background: var(--wa-color-neutral-800);
-            border: 1px solid var(--wa-color-neutral-700);
+            background: var(--wa-color-neutral-15);
+            border: 1px solid var(--wa-color-neutral-25);
             border-radius: 3px;
             font-size: 11px;
             font-family: monospace;
             opacity: 0.7;
         }
 
+        :host-context(.wa-light) .command-keybinding {
+            background: var(--wa-color-neutral-85);
+            border: 1px solid var(--wa-color-neutral-75);
+        }
+
         .no-results {
             padding: 20px;
             text-align: center;
-            color: var(--wa-color-neutral-400);
+            color: var(--wa-color-neutral-60);
+        }
+
+        :host-context(.wa-light) .no-results {
+            color: var(--wa-color-neutral-40);
         }
 
         wa-dialog::part(panel) {

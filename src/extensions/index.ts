@@ -14,7 +14,7 @@ extensionRegistry.registerExtension({
     name: "Python terminal",
     description: "Python terminal view",
     loader: () => import("./pyterminal/pyterminal-extension.ts"),
-    icon: "terminal",
+    icon: "k python",
     experimental: true,
 })
 
@@ -49,7 +49,7 @@ extensionRegistry.registerExtension({
     name: "Jupyter Notebook Editor",
     description: "View and execute Jupyter notebooks (.ipynb) with Python code execution and markdown rendering",
     loader: () => import("./notebook/notebook-extension.ts"),
-    icon: "book",
+    icon: "k jupyter",
 })
 
 extensionRegistry.registerExtension({

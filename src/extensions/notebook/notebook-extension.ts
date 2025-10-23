@@ -1188,7 +1188,7 @@ export default ({ editorRegistry }: any) => {
                 title: input.getName(),
                 data: input,
                 key: input.getName(),
-                icon: "book",
+                icon: "k jupyter",
                 noOverflow: true,
                 state: {},
             } as EditorInput

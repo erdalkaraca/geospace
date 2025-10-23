@@ -6,7 +6,7 @@ export default ({ contributionRegistry }: any) => {
     contributionRegistry.registerContribution(PANEL_BOTTOM, {
         name: "pyterminal",
         label: "Python",
-        icon: "terminal",
+        icon: "k python",
         component: () => html`
             <k-pyterminal></k-pyterminal>`
     });

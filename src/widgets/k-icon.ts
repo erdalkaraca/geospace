@@ -1,7 +1,7 @@
-import {html, nothing} from 'lit'
 import {customElement, property} from 'lit/decorators.js'
 
 import {KWidget} from "./k-widget.ts";
+import { icon } from '../core/k-utils.ts';
 
 @customElement('k-icon')
 export class KIcon extends KWidget {
@@ -19,18 +19,6 @@ export class KIcon extends KWidget {
     private label?: string;
 
     render() {
-        const parts = this.name?.trim().split(" ")
-        const name = parts?.pop()
-        const library = parts?.pop()
-        return html`
-            <wa-icon library="${library || nothing}" variant="${this.variant || nothing}"
-                     family="${this.family || nothing}" name=${name} label="${this.label || name || nothing}"></wa-icon>
-        `
-    }
-}
-
-declare global {
-    interface HTMLElementTagNameMap {
-        'k-icon': KIcon
+        return icon(this.name, this.label, this.family, this.variant)
     }
 }
