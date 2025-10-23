@@ -296,14 +296,17 @@ export class KTabs extends KContainer {
 
         wa-tab-panel[active] {
             display: grid;
-            grid-template-rows: minmax(0, 1fr);
+            grid-template-rows: auto 1fr;
             height: 100%;
             width: 100%;
         }
 
         wa-tab-panel {
             --padding: 0px;
-            overflow: hidden;
+        }
+
+        .tab-content {
+            min-height: 0;
         }
 
         .part-dirty::part(base) {
