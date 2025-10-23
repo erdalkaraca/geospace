@@ -1,23 +1,6 @@
 import {html, nothing} from "lit";
 import {registerIconLibrary} from '@awesome.me/webawesome'
 
-export const observeOverflow = (child: HTMLElement) => {
-    if (!child) {
-        return
-    }
-    child.style.height = "100%"
-    new IntersectionObserver(
-        (entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    child.style.maxHeight = `${entry.intersectionRect.height}px`;
-                } else {
-                    child.style.maxHeight = 'none'; // Reset to allow full height
-                }
-            });
-        }).observe(child)
-}
-
 registerIconLibrary('k', {
     resolver: (name: string) => {
         return new URL(`../icons/${name}.svg`, import.meta.url).href;

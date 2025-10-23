@@ -4,7 +4,7 @@ import {KContainer} from "./k-container.ts";
 import {contributionRegistry, TabContribution, TOPIC_CONTRIBUTEIONS_CHANGED} from "../core/contributionregistry.ts";
 import {when} from "lit/directives/when.js";
 import {repeat} from "lit/directives/repeat.js";
-import {icon, observeOverflow} from "../core/k-utils.ts";
+import {icon} from "../core/k-utils.ts";
 import {createRef, ref} from "lit/directives/ref.js";
 import {subscribe} from "../core/events.ts";
 
@@ -100,14 +100,6 @@ export class KTabs extends KContainer {
         this.requestUpdate();
         
         this.updateComplete.then(() => {
-            // Make sure the panel contents do not overflow
-            // FIXME: Find better way to handle overflow
-            if (contribution.noOverflow !== false) {
-                const tabPanel = this.getTabPanel(contribution.name);
-                if (tabPanel) {
-                    observeOverflow(tabPanel);
-                }
-            }
             this.activate(contribution.name);
         });
     }
@@ -224,7 +216,7 @@ export class KTabs extends KContainer {
                         </wa-tab>
                         <wa-tab-panel name="${c.name}">
                             <k-toolbar id="toolbar.${c.name}" class="tab-toolbar"></k-toolbar>
-                            <div class="tab-content" style="height: 100%; width: 100%;">
+                            <wa-scroller class="tab-content" orientation="vertical">
                                 ${c.component ? c.component(c.name) : nothing}
                             </div>
                         </wa-tab-panel>
@@ -265,6 +257,7 @@ export class KTabs extends KContainer {
 
         wa-tab-panel {
             --padding: 0px;
+            overflow: hidden;
         }
 
         .part-dirty::part(base) {
