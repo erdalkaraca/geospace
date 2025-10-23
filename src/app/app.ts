@@ -33,7 +33,6 @@ logger.info('Initializing geo!space...');
 
 coreExtensions.forEach(extId => {
     extensionRegistry.enable(extId);
-    logger.debug(`Enabled extension: ${extId}`);
 });
 
 logger.info('Application initialized successfully');

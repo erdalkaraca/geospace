@@ -48,6 +48,9 @@ export class KNotebookEditor extends KPart {
     private pyConnected: boolean = false;
 
     @state()
+    private pyConnecting: boolean = false;
+
+    @state()
     private pyVersion?: string;
 
     @state()
@@ -58,6 +61,9 @@ export class KNotebookEditor extends KPart {
 
     @state()
     private isRunningAll: boolean = false;
+
+    @state()
+    private highlightedCellIndex: number = -1;
 
     private cancelRunAll: boolean = false;
 
@@ -148,6 +154,79 @@ export class KNotebookEditor extends KPart {
         this.loadNotebook();
     }
 
+    protected renderToolbar() {
+        const connectionTitle = this.pyConnecting 
+            ? 'Connecting to Python...' 
+            : this.pyConnected 
+                ? 'Python Connected' 
+                : 'Python Disconnected - Click to connect';
+        
+        const connectionText = this.pyConnecting
+            ? 'Connecting...'
+            : this.pyConnected && this.pyVersion 
+                ? `Python ${this.pyVersion}` 
+                : 'Not connected';
+        
+        const iconColor = this.pyConnected
+            ? "var(--wa-color-green-40)"
+            : this.pyConnecting
+                ? "var(--wa-color-warning-500)"
+                : "var(--wa-color-red-40)";
+
+        return html`
+            <wa-button 
+                appearance="plain" 
+                size="small"
+                style="display: flex; align-items: center; gap: 0.5rem;"
+                ?disabled=${this.pyConnecting}
+                @click=${() => this.connectPython()}
+                title=${connectionTitle}>
+                <wa-icon 
+                    name="circle"
+                    label="Python status"
+                    style=${styleMap({ color: iconColor })}
+                ></wa-icon>
+                ${connectionText}
+            </wa-button>
+            ${this.isRunningAll ? html`
+                <wa-button 
+                    size="small" 
+                    appearance="plain"
+                    @click=${() => this.cancelAllCells()}
+                    title="Cancel running all cells">
+                    <wa-icon name="stop" label="Stop"></wa-icon>
+                    Cancel All
+                </wa-button>
+            ` : html`
+                <wa-button 
+                    size="small" 
+                    appearance="plain"
+                    @click=${() => this.runAllCells()}
+                    title="Run all code cells sequentially">
+                    <wa-icon name="play" label="Run"></wa-icon>
+                    Run All
+                </wa-button>
+            `}
+            <wa-button 
+                size="small" 
+                appearance="plain"
+                @click=${() => this.clearAllOutputs()}
+                title="Clear all outputs and reset execution counter">
+                <wa-icon name="eraser" label="Clear"></wa-icon>
+                Clear Outputs
+            </wa-button>
+            <wa-button 
+                size="small" 
+                appearance="plain"
+                @click=${() => this.restartKernel()}
+                title="Restart Python kernel (clears all variables and state)"
+                ?disabled=${!this.pyConnected || this.pyConnecting}>
+                <wa-icon name="arrows-rotate" label="Restart"></wa-icon>
+                Restart Kernel
+            </wa-button>
+        `;
+    }
+
     protected doInitUI() {
         // Set up theme observer to update Monaco editors when theme changes
         this.setupThemeObserver();
@@ -224,40 +303,36 @@ export class KNotebookEditor extends KPart {
     }
 
     // Render top cell actions (add before)
-    private renderTopActions(index: number) {
-        return html`
-            <div class="cell-actions-top">
-                <wa-button size="small" appearance="plain" @click=${() => this.addCellBefore(index, 'code')} title="Add code cell">
-                    <wa-icon name="code" label="Add code cell"></wa-icon>
-                </wa-button>
-                <wa-button size="small" appearance="plain" @click=${() => this.addCellBefore(index, 'markdown')} title="Add markdown cell">
-                    <wa-icon name="font" label="Add markdown cell"></wa-icon>
-                </wa-button>
-            </div>
-        `;
-    }
-
-    // Render bottom cell actions (add after)
-    private renderBottomActions(index: number) {
-        return html`
-            <div class="cell-actions-bottom">
-                <wa-button size="small" appearance="plain" @click=${() => this.addCellAfter(index, 'code')} title="Add code cell">
-                    <wa-icon name="code" label="Add code cell"></wa-icon>
-                </wa-button>
-                <wa-button size="small" appearance="plain" @click=${() => this.addCellAfter(index, 'markdown')} title="Add markdown cell">
-                    <wa-icon name="font" label="Add markdown cell"></wa-icon>
-                </wa-button>
-            </div>
-        `;
-    }
-
-    // Render header actions (delete and optional additional button)
     private renderHeaderActions(index: number, additionalButton?: any) {
         return html`
             <div class="cell-header-actions">
+                <wa-button size="small" appearance="plain" @click=${() => this.addCellBefore(index, 'code')} title="Add code cell before">
+                    <wa-icon name="plus"></wa-icon>
+                    <wa-icon name="code" label="Code"></wa-icon>
+                </wa-button>
+                <wa-button size="small" appearance="plain" @click=${() => this.addCellBefore(index, 'markdown')} title="Add markdown cell before">
+                    <wa-icon name="plus"></wa-icon>
+                    <wa-icon name="font" label="Markdown"></wa-icon>
+                </wa-button>
+                <span class="divider"></span>
                 ${additionalButton || ''}
                 <wa-button size="small" appearance="plain" @click=${() => this.deleteCell(index)} title="Delete cell" ?disabled=${this.notebook!.cells.length <= 1}>
                     <wa-icon name="trash" label="Delete cell"></wa-icon>
+                </wa-button>
+            </div>
+        `;
+    }
+
+    private renderFooterActions(index: number) {
+        return html`
+            <div class="cell-footer">
+                <wa-button size="small" appearance="plain" @click=${() => this.addCellAfter(index, 'code')} title="Add code cell after">
+                    <wa-icon name="code" label="Code"></wa-icon>
+                    <wa-icon name="plus"></wa-icon>
+                </wa-button>
+                <wa-button size="small" appearance="plain" @click=${() => this.addCellAfter(index, 'markdown')} title="Add markdown cell after">
+                    <wa-icon name="font" label="Markdown"></wa-icon>
+                    <wa-icon name="plus"></wa-icon>
                 </wa-button>
             </div>
         `;
@@ -438,16 +513,18 @@ export class KNotebookEditor extends KPart {
     }
 
     private async restartKernel() {
-        if (!this.pyenv) return;
+        if (!this.pyenv || this.pyConnecting) return;
 
         try {
+            this.pyConnecting = true;
+            
             // Close current environment
             this.pyenv.close();
             this.pyenv = undefined;
             this.pyConnected = false;
             this.pyVersion = undefined;
 
-            // Force re-render to show disconnected state
+            // Force re-render to show reconnecting state
             this.requestUpdate();
 
             // Reinitialize
@@ -457,6 +534,8 @@ export class KNotebookEditor extends KPart {
             this.requestUpdate();
         } catch (error) {
             console.error("Failed to restart kernel:", error);
+        } finally {
+            this.pyConnecting = false;
         }
     }
 
@@ -527,41 +606,49 @@ export class KNotebookEditor extends KPart {
         const isEditing = this.editingMarkdownCells.has(index);
 
         if (isEditing) {
+            const editButtons = html`
+                <wa-button 
+                    size="small" 
+                    appearance="plain"
+                    @click=${(e: Event) => {
+                        const textarea = (e.target as HTMLElement).closest('.markdown-cell')?.querySelector('textarea');
+                        if (textarea) {
+                            this.saveMarkdownEdit(index, { target: textarea } as any);
+                        }
+                    }}
+                    title="Save changes">
+                    <wa-icon name="check" label="Save"></wa-icon>
+                </wa-button>
+                <wa-button 
+                    size="small" 
+                    appearance="plain"
+                    @click=${() => this.toggleMarkdownEdit(index)}
+                    title="Cancel editing">
+                    <wa-icon name="xmark" label="Cancel"></wa-icon>
+                </wa-button>
+            `;
+            
             return html`
                 <div class="cell-wrapper">
-                    ${this.renderTopActions(index)}
-                    <div class="cell markdown-cell editing">
-                    <div class="cell-header">
-                        <span class="cell-label">Markdown</span>
-                        <div class="markdown-edit-buttons">
-                            <wa-button 
-                                size="small" 
-                                appearance="plain"
-                                @click=${() => this.toggleMarkdownEdit(index)}
-                                title="Cancel editing">
-                                <wa-icon name="xmark" label="Cancel"></wa-icon>
-                            </wa-button>
-                            <wa-button 
-                                size="small" 
-                                appearance="plain"
-                                @click=${(e: Event) => {
-                            const textarea = (e.target as HTMLElement).closest('.markdown-cell')?.querySelector('textarea');
-                            if (textarea) {
-                                this.saveMarkdownEdit(index, { target: textarea } as any);
-                            }
-                        }}
-                                title="Save changes">
-                                <wa-icon name="check" label="Save"></wa-icon>
-                            </wa-button>
+                    <wa-animation 
+                        name="bounce" 
+                        duration="1000" 
+                        iterations="1"
+                        ?play=${this.highlightedCellIndex === index}
+                        @wa-finish=${() => this.highlightedCellIndex = -1}>
+                        <div class="cell markdown-cell editing">
+                            <div class="cell-header">
+                                <span class="cell-label">Markdown</span>
+                                ${this.renderHeaderActions(index, editButtons)}
+                            </div>
+                            <textarea 
+                                class="markdown-editor"
+                                .value=${source}
+                                @blur=${(e: Event) => this.saveMarkdownEdit(index, e)}
+                                placeholder="Enter markdown content here... (# for headings, ** for bold, etc.)"></textarea>
+                            ${this.renderFooterActions(index)}
                         </div>
-                    </div>
-                        <textarea 
-                            class="markdown-editor"
-                            .value=${source}
-                            @blur=${(e: Event) => this.saveMarkdownEdit(index, e)}
-                            placeholder="Enter markdown content here... (# for headings, ** for bold, etc.)"></textarea>
-                    </div>
-                    ${this.renderBottomActions(index)}
+                    </wa-animation>
                 </div>
             `;
         }
@@ -580,22 +667,28 @@ export class KNotebookEditor extends KPart {
 
         return html`
             <div class="cell-wrapper">
-                ${this.renderTopActions(index)}
-                <div class="cell markdown-cell ${isEmpty ? 'empty' : ''}" @dblclick=${() => this.toggleMarkdownEdit(index)}>
-                    <div class="cell-header">
-                        <span class="cell-label"></span>
-                        ${this.renderHeaderActions(index, editButton)}
+                <wa-animation 
+                    name="bounce" 
+                    duration="1000" 
+                    iterations="1"
+                    ?play=${this.highlightedCellIndex === index}
+                    @wa-finish=${() => this.highlightedCellIndex = -1}>
+                    <div class="cell markdown-cell ${isEmpty ? 'empty' : ''}" @dblclick=${() => this.toggleMarkdownEdit(index)}>
+                        <div class="cell-header">
+                            <span class="cell-label"></span>
+                            ${this.renderHeaderActions(index, editButton)}
+                        </div>
+                        <div class="cell-content">
+                            ${isEmpty ? html`
+                                <div class="markdown-placeholder">
+                                    <wa-icon name="font" label="Markdown"></wa-icon>
+                                    <span>Double-click or click the pencil icon to edit markdown</span>
+                                </div>
+                            ` : unsafeHTML(rendered)}
+                        </div>
+                        ${this.renderFooterActions(index)}
                     </div>
-                    <div class="cell-content">
-                        ${isEmpty ? html`
-                            <div class="markdown-placeholder">
-                                <wa-icon name="font" label="Markdown"></wa-icon>
-                                <span>Double-click or click the pencil icon to edit markdown</span>
-                            </div>
-                        ` : unsafeHTML(rendered)}
-                    </div>
-                </div>
-                ${this.renderBottomActions(index)}
+                </wa-animation>
             </div>
         `;
     }
@@ -627,30 +720,36 @@ export class KNotebookEditor extends KPart {
 
         return html`
             <div class="cell-wrapper">
-                ${this.renderTopActions(index)}
-                <div class="cell code-cell ${isExecuting ? 'executing' : ''}">
-                    <div class="cell-header">
-                        ${runButton}
-                        <span class="cell-label">
-                            ${isExecuting ? html`
-                                In [<wa-animation name="pulse" duration="1000" iterations="Infinity" ?play=${isExecuting}>
-                                    <span class="executing-indicator">*</span>
-                                </wa-animation>]:
-                            ` : html`
-                                In [${cell.execution_count ?? ' '}]:
-                            `}
-                        </span>
-                        ${this.renderHeaderActions(index)}
-                    </div>
-                    <div class="cell-input monaco-container" ${ref(cellRef)} data-cell-index="${index}"></div>
-                    ${output ? html`
-                        <div class="cell-output ${output.type === 'error' ? 'output-error' : ''}">
-                            <div class="output-label">Out [${index + 1}]:</div>
-                            <pre><code>${output.data}</code></pre>
+                <wa-animation 
+                    name="bounce" 
+                    duration="1000" 
+                    iterations="1"
+                    ?play=${this.highlightedCellIndex === index}
+                    @wa-finish=${() => this.highlightedCellIndex = -1}>
+                    <div class="cell code-cell ${isExecuting ? 'executing' : ''}">
+                        <div class="cell-header">
+                            ${runButton}
+                            <span class="cell-label">
+                                ${isExecuting ? html`
+                                    In [<wa-animation name="pulse" duration="1000" iterations="Infinity" ?play=${isExecuting}>
+                                        <span class="executing-indicator">*</span>
+                                    </wa-animation>]:
+                                ` : html`
+                                    In [${cell.execution_count ?? ' '}]:
+                                `}
+                            </span>
+                            ${this.renderHeaderActions(index)}
                         </div>
-                    ` : ''}
-                </div>
-                ${this.renderBottomActions(index)}
+                        <div class="cell-input monaco-container" ${ref(cellRef)} data-cell-index="${index}"></div>
+                        ${output ? html`
+                            <div class="cell-output ${output.type === 'error' ? 'output-error' : ''}">
+                                <div class="output-label">Out [${index + 1}]:</div>
+                                <pre><code>${output.data}</code></pre>
+                            </div>
+                        ` : ''}
+                        ${this.renderFooterActions(index)}
+                    </div>
+                </wa-animation>
             </div>
         `;
     }
@@ -672,10 +771,17 @@ export class KNotebookEditor extends KPart {
     }
 
     private async connectPython() {
+        if (this.pyConnecting || this.pyConnected) {
+            return;
+        }
+        
         try {
+            this.pyConnecting = true;
             await this.initPyodide();
         } catch (error) {
             console.error("Failed to initialize Pyodide:", error);
+        } finally {
+            this.pyConnecting = false;
         }
     }
 
@@ -701,6 +807,25 @@ export class KNotebookEditor extends KPart {
         }
         
         this.resetCellState();
+        
+        // Trigger animation and scroll to the new cell
+        this.highlightedCellIndex = index;
+        this.updateComplete.then(() => {
+            this.scrollToCell(index);
+        });
+    }
+
+    private scrollToCell(index: number) {
+        // Find the cell wrapper element
+        const cellWrapper = this.shadowRoot?.querySelectorAll('.cell-wrapper')[index];
+        if (cellWrapper) {
+            // Scroll into view with smooth animation
+            cellWrapper.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'center',
+                inline: 'nearest'
+            });
+        }
     }
 
     private saveEditorContents() {
@@ -763,6 +888,14 @@ export class KNotebookEditor extends KPart {
 
     protected updated(changedProperties: Map<string, any>) {
         super.updated(changedProperties);
+
+        // Update toolbar when state affecting toolbar changes
+        if (changedProperties.has('pyConnected') || 
+            changedProperties.has('pyConnecting') ||
+            changedProperties.has('pyVersion') ||
+            changedProperties.has('isRunningAll')) {
+            this.updateToolbar();
+        }
 
         // Initialize Monaco editors for code cells
         if (this.notebook && this.notebook.cells) {
@@ -828,68 +961,13 @@ export class KNotebookEditor extends KPart {
             <style>
                 ${monacoStyles}
             </style>
-            <div class="notebook-toolbar">
-                <div class="python-status">
-                    <wa-icon 
-                        name="circle" 
-                        label="Python status"
-                        @click=${this.connectPython}
-                        style="${styleMap({
-            color: this.pyConnected ?
-                "var(--wa-color-green-40)" :
-                "var(--wa-color-red-40)",
-            cursor: "pointer"
-        })}"
-                        title="${this.pyConnected ? 'Python Connected' : 'Python Disconnected - Click to connect'}">
-                    </wa-icon>
-                    ${this.pyConnected && this.pyVersion ? html`
-                        <span class="python-version">Python ${this.pyVersion}</span>
-                    ` : ''}
-                </div>
-                ${this.isRunningAll ? html`
-                    <wa-button 
-                        size="small" 
-                        appearance="plain"
-                        @click=${this.cancelAllCells}
-                        title="Cancel running all cells">
-                        <wa-icon name="stop" label="Stop"></wa-icon>
-                        Cancel All
-                    </wa-button>
-                ` : html`
-                    <wa-button 
-                        size="small" 
-                        appearance="plain"
-                        @click=${this.runAllCells}
-                        title="Run all code cells sequentially">
-                        <wa-icon name="play" label="Run"></wa-icon>
-                        Run All
-                    </wa-button>
-                `}
-                <wa-button 
-                    size="small" 
-                    appearance="plain"
-                    @click=${this.clearAllOutputs}
-                    title="Clear all outputs and reset execution counter">
-                    <wa-icon name="eraser" label="Clear"></wa-icon>
-                    Clear Outputs
-                </wa-button>
-                <wa-button 
-                    size="small" 
-                    appearance="plain"
-                    @click=${this.restartKernel}
-                    title="Restart Python kernel (clears all variables and state)"
-                    ?disabled=${!this.pyConnected}>
-                    <wa-icon name="arrows-rotate" label="Restart"></wa-icon>
-                    Restart Kernel
-                </wa-button>
-            </div>
             <wa-scroller orientation="vertical" class="notebook-scroller">
                 <div class="notebook-cells">
                     ${repeat(
-            this.notebook.cells,
-            (_cell, index) => index,
-            (cell, index) => this.renderCell(cell, index)
-        )}
+                        this.notebook.cells,
+                        (_cell, index) => index,
+                        (cell, index) => this.renderCell(cell, index)
+                    )}
                 </div>
             </wa-scroller>
         `;
@@ -902,20 +980,6 @@ export class KNotebookEditor extends KPart {
             height: 100%;
             width: 100%;
             overflow: hidden;
-        }
-
-        .notebook-toolbar {
-            display: flex;
-            gap: 0.5rem;
-            padding: 1rem;
-            border-radius: 4px;
-            flex-shrink: 0;
-            z-index: 10;
-            opacity: 0.95;
-            max-width: 1200px;
-            width: 100%;
-            margin: 0 auto;
-            box-sizing: border-box;
         }
 
         .python-status {
@@ -957,39 +1021,6 @@ export class KNotebookEditor extends KPart {
             position: relative;
         }
 
-        .cell-actions-top,
-        .cell-actions-bottom {
-            display: flex;
-            gap: 0.25rem;
-            align-items: center;
-            justify-content: center;
-            padding: 0.25rem;
-            opacity: 0;
-            transition: opacity 0.2s;
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 5;
-        }
-
-        .cell-actions-top {
-            top: -1.5rem;
-        }
-
-        .cell-actions-bottom {
-            bottom: -1.5rem;
-        }
-
-        .cell-wrapper:hover .cell-actions-top,
-        .cell-wrapper:hover .cell-actions-bottom {
-            opacity: 0.7;
-        }
-
-        .cell-actions-top:hover,
-        .cell-actions-bottom:hover {
-            opacity: 1 !important;
-        }
-
         .cell-header-actions {
             display: flex;
             gap: 0.25rem;
@@ -998,7 +1029,30 @@ export class KNotebookEditor extends KPart {
             transition: opacity 0.2s;
         }
 
+        .cell-header-actions .divider {
+            width: 1px;
+            height: 1rem;
+            background: var(--wa-color-outline);
+            margin: 0 0.25rem;
+            opacity: 0.5;
+        }
+
         .cell-header:hover .cell-header-actions {
+            opacity: 1;
+        }
+
+        .cell-footer {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            justify-content: flex-end;
+            padding: 0.5rem;
+            border-top: 1px solid var(--wa-color-outline);
+            opacity: 0.5;
+            transition: opacity 0.2s;
+        }
+
+        .cell-footer:hover {
             opacity: 1;
         }
 
@@ -1171,11 +1225,6 @@ export class KNotebookEditor extends KPart {
             font-size: 1.5rem;
         }
 
-        .markdown-edit-buttons {
-            display: flex;
-            gap: 0.25rem;
-            align-items: center;
-        }
     `;
 }
 

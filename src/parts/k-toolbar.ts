@@ -18,6 +18,12 @@ export class KToolbar extends SignalWatcher(KElement) {
     @property()
     private position: "start" | "center" | "end" = "start";
 
+    @property({attribute: false})
+    public partToolbarContent?: any = undefined;
+
+    @property({attribute: false})
+    public partToolbarRenderer?: () => any = undefined;
+
     @state()
     private contributions: Contribution[] = [];
 
@@ -55,11 +61,15 @@ export class KToolbar extends SignalWatcher(KElement) {
     }
 
     render() {
+        const partContent = this.partToolbarRenderer ? this.partToolbarRenderer() : 
+                           (this.partToolbarContent ? this.partToolbarContent : '');
+        
         return html`
             <div class="toolbar-items" style=${styleMap({"justify-content": this.position})}>
                 <slot name="start">
                     ${this.contributions.filter(c => c.slot === "start").map(this.contributionCreator.bind(this))}
                 </slot>
+                ${partContent}
                 ${this.contributions.filter(c => c.slot === undefined).map(this.contributionCreator.bind(this))}
                 <slot>
                 </slot>

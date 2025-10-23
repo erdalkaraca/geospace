@@ -7,6 +7,8 @@ import {repeat} from "lit/directives/repeat.js";
 import {icon} from "../core/k-utils.ts";
 import {createRef, ref} from "lit/directives/ref.js";
 import {subscribe} from "../core/events.ts";
+import {KPart} from "./k-part.ts";
+import {KToolbar} from "./k-toolbar.ts";
 
 /**
  * KTabs - A dynamic tab container component
@@ -53,7 +55,20 @@ export class KTabs extends KContainer {
             // @ts-ignore
             this.tabGroup.value.addEventListener("wa-tab-show", (event: CustomEvent) => {
                 const tabPanel = this.getTabPanel(event.detail.name);
-                this.dispatchEvent(new CustomEvent('tab-shown', {detail: tabPanel}));
+                if (tabPanel) {
+                    // Update toolbar from component's renderToolbar() method
+                    this.updateToolbarFromComponent(tabPanel);
+                    this.dispatchEvent(new CustomEvent('tab-shown', {detail: tabPanel}));
+                }
+            });
+
+            // Listen for toolbar update requests from components
+            this.tabGroup.value.addEventListener("part-toolbar-changed", (event: Event) => {
+                const component = event.target as HTMLElement;
+                const tabPanel = component.closest('wa-tab-panel') as HTMLElement | null;
+                if (tabPanel) {
+                    this.updateToolbarFromComponent(tabPanel);
+                }
             });
         });
         
@@ -101,6 +116,14 @@ export class KTabs extends KContainer {
         
         this.updateComplete.then(() => {
             this.activate(contribution.name);
+            // Update toolbar after component is rendered
+            const tabPanel = this.getTabPanel(contribution.name);
+            if (tabPanel) {
+                // Give component time to initialize
+                requestAnimationFrame(() => {
+                    this.updateToolbarFromComponent(tabPanel);
+                });
+            }
         });
     }
 
@@ -193,6 +216,29 @@ export class KTabs extends KContainer {
 
     private getTab(name: string): HTMLElement | null {
         return this.tabGroup.value!.querySelector(`wa-tab[panel='${name}']`) as HTMLElement | null;
+    }
+
+    /**
+     * Updates the toolbar for a tab panel by querying the component for its toolbar content.
+     * This allows KPart components to provide their own toolbar items directly.
+     */
+    private updateToolbarFromComponent(tabPanel: HTMLElement): void {
+        const contentDiv = tabPanel.querySelector('.tab-content');
+        if (!contentDiv || !contentDiv.firstElementChild) return;
+        
+        const component = contentDiv.firstElementChild;
+        if (!(component instanceof KPart)) return;
+        
+        // Check if component has renderToolbar method
+        if (!component['renderToolbar']) return;
+        
+        // Query for k-toolbar directly since there's only one per tab panel
+        const toolbar = tabPanel.querySelector('k-toolbar') as KToolbar | null;
+        if (toolbar) {
+            // Pass a bound render function to maintain component context
+            toolbar.partToolbarRenderer = () => component['renderToolbar']();
+            toolbar.requestUpdate();
+        }
     }
 
     // ============= Render Method =============

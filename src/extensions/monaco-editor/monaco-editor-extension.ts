@@ -15,7 +15,6 @@ import {toastError, toastInfo} from "../../core/toast.ts";
 import {PyEnv} from "../../core/pyservice.ts";
 import {File, workspaceService} from "../../core/filesys.ts";
 import {ChatContext} from "../../core/chatservice.ts";
-import {when} from "lit/directives/when.js";
 
 self.MonacoEnvironment = {
     getWorker(_: any, label: string) {
@@ -79,6 +78,15 @@ export class KMonacoEditor extends KPart {
         this.canExecute = file.getName().endsWith(".py")
     }
 
+    protected updated(changedProperties: Map<string, any>) {
+        super.updated(changedProperties);
+        
+        // Update toolbar when state affecting toolbar changes
+        if (changedProperties.has('canExecute') || changedProperties.has('pyenv')) {
+            this.updateToolbar();
+        }
+    }
+
     protected async doInitUI() {
         const file = this.input!.data
         const textContents = await file.getContents()
@@ -133,6 +141,26 @@ export class KMonacoEditor extends KPart {
         return this.model.getLanguageId()?.toLowerCase()
     }
 
+    protected renderToolbar() {
+        if (!this.canExecute) {
+            return html``;
+        }
+
+        return html`
+            <wa-button @click=${() => this.onRunCode()} title="Run code"
+                       ?disabled="${!this.canExecute}" appearance="plain" size="small">
+                <wa-icon name="play" label="Run code"></wa-icon>
+            </wa-button>
+            <wa-button @click=${() => this.toggleConnection()}
+                       style="${styleMap({color: this.pyenv ? "var(--wa-color-success-fill-loud)" : "var(--wa-color-danger-fill-loud)"})}"
+                       title="(Re)Connect to execution environment"
+                       ?disabled="${!this.canExecute}"
+                       appearance="plain" size="small">
+                <wa-icon name="circle" label="Connection status"></wa-icon>
+            </wa-button>
+        `;
+    }
+
     private async toggleConnection() {
         if (this.pyenv) {
             this.pyenv.close()
@@ -152,21 +180,6 @@ export class KMonacoEditor extends KPart {
             <style>
                 ${styles}
             </style>
-            ${when(this.canExecute, () => html`
-                <k-toolbar>
-                    <wa-button @click=${this.onRunCode} title="Run code"
-                               ?disabled="${!this.canExecute}" appearance="plain" size="small">
-                        <wa-icon name="play" label="Run code"></wa-icon>
-                    </wa-button>
-                    <wa-button @click=${this.toggleConnection}
-                               style="${styleMap({color: this.pyenv ? "var(--wa-color-success-fill-loud)" : "var(--wa-color-danger-fill-loud)"})}"
-                               title="(Re)Connect to execution environment"
-                               ?disabled="${!this.canExecute}"
-                               appearance="plain" size="small">
-                        <wa-icon name="circle" label="Connection status"></wa-icon>
-                    </wa-button>
-                </k-toolbar>
-            `)}
             <div class="monaco-editor-container" ${ref(this.editorRef)}>
             </div>
         `
