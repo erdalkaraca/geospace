@@ -799,6 +799,9 @@ export class KNotebookEditor extends KPart {
         // Save editor contents BEFORE modifying the cells array
         this.saveEditorContents();
         
+        // Shift indices in state maps for all cells at index and beyond
+        this.shiftIndicesUp(index);
+        
         this.notebook.cells.splice(index, 0, this.createCell(cellType));
         
         // Automatically enter edit mode for new markdown cells
@@ -853,24 +856,84 @@ export class KNotebookEditor extends KPart {
         // Save editor contents BEFORE modifying the cells array
         this.saveEditorContents();
         
-        this.notebook.cells.splice(index, 1);
-        this.cleanupCellOutputs();
+        // Remove state for the deleted cell
+        this.cellOutputs.delete(index);
         this.executingCells.delete(index);
         this.editingMarkdownCells.delete(index);
+        
+        this.notebook.cells.splice(index, 1);
+        
+        // Shift indices in state maps for all cells after the deleted one
+        this.shiftIndicesDown(index);
+        
         this.resetCellState();
     }
 
-    // Clean up outputs for cells that no longer exist
-    private cleanupCellOutputs() {
-        if (!this.notebook) return;
+    // Shift all indices >= startIndex up by 1 (used when inserting a cell)
+    private shiftIndicesUp(startIndex: number) {
+        // Process indices in reverse order to avoid overwriting
+        const indicesToShift = Array.from(this.cellOutputs.keys())
+            .filter(idx => idx >= startIndex)
+            .sort((a, b) => b - a);
+        
+        indicesToShift.forEach(oldIndex => {
+            const output = this.cellOutputs.get(oldIndex);
+            this.cellOutputs.delete(oldIndex);
+            this.cellOutputs.set(oldIndex + 1, output);
+        });
 
-        const validIndices = new Set(this.notebook.cells.map((_, idx) => idx));
-        const outputIndices = Array.from(this.cellOutputs.keys());
+        // Shift executingCells
+        const executingToShift = Array.from(this.executingCells)
+            .filter(idx => idx >= startIndex)
+            .sort((a, b) => b - a);
+        
+        executingToShift.forEach(oldIndex => {
+            this.executingCells.delete(oldIndex);
+            this.executingCells.add(oldIndex + 1);
+        });
 
-        outputIndices.forEach(idx => {
-            if (!validIndices.has(idx)) {
-                this.cellOutputs.delete(idx);
-            }
+        // Shift editingMarkdownCells
+        const editingToShift = Array.from(this.editingMarkdownCells)
+            .filter(idx => idx >= startIndex)
+            .sort((a, b) => b - a);
+        
+        editingToShift.forEach(oldIndex => {
+            this.editingMarkdownCells.delete(oldIndex);
+            this.editingMarkdownCells.add(oldIndex + 1);
+        });
+    }
+
+    // Shift all indices > startIndex down by 1 (used when deleting a cell)
+    private shiftIndicesDown(startIndex: number) {
+        // Process indices in forward order
+        const indicesToShift = Array.from(this.cellOutputs.keys())
+            .filter(idx => idx > startIndex)
+            .sort((a, b) => a - b);
+        
+        indicesToShift.forEach(oldIndex => {
+            const output = this.cellOutputs.get(oldIndex);
+            this.cellOutputs.delete(oldIndex);
+            this.cellOutputs.set(oldIndex - 1, output);
+        });
+
+        // Shift executingCells
+        const executingToShift = Array.from(this.executingCells)
+            .filter(idx => idx > startIndex)
+            .sort((a, b) => a - b);
+        
+        executingToShift.forEach(oldIndex => {
+            this.executingCells.delete(oldIndex);
+            this.executingCells.add(oldIndex - 1);
+        });
+
+        // Shift editingMarkdownCells
+        const editingToShift = Array.from(this.editingMarkdownCells)
+            .filter(idx => idx > startIndex)
+            .sort((a, b) => a - b);
+        
+        editingToShift.forEach(oldIndex => {
+            this.editingMarkdownCells.delete(oldIndex);
+            this.editingMarkdownCells.add(oldIndex - 1);
         });
     }
 
