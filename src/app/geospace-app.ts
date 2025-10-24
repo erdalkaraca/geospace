@@ -1,5 +1,5 @@
 import {html} from "lit";
-import {AppDefinition} from "../core/apploader.ts";
+import {AppDefinition, appLoaderService} from "../core/apploader.ts";
 import {createLogger} from "../core/logger.ts";
 import {version as appVersion} from "../../package.json";
 
@@ -183,3 +183,5 @@ export const geospaceApp: AppDefinition = {
     },
 };
 
+// Self-bootstrap: load and render the app
+appLoaderService.loadApp(geospaceApp, document.body);

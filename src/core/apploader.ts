@@ -112,14 +112,22 @@ class AppLoaderService {
     /**
      * Load and initialize an application.
      * 
-     * @param appId - Application identifier
-     * @returns Promise that resolves when app is initialized
+     * @param appOrId - Application definition or identifier
+     * @param container - Optional DOM element to render into (if provided, auto-renders after loading)
+     * @returns Promise that resolves when app is initialized and rendered
      */
-    async loadApp(appId: string): Promise<void> {
-        const app = this.apps.get(appId);
+    async loadApp(appOrId: string | AppDefinition, container?: HTMLElement): Promise<void> {
+        let app: AppDefinition;
         
-        if (!app) {
-            throw new Error(`App '${appId}' not found. Make sure it's registered.`);
+        if (typeof appOrId === 'string') {
+            const foundApp = this.apps.get(appOrId);
+            if (!foundApp) {
+                throw new Error(`App '${appOrId}' not found. Make sure it's registered.`);
+            }
+            app = foundApp;
+        } else {
+            app = appOrId;
+            this.registerApp(app);
         }
         
         logger.info(`Loading app: ${app.name}...`);
@@ -182,6 +190,11 @@ class AppLoaderService {
         
         this.currentApp = app;
         logger.info(`App ${app.name} loaded successfully`);
+        
+        // Auto-render if container provided
+        if (container) {
+            this.renderApp(container);
+        }
     }
     
     /**
