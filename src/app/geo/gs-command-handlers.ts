@@ -57,6 +57,46 @@ commandRegistry.registerAll({
 
 commandRegistry.registerAll({
     command: {
+        "id": "zoom_in",
+        "name": "Zoom In",
+        "description": "Zooms the map in by one level",
+        "parameters": []
+    },
+    handler: {
+        canExecute: _context => activePartSignal.get() instanceof GsMapEditor,
+        execute: async _context => {
+            const editor = activePartSignal.get() as GsMapEditor;
+            const gsMap = editor.getGsMap();
+            if (gsMap?.view?.zoom !== undefined) {
+                const operations = editor.mapOperations;
+                await operations?.setZoom(gsMap.view.zoom + 1);
+            }
+        }
+    }
+})
+
+commandRegistry.registerAll({
+    command: {
+        "id": "zoom_out",
+        "name": "Zoom Out",
+        "description": "Zooms the map out by one level",
+        "parameters": []
+    },
+    handler: {
+        canExecute: _context => activePartSignal.get() instanceof GsMapEditor,
+        execute: async _context => {
+            const editor = activePartSignal.get() as GsMapEditor;
+            const gsMap = editor.getGsMap();
+            if (gsMap?.view?.zoom !== undefined) {
+                const operations = editor.mapOperations;
+                await operations?.setZoom(gsMap.view.zoom - 1);
+            }
+        }
+    }
+})
+
+commandRegistry.registerAll({
+    command: {
         "id": "center_location",
         "name": "Center to a location",
         "description": "Centers the map to the provided location coordinates",
@@ -420,6 +460,43 @@ commandRegistry.registerAll({
             const part = activePartSignal.get();
             if (part instanceof GsMapEditor) {
                 await part.refresh();
+            }
+        }
+    }
+})
+
+commandRegistry.registerAll({
+    command: {
+        "id": "reset_view",
+        "name": "Reset View",
+        "description": "Resets the map view to the initial center and zoom level",
+        "parameters": []
+    },
+    handler: {
+        canExecute: _context => activePartSignal.get() instanceof GsMapEditor,
+        execute: async _context => {
+            const part = activePartSignal.get();
+            if (part instanceof GsMapEditor) {
+                await part.resetView();
+            }
+        }
+    }
+})
+
+commandRegistry.registerAll({
+    command: {
+        "id": "toggle_color_mode",
+        "name": "Toggle Color Mode",
+        "description": "Toggles between dark and light mode for the map",
+        "parameters": []
+    },
+    handler: {
+        canExecute: _context => activePartSignal.get() instanceof GsMapEditor,
+        execute: async _context => {
+            const editor = activePartSignal.get() as GsMapEditor;
+            const operations = editor.mapOperations;
+            if (operations) {
+                await operations.switchColorMode();
             }
         }
     }

@@ -4,6 +4,7 @@ import { createRef, ref, Ref } from 'lit/directives/ref.js'
 import { CommandStack } from "../../core/commandregistry.ts";
 import { KPart } from "../../parts/k-part.ts";
 import { EditorInput } from "../../core/editorregistry.ts";
+import { contributionRegistry } from "../../core/contributionregistry.ts";
 import { DEFAULT_GSMAP, GsMap } from "../rt";
 import { mapChangedSignal, MapEvents } from "./gs-signals.ts";
 import olCSS from "../../../node_modules/ol/ol.css?raw";
@@ -15,6 +16,7 @@ import {MapRenderer, MapOperations, createProxy} from "./map-renderer.ts";
 import { IFrameMapRenderer } from "./proxy-map-renderer.ts";
 import { DomainMapOperations } from "./domain-map-operations.ts";
 import { activePartSignal } from "../../core/appstate.ts";
+import logger from '../../core/logger.ts';
 
 @customElement('gs-map')
 export class GsMapEditor extends KPart {
@@ -26,6 +28,7 @@ export class GsMapEditor extends KPart {
     private operations?: MapOperations;
     private gsMap?: GsMap;
     private isFirstConnection = true;
+    private initialView?: { center: [number, number], zoom: number };
 
     chatContext: ChatContext = {
         history: []
@@ -41,10 +44,36 @@ export class GsMapEditor extends KPart {
     }
 
     private registerToolbarActions() {
+        // Zoom controls
         this.registerToolbarContribution({
-            label: "Refresh map",
-            icon: "rotate",
-            command: "refresh_map",
+            label: "Zoom in",
+            icon: "magnifying-glass-plus",
+            command: "zoom_in",
+            slot: "start"
+        });
+        
+        this.registerToolbarContribution({
+            label: "Zoom out",
+            icon: "magnifying-glass-minus",
+            command: "zoom_out",
+            slot: "start"
+        });
+        
+        // Navigation controls
+        this.registerToolbarContribution({
+            label: "Reset view",
+            icon: "house",
+            command: "reset_view",
+            slot: "start"
+        });
+        
+        this.registerToolbarDivider();
+        
+        // Display mode controls
+        this.registerToolbarContribution({
+            label: "Toggle dark/light mode",
+            icon: "circle-half-stroke",
+            command: "toggle_color_mode",
             slot: "start"
         });
         
@@ -52,6 +81,29 @@ export class GsMapEditor extends KPart {
             label: "Toggle mobile view",
             icon: "mobile",
             command: "toggle_mobile_view",
+            slot: "start"
+        });
+        
+        this.registerToolbarDivider();
+        
+        // Action controls
+        this.registerToolbarContribution({
+            label: "Refresh map",
+            icon: "rotate",
+            command: "refresh_map",
+            slot: "start"
+        });
+    }
+    
+    private registerToolbarDivider() {
+        const id = this.getAttribute('id');
+        if (!id) return;
+        
+        const toolbarTarget = `toolbar.${id}`;
+        contributionRegistry.registerContribution(toolbarTarget, {
+            label: "",
+            html: `<wa-divider orientation="vertical"></wa-divider>`,
+            target: toolbarTarget,
             slot: "start"
         });
     }
@@ -94,6 +146,14 @@ export class GsMapEditor extends KPart {
         await replaceUris(gsMap, "src");
 
         this.gsMap = gsMap;
+        
+        // Store initial view for reset functionality
+        if (gsMap.view) {
+            this.initialView = {
+                center: [...gsMap.view.center] as [number, number],
+                zoom: gsMap.view.zoom
+            };
+        }
 
         // Create iframe renderer for isolation
         this.renderer = new IFrameMapRenderer(gsMap, env);
@@ -208,13 +268,20 @@ export class GsMapEditor extends KPart {
 
     async refresh() {
         if (!this.renderer) {
-            toastError('Map not initialized');
+            logger.error('Map not initialized');
             return;
         }
         
-        toastInfo("Refreshing map...");
         await this.renderer.modelToUI();
-        toastInfo("Map refreshed");
+    }
+
+    async resetView() {
+        if (!this.operations || !this.initialView) {
+            return;
+        }
+        
+        await this.operations.setCenter(this.initialView.center);
+        await this.operations.setZoom(this.initialView.zoom);
     }
 
     protected doClose() {
