@@ -1,5 +1,6 @@
 import "../externals/webawesome.ts"
 import "./k-app.ts"
 import "./k-toolbar.ts"
+import "./k-contextmenu.ts"
 import "./k-tabs.ts"
 import "./k-resizable-grid.ts"

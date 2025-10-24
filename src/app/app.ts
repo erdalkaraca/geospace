@@ -67,7 +67,7 @@ export class GSApp extends KContainer {
             <div class="toolbar-top">
                 <k-toolbar id=${TOOLBAR_MAIN}></k-toolbar>
                 <k-toolbar id=${TOOLBAR_MAIN_CENTER}></k-toolbar>
-                <k-toolbar class="toolbar-end" id=${TOOLBAR_MAIN_RIGHT} align="right"></k-toolbar>
+                <k-toolbar class="toolbar-end" id=${TOOLBAR_MAIN_RIGHT}></k-toolbar>
             </div>
             
             <!-- MAIN CONTENT AREA (VS Code style layout) -->

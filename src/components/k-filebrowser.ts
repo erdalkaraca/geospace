@@ -29,9 +29,9 @@ export class KFileBrowser extends KPart {
     private treeRef = createRef<HTMLElement>();
 
     protected doBeforeUI() {
-        // Start loading workspace asynchronously
         this.initializeWorkspace();
         this.registerToolbarActions();
+        this.registerContextMenuActions();
     }
 
     private async initializeWorkspace() {
@@ -70,6 +70,29 @@ export class KFileBrowser extends KPart {
             icon: "trash",
             command: "delete_resource",
             slot: "start",
+            disabled: () => {
+                return !(activeSelectionSignal.get() instanceof Resource)
+            }
+        })
+    }
+
+    private registerContextMenuActions() {
+        this.registerContextMenuContribution({
+            label: "Open",
+            icon: "folder-open",
+            command: "open_editor"
+        })
+        
+        this.registerContextMenuContribution({
+            label: "Create new file...",
+            icon: "plus",
+            command: "create_file"
+        })
+        
+        this.registerContextMenuContribution({
+            label: "Delete",
+            icon: "trash",
+            command: "delete_resource",
             disabled: () => {
                 return !(activeSelectionSignal.get() instanceof Resource)
             }

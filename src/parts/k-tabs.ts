@@ -9,6 +9,7 @@ import {createRef, ref} from "lit/directives/ref.js";
 import {subscribe} from "../core/events.ts";
 import {KPart} from "./k-part.ts";
 import {KToolbar} from "./k-toolbar.ts";
+import {KContextMenu} from "./k-contextmenu.ts";
 import {MouseButton} from "../core/constants.ts";
 
 /**
@@ -70,6 +71,48 @@ export class KTabs extends KContainer {
                 if (tabPanel) {
                     this.updateToolbarFromComponent(tabPanel);
                 }
+            });
+
+            // Listen for context menu update requests from components
+            this.tabGroup.value.addEventListener("part-contextmenu-changed", (event: Event) => {
+                const component = event.target as HTMLElement;
+                const tabPanel = component.closest('wa-tab-panel') as HTMLElement | null;
+                if (tabPanel) {
+                    this.updateContextMenuFromComponent(tabPanel);
+                }
+            });
+
+            // Automatically wire up context menus for all tab content
+            this.tabGroup.value.addEventListener('contextmenu', (event: Event) => {
+                const mouseEvent = event as MouseEvent;
+                const scroller = (mouseEvent.target as HTMLElement).closest('wa-scroller.tab-content');
+                if (!scroller) return;
+                
+                mouseEvent.preventDefault();
+                
+                const tabPanel = scroller.closest('wa-tab-panel') as HTMLElement;
+                if (!tabPanel) return;
+                
+                // Trigger a left click to update selection before showing context menu
+                const clickEvent = new MouseEvent('click', {
+                    bubbles: true,
+                    cancelable: true,
+                    view: window,
+                    clientX: mouseEvent.clientX,
+                    clientY: mouseEvent.clientY,
+                    button: 0
+                });
+                mouseEvent.target!.dispatchEvent(clickEvent);
+                
+                // Wait for selection to update before showing context menu
+                requestAnimationFrame(() => {
+                    this.updateContextMenuFromComponent(tabPanel);
+                    
+                    const contextMenu = tabPanel.querySelector('k-contextmenu') as KContextMenu;
+                    if (contextMenu) {
+                        contextMenu.show({ x: mouseEvent.clientX, y: mouseEvent.clientY });
+                    }
+                });
             });
         });
         
@@ -248,6 +291,29 @@ export class KTabs extends KContainer {
         }
     }
 
+    /**
+     * Updates the context menu for a tab panel by querying the component for its context menu content.
+     * This allows KPart components to provide their own context menu items directly.
+     */
+    private updateContextMenuFromComponent(tabPanel: HTMLElement): void {
+        const contentDiv = tabPanel.querySelector('.tab-content');
+        if (!contentDiv || !contentDiv.firstElementChild) return;
+        
+        const component = contentDiv.firstElementChild;
+        if (!(component instanceof KPart)) return;
+        
+        // Check if component has renderContextMenu method
+        if (!component['renderContextMenu']) return;
+        
+        // Query for k-contextmenu directly since there's only one per tab panel
+        const contextMenu = tabPanel.querySelector('k-contextmenu') as KContextMenu | null;
+        if (contextMenu) {
+            // Pass a bound render function to maintain component context
+            contextMenu.partContextMenuRenderer = () => component['renderContextMenu']();
+            contextMenu.requestUpdate();
+        }
+    }
+
     // ============= Render Method =============
 
     render() {
@@ -273,6 +339,7 @@ export class KTabs extends KContainer {
                             <wa-scroller class="tab-content" orientation="vertical">
                                 ${c.component ? c.component(c.name) : nothing}
                             </wa-scroller>
+                            <k-contextmenu id="contextmenu.${c.name}"></k-contextmenu>
                         </wa-tab-panel>
                     `
                 )}

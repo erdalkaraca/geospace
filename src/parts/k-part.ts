@@ -59,6 +59,56 @@ export abstract class KPart extends KContainer {
         }));
     }
 
+    /**
+     * Override this method to provide context menu content for this part.
+     * This is a lightweight alternative to registering context menu contributions
+     * for actions that are scoped to this part instance.
+     * 
+     * IMPORTANT: Event handlers MUST use arrow functions to preserve the component's 'this' context.
+     * The context menu is rendered in a different component (k-contextmenu), so direct method 
+     * references lose their binding.
+     * 
+     * ✅ Correct:
+     *   @click=${() => this.myMethod()}
+     *   @click=${(e) => this.handleClick(e)}
+     * 
+     * ❌ Wrong (this will be bound to the context menu, not your component):
+     *   @click=${this.myMethod}
+     * 
+     * Example:
+     * ```typescript
+     * protected renderContextMenu() {
+     *     return html`
+     *         <wa-dropdown-item @click=${() => this.open()}>
+     *             <wa-icon name="folder-open"></wa-icon>
+     *             Open
+     *         </wa-dropdown-item>
+     *         <wa-divider></wa-divider>
+     *         <wa-dropdown-item @click=${() => this.delete()}>
+     *             <wa-icon name="trash"></wa-icon>
+     *             Delete
+     *         </wa-dropdown-item>
+     *     `;
+     * }
+     * ```
+     * 
+     * @returns TemplateResult with context menu items, or nothing if no context menu needed
+     */
+    protected renderContextMenu(): TemplateResult | typeof nothing {
+        return nothing;
+    }
+
+    /**
+     * Call this method to update the context menu when the component's state changes.
+     * This triggers a re-render of the context menu with the latest content from renderContextMenu().
+     */
+    protected updateContextMenu(): void {
+        this.dispatchEvent(new CustomEvent('part-contextmenu-changed', {
+            bubbles: true,
+            composed: true
+        }));
+    }
+
     protected updated(_changedProperties: PropertyValues) {
         super.updated(_changedProperties);
 
@@ -114,6 +164,18 @@ export abstract class KPart extends KContainer {
         contributionRegistry.registerContribution(toolbarTarget, {
             ...contribution,
             target: toolbarTarget
+        } as CommandContribution)
+    }
+
+    protected registerContextMenuContribution(contribution: Omit<CommandContribution, 'target'>) {
+        const id = this.getAttribute('id')
+        if (!id) {
+            return
+        }
+        const contextMenuTarget = `contextmenu.${id}`
+        contributionRegistry.registerContribution(contextMenuTarget, {
+            ...contribution,
+            target: contextMenuTarget
         } as CommandContribution)
     }
 }

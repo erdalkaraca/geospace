@@ -22,10 +22,12 @@ import APP_SYS_PROMPT from "./geospace-sysprompt.txt?raw"
 import {CID_PROMPTS, SysPromptContribution} from "../core/chatservice.ts";
 import {contributionRegistry} from "../core/contributionregistry.ts";
 import {Extension, extensionRegistry} from "../core/extensionregistry.ts";
-import {workspaceService} from "../core/filesys.ts";
+import {workspaceService, File} from "../core/filesys.ts";
 import {editorRegistry} from "../core/editorregistry.ts";
 import {KPart} from "../parts/k-part.ts";
 import {registerAll} from "../core/commandregistry.ts";
+import {activeSelectionSignal} from "../core/appstate.ts";
+import {GsSourceType} from "./rt/gs-model.ts";
 
 import {
     SIDEBAR_MAIN,
@@ -38,6 +40,31 @@ import {
 } from "../core/constants.ts";
 
 const logger = createLogger('GeoSpaceApp');
+
+// Map file extensions to GsSourceType
+const FILE_EXTENSION_TO_SOURCE_TYPE: Record<string, GsSourceType> = {
+    '.geojson': GsSourceType.GeoJSON,
+    '.json': GsSourceType.GeoJSON,
+    '.kml': GsSourceType.KML,
+    '.gpx': GsSourceType.GPX,
+    '.tif': GsSourceType.GeoTIFF,
+    '.tiff': GsSourceType.GeoTIFF,
+    '.geotiff': GsSourceType.GeoTIFF
+};
+
+const getSourceTypeFromFile = (file: File): GsSourceType | null => {
+    const fileName = file.getName().toLowerCase();
+    for (const [ext, sourceType] of Object.entries(FILE_EXTENSION_TO_SOURCE_TYPE)) {
+        if (fileName.endsWith(ext)) {
+            return sourceType;
+        }
+    }
+    return null;
+};
+
+const isSupportedSpatialFile = (file: File): boolean => {
+    return getSourceTypeFromFile(file) !== null;
+};
 
 export const geospaceApp: AppDefinition = {
     id: "geospace",
@@ -107,6 +134,19 @@ export const geospaceApp: AppDefinition = {
                 label: `v${appVersion}`,
                 icon: "circle-info",
                 command: "show_version_info"
+            },
+            {
+                target: "contextmenu.filebrowser",
+                label: "Add as Map Layer",
+                icon: "layer-group",
+                command: "add_layer_from_selection",
+                disabled: () => {
+                    const selection = activeSelectionSignal.get();
+                    if (!(selection instanceof File)) {
+                        return true;
+                    }
+                    return !isSupportedSpatialFile(selection);
+                }
             }
         ] as any[],
         
@@ -171,6 +211,40 @@ export const geospaceApp: AppDefinition = {
             handler: {
                 execute: async _context => {
                     alert(`${geospaceApp.name}\nVersion: ${geospaceApp.version}\nAlpha Release\n\n${geospaceApp.description}`)
+                }
+            }
+        })
+
+        registerAll({
+            command: {
+                "id": "add_layer_from_selection",
+                "name": "Add Layer from Selected File",
+                "description": "Adds the selected file as a map layer",
+                "parameters": []
+            },
+            handler: {
+                execute: async context => {
+                    const selection = activeSelectionSignal.get();
+                    if (!(selection instanceof File)) {
+                        return;
+                    }
+                    
+                    const sourceType = getSourceTypeFromFile(selection);
+                    if (!sourceType) {
+                        logger.warn(`Unsupported file type: ${selection.getName()}`);
+                        return;
+                    }
+                    
+                    const filePath = selection.getWorkspacePath();
+                    
+                    // Call add_layer command with proper parameters
+                    await context.commandRegistry!.execute('add_layer', {
+                        source: context,
+                        params: {
+                            source: sourceType,
+                            url: filePath
+                        }
+                    });
                 }
             }
         })
