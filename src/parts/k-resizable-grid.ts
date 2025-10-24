@@ -234,7 +234,7 @@ export class KResizableGrid extends KElement {
                         <div 
                             class="resize-handle"
                             style="
-                                background-color: var(--wa-color-neutral-border-subtle, rgba(128, 128, 128, 0.2));
+                                background-color: var(--wa-color-neutral-border-quiet);
                                 cursor: ${this.orientation === 'horizontal' ? 'col-resize' : 'row-resize'};
                                 position: relative;
                                 z-index: 10;
@@ -243,10 +243,10 @@ export class KResizableGrid extends KElement {
                             "
                             @mousedown=${(e: MouseEvent) => this.startResize(e, index)}
                             @mouseenter=${(e: Event) => {
-                                (e.target as HTMLElement).style.backgroundColor = 'var(--wa-color-primary-fill, rgba(0, 102, 204, 0.4))';
+                                (e.target as HTMLElement).style.backgroundColor = 'var(--wa-color-brand-fill-normal)';
                             }}
                             @mouseleave=${(e: Event) => {
-                                (e.target as HTMLElement).style.backgroundColor = 'var(--wa-color-neutral-border-subtle, rgba(128, 128, 128, 0.2))';
+                                (e.target as HTMLElement).style.backgroundColor = 'var(--wa-color-neutral-border-quiet)';
                             }}
                         ></div>
                     `;

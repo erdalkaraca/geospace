@@ -41,7 +41,7 @@ logger.info('geo!space is ready!');
 render(html`
     <div id="gs-app" style="display: flex; flex-direction: column; height: 100vh; width: 100%;">
         <!-- TOP TOOLBAR -->
-        <div style="width: 100%; display: grid; grid-template-columns: 1fr 2fr 1fr; align-items: center; border-bottom: solid 1px grey; flex-shrink: 0;">
+        <div style="width: 100%; display: grid; grid-template-columns: 1fr 2fr 1fr; align-items: center; border-bottom: solid var(--wa-border-width-s) var(--wa-color-neutral-border-loud); flex-shrink: 0;">
             <k-toolbar id=${TOOLBAR_MAIN}></k-toolbar>
             <k-toolbar id=${TOOLBAR_MAIN_CENTER}></k-toolbar>
             <k-toolbar style="justify-self: end;" id=${TOOLBAR_MAIN_RIGHT} align="right"></k-toolbar>
@@ -81,7 +81,7 @@ render(html`
         </k-resizable-grid>
         
         <!-- BOTTOM TOOLBAR (status bar) -->
-        <div style="width: 100%; border-top: solid 1px grey; display: grid; grid-template-columns: 1fr 2fr auto; align-items: center; flex-shrink: 0; min-height: 32px; padding: 0 0.5rem;">
+        <div style="width: 100%; border-top: solid var(--wa-border-width-s) var(--wa-color-neutral-border-loud); display: grid; grid-template-columns: 1fr 2fr auto; align-items: center; flex-shrink: 0; min-height: 32px; padding: 0 var(--wa-space-xs);">
             <k-toolbar id=${TOOLBAR_BOTTOM}></k-toolbar>
             <k-toolbar id=${TOOLBAR_BOTTOM_CENTER}></k-toolbar>
             <k-toolbar id=${TOOLBAR_BOTTOM_END} style="justify-self: end;"></k-toolbar>
