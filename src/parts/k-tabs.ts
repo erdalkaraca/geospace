@@ -393,10 +393,7 @@ export class KTabs extends KContainer {
                             ${icon(c.icon!)}
                             ${c.label}
                             ${when(c.closable, () => html`
-                                <wa-button for="${c.name}" tabindex="-1" title="Close Tab" appearance="plain" size="small"
-                                           @click="${(e: Event) => this.closeTab(e, c.name)}">
-                                    <wa-icon name="xmark" label="Close"></wa-icon>
-                                </wa-button>
+                                <wa-icon name="xmark" label="Close"  @click="${(e: Event) => this.closeTab(e, c.name)}"></wa-icon>
                             `)}
                         </wa-tab>
                         <wa-tab-panel name="${c.name}">
