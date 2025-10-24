@@ -16,10 +16,10 @@ export class GsMapProps extends KPart {
 
     @watching(activePartSignal)
     protected onPartChanged(part: KPart) {
-        if (part == this || part == this.mapEditor) {
+        if (part == this || part == this.mapEditor || !(part instanceof GsMapEditor)) {
             return
         }
-        this.mapEditor = part instanceof GsMapEditor ? part : undefined
+        this.mapEditor = part
         this.updateLater()
     }
 
