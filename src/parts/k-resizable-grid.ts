@@ -45,17 +45,8 @@ export class KResizableGrid extends KElement {
     private childStylesApplied = false;
     private mutationObserver?: MutationObserver;
 
-    /**
-     * Shadow DOM is intentionally disabled for this component.
-     * 
-     * Reasoning:
-     * - The editor registry and other framework functionality relies on querying 
-     *   DOM elements from the global level (e.g., document.querySelector)
-     * - Shadow DOM would encapsulate children and make them inaccessible to global queries
-     * - This component needs direct access to its children to apply dynamic grid positioning
-     * - The component acts as a transparent layout container within the global DOM tree
-     */
     createRenderRoot() {
+        // intentionally disabling shadow DOM for the resizable grid
         return this;
     }
 
@@ -118,7 +109,19 @@ export class KResizableGrid extends KElement {
         if (changedProperties.has('gridChildren') && !this.childStylesApplied && this.gridChildren.length > 0) {
             this.childStylesApplied = true;
             
-            // Apply grid positioning and styling to children
+            /**
+             * Direct style manipulation is intentionally used here.
+             * 
+             * Reasoning:
+             * - Grid positioning (gridColumn/gridRow) must be computed dynamically based on
+             *   the number of children and orientation at runtime
+             * - Shadow DOM is disabled (see createRenderRoot), so we cannot use ::slotted()
+             *   or scoped CSS selectors to style children
+             * - CSS classes alone cannot express the dynamic grid positioning logic
+             *   (e.g., child at index 0 → column 1, index 1 → column 3, etc.)
+             * - This is a layout container whose primary job is to programmatically position
+             *   its children within a CSS grid system
+             */
             this.gridChildren.forEach((child, index) => {
                 child.style.overflow = 'hidden';
                 child.style.height = '100%';
@@ -236,6 +239,19 @@ export class KResizableGrid extends KElement {
         // Render resize handles
         // Child styling is applied in updated() when gridChildren/gridSizes change
         return html`
+            <style>
+                .resize-handle {
+                    position: relative;
+                    z-index: 10;
+                    background-color: var(--wa-color-neutral-border-quiet);
+                    transition: background-color var(--wa-transition-fast);
+                }
+                
+                .resize-handle:hover {
+                    background-color: var(--wa-color-brand-fill-normal);
+                }
+            </style>
+            
             ${this.gridChildren.map((_, index) => {
                 if (index < this.gridChildren.length - 1) {
                     const gridCol = this.orientation === 'horizontal' ? `${index * 2 + 2}` : '1';
@@ -244,20 +260,11 @@ export class KResizableGrid extends KElement {
                         <div 
                             class="resize-handle"
                             style="
-                                background-color: var(--wa-color-neutral-border-quiet);
                                 cursor: ${this.orientation === 'horizontal' ? 'col-resize' : 'row-resize'};
-                                position: relative;
-                                z-index: 10;
                                 grid-column: ${gridCol};
                                 grid-row: ${gridRow};
                             "
                             @mousedown=${(e: MouseEvent) => this.startResize(e, index)}
-                            @mouseenter=${(e: Event) => {
-                                (e.target as HTMLElement).style.backgroundColor = 'var(--wa-color-brand-fill-normal)';
-                            }}
-                            @mouseleave=${(e: Event) => {
-                                (e.target as HTMLElement).style.backgroundColor = 'var(--wa-color-neutral-border-quiet)';
-                            }}
                         ></div>
                     `;
                 }
