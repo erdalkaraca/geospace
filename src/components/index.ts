@@ -1,6 +1,7 @@
 import "./k-filebrowser.ts"
 import "./k-tasks.ts"
 import "./k-workspace-name.ts"
+import "./k-part-name.ts"
 import "./k-aiassist.ts"
 import "./k-extensions.ts"
 import "./k-log-terminal.ts"

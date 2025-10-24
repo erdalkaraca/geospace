@@ -15,7 +15,7 @@ import {toastError} from "../core/toast.ts";
 import {when} from "lit/directives/when.js";
 import {topic} from "../core/events.ts";
 import {taskService} from "../core/taskservice.ts";
-import {activeEditorSignal, activePartSignal} from "../core/appstate.ts";
+import {activePartSignal} from "../core/appstate.ts";
 import {
     commandRegistry as globalCommandRegistry,
     CommandRegistry,
@@ -159,9 +159,10 @@ export class KAIAssist extends KPart {
         this.requestUpdate()
         this.busy = true
 
+        const activePart = activePartSignal.get();
         const callContext = uiContext.createChild({
-            activePart: activePartSignal.get(),
-            activeEditor: activeEditorSignal.get()
+            activePart: activePart,
+            activeEditor: activePart?.isEditor ? activePart : null
         })
         
         taskService.runAsync("Calling AI assistant", _progress => 

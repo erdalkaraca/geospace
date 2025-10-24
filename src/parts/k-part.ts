@@ -3,11 +3,15 @@ import {property} from "lit/decorators.js";
 import {PropertyValues, TemplateResult, nothing} from "lit";
 import {partDirtySignal, activePartSignal} from "../core/appstate.ts";
 import {CommandStack} from "../core/commandregistry.ts";
-import {CommandContribution, contributionRegistry} from "../core/contributionregistry.ts";
+import {CommandContribution, contributionRegistry, TabContribution} from "../core/contributionregistry.ts";
 
 export abstract class KPart extends KContainer {
     @property()
     private dirty: boolean = false
+
+    public tabContribution?: TabContribution;
+    
+    public isEditor: boolean = false;
 
     protected commandStack?: CommandStack;
 
@@ -135,9 +139,6 @@ export abstract class KPart extends KContainer {
 
     connectedCallback() {
         super.connectedCallback();
-        (this.parentElement as HTMLElement).addEventListener("click", (_event: MouseEvent) => {
-            activePartSignal.set(this)
-        })
     }
 
     save() {

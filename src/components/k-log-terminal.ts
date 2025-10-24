@@ -1,6 +1,6 @@
 import { css, html } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
-import { KWidget } from '../widgets/k-widget.ts';
+import { KPart } from '../parts/k-part.ts';
 import { createRef, ref, Ref } from 'lit/directives/ref.js';
 import { registerLogHandler, unregisterLogHandler, type LogLevel } from '../core/logger.ts';
 
@@ -12,7 +12,7 @@ export interface LogMessage {
 }
 
 @customElement('k-log-terminal')
-export class KLogTerminal extends KWidget {
+export class KLogTerminal extends KPart {
     @state()
     private messages: LogMessage[] = [];
 

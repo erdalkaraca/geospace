@@ -10,7 +10,8 @@ import {subscribe} from "../core/events.ts";
 import {KPart} from "./k-part.ts";
 import {KToolbar} from "./k-toolbar.ts";
 import {KContextMenu} from "./k-contextmenu.ts";
-import {MouseButton} from "../core/constants.ts";
+import {MouseButton, EDITOR_AREA_MAIN} from "../core/constants.ts";
+import {activePartSignal} from "../core/appstate.ts";
 
 /**
  * KTabs - A dynamic tab container component
@@ -82,6 +83,45 @@ export class KTabs extends KContainer {
                 }
             });
 
+            // Update active part signal when clicking anywhere in tab content or tab title
+            this.tabGroup.value.addEventListener('click', (event: Event) => {
+                const target = event.target as HTMLElement;
+                
+                // Handle clicks on tab titles
+                const tab = target.closest('wa-tab');
+                if (tab) {
+                    const panelName = tab.getAttribute('panel');
+                    if (panelName) {
+                        const tabPanel = this.getTabPanel(panelName);
+                        if (tabPanel) {
+                            const contentDiv = tabPanel.querySelector('.tab-content');
+                            if (contentDiv && contentDiv.firstElementChild) {
+                                const part = contentDiv.firstElementChild;
+                                if (part instanceof KPart) {
+                                    activePartSignal.set(part);
+                                }
+                            }
+                        }
+                    }
+                    return;
+                }
+                
+                // Handle clicks on tab content
+                const scroller = target.closest('wa-scroller.tab-content');
+                if (!scroller) return;
+                
+                const tabPanel = scroller.closest('wa-tab-panel') as HTMLElement;
+                if (!tabPanel) return;
+                
+                const contentDiv = tabPanel.querySelector('.tab-content');
+                if (contentDiv && contentDiv.firstElementChild) {
+                    const part = contentDiv.firstElementChild;
+                    if (part instanceof KPart) {
+                        activePartSignal.set(part);
+                    }
+                }
+            });
+
             // Automatically wire up context menus for all tab content
             this.tabGroup.value.addEventListener('contextmenu', (event: Event) => {
                 const mouseEvent = event as MouseEvent;
@@ -130,7 +170,23 @@ export class KTabs extends KContainer {
 
     updated(changedProperties: Map<string, any>) {
         super.updated(changedProperties);
-        // No special instance management needed with fixed layout
+        
+        if (changedProperties.has('contributions')) {
+            const isEditorArea = this.containerId === EDITOR_AREA_MAIN;
+            this.contributions.forEach(contribution => {
+                const tabPanel = this.getTabPanel(contribution.name);
+                if (!tabPanel) return;
+                
+                const contentDiv = tabPanel.querySelector('.tab-content');
+                if (contentDiv && contentDiv.firstElementChild) {
+                    const part = contentDiv.firstElementChild;
+                    if (part instanceof KPart) {
+                        part.tabContribution = contribution;
+                        part.isEditor = isEditorArea;
+                    }
+                }
+            });
+        }
     }
 
     // ============= Public API Methods =============
@@ -163,6 +219,15 @@ export class KTabs extends KContainer {
             // Update toolbar after component is rendered
             const tabPanel = this.getTabPanel(contribution.name);
             if (tabPanel) {
+                const contentDiv = tabPanel.querySelector('.tab-content');
+                if (contentDiv && contentDiv.firstElementChild) {
+                    const part = contentDiv.firstElementChild;
+                    if (part instanceof KPart) {
+                        part.tabContribution = contribution;
+                        part.isEditor = this.containerId === EDITOR_AREA_MAIN;
+                    }
+                }
+                
                 // Give component time to initialize
                 requestAnimationFrame(() => {
                     this.updateToolbarFromComponent(tabPanel);
