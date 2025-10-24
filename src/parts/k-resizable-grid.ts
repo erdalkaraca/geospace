@@ -45,6 +45,16 @@ export class KResizableGrid extends KElement {
     private childStylesApplied = false;
     private mutationObserver?: MutationObserver;
 
+    /**
+     * Shadow DOM is intentionally disabled for this component.
+     * 
+     * Reasoning:
+     * - The editor registry and other framework functionality relies on querying 
+     *   DOM elements from the global level (e.g., document.querySelector)
+     * - Shadow DOM would encapsulate children and make them inaccessible to global queries
+     * - This component needs direct access to its children to apply dynamic grid positioning
+     * - The component acts as a transparent layout container within the global DOM tree
+     */
     createRenderRoot() {
         return this;
     }

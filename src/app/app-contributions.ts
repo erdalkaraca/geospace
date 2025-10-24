@@ -34,6 +34,27 @@ import {KPart} from "../parts/k-part.ts";
 
 import {version as appVersion} from "../../package.json"
 import {registerAll} from "../core/commandregistry.ts";
+import {createLogger} from "../core/logger.ts";
+
+const logger = createLogger('App');
+
+// Core extensions to enable on startup
+const coreExtensions = [
+    "system.mdeditor",
+    "system.monaco",
+    "system.download",
+    "system.commandpalette",
+    "system.memoryusage"
+];
+
+logger.info('Initializing geo!space...');
+
+coreExtensions.forEach(extId => {
+    extensionRegistry.enable(extId);
+});
+
+logger.info('Application initialized successfully');
+logger.info('geo!space is ready!');
 
 contributionRegistry.registerContribution(TOOLBAR_MAIN, {
     slot: "start",
