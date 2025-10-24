@@ -9,6 +9,7 @@ import {createRef, ref} from "lit/directives/ref.js";
 import {subscribe} from "../core/events.ts";
 import {KPart} from "./k-part.ts";
 import {KToolbar} from "./k-toolbar.ts";
+import {MouseButton} from "../core/constants.ts";
 
 /**
  * KTabs - A dynamic tab container component
@@ -125,6 +126,12 @@ export class KTabs extends KContainer {
                 });
             }
         });
+    }
+
+    handleTabAuxClick(event: MouseEvent, contribution: TabContribution): void {
+        if (event.button === MouseButton.MIDDLE && contribution.closable) {
+            this.closeTab(event, contribution.name);
+        }
     }
 
     closeTab(event: Event, tabName: string): void {
@@ -250,7 +257,8 @@ export class KTabs extends KContainer {
                     this.contributions,
                     (c) => c.name,
                     (c) => html`
-                        <wa-tab panel="${c.name}">
+                        <wa-tab panel="${c.name}"
+                                @auxclick="${(e: MouseEvent) => this.handleTabAuxClick(e, c)}">
                             ${icon(c.icon!)}
                             ${c.label}
                             ${when(c.closable, () => html`
