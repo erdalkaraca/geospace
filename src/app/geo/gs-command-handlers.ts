@@ -13,7 +13,6 @@ import {
     toGsSourceType,
     toSourceUrl
 } from "../rt";
-import {TOOLBAR_MAIN} from "../../core/constants.ts";
 import {activePartSignal} from "../../core/appstate.ts";
 import {GsMapEditor} from "./gs-map-editor.ts";
 
@@ -405,13 +404,23 @@ commandRegistry.registerAll({
 
             (renderer as any).toggleMobileView();
         }
+    }
+})
+
+commandRegistry.registerAll({
+    command: {
+        "id": "refresh_map",
+        "name": "Refresh Map",
+        "description": "Refreshes the currently active map editor",
+        "parameters": []
     },
-    contribution: {
-        target: TOOLBAR_MAIN,
-        icon: "mobile",
-        label: "Toggle mobile view",
-        disabled: () => {
-            return !(activePartSignal.get() instanceof GsMapEditor)
+    handler: {
+        canExecute: _context => activePartSignal.get() instanceof GsMapEditor,
+        execute: async _context => {
+            const part = activePartSignal.get();
+            if (part instanceof GsMapEditor) {
+                await part.refresh();
+            }
         }
     }
 })

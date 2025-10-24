@@ -17,8 +17,8 @@ editorRegistry.registerEditorInputHandler({
             icon: "location-dot",
             state: {}
         } as EditorInput
-        editorInput.widgetFactory = () => html`
-            <gs-map .input="${editorInput}"></gs-map>`
+        editorInput.widgetFactory = (id: string) => html`
+            <gs-map id="${id}" .input="${editorInput}"></gs-map>`
         return editorInput
     }
 })

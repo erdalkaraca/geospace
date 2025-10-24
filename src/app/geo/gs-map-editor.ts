@@ -36,6 +36,26 @@ export class GsMapEditor extends KPart {
         this.commandStack = new CommandStack()
     }
 
+    protected doBeforeUI() {
+        this.registerToolbarActions();
+    }
+
+    private registerToolbarActions() {
+        this.registerToolbarContribution({
+            label: "Refresh map",
+            icon: "rotate",
+            command: "refresh_map",
+            slot: "start"
+        });
+        
+        this.registerToolbarContribution({
+            label: "Toggle mobile view",
+            icon: "mobile",
+            command: "toggle_mobile_view",
+            slot: "start"
+        });
+    }
+
     async connectedCallback() {
         super.connectedCallback();
         
@@ -184,6 +204,17 @@ export class GsMapEditor extends KPart {
 
     edit() {
         toastInfo("not yet implemented")
+    }
+
+    async refresh() {
+        if (!this.renderer) {
+            toastError('Map not initialized');
+            return;
+        }
+        
+        toastInfo("Refreshing map...");
+        await this.renderer.modelToUI();
+        toastInfo("Map refreshed");
     }
 
     protected doClose() {
