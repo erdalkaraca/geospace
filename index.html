@@ -10,7 +10,12 @@
     <link rel="stylesheet" href="./src/loading-bar.css">
 
     <script type="module">
-        import "./src/app/app.ts"
+        import {appLoaderService} from "./src/core/apploader.ts"
+        import {geospaceApp} from "./src/app/geospace-app.ts"
+        
+        appLoaderService.registerApp(geospaceApp);
+        await appLoaderService.loadApp("geospace");
+        appLoaderService.renderApp(document.body);
     </script>
 
     <style>
@@ -37,6 +42,6 @@
     </style>
 </head>
 <body>
-    <gs-app></gs-app>
+    <!-- App will be rendered here by the app loader -->
 </body>
 </html>

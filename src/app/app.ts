@@ -1,8 +1,6 @@
 import {html} from "lit";
 import {customElement} from "lit/decorators.js";
 
-import "./app-contributions.ts"
-
 import {
     EDITOR_AREA_MAIN,
     SIDEBAR_MAIN,
