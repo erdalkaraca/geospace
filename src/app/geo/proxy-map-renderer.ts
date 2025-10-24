@@ -16,6 +16,7 @@ export class IFrameMapRenderer implements MapRenderer {
     private operations: MapOperations;
     private onDirtyCallback?: () => void;
     private onSyncCallback?: (gsMap: GsMap) => void;
+    private onClickCallback?: () => void;
     private isMobileView: boolean = false;
     private targetElement?: HTMLElement;
 
@@ -121,6 +122,10 @@ export class IFrameMapRenderer implements MapRenderer {
         this.onSyncCallback = callback;
     }
 
+    setOnClick(callback: () => void): void {
+        this.onClickCallback = callback;
+    }
+
     triggerSync() {
         if (this.onSyncCallback) {
             this.onSyncCallback(this.gsMap)
@@ -221,6 +226,8 @@ export class IFrameMapRenderer implements MapRenderer {
                 this.onDirtyCallback?.();
             } else if (type === 'sync') {
                 this.onSyncCallback?.(gsMap);
+            } else if (type === 'iframeClicked') {
+                this.onClickCallback?.();
             } else if (type === 'resolveAsset') {
                 // Handle asset resolution requests from iframe
                 this.handleAssetResolution(id, event.data.path);

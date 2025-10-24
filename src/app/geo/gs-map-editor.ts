@@ -14,6 +14,7 @@ import { ChatContext } from "../../core/chatservice.ts";
 import {MapRenderer, MapOperations, createProxy} from "./map-renderer.ts";
 import { IFrameMapRenderer } from "./proxy-map-renderer.ts";
 import { DomainMapOperations } from "./domain-map-operations.ts";
+import { activePartSignal } from "../../core/appstate.ts";
 
 @customElement('gs-map')
 export class GsMapEditor extends KPart {
@@ -47,6 +48,12 @@ export class GsMapEditor extends KPart {
         // On subsequent connections (perspective switches), recreate the iframe
         if (this.renderer?.reattached) {
             await this.renderer.reattached();
+            // Re-setup click handler after reattachment
+            if (this.renderer.setOnClick) {
+                this.renderer.setOnClick(() => {
+                    activePartSignal.set(this);
+                });
+            }
         }
     }
 
@@ -87,6 +94,9 @@ export class GsMapEditor extends KPart {
             this.renderer.setOnSync((updatedGsMap: GsMap) => {
                 this.gsMap!.view = updatedGsMap.view;
                 this.markDirty(true);
+            });
+            this.renderer.setOnClick?.(() => {
+                activePartSignal.set(this);
             });
 
             mapChangedSignal.set({ part: this, event: MapEvents.LOADED });
@@ -146,7 +156,6 @@ export class GsMapEditor extends KPart {
     getGsMap(): GsMap | undefined {
         return this.gsMap;
     }
-
 
     async save() {
         if (!this.renderer) {

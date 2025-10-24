@@ -17,6 +17,7 @@ export interface MapRenderer {
     triggerDirty(): void;
     setOnSync(callback: (gsMap: GsMap) => void): void;
     triggerSync(): void;
+    setOnClick?(callback: () => void): void;
     destroy(): void;
 }
 

@@ -128,5 +128,10 @@ window.addEventListener('message', async (event: MessageEvent<any>) => {
     event.source!.postMessage({ id, ...result }, event.origin);
 });
 
+// Notify parent when iframe is clicked to activate the part
+document.addEventListener('click', () => {
+    window.parent.postMessage({ type: 'iframeClicked' }, '*');
+}, true); // Use capture phase to catch all clicks
+
 // Notify parent that iframe is ready
 window.parent.postMessage({ type: 'rendererReady' }, '*');
