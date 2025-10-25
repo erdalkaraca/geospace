@@ -39,8 +39,10 @@ export class KResizableGrid extends KElement {
         handleIndex: number;
         startPos: number;
         startSizes: number[];
+        currentSizes?: number[];
     } | null = null;
     
+    private resizeOverlay: HTMLDivElement | null = null;
     private childrenLoaded = false;
     private childStylesApplied = false;
     private mutationObserver?: MutationObserver;
@@ -164,6 +166,17 @@ export class KResizableGrid extends KElement {
             startSizes
         };
 
+        // Create overlay to prevent iframes from capturing mouse events
+        this.resizeOverlay = document.createElement('div');
+        this.resizeOverlay.style.position = 'fixed';
+        this.resizeOverlay.style.top = '0';
+        this.resizeOverlay.style.left = '0';
+        this.resizeOverlay.style.width = '100%';
+        this.resizeOverlay.style.height = '100%';
+        this.resizeOverlay.style.zIndex = '9999';
+        this.resizeOverlay.style.cursor = this.orientation === 'horizontal' ? 'col-resize' : 'row-resize';
+        document.body.appendChild(this.resizeOverlay);
+
         document.addEventListener('mousemove', this.handleResize);
         document.addEventListener('mouseup', this.stopResize);
         
@@ -189,18 +202,46 @@ export class KResizableGrid extends KElement {
 
         if (newSizes[this.resizing.handleIndex] >= minSize && 
             newSizes[this.resizing.handleIndex + 1] >= minSize) {
+            this.resizing.currentSizes = newSizes;
             
-            // Convert back to percentages for storage
-            this.gridSizes = newSizes.map(size => {
+            // Update visual preview directly without triggering requestUpdate()
+            const gridTemplate = newSizes.map((size, index) => {
+                const percent = (size / containerSize) * 100;
+                const sizeStr = `${percent.toFixed(2)}%`;
+                if (index === newSizes.length - 1) {
+                    return sizeStr;
+                }
+                return `${sizeStr} 4px`;
+            }).join(' ');
+            
+            if (this.orientation === 'horizontal') {
+                this.style.gridTemplateColumns = gridTemplate;
+            } else {
+                this.style.gridTemplateRows = gridTemplate;
+            }
+        }
+    }
+
+    private stopResize = () => {
+        if (this.resizing?.currentSizes) {
+            const containerSize = this.orientation === 'horizontal' 
+                ? this.offsetWidth 
+                : this.offsetHeight;
+            
+            this.gridSizes = this.resizing.currentSizes.map(size => {
                 const percent = (size / containerSize) * 100;
                 return `${percent.toFixed(2)}%`;
             });
             
             this.requestUpdate();
         }
-    }
-
-    private stopResize = () => {
+        
+        // Remove overlay
+        if (this.resizeOverlay) {
+            document.body.removeChild(this.resizeOverlay);
+            this.resizeOverlay = null;
+        }
+        
         this.resizing = null;
         document.removeEventListener('mousemove', this.handleResize);
         document.removeEventListener('mouseup', this.stopResize);
