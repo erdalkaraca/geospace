@@ -2,6 +2,7 @@ import { css, html, unsafeCSS } from 'lit'
 import { customElement, property } from 'lit/decorators.js'
 import { createRef, ref, Ref } from 'lit/directives/ref.js'
 import { when } from 'lit/directives/when.js'
+import { keyed } from 'lit/directives/keyed.js'
 import { CommandStack } from "../../core/commandregistry.ts";
 import { KPart } from "../../parts/k-part.ts";
 import { EditorInput } from "../../core/editorregistry.ts";
@@ -95,25 +96,30 @@ export class GsMapEditor extends KPart {
                       .action=${() => this.handleCreateDrawingLayer()}>
             </k-action>
             
-            ${when(drawableLayers.length > 0, () => html`
-                <wa-select 
-                    placeholder="Drawing layer"
-                    size="small"
-                    value="${this.activeDrawingLayerIndex ?? ''}"
-                    @change=${(e: any) => {
-                        const newIndex = e.target.value ? parseInt(e.target.value) : undefined;
-                        this.activeDrawingLayerIndex = newIndex;
-                        if (newIndex === undefined || newIndex === null || e.target.value === '') {
-                            this.operations?.disableDrawing();
-                            this.interactionMode = 'none';
-                        }
-                        this.updateToolbar();
-                    }}>
-                    <wa-option value="">Select layer</wa-option>
-                    ${drawableLayers.map(({ layer, index }) => html`
-                        <wa-option value="${index}">${layer.name || `Layer ${index + 1}`}</wa-option>
-                    `)}
-                </wa-select>
+            ${when(drawableLayers.length > 0, () => {
+                // Create a key based on layer names to force wa-select to re-render when names change
+                const layerKey = drawableLayers.map(({ layer, index }) => `${index}:${layer.name}`).join('|');
+                return html`
+                ${keyed(layerKey, html`
+                    <wa-select 
+                        placeholder="Drawing layer"
+                        size="small"
+                        value="${this.activeDrawingLayerIndex ?? ''}"
+                        @change=${(e: any) => {
+                            const newIndex = e.target.value ? parseInt(e.target.value) : undefined;
+                            this.activeDrawingLayerIndex = newIndex;
+                            if (newIndex === undefined || newIndex === null || e.target.value === '') {
+                                this.operations?.disableDrawing();
+                                this.interactionMode = 'none';
+                            }
+                            this.updateToolbar();
+                        }}>
+                        <wa-option value="">Select layer</wa-option>
+                        ${drawableLayers.map(({ layer, index }) => html`
+                            <wa-option value="${index}">${layer.name || `Layer ${index + 1}`}</wa-option>
+                        `)}
+                    </wa-select>
+                `)}
                 
                 <k-action icon="location-dot" 
                           title="Draw Point"
@@ -143,7 +149,8 @@ export class GsMapEditor extends KPart {
                           ?disabled=${this.interactionMode !== 'select'}
                           .action=${() => this.handleDeleteSelected()}>
                 </k-action>
-            `)}
+            `
+            })}
         `;
     }
 
