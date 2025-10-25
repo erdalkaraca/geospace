@@ -6,35 +6,55 @@ import {editorRegistry} from "../core/editorregistry.ts";
 
 registerAll({
     command: {
-        "id": "touch",
-        "name": "Create a file",
+        "id": "create_file",
+        "name": "Create new file",
         "description": "Creates a new file within the workspace",
+        "keyBinding": "CTRL+N",
         "parameters": [
             {
                 "name": "path",
                 "description": "the path including name of the file to be created, must be relative to the workspace",
-                "required": true
+                "required": false
             },
             {
                 "name": "contents",
                 "description": "the textual contents of the file",
                 "required": false
+            },
+            {
+                "name": "ask",
+                "description": "whether to prompt the user for the file path",
+                "required": false
             }
         ]
     },
     handler: {
-        execute: async ({params: {path, contents}}: any) => {
-            if (!path) {
+        execute: async ({params}: any) => {
+            const workspaceDir = await workspaceService.getWorkspace()
+            if (!workspaceDir) {
+                toastError("Please select a workspace!")
                 return
             }
-            const workspaceDir = await workspaceService.getWorkspace()
-            const createdResource = await workspaceDir!.getResource(path, {create: true})
+
+            let path = params?.path
+            const contents = params?.contents
+            const ask = params?.ask
+
+            if (ask || !path) {
+                path = prompt("Enter path to new file (directories will be created if not exist):")
+                if (!path) {
+                    return
+                }
+            }
+
+            const createdResource = await workspaceDir.getResource(path, {create: true})
             if (!createdResource) {
-                console.log("could not create file: " + path)
+                toastError("Could not create file: " + path)
             } else {
                 if (contents) {
                     await (createdResource as File).saveContents(contents)
                 }
+                toastInfo("File created: " + path)
             }
         }
     }
@@ -42,22 +62,56 @@ registerAll({
 
 registerAll({
     command: {
-        "id": "create_file",
-        "name": "Create new file",
-        "description": "Shows a popup to create a new file",
-        "parameters": []
+        "id": "rename_resource",
+        "name": "Rename a resource (file or directory)",
+        "description": "Renames a resource (file or directory)",
+        "keyBinding": "F2",
+        "parameters": [
+            {
+                "name": "path",
+                "description": "the path of the resource within the workspace to rename or the currently active selection",
+                "required": false
+            },
+            {
+                "name": "newName",
+                "description": "the new name for the resource",
+                "required": false
+            }
+        ]
     },
     handler: {
-        execute: async _context => {
-            const workspaceDir = await workspaceService.getWorkspace()
-            if (!workspaceDir) {
-                toastError("Please select a workspace!")
+        execute: async context => {
+            let resource = undefined
+            let path = context.params && context.params["path"]
+            if (path) {
+                const workspaceDir = await workspaceService.getWorkspace()
+                if (workspaceDir) {
+                    resource = await workspaceDir.getResource(path)
+                }
+            }
+
+            if (!resource) {
+                resource = activeSelectionSignal.get()
+            }
+
+            if (!resource) {
+                toastError("No resource to rename provided!")
                 return
             }
 
-            const path = prompt("Enter path to new file (directories will be created if not exist):")
-            if (path) {
-                await workspaceDir.getResource(path, {create: true})
+            const currentName = resource.getName()
+            const newName = context.params?.newName || 
+                           prompt(`Enter new name for "${currentName}":`, currentName)
+            
+            if (!newName || newName === currentName) {
+                return
+            }
+
+            try {
+                await resource.rename(newName)
+                toastInfo(`Resource renamed to: ${newName}`)
+            } catch (err: any) {
+                toastError(`Failed to rename ${currentName}: ${err.message}`)
             }
         }
     }
@@ -68,6 +122,7 @@ registerAll({
         "id": "delete_resource",
         "name": "Delete a resource (file or directory)",
         "description": "Deletes a resource (file or directory)",
+        "keyBinding": "DELETE",
         "parameters": [
             {
                 "name": "path",
@@ -144,6 +199,7 @@ registerAll({
         "id": "reload_workspace",
         "name": "Reload workspace folder",
         "description": "Reloads the active workspace folder",
+        "keyBinding": "F5",
         "parameters": []
     },
     handler: {

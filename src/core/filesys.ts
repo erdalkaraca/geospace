@@ -18,6 +18,8 @@ export abstract class Resource {
 
     public abstract copyTo(targetPath: string): Promise<void>;
 
+    public abstract rename(newName: string): Promise<void>;
+
     public getWorkspacePath(): string {
         const paths: string[] = []
         let current: Resource | undefined = this
@@ -114,6 +116,10 @@ export class StringFile extends File {
         throw Error(`Not supported`);
     }
 
+    async rename(_newName: string): Promise<void> {
+        throw Error(`Not supported`);
+    }
+
     getName(): string {
         return this.name;
     }
@@ -184,6 +190,32 @@ export class FileSysFileHandleResource extends File {
         const contents = await this.getContents({blob: true})
         const targetFile = await this.getWorkspace().getResource(targetPath, {create: true}) as File
         await targetFile.saveContents(contents)
+    }
+
+    async rename(newName: string): Promise<void> {
+        const parent = this.getParent() as FileSysDirHandleResource;
+        if (!parent) {
+            throw new Error('Cannot rename root resource');
+        }
+
+        if (this.getName() === newName) {
+            return;
+        }
+
+        if ('move' in this.fileHandle && typeof (this.fileHandle as any).move === 'function') {
+            await (this.fileHandle as any).move(newName);
+        } else {
+            const oldPath = this.getWorkspacePath();
+            const pathParts = oldPath.split('/');
+            pathParts[pathParts.length - 1] = newName;
+            const newPath = pathParts.join('/');
+            
+            await this.copyTo(newPath);
+            await this.delete();
+        }
+        
+        await parent.listChildren(true);
+        publish(TOPIC_WORKSPACE_CHANGED, this.getWorkspace());
     }
 }
 
@@ -277,14 +309,14 @@ export class FileSysDirHandleResource extends Directory {
             }
         } finally {
             if (workspaceChanged) {
-                publish(TOPIC_WORKSPACE_CHANGED, this);
+                publish(TOPIC_WORKSPACE_CHANGED, this.getWorkspace());
             }
         }
         return currentResource;
     }
 
     public touch() {
-        publish(TOPIC_WORKSPACE_CHANGED, this);
+        publish(TOPIC_WORKSPACE_CHANGED, this.getWorkspace());
     }
 
     async delete(name?: string, recursive: boolean = true) {
@@ -294,7 +326,7 @@ export class FileSysDirHandleResource extends Directory {
         return this.dirHandle.removeEntry(name, {
             recursive: recursive
         }).then(() => {
-            publish(TOPIC_WORKSPACE_CHANGED, this);
+            publish(TOPIC_WORKSPACE_CHANGED, this.getWorkspace());
         })
     }
 
@@ -303,6 +335,26 @@ export class FileSysDirHandleResource extends Directory {
             const targetResourceName = [targetPath, resource.getName()].join("/")
             await resource.copyTo(targetResourceName)
         }
+    }
+
+    async rename(newName: string): Promise<void> {
+        const parent = this.getParent() as FileSysDirHandleResource;
+        if (!parent) {
+            throw new Error('Cannot rename workspace root');
+        }
+
+        if (this.getName() === newName) {
+            return;
+        }
+
+        if ('move' in this.dirHandle && typeof (this.dirHandle as any).move === 'function') {
+            await (this.dirHandle as any).move(newName);
+        } else {
+            throw new Error('Directory rename not supported in this browser. Please use a browser with File System Access API move() support.');
+        }
+        
+        await parent.listChildren(true);
+        publish(TOPIC_WORKSPACE_CHANGED, this.getWorkspace());
     }
 }
 
