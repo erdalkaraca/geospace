@@ -3,7 +3,6 @@ import {fromLonLat} from "ol/proj";
 
 import {MapOperations} from "./map-renderer.ts";
 import {replaceUris} from "./utils.ts";
-import {mapChangedSignal, MapEvents} from "./gs-signals.ts";
 import {
     GsGeometry,
     GsGeometryType,
@@ -186,9 +185,7 @@ commandRegistry.registerAll({
             };
 
             await operations.addMarker(marker, context.params!["layerName"]);
-
-            // Trigger map change signal
-            mapChangedSignal.set({part: operations, event: MapEvents.LAYER_ADDED});
+            // Signal automatically triggered by SignalingMapOperations
         }
     }
 })
@@ -241,9 +238,7 @@ commandRegistry.registerAll({
 
             await replaceUris(gsLayer, "url");
             await operations.addLayer(gsLayer, isBasemap);
-
-            // Trigger map change signal
-            mapChangedSignal.set({part: operations, event: MapEvents.LAYER_ADDED});
+            // Signal automatically triggered by SignalingMapOperations
         }
     }
 })

@@ -15,6 +15,7 @@ import { ChatContext } from "../../core/chatservice.ts";
 import {MapRenderer, MapOperations, createProxy} from "./map-renderer.ts";
 import { IFrameMapRenderer } from "./proxy-map-renderer.ts";
 import { DomainMapOperations } from "./domain-map-operations.ts";
+import { SignalingMapOperations } from "./signaling-map-operations.ts";
 import { activePartSignal } from "../../core/appstate.ts";
 import logger from '../../core/logger.ts';
 
@@ -164,9 +165,10 @@ export class GsMapEditor extends KPart {
 
         const iframeOps = this.renderer.getOperations();
         const domainOps = new DomainMapOperations(gsMap, this.renderer);
+        const signalingOps = new SignalingMapOperations(this);
 
-        // Create composite operations that combine domain model and iframe operations
-        this.operations = createProxy([domainOps, iframeOps]);
+        // Create composite operations chain: domain model -> iframe -> signaling
+        this.operations = createProxy([domainOps, iframeOps, signalingOps]);
 
         try {
             if (!this.mapContainer.value) {
