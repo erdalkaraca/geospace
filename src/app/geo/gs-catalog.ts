@@ -21,41 +21,16 @@ export class GsCatalog extends KPart {
         this.rootNodes = this.toTreeNodes(contributions)
     }
 
-    protected doInitUI() {
-        this.registerToolbarActions()
-    }
-    
-    private registerToolbarActions() {
-        this.registerToolbarContribution({
-            label: "Checkout",
-            icon: "file-arrow-down",
-            command: "checkout",
-            slot: "start",
-            disabled: () => {
-                return !(activePartSignal.get() instanceof GsCatalog) || activeSelectionSignal.get() === undefined
-            }
-        })
+    protected renderToolbar() {
+        const isActiveAndHasSelection = (activePartSignal.get() instanceof GsCatalog) && 
+                                       activeSelectionSignal.get() !== undefined;
         
-        this.registerToolbarContribution({
-            label: "Refresh Catalog",
-            icon: "arrows-rotate",
-            command: "refresh_catalog",
-            slot: "start"
-        })
-        
-        this.registerToolbarContribution({
-            label: "Expand All",
-            icon: "angles-down",
-            command: "catalog_expand_all",
-            slot: "end"
-        })
-        
-        this.registerToolbarContribution({
-            label: "Collapse All",
-            icon: "angles-up",
-            command: "catalog_collapse_all",
-            slot: "end"
-        })
+        return html`
+            <k-command cmd="checkout" icon="file-arrow-down" ?disabled=${!isActiveAndHasSelection} title="Checkout"></k-command>
+            <k-command cmd="refresh_catalog" icon="arrows-rotate" title="Refresh Catalog"></k-command>
+            <k-command cmd="catalog_expand_all" icon="angles-down" slot="end" title="Expand All"></k-command>
+            <k-command cmd="catalog_collapse_all" icon="angles-up" slot="end" title="Collapse All"></k-command>
+        `;
     }
 
     private toTreeNodes(contributions: TreeContribution[]) {

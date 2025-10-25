@@ -30,8 +30,6 @@ export class KFileBrowser extends KPart {
 
     protected doBeforeUI() {
         this.initializeWorkspace();
-        this.registerToolbarActions();
-        this.registerContextMenuActions();
     }
 
     private async initializeWorkspace() {
@@ -43,60 +41,25 @@ export class KFileBrowser extends KPart {
         }
     }
 
-    private registerToolbarActions() {
-        this.registerToolbarContribution({
-            label: "Load workspace folder",
-            icon: "folder-open",
-            command: "load_workspace",
-            slot: "start"
-        })
+    protected renderToolbar() {
+        const canDelete = activeSelectionSignal.get() instanceof Resource;
         
-        this.registerToolbarContribution({
-            label: "Reload workspace folder",
-            icon: "repeat",
-            command: "reload_workspace",
-            slot: "start"
-        })
-        
-        this.registerToolbarContribution({
-            label: "Create new file...",
-            icon: "plus",
-            command: "create_file",
-            slot: "start"
-        })
-        
-        this.registerToolbarContribution({
-            label: "Delete selected resource",
-            icon: "trash",
-            command: "delete_resource",
-            slot: "start",
-            disabled: () => {
-                return !(activeSelectionSignal.get() instanceof Resource)
-            }
-        })
+        return html`
+            <k-command cmd="load_workspace" icon="folder-open" title="Load workspace folder"></k-command>
+            <k-command cmd="reload_workspace" icon="repeat" title="Reload workspace folder"></k-command>
+            <k-command cmd="create_file" icon="plus" title="Create new file..."></k-command>
+            <k-command cmd="delete_resource" icon="trash" ?disabled=${!canDelete} title="Delete selected resource"></k-command>
+        `;
     }
 
-    private registerContextMenuActions() {
-        this.registerContextMenuContribution({
-            label: "Open",
-            icon: "folder-open",
-            command: "open_editor"
-        })
+    protected renderContextMenu() {
+        const canDelete = activeSelectionSignal.get() instanceof Resource;
         
-        this.registerContextMenuContribution({
-            label: "Create new file...",
-            icon: "plus",
-            command: "create_file"
-        })
-        
-        this.registerContextMenuContribution({
-            label: "Delete",
-            icon: "trash",
-            command: "delete_resource",
-            disabled: () => {
-                return !(activeSelectionSignal.get() instanceof Resource)
-            }
-        })
+        return html`
+            <k-command cmd="open_editor" icon="folder-open">Open</k-command>
+            <k-command cmd="create_file" icon="plus">Create new file...</k-command>
+            <k-command cmd="delete_resource" icon="trash" ?disabled=${!canDelete}>Delete</k-command>
+        `;
     }
 
     @topic(TOPIC_WORKSPACE_CHANGED)

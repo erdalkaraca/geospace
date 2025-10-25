@@ -1,4 +1,4 @@
-import {commandRegistry, CommandRegistry, CommandStack, ExecutionContext} from "../core/commandregistry.ts";
+import {commandRegistry, CommandRegistry, CommandStack} from "../core/commandregistry.ts";
 import {ChatMessage, CID_PROMPTS, SysPromptContribution} from "../core/chatservice.ts";
 import {contributionRegistry} from "../core/contributionregistry.ts";
 

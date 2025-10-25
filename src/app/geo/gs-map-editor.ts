@@ -4,7 +4,6 @@ import { createRef, ref, Ref } from 'lit/directives/ref.js'
 import { CommandStack } from "../../core/commandregistry.ts";
 import { KPart } from "../../parts/k-part.ts";
 import { EditorInput } from "../../core/editorregistry.ts";
-import { contributionRegistry } from "../../core/contributionregistry.ts";
 import { DEFAULT_GSMAP, GsMap } from "../rt";
 import { mapChangedSignal, MapEvents } from "./gs-signals.ts";
 import olCSS from "../../../node_modules/ol/ol.css?raw";
@@ -44,73 +43,21 @@ export class GsMapEditor extends KPart {
         return this.operations!;
     }
 
-    protected doBeforeUI() {
-        this.registerToolbarActions();
-    }
-
-    private registerToolbarActions() {
-        // Zoom controls
-        this.registerToolbarContribution({
-            label: "Zoom in",
-            icon: "magnifying-glass-plus",
-            command: "zoom_in",
-            slot: "start"
-        });
-        
-        this.registerToolbarContribution({
-            label: "Zoom out",
-            icon: "magnifying-glass-minus",
-            command: "zoom_out",
-            slot: "start"
-        });
-        
-        // Navigation controls
-        this.registerToolbarContribution({
-            label: "Reset view",
-            icon: "house",
-            command: "reset_view",
-            slot: "start"
-        });
-        
-        this.registerToolbarDivider();
-        
-        // Display mode controls
-        this.registerToolbarContribution({
-            label: "Toggle dark/light mode",
-            icon: "circle-half-stroke",
-            command: "toggle_color_mode",
-            slot: "start"
-        });
-        
-        this.registerToolbarContribution({
-            label: "Toggle mobile view",
-            icon: "mobile",
-            command: "toggle_mobile_view",
-            slot: "start"
-        });
-        
-        this.registerToolbarDivider();
-        
-        // Action controls
-        this.registerToolbarContribution({
-            label: "Refresh map",
-            icon: "rotate",
-            command: "refresh_map",
-            slot: "start"
-        });
-    }
-    
-    private registerToolbarDivider() {
-        const id = this.getAttribute('id');
-        if (!id) return;
-        
-        const toolbarTarget = `toolbar.${id}`;
-        contributionRegistry.registerContribution(toolbarTarget, {
-            label: "",
-            html: `<wa-divider orientation="vertical"></wa-divider>`,
-            target: toolbarTarget,
-            slot: "start"
-        });
+    protected renderToolbar() {
+        return html`
+            <k-command cmd="zoom_in" icon="magnifying-glass-plus" title="Zoom in"></k-command>
+            <k-command cmd="zoom_out" icon="magnifying-glass-minus" title="Zoom out"></k-command>
+            <k-command cmd="reset_view" icon="house" title="Reset view"></k-command>
+            
+            <wa-divider orientation="vertical"></wa-divider>
+            
+            <k-command cmd="toggle_color_mode" icon="circle-half-stroke" title="Toggle dark/light mode"></k-command>
+            <k-command cmd="toggle_mobile_view" icon="mobile" title="Toggle mobile view"></k-command>
+            
+            <wa-divider orientation="vertical"></wa-divider>
+            
+            <k-command cmd="refresh_map" icon="rotate" title="Refresh map"></k-command>
+        `;
     }
 
     async connectedCallback() {
