@@ -19,6 +19,7 @@ jobs:
           token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Extract version and create tag
+        id: extract-version
         run: |
           # Get the commit message
           COMMIT_MSG=$(git log -1 --pretty=%B)
@@ -32,6 +33,8 @@ jobs:
             VERSION=${VERSION_WITH_V#v}
             echo "Found version in commit: $VERSION_WITH_V"
             echo "Creating tag: $VERSION"
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "commit_msg=$COMMIT_MSG" >> $GITHUB_OUTPUT
             
             # Check if tag already exists
             if git rev-parse "$VERSION" >/dev/null 2>&1; then
@@ -46,5 +49,19 @@ jobs:
             echo "This will trigger the build-and-deploy workflow"
           else
             echo "No version pattern found in commit message"
+            echo "version=" >> $GITHUB_OUTPUT
           fi
+
+      - name: Create Release
+        if: steps.extract-version.outputs.version != ''
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.extract-version.outputs.version }}
+          name: Release ${{ steps.extract-version.outputs.version }}
+          body: ${{ steps.extract-version.outputs.commit_msg }}
+          draft: false
+          prerelease: false
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
