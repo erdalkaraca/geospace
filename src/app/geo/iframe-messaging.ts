@@ -71,8 +71,8 @@ async function handleOperation(method: string, params: any) {
                 window.parent.postMessage({ type: 'dirty' }, '*');
             });
 
-            mapRenderer.setOnSync((gsMap) => {
-                window.parent.postMessage({ type: 'sync', gsMap }, '*');
+            mapRenderer.setOnSync((event) => {
+                window.parent.postMessage({ type: 'sync', event }, '*');
             });
 
             await mapRenderer.render('#map-container');

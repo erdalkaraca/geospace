@@ -1,4 +1,4 @@
-import {MapOperations, MapRenderer} from "./map-renderer.ts";
+import {MapOperations, MapRenderer, MapSyncEvent} from "./map-renderer.ts";
 import {GsMap} from "../rt";
 
 const iframeSrc = "iframe-map-renderer.html";
@@ -15,7 +15,7 @@ export class IFrameMapRenderer implements MapRenderer {
     private env?: any;
     private operations: MapOperations;
     private onDirtyCallback?: () => void;
-    private onSyncCallback?: (gsMap: GsMap) => void;
+    private onSyncCallback?: (event: MapSyncEvent) => void;
     private onClickCallback?: () => void;
     private isMobileView: boolean = false;
     private targetElement?: HTMLElement;
@@ -118,7 +118,7 @@ export class IFrameMapRenderer implements MapRenderer {
         }
     }
 
-    setOnSync(callback: (gsMap: GsMap) => void): void {
+    setOnSync(callback: (event: MapSyncEvent) => void): void {
         this.onSyncCallback = callback;
     }
 
@@ -126,9 +126,9 @@ export class IFrameMapRenderer implements MapRenderer {
         this.onClickCallback = callback;
     }
 
-    triggerSync() {
+    triggerSync(event: MapSyncEvent) {
         if (this.onSyncCallback) {
-            this.onSyncCallback(this.gsMap)
+            this.onSyncCallback(event)
         }
     }
 
@@ -207,7 +207,7 @@ export class IFrameMapRenderer implements MapRenderer {
                 return;
             }
 
-            const { id, result, error, type, gsMap } = event.data;
+            const { id, result, error, type, event: syncEvent } = event.data;
             
             // Handle async responses to our messages
             if (id !== undefined && this.pendingMessages.has(id)) {
@@ -225,7 +225,7 @@ export class IFrameMapRenderer implements MapRenderer {
             if (type === 'dirty') {
                 this.onDirtyCallback?.();
             } else if (type === 'sync') {
-                this.onSyncCallback?.(gsMap);
+                this.onSyncCallback?.(syncEvent);
             } else if (type === 'iframeClicked') {
                 this.onClickCallback?.();
             } else if (type === 'resolveAsset') {

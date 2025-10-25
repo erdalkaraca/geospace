@@ -1,4 +1,4 @@
-import {MapOperations, MapRenderer} from "./map-renderer.ts";
+import {MapOperations, MapRenderer, MapSyncEvent} from "./map-renderer.ts";
 import {GsFeature, gsLib, GsMap, GsSourceType, KEY_NAME, stylesLoader, toOlFeature, toOlLayer} from "../rt/gs-lib.ts";
 import {toGsFeature} from "../rt/gs-ol2gs.ts";
 import {Map} from "ol";
@@ -20,7 +20,7 @@ export class OpenLayersMapRenderer implements MapRenderer {
     gsMap: GsMap;
     private env?: any;
     private onDirtyCallback?: () => void;
-    private onSyncCallback?: (gsMap: GsMap) => void;
+    private onSyncCallback?: (event: MapSyncEvent) => void;
     private isDestroyed: boolean = false;
     private operations?: OpenLayersMapOperations;
 
@@ -113,7 +113,7 @@ export class OpenLayersMapRenderer implements MapRenderer {
         this.onDirtyCallback = callback;
     }
 
-    setOnSync(callback: (gsMap: GsMap) => void): void {
+    setOnSync(callback: (event: MapSyncEvent) => void): void {
         this.onSyncCallback = callback;
     }
 
@@ -122,9 +122,9 @@ export class OpenLayersMapRenderer implements MapRenderer {
         this.onDirtyCallback();
     }
 
-    triggerSync(): void {
+    triggerSync(event: MapSyncEvent): void {
         if (this.isDestroyed || !this.onSyncCallback) return;
-        this.onSyncCallback(this.gsMap);
+        this.onSyncCallback(event);
     }
 
     private syncViewToModel(): void {
@@ -133,21 +133,15 @@ export class OpenLayersMapRenderer implements MapRenderer {
         const view = this.olMap.getView();
         const center = view.getCenter();
         const zoom = view.getZoom();
-        const projection = view.getProjection().getCode();
+        const rotation = view.getRotation();
 
-        // Update the domain model with current OpenLayers view state
-        if (center) {
-            this.gsMap.view.center = center;
+        // Notify host with specific view change event
+        if (center && zoom !== undefined) {
+            this.triggerSync({
+                type: 'viewChanged',
+                view: { center: center as [number, number], zoom, rotation }
+            });
         }
-        if (zoom !== undefined) {
-            this.gsMap.view.zoom = zoom;
-        }
-        if (projection) {
-            this.gsMap.view.projection = projection;
-        }
-
-        // Trigger sync callback to update the host's domain model
-        this.triggerSync();
     }
 
     public syncLayerFeaturesToModel(layerIndex: number): void {
@@ -165,14 +159,13 @@ export class OpenLayersMapRenderer implements MapRenderer {
         const olFeatures = source.getFeatures();
         const gsFeatures = olFeatures.map((olFeature: Feature) => toGsFeature(olFeature));
 
-        // Update the domain model
-        const gsLayer = this.gsMap.layers[layerIndex];
-        if (gsLayer && gsLayer.source.type === GsSourceType.Features) {
-            (gsLayer.source as any).features = gsFeatures;
-        }
-
-        // Trigger sync callback to update the host's domain model
-        this.triggerSync();
+        // Notify host with features change event
+        // Host decides whether to apply based on its own layer structure
+        this.triggerSync({
+            type: 'featuresChanged',
+            layerIndex,
+            features: gsFeatures
+        });
     }
 
     private setupEventListeners(): void {

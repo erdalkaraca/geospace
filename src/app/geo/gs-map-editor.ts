@@ -14,7 +14,7 @@ import { loadEnvs, replaceUris, revertBlobUris } from "./utils.ts";
 import { File } from '../../core/filesys.ts';
 import { toastError, toastInfo } from "../../core/toast.ts";
 import { ChatContext } from "../../core/chatservice.ts";
-import {MapRenderer, MapOperations, createProxy} from "./map-renderer.ts";
+import {MapRenderer, MapOperations, createProxy, MapSyncEvent} from "./map-renderer.ts";
 import { IFrameMapRenderer } from "./proxy-map-renderer.ts";
 import { DomainMapOperations } from "./domain-map-operations.ts";
 import { SignalingMapOperations } from "./signaling-map-operations.ts";
@@ -218,9 +218,38 @@ export class GsMapEditor extends KPart {
             await this.renderer.render(this.mapContainer.value);
 
             this.renderer.setOnDirty(() => this.markDirty(true));
-            this.renderer.setOnSync((updatedGsMap: GsMap) => {
-                this.gsMap!.view = updatedGsMap.view;
-                this.gsMap!.layers = updatedGsMap.layers;
+            
+            // Handle sync events from iframe
+            this.renderer.setOnSync((event: MapSyncEvent) => {
+                if (!this.gsMap) return;
+                
+                switch (event.type) {
+                    case 'viewChanged':
+                        // Update view from user interaction
+                        this.gsMap.view.center = event.view.center;
+                        this.gsMap.view.zoom = event.view.zoom;
+                        if (event.view.rotation !== undefined && event.view.rotation !== 0) {
+                            (this.gsMap.view as any).rotation = event.view.rotation;
+                        }
+                        break;
+                        
+                    case 'featuresChanged':
+                        // Update features for specific layer (drawing/deleting)
+                        const layer = this.gsMap.layers[event.layerIndex];
+                        if (layer && layer.source?.type === GsSourceType.Features) {
+                            (layer.source as any).features = event.features;
+                        }
+                        break;
+                        
+                    case 'featureSelected':
+                        // Handle feature selection (future use)
+                        break;
+                        
+                    case 'featureDeselected':
+                        // Handle feature deselection (future use)
+                        break;
+                }
+                
                 this.markDirty(true);
             });
             this.renderer.setOnClick?.(() => {

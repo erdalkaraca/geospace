@@ -1,6 +1,15 @@
 import {GsMap} from "../rt";
 
 /**
+ * Sync event types that describe what changed in the map
+ */
+export type MapSyncEvent = 
+    | { type: 'viewChanged', view: { center: [number, number], zoom: number, rotation?: number } }
+    | { type: 'featuresChanged', layerIndex: number, features: any[] }
+    | { type: 'featureSelected', layerIndex: number, featureId: string }
+    | { type: 'featureDeselected' };
+
+/**
  * Abstract interface for map rendering
  * The host app only knows about this interface and the GsMap domain model
  * 
@@ -15,8 +24,8 @@ export interface MapRenderer {
     getOperations(): MapOperations;
     setOnDirty(callback: () => void): void;
     triggerDirty(): void;
-    setOnSync(callback: (gsMap: GsMap) => void): void;
-    triggerSync(): void;
+    setOnSync(callback: (event: MapSyncEvent) => void): void;
+    triggerSync(event: MapSyncEvent): void;
     setOnClick?(callback: () => void): void;
     destroy(): void;
 }
