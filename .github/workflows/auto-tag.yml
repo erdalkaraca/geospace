@@ -16,6 +16,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Extract version and create tag
         run: |
@@ -42,6 +43,7 @@ jobs:
             git tag "$VERSION"
             git push origin "$VERSION"
             echo "Created and pushed tag: $VERSION"
+            echo "This will trigger the build-and-deploy workflow"
           else
             echo "No version pattern found in commit message"
           fi
