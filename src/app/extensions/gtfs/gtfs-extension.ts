@@ -71,8 +71,9 @@ registerAll({
                         targetFolder = fileName.replace(/\.zip$/i, "_geojson") + "/"
                     }
                     
+                    // Use weighted progress percentages to reflect actual time spent
                     progress.message = "Preparing conversion..."
-                    progress.progress = 0
+                    progress.progress = 1
                     
                     // Create target folder
                     await workspaceDir.getResource(targetFolder, {create: true})
@@ -82,35 +83,34 @@ registerAll({
                     const outputPath = targetFolder.replace(/\/$/, '')
                     
                     progress.message = "Initializing Python environment..."
-                    progress.progress = 25
+                    progress.progress = 2
                     
-                    // Initialize PyEnv
                     const pyenv = new PyEnv()
                     await pyenv.init(workspaceDir)
                     
                     progress.message = "Loading required packages..."
-                    progress.progress = 40
+                    progress.progress = 4
                     
-                    // Load required packages for GTFS processing
                     await pyenv.loadPackages(['pandas', 'geopandas', 'shapely'])
                     
                     progress.message = "Loading conversion script..."
-                    progress.progress = 60
+                    progress.progress = 6
                     
                     try {
-                        // Load the script (defines the main function)
                         await pyenv.execCode(scriptContent)
                         
-                        progress.message = "Executing conversion..."
-                        progress.progress = 75
+                        // Step 5 takes ~90% of the time
+                        progress.message = "Executing conversion (this may take a while)..."
+                        progress.progress = 10
                         
-                        // Run the main function with input and output paths
                         await pyenv.runFunction("main", {
                             input_path: inputPath,
                             output_path: outputPath
                         })
                         
+                        progress.message = "Conversion complete!"
                         progress.progress = 100
+                        
                         toastInfo(`GTFS converted successfully to ${targetFolder.replace(/\/$/, '')}`)
                     } catch (err) {
                         toastError("Python script failed: " + err)

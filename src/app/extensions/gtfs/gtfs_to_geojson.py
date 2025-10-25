@@ -257,32 +257,41 @@ def main(input_path, output_path):
             
             # Process shapes and routes together (routes depend on shapes)
             if 'shapes.txt' in file_list:
-                # Load shapes GeoDataFrame (used for both shapes.geojson and routes.geojson)
                 shapes_output = f"{output_path}/shapes.geojson"
+                routes_output = f"{output_path}/routes.geojson"
                 
-                if os.path.exists(shapes_output):
-                    # Read existing shapes.geojson (much faster than reprocessing)
+                # Check if we need to process shapes or routes
+                need_shapes = not os.path.exists(shapes_output)
+                need_routes = not os.path.exists(routes_output) and 'routes.txt' in file_list and 'trips.txt' in file_list
+                
+                # Only load shapes if we need them
+                if need_shapes or need_routes:
+                    if os.path.exists(shapes_output):
+                        # Read existing shapes.geojson for routes processing
+                        print("⊙ Skipping shapes.geojson (already exists)")
+                        print("  Reading existing shapes.geojson for routes processing...")
+                        shapes_gdf = gpd.read_file(shapes_output)
+                        # Convert shape_id to int (GeoJSON stores it as string)
+                        shapes_gdf['shape_id'] = shapes_gdf['shape_id'].astype(int)
+                    else:
+                        # Create shapes from scratch
+                        shapes_gdf = create_shapes_geojson(gtfs_zip, output_path, write_file=True)
+                    
+                    # Create routes if needed
+                    if need_routes:
+                        create_routes_geojson(gtfs_zip, output_path, shapes_gdf)
+                    elif os.path.exists(routes_output):
+                        print("⊙ Skipping routes.geojson (already exists)")
+                else:
+                    # Both already exist
                     print("⊙ Skipping shapes.geojson (already exists)")
-                    print("  Reading existing shapes.geojson for routes processing...")
-                    shapes_gdf = gpd.read_file(shapes_output)
-                    # Convert shape_id to int (GeoJSON stores it as string)
-                    shapes_gdf['shape_id'] = shapes_gdf['shape_id'].astype(int)
-                else:
-                    # Create shapes from scratch
-                    shapes_gdf = create_shapes_geojson(gtfs_zip, output_path, write_file=True)
+                    print("⊙ Skipping routes.geojson (already exists)")
                 
-                # Create routes using the shapes GeoDataFrame
-                if 'routes.txt' in file_list and 'trips.txt' in file_list:
-                    process_gtfs_layer(
-                        gtfs_zip, file_list, 'routes.txt',
-                        f"{output_path}/routes.geojson",
-                        lambda: create_routes_geojson(gtfs_zip, output_path, shapes_gdf)
-                    )
-                else:
-                    if 'routes.txt' not in file_list:
-                        print("⚠ Warning: routes.txt not found in GTFS archive")
-                    if 'trips.txt' not in file_list:
-                        print("⚠ Warning: trips.txt not found in GTFS archive")
+                # Check for missing source files
+                if 'routes.txt' not in file_list:
+                    print("⚠ Warning: routes.txt not found in GTFS archive")
+                if 'trips.txt' not in file_list:
+                    print("⚠ Warning: trips.txt not found in GTFS archive")
             else:
                 print("⚠ Warning: shapes.txt not found in GTFS archive")
             
