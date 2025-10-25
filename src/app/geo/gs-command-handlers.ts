@@ -15,9 +15,10 @@ import {
 } from "../rt";
 import {activePartSignal} from "../../core/appstate.ts";
 import {GsMapEditor} from "./gs-map-editor.ts";
+import logger from "../../core/logger.ts";
 
 const canExecute = (context: ExecutionContext) => {
-    return context.source instanceof GsMapEditor;
+    return context.activeEditor instanceof GsMapEditor;
 }
 
 /**
@@ -26,10 +27,12 @@ const canExecute = (context: ExecutionContext) => {
  * and provides proper error handling if renderer is not available
  */
 const getMapOperations = (context: ExecutionContext): MapOperations => {
-    if (!context.source || !(context.source as any).renderer) {
+    const editor = context.activeEditor as GsMapEditor;
+    if (!(editor instanceof GsMapEditor) || !(editor  as GsMapEditor).getOperations()) {
+        logger.error('GsMapEditor with renderer not available in context.source');
         throw new Error('GsMapEditor with renderer not available in context.source');
     }
-    return (context.source as any).renderer.getOperations();
+    return (editor  as GsMapEditor).getOperations();
 }
 
 commandRegistry.registerAll({

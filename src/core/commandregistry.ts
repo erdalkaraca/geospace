@@ -1,6 +1,7 @@
 import logger from "./logger.ts";
 import {CommandContribution, Contribution, contributionRegistry} from "./contributionregistry.ts";
 import {rootContext} from "./di.ts";
+import {activePartSignal, activeEditorSignal} from "./appstate.ts";
 
 export interface Parameter {
     name: string;
@@ -92,6 +93,24 @@ export class CommandRegistry {
         return this.handlers.get(commandId)
     }
 
+    /**
+     * Creates an ExecutionContext with the current application state
+     * 
+     * @param source The source component/widget executing the command
+     * @param params Optional command parameters
+     * @returns ExecutionContext with captured application state
+     */
+    createExecutionContext(source?: any, params?: ExecuteParams): ExecutionContext {
+        const context: ExecutionContext = {
+            source: source,
+            params: params || {},
+            activePart: activePartSignal.get(),
+            activeEditor: activeEditorSignal.get()
+        };
+        
+        return context;
+    }
+
     execute(commandId: string, context: ExecutionContext = {}) {
         const handlers = this.getHandler(commandId);
 
@@ -104,7 +123,7 @@ export class CommandRegistry {
                 return handler.execute(context);
             }
         }
-        throw new Error(`Registered handlers could not match execution of command: ${commandId}`);
+        logger.error(`No handler found to execute command: ${commandId}`);
     }
 
     createAndRegisterCommand(id: string, name: string, description: string, parameters: Parameter[], handler?: Handler) {

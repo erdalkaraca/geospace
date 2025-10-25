@@ -1,6 +1,6 @@
 import {EDITOR_AREA_MAIN} from "./constants.ts";
 import {KPart} from "../parts/k-part.ts";
-import {activePartSignal, partDirtySignal} from "./appstate.ts";
+import {activePartSignal, activeEditorSignal, partDirtySignal} from "./appstate.ts";
 import {watchSignal} from "./signals.ts";
 import {subscribe} from "./events.ts";
 import {TOPIC_WORKSPACE_CONNECTED} from "./filesys.ts";
@@ -48,6 +48,10 @@ class EditorRegistry {
                 const parts = Array.from(tabPanel.querySelectorAll(`*`)).filter((element): element is KPart => element instanceof KPart)
                 parts.forEach((part) => {
                     activePartSignal.set(part)
+                    // Only update activeEditorSignal if this is an editor part
+                    if ((part as KPart).isEditor) {
+                        activeEditorSignal.set(part)
+                    }
                 })
             }
         }
@@ -61,6 +65,9 @@ class EditorRegistry {
                 // part.close() will be automatically called by disconnected callback of part
                 if (activePartSignal.get() == part) {
                     activePartSignal.set(null as unknown as KPart)
+                }
+                if (activeEditorSignal.get() == part) {
+                    activeEditorSignal.set(null as unknown as KPart)
                 }
             })
         }

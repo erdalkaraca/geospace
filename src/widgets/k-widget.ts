@@ -1,7 +1,7 @@
 import {LitElement, PropertyValues} from "lit";
 import {subscribe as event_subscribe} from "../core/events.ts";
 import {toastError, toastInfo} from "../core/toast.ts";
-import {commandRegistry, ExecuteParams, ExecutionContext} from "../core/commandregistry.ts";
+import {commandRegistry, ExecuteParams} from "../core/commandregistry.ts";
 import {Signal} from "@lit-labs/signals";
 import {watchSignal} from "../core/signals.ts";
 
@@ -63,10 +63,7 @@ export abstract class KWidget extends LitElement {
     }
 
     protected executeCommand(command: string, params: ExecuteParams) {
-        const execContext: ExecutionContext = {
-            source: this,
-            params: params
-        }
+        const execContext = commandRegistry.createExecutionContext(this, params);
         commandRegistry.execute(command, execContext);
     }
 

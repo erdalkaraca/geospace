@@ -69,9 +69,7 @@ contributionRegistry.registerContribution(CID_PROMPTS, {
                     const commandStack = activeEditor?.getCommandStack() || new CommandStack()
                     await taskService.runAsync("Executing commands", async () => {
                         logger.debug("Executing commands: " + JSON.stringify(commands));
-                        const context: ExecutionContext = {
-                            source: activeEditor,
-                        }
+                        const context = commandRegistry.createExecutionContext(activeEditor);
                         for (const command of commands) {
                             const replaced = Object.entries(command["parameters"] || {}).map(([key, value]) => {
                                 if (typeof value === 'string') {

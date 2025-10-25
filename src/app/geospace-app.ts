@@ -1,7 +1,7 @@
-import {html} from "lit";
-import {AppDefinition, appLoaderService} from "../core/apploader.ts";
-import {createLogger} from "../core/logger.ts";
-import {version as appVersion} from "../../package.json";
+import { html } from "lit";
+import { AppDefinition, appLoaderService } from "../core/apploader.ts";
+import { createLogger } from "../core/logger.ts";
+import { version as appVersion } from "../../package.json";
 
 // Side-effect imports: Initialize core services and register components
 import '../core/init.ts'
@@ -19,15 +19,15 @@ import "./../sysprompts"
 import "./app.ts" // Registers gs-app component
 
 import APP_SYS_PROMPT from "./geospace-sysprompt.txt?raw"
-import {CID_PROMPTS, SysPromptContribution} from "../core/chatservice.ts";
-import {contributionRegistry} from "../core/contributionregistry.ts";
-import {Extension, extensionRegistry} from "../core/extensionregistry.ts";
-import {workspaceService, File} from "../core/filesys.ts";
-import {editorRegistry} from "../core/editorregistry.ts";
-import {KPart} from "../parts/k-part.ts";
-import {registerAll} from "../core/commandregistry.ts";
-import {activeSelectionSignal} from "../core/appstate.ts";
-import {GsSourceType} from "./rt/gs-model.ts";
+import { CID_PROMPTS, SysPromptContribution } from "../core/chatservice.ts";
+import { contributionRegistry } from "../core/contributionregistry.ts";
+import { Extension, extensionRegistry } from "../core/extensionregistry.ts";
+import { workspaceService, File } from "../core/filesys.ts";
+import { editorRegistry } from "../core/editorregistry.ts";
+import { KPart } from "../parts/k-part.ts";
+import { commandRegistry, registerAll } from "../core/commandregistry.ts";
+import { activeSelectionSignal } from "../core/appstate.ts";
+import { GsSourceType } from "./rt/gs-model.ts";
 
 import {
     SIDEBAR_MAIN,
@@ -71,7 +71,7 @@ export const geospaceApp: AppDefinition = {
     name: "geo!space",
     version: appVersion,
     description: "A geospatial IDE for working with spatial data",
-    
+
     extensions: [
         "system.mdeditor",
         "system.monaco",
@@ -79,7 +79,7 @@ export const geospaceApp: AppDefinition = {
         "system.commandpalette",
         "system.memoryusage"
     ],
-    
+
     contributions: {
         ui: [
             {
@@ -149,7 +149,7 @@ export const geospaceApp: AppDefinition = {
                 }
             }
         ] as any[],
-        
+
         extensions: [
             {
                 id: "geospace.mapBuilder",
@@ -167,7 +167,7 @@ export const geospaceApp: AppDefinition = {
             }
         ]
     },
-    
+
     async initialize() {
         contributionRegistry.registerContribution(CID_PROMPTS, {
             label: "App Support",
@@ -186,10 +186,10 @@ export const geospaceApp: AppDefinition = {
                 const extensionsStr = `***Available Extensions:***\n${JSON.stringify(extensions, null, 2)}`
                 return `${APP_SYS_PROMPT}\n\n${extensionsStr}`
             },
-            canHandle: ({activeEditor}: { activeEditor: KPart }) => {
+            canHandle: ({ activeEditor }: { activeEditor: KPart }) => {
                 return activeEditor === undefined
             },
-            promptDecorator: async ({userPrompt}: any) => {
+            promptDecorator: async ({ userPrompt }: any) => {
                 return workspaceService.getWorkspace().then(workspace => {
                     const appState = {
                         workspace: workspace?.getName(),
@@ -228,30 +228,28 @@ export const geospaceApp: AppDefinition = {
                     if (!(selection instanceof File)) {
                         return;
                     }
-                    
+
                     const sourceType = getSourceTypeFromFile(selection);
                     if (!sourceType) {
                         logger.warn(`Unsupported file type: ${selection.getName()}`);
                         return;
                     }
-                    
+
                     const filePath = selection.getWorkspacePath();
-                    
+                    const commandContext = commandRegistry.createExecutionContext(context.source, {
+                        source: sourceType,
+                        url: filePath
+                    })
+
                     // Call add_layer command with proper parameters
-                    await context.commandRegistry!.execute('add_layer', {
-                        source: context,
-                        params: {
-                            source: sourceType,
-                            url: filePath
-                        }
-                    });
+                    await commandRegistry.execute('add_layer', commandContext);
                 }
             }
         })
-        
+
         logger.info('geo!space is ready!');
     },
-    
+
     render() {
         return html`<gs-app></gs-app>`;
     },

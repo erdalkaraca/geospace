@@ -6,7 +6,7 @@
  */
 
 import logger from "./logger.ts";
-import { commandRegistry, ExecutionContext } from "./commandregistry.ts";
+import { commandRegistry } from "./commandregistry.ts";
 import { rootContext } from "./di.ts";
 
 import type { Command } from "./commandregistry.ts";
@@ -307,10 +307,7 @@ export class KeyBindingManager {
                 event.preventDefault();
                 event.stopPropagation();
                 
-                const context: ExecutionContext = {
-                    source: 'keybinding',
-                    params: {}
-                };
+                const context = commandRegistry.createExecutionContext('keybinding', {});
                 
                 commandRegistry.execute(binding.commandId, context);
                 logger.info(`Executed command via key binding: ${binding.commandId}`);

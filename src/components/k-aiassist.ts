@@ -18,8 +18,7 @@ import {taskService} from "../core/taskservice.ts";
 import {activePartSignal} from "../core/appstate.ts";
 import {
     commandRegistry as globalCommandRegistry,
-    CommandRegistry,
-    ExecutionContext
+    CommandRegistry
 } from "../core/commandregistry.ts";
 import {uiContext} from "../core/di.ts";
 import {watching} from "../core/signals.ts";
@@ -139,10 +138,7 @@ export class KAIAssist extends KPart {
             params[command.parameters[i].name] = c
         })
         
-        const context: ExecutionContext = {
-            source: this,
-            params: params
-        }
+        const context = currentCommandRegistry.createExecutionContext(this, params)
         
         currentCommandRegistry.execute(commandId, context)
         this.requestUpdate()

@@ -39,6 +39,10 @@ export class GsMapEditor extends KPart {
         this.commandStack = new CommandStack()
     }
 
+    getOperations(): MapOperations {
+        return this.operations!;
+    }
+
     protected doBeforeUI() {
         this.registerToolbarActions();
     }
