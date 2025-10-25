@@ -24,20 +24,24 @@ jobs:
           echo "Commit message: $COMMIT_MSG"
           
           # Extract version pattern (v0.12.9, v1.2.3, etc.)
-          VERSION=$(echo "$COMMIT_MSG" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | head -n 1)
+          VERSION_WITH_V=$(echo "$COMMIT_MSG" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | head -n 1)
           
-          if [ -n "$VERSION" ]; then
-            echo "Found version: $VERSION"
+          if [ -n "$VERSION_WITH_V" ]; then
+            # Strip the 'v' prefix to get semantic version
+            VERSION=${VERSION_WITH_V#v}
+            echo "Found version in commit: $VERSION_WITH_V"
+            echo "Creating tag: $VERSION"
             
             # Check if tag already exists
             if git rev-parse "$VERSION" >/dev/null 2>&1; then
-              echo "Tag $VERSION already exists, skipping"
-            else
-              # Create and push the tag
-              git tag "$VERSION"
-              git push origin "$VERSION"
-              echo "Created and pushed tag: $VERSION"
+              echo "Error: Tag $VERSION already exists!"
+              exit 1
             fi
+            
+            # Create and push the tag (without 'v' prefix)
+            git tag "$VERSION"
+            git push origin "$VERSION"
+            echo "Created and pushed tag: $VERSION"
           else
             echo "No version pattern found in commit message"
           fi
