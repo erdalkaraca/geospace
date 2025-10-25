@@ -48,6 +48,23 @@ export class DomainMapOperations implements MapOperations {
         this.triggerDirty();
     }
 
+    async renameLayer(index: number, newName: string): Promise<void> {
+        if (index >= 0 && index < this.gsMap.layers.length) {
+            this.gsMap.layers[index].name = newName;
+        }
+        this.triggerDirty();
+    }
+
+    async moveLayer(fromIndex: number, toIndex: number): Promise<void> {
+        if (fromIndex >= 0 && fromIndex < this.gsMap.layers.length &&
+            toIndex >= 0 && toIndex < this.gsMap.layers.length &&
+            fromIndex !== toIndex) {
+            const [layer] = this.gsMap.layers.splice(fromIndex, 1);
+            this.gsMap.layers.splice(toIndex, 0, layer);
+        }
+        this.triggerDirty();
+    }
+
     async setLayerVisible(index: number, visible: boolean): Promise<void> {
         if (index >= 0 && index < this.gsMap.layers.length) {
             this.gsMap.layers[index].visible = visible;

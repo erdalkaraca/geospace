@@ -243,6 +243,24 @@ export class OpenLayersMapOperations implements MapOperations {
         this.olMap.getLayers().removeAt(index);
     }
 
+    async renameLayer(index: number, newName: string): Promise<void> {
+        const olLayers = this.olMap.getLayers();
+        if (index >= 0 && index < olLayers.getLength()) {
+            olLayers.item(index).set(KEY_NAME, newName);
+        }
+    }
+
+    async moveLayer(fromIndex: number, toIndex: number): Promise<void> {
+        const olLayers = this.olMap.getLayers();
+        if (fromIndex >= 0 && fromIndex < olLayers.getLength() &&
+            toIndex >= 0 && toIndex < olLayers.getLength() &&
+            fromIndex !== toIndex) {
+            const layer = olLayers.item(fromIndex);
+            olLayers.removeAt(fromIndex);
+            olLayers.insertAt(toIndex, layer);
+        }
+    }
+
     async setLayerVisible(index: number, visible: boolean): Promise<void> {
         const olLayers = this.olMap.getLayers();
         if (index >= 0 && index < olLayers.getLength()) {

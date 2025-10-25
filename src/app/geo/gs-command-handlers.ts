@@ -273,6 +273,49 @@ commandRegistry.registerAll({
 
 commandRegistry.registerAll({
     command: {
+        "id": "rename_layer",
+        "name": "Rename a layer",
+        "description": "Rename a layer given its index (starting with 1 for the first layer)",
+        "parameters": [
+            {
+                "name": "index",
+                "description": "the index of the layer to rename, starts with 1 for the first layer",
+                "required": true
+            },
+            {
+                "name": "newName",
+                "description": "the new name for the layer",
+                "required": false
+            }
+        ]
+    },
+    handler: {
+        canExecute,
+        execute: async context => {
+            const operations = getMapOperations(context);
+            const editor = context.activeEditor as GsMapEditor;
+            const gsMap = editor.getGsMap();
+            const index = parseInt(context.params!["index"]) - 1
+
+            if (index < 0 || !gsMap || index >= gsMap.layers.length) {
+                return;
+            }
+
+            const currentName = gsMap.layers[index].name || `Layer ${index + 1}`;
+            const newName = context.params?.newName || 
+                           prompt(`Enter new name for "${currentName}":`, currentName);
+            
+            if (!newName || newName === currentName) {
+                return;
+            }
+
+            await operations.renameLayer(index, newName);
+        }
+    }
+})
+
+commandRegistry.registerAll({
+    command: {
         "id": "apply_styles",
         "name": "Apply styles",
         "description": "Applies a styles json file to a layer",

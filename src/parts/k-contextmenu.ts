@@ -124,6 +124,11 @@ export class KContextMenu extends SignalWatcher(KElement) {
 
         wa-dropdown {
             pointer-events: auto;
+            min-width: 200px;
+        }
+        
+        wa-dropdown::part(panel) {
+            min-width: 200px;
         }
     `;
 }

@@ -36,6 +36,8 @@ export interface MapOperations {
     // Layer operations
     addLayer(layer: any, isBasemap?: boolean): Promise<void>;
     deleteLayer(index: number): Promise<void>;
+    renameLayer(index: number, newName: string): Promise<void>;
+    moveLayer(fromIndex: number, toIndex: number): Promise<void>;
     setLayerVisible(index: number, visible: boolean): Promise<void>;
     applyStyles(layerIdentifier: string | number, stylesPath: string): Promise<void>;
     

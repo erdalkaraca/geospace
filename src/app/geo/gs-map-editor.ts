@@ -48,6 +48,7 @@ export class GsMapEditor extends KPart {
             <k-command cmd="zoom_in" icon="magnifying-glass-plus" title="Zoom in"></k-command>
             <k-command cmd="zoom_out" icon="magnifying-glass-minus" title="Zoom out"></k-command>
             <k-command cmd="reset_view" icon="house" title="Reset view"></k-command>
+            <k-command cmd="refresh_map" icon="rotate" title="Refresh map"></k-command>
             
             <wa-divider orientation="vertical"></wa-divider>
             
@@ -55,8 +56,8 @@ export class GsMapEditor extends KPart {
             <k-command cmd="toggle_mobile_view" icon="mobile" title="Toggle mobile view"></k-command>
             
             <wa-divider orientation="vertical"></wa-divider>
+
             
-            <k-command cmd="refresh_map" icon="rotate" title="Refresh map"></k-command>
         `;
     }
 

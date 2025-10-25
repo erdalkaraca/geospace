@@ -1,5 +1,5 @@
 import {css, html} from 'lit'
-import {customElement} from 'lit/decorators.js'
+import {customElement, state} from 'lit/decorators.js'
 import {KPart} from "../../parts/k-part.ts";
 import {when} from "lit/directives/when.js";
 import {GsMapEditor} from "./gs-map-editor.ts";
@@ -9,10 +9,15 @@ import {mapChangedSignal} from "./gs-signals.ts";
 import {icon} from "../../core/k-utils.ts";
 import {GsLayer, GsControl, GsOverlay} from "../rt/gs-model.ts";
 import {getOriginalUri} from "./utils.ts";
+import {commandRegistry} from "../../core/commandregistry.ts";
+import "../../components/k-action.ts";
 
 @customElement('gs-map-props')
 export class GsMapProps extends KPart {
     private mapEditor?: GsMapEditor;
+
+    @state()
+    private selectedLayerIndex?: number;
 
     @watching(activePartSignal)
     protected onPartChanged(part: KPart) {
@@ -30,17 +35,13 @@ export class GsMapProps extends KPart {
         }
     }
 
-    private toggleVisible(event: Event) {
-        // @ts-ignore
-        const index: number = event.currentTarget.index
+    private toggleVisible(index: number) {
         const gsMap = this.mapEditor!.getGsMap()
         const layer = gsMap!.layers[index]
-        const currentVisible = layer.visible !== false // true if undefined or true, false if false
+        const currentVisible = layer.visible !== false
         const newVisible = !currentVisible
         
-        // Use operations directly to update both OpenLayers map and domain model
         this.mapEditor?.mapOperations?.setLayerVisible(index, newVisible)
-        
         this.updateLater()
     }
 
@@ -48,6 +49,92 @@ export class GsMapProps extends KPart {
         if (confirm(message)) {
             action();
         }
+    }
+
+    private selectLayer(index: number) {
+        this.selectedLayerIndex = index;
+        this.updateToolbar();
+        this.updateContextMenu();
+    }
+
+    private renameLayer(index?: number) {
+        if (!this.mapEditor) return;
+
+        const layerIndex = index !== undefined ? index : this.selectedLayerIndex;
+        if (layerIndex === undefined) return;
+
+        const context = commandRegistry.createExecutionContext(this, {
+            index: layerIndex + 1
+        });
+        context.activeEditor = this.mapEditor;
+        commandRegistry.execute("rename_layer", context);
+    }
+
+    private deleteLayer(index?: number) {
+        if (!this.mapEditor) return;
+
+        const layerIndex = index !== undefined ? index : this.selectedLayerIndex;
+        if (layerIndex === undefined) return;
+
+        const gsMap = this.mapEditor.getGsMap();
+        const layer = gsMap?.layers[layerIndex];
+        if (!layer) return;
+
+        this.confirmAction(
+            `Delete layer "${layer.name || `Layer ${layerIndex + 1}`}"?`,
+            () => this.withRefresh(() => this.mapEditor?.mapOperations?.deleteLayer(layerIndex))
+        );
+    }
+
+    private moveLayerUp(index: number) {
+        if (!this.mapEditor || index <= 0) return;
+        
+        this.withRefresh(() => this.mapEditor?.mapOperations?.moveLayer(index, index - 1));
+        this.selectedLayerIndex = index - 1;
+    }
+
+    private moveLayerDown(index: number) {
+        if (!this.mapEditor) return;
+        
+        const gsMap = this.mapEditor.getGsMap();
+        if (!gsMap || index >= gsMap.layers.length - 1) return;
+        
+        this.withRefresh(() => this.mapEditor?.mapOperations?.moveLayer(index, index + 1));
+        this.selectedLayerIndex = index + 1;
+    }
+
+    protected renderToolbar() {
+        const hasSelection = this.selectedLayerIndex !== undefined;
+        
+        return html`
+            <k-action ?disabled=${!hasSelection} 
+                      title="Rename selected layer" 
+                      icon="pen"
+                      .action=${() => this.renameLayer()}>
+            </k-action>
+            <k-action ?disabled=${!hasSelection} 
+                      title="Delete selected layer" 
+                      icon="trash"
+                      .action=${() => this.deleteLayer()}>
+            </k-action>
+        `;
+    }
+
+    protected renderContextMenu() {
+        const hasSelection = this.selectedLayerIndex !== undefined;
+        
+        return html`
+            <k-action ?disabled=${!hasSelection} 
+                      icon="pen"
+                      .action=${() => this.renameLayer()}>
+                Rename
+            </k-action>
+            <k-action ?disabled=${!hasSelection} 
+                      icon="trash"
+                      .action=${() => this.deleteLayer()}>
+                Delete
+            </k-action>
+        `;
     }
 
     render() {
@@ -58,17 +145,33 @@ export class GsMapProps extends KPart {
                     <wa-tree-item expanded>
                         ${icon("fg layers")} Layers
                         ${this.mapEditor!.getGsMap()?.layers.map((layer: GsLayer, i: number) => html`
-                            <wa-tree-item>
-                                <wa-button .index="${i}" @click="${this.toggleVisible}" appearance="plain"
-                                           size="small">
-                                    <wa-icon name="${layer.visible !== false ? "eye" : "eye-slash"}" label="${layer.visible !== false ? 'Hide layer' : 'Show layer'}"></wa-icon>
-                                </wa-button>
-                                <span>${layer.name ?? `Layer ${i + 1}`}${i == 0 ? html`
-                                    <small>(basemap)</small>` : ""}</span>
-                                <wa-button appearance="plain" size="small"
-                                           @click="${() => this.confirmAction(`Delete layer "${layer.name || `Layer ${i + 1}`}"?`, () => this.withRefresh(() => this.mapEditor?.mapOperations?.deleteLayer(i)))}">
-                                    <wa-icon name="trash" label="Delete layer"></wa-icon>
-                                </wa-button>
+                            <wa-tree-item @click="${() => this.selectLayer(i)}" 
+                                          class="${this.selectedLayerIndex === i ? 'selected' : ''}">
+                                <div class="layer-item">
+                                    <div class="layer-name">
+                                        <span>${layer.name ?? `Layer ${i + 1}`}${i == 0 ? html`
+                                            <small>(basemap)</small>` : ""}</span>
+                                    </div>
+                                    <div class="layer-actions">
+                                        <k-action size="small"
+                                                  icon="${layer.visible !== false ? "eye" : "eye-slash"}"
+                                                  title="${layer.visible !== false ? 'Hide layer' : 'Show layer'}"
+                                                  .action=${() => this.toggleVisible(i)}>
+                                        </k-action>
+                                        <k-action size="small"
+                                                  icon="arrow-up"
+                                                  title="Move layer up"
+                                                  ?disabled="${i === 0}"
+                                                  .action=${() => this.moveLayerUp(i)}>
+                                        </k-action>
+                                        <k-action size="small"
+                                                  icon="arrow-down"
+                                                  title="Move layer down"
+                                                  ?disabled="${i === this.mapEditor!.getGsMap()!.layers.length - 1}"
+                                                  .action=${() => this.moveLayerDown(i)}>
+                                        </k-action>
+                                    </div>
+                                </div>
                             </wa-tree-item>
                         `)}
                     </wa-tree-item>
@@ -77,10 +180,11 @@ export class GsMapProps extends KPart {
                         ${this.mapEditor?.getGsMap()?.controls.map((control: GsControl, i: number) => html`
                             <wa-tree-item>
                                 <span>${getOriginalUri(control.src)}</span>
-                                <wa-button appearance="plain" size="small"
-                                           @click="${() => this.confirmAction(`Delete control "${getOriginalUri(control.src)}"?`, () => this.withRefresh(() => this.mapEditor?.mapOperations?.removeControl(i)))}">
-                                    <wa-icon name="trash" label="Delete control"></wa-icon>
-                                </wa-button>
+                                <k-action size="small"
+                                          icon="trash"
+                                          title="Delete control"
+                                          .action=${() => this.confirmAction(`Delete control "${getOriginalUri(control.src)}"?`, () => this.withRefresh(() => this.mapEditor?.mapOperations?.removeControl(i)))}>
+                                </k-action>
                             </wa-tree-item>
                         `)}
                     </wa-tree-item>
@@ -89,10 +193,11 @@ export class GsMapProps extends KPart {
                         ${this.mapEditor?.getGsMap()?.overlays.map((overlay: GsOverlay, i: number) => html`
                             <wa-tree-item>
                                 <span>${getOriginalUri(overlay.src)}</span>
-                                <wa-button appearance="plain" size="small"
-                                           @click="${() => this.confirmAction(`Delete overlay "${getOriginalUri(overlay.src)}"?`, () => this.withRefresh(() => this.mapEditor?.mapOperations?.removeOverlay(i)))}">
-                                    <wa-icon name="trash" label="Delete overlay"></wa-icon>
-                                </wa-button>
+                                <k-action size="small"
+                                          icon="trash"
+                                          title="Delete overlay"
+                                          .action=${() => this.confirmAction(`Delete overlay "${getOriginalUri(overlay.src)}"?`, () => this.withRefresh(() => this.mapEditor?.mapOperations?.removeOverlay(i)))}>
+                                </k-action>
                             </wa-tree-item>
                         `)}
                     </wa-tree-item>
@@ -108,6 +213,26 @@ export class GsMapProps extends KPart {
         :host {
             display: flex;
             flex-direction: column;
+        }
+        
+        wa-tree-item.selected {
+            background-color: var(--wa-color-primary-50);
+        }
+        
+        .layer-item {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            gap: 4px;
+        }
+        
+        .layer-name {
+            flex: 1;
+        }
+        
+        .layer-actions {
+            display: flex;
+            gap: 2px;
         }
     `;
 }

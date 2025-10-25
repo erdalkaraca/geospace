@@ -33,6 +33,16 @@ export class SignalingMapOperations implements MapOperations {
         mapChangedSignal.set({ part: this.source, event: MapEvents.LAYER_DELETED });
     }
 
+    async renameLayer(_index: number, _newName: string): Promise<void> {
+        // Trigger signal after layer is renamed by other operations
+        mapChangedSignal.set({ part: this.source, event: MapEvents.LAYER_UPDATED });
+    }
+
+    async moveLayer(_fromIndex: number, _toIndex: number): Promise<void> {
+        // Trigger signal after layer is moved by other operations
+        mapChangedSignal.set({ part: this.source, event: MapEvents.LAYER_UPDATED });
+    }
+
     async setLayerVisible(_index: number, _visible: boolean): Promise<void> {
         // No-op - visibility changes don't need signaling
     }
