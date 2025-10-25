@@ -6,7 +6,7 @@ import {GsMapEditor} from "./gs-map-editor.ts";
 import {activePartSignal} from "../../core/appstate.ts";
 import {SignalPort, watching} from "../../core/signals.ts";
 import {mapChangedSignal} from "./gs-signals.ts";
-import {icon} from "../../core/k-utils.ts";
+import '../../widgets/k-icon.ts';
 import {GsLayer, GsControl, GsOverlay} from "../rt/gs-model.ts";
 import {getOriginalUri} from "./utils.ts";
 import {commandRegistry} from "../../core/commandregistry.ts";
@@ -143,7 +143,7 @@ export class GsMapProps extends KPart {
             () => html`
                 <wa-tree>
                     <wa-tree-item expanded>
-                        ${icon("fg layers")} Layers
+                        <k-icon name="fg layers"></k-icon> Layers
                         ${this.mapEditor!.getGsMap()?.layers.map((layer: GsLayer, i: number) => html`
                             <wa-tree-item @click="${() => this.selectLayer(i)}" 
                                           class="${this.selectedLayerIndex === i ? 'selected' : ''}">
@@ -176,7 +176,7 @@ export class GsMapProps extends KPart {
                         `)}
                     </wa-tree-item>
                     <wa-tree-item expanded>
-                        ${icon("fg map-control")} Controls
+                        <k-icon name="fg map-control"></k-icon> Controls
                         ${this.mapEditor?.getGsMap()?.controls.map((control: GsControl, i: number) => html`
                             <wa-tree-item>
                                 <span>${getOriginalUri(control.src)}</span>
@@ -189,7 +189,7 @@ export class GsMapProps extends KPart {
                         `)}
                     </wa-tree-item>
                     <wa-tree-item expanded>
-                        ${icon("fg map-poi")} Overlays
+                        <k-icon name="fg map-poi"></k-icon> Overlays
                         ${this.mapEditor?.getGsMap()?.overlays.map((overlay: GsOverlay, i: number) => html`
                             <wa-tree-item>
                                 <span>${getOriginalUri(overlay.src)}</span>
@@ -202,7 +202,7 @@ export class GsMapProps extends KPart {
                         `)}
                     </wa-tree-item>
                     <wa-tree-item expanded>
-                        ${icon("highlighter")} Styles
+                        <k-icon name="highlighter"></k-icon> Styles
                     </wa-tree-item>
                 </wa-tree>
             `

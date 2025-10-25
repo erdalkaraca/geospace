@@ -1,7 +1,7 @@
 import { css, html, nothing } from 'lit'
 import { customElement, property, state } from 'lit/decorators.js'
 import { KWidget } from '../widgets/k-widget.ts'
-import { icon } from '../core/k-utils.ts'
+import '../widgets/k-icon.ts'
 import { keyBindingManager } from '../core/keybindings.ts'
 import { contributionRegistry, Contribution, CommandContribution, HTMLContribution, TOPIC_CONTRIBUTEIONS_CHANGED } from '../core/contributionregistry.ts'
 import { subscribe } from '../core/events.ts'
@@ -108,7 +108,7 @@ export class KCommand extends KWidget {
                 <wa-dropdown-item 
                     ?disabled=${this.disabled}
                     @click=${() => this.handleClick()}>
-                    ${icon(this.icon, this.title)}
+                    <k-icon name="${this.icon}" label="${this.title}" slot="icon"></k-icon>
                     <slot></slot>
                     ${keybinding ? html`<span class="keybinding">${keybinding}</span>` : ''}
                 </wa-dropdown-item>
@@ -124,7 +124,7 @@ export class KCommand extends KWidget {
                         size=${this.size}
                         ?disabled=${this.disabled}
                         title=${keybinding ? `${this.title} (${keybinding})` : this.title}>
-                        ${icon(this.icon, this.title)}
+                        <k-icon slot="start" name="${this.icon}" label="${this.title}"></k-icon>
                         <slot></slot>
                     </wa-button>
                     
@@ -145,13 +145,13 @@ export class KCommand extends KWidget {
         }
 
         return html`
-            <wa-button 
+            <wa-button
                 appearance=${this.appearance}
                 size=${this.size}
                 ?disabled=${this.disabled}
                 title=${keybinding ? `${this.title} (${keybinding})` : this.title}
                 @click=${() => this.handleClick()}>
-                ${icon(this.icon, this.title)}
+                <k-icon slot="start" name="${this.icon}" label="${this.title}"></k-icon>
                 <slot></slot>
             </wa-button>
         `

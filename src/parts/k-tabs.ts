@@ -4,7 +4,7 @@ import {KContainer} from "./k-container.ts";
 import {contributionRegistry, TabContribution, TOPIC_CONTRIBUTEIONS_CHANGED} from "../core/contributionregistry.ts";
 import {when} from "lit/directives/when.js";
 import {repeat} from "lit/directives/repeat.js";
-import {icon} from "../core/k-utils.ts";
+import '../widgets/k-icon.ts';
 import {createRef, ref} from "lit/directives/ref.js";
 import {subscribe} from "../core/events.ts";
 import {KPart} from "./k-part.ts";
@@ -390,7 +390,7 @@ export class KTabs extends KContainer {
                     (c) => html`
                         <wa-tab panel="${c.name}"
                                 @auxclick="${(e: MouseEvent) => this.handleTabAuxClick(e, c)}">
-                            ${icon(c.icon!)}
+                            <k-icon name="${c.icon!}"></k-icon>
                             ${c.label}
                             ${when(c.closable, () => html`
                                 <wa-icon name="xmark" label="Close"  @click="${(e: Event) => this.closeTab(e, c.name)}"></wa-icon>

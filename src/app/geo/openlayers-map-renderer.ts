@@ -1,8 +1,14 @@
 import {MapOperations, MapRenderer} from "./map-renderer.ts";
-import {GsFeature, gsLib, GsMap, KEY_NAME, stylesLoader, toOlFeature, toOlLayer} from "../rt/gs-lib.ts";
+import {GsFeature, gsLib, GsMap, GsSourceType, KEY_NAME, stylesLoader, toOlFeature, toOlLayer} from "../rt/gs-lib.ts";
+import {toGsFeature} from "../rt/gs-ol2gs.ts";
 import {Map} from "ol";
+import type {Feature} from "ol";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
+import Draw from "ol/interaction/Draw.js";
+import Select from "ol/interaction/Select.js";
+import {click} from "ol/events/condition.js";
+import {Style, Stroke, Fill, Circle as CircleStyle} from "ol/style.js";
 
 /**
  * OpenLayers map renderer that manages OpenLayers maps
@@ -41,7 +47,7 @@ export class OpenLayersMapRenderer implements MapRenderer {
             });
             
             // Create operations after map is available
-            this.operations = new OpenLayersMapOperations(this.olMap);
+            this.operations = new OpenLayersMapOperations(this.olMap, this);
             
             // Bind styles to layers
             if (this.olMap) {
@@ -144,6 +150,31 @@ export class OpenLayersMapRenderer implements MapRenderer {
         this.triggerSync();
     }
 
+    public syncLayerFeaturesToModel(layerIndex: number): void {
+        if (!this.olMap) return;
+
+        const olLayers = this.olMap.getLayers();
+        const olLayer = olLayers.item(layerIndex);
+
+        if (!(olLayer instanceof VectorLayer)) return;
+
+        const source = olLayer.getSource();
+        if (!source) return;
+
+        // Convert OpenLayers features back to GsFeatures
+        const olFeatures = source.getFeatures();
+        const gsFeatures = olFeatures.map((olFeature: Feature) => toGsFeature(olFeature));
+
+        // Update the domain model
+        const gsLayer = this.gsMap.layers[layerIndex];
+        if (gsLayer && gsLayer.source.type === GsSourceType.Features) {
+            (gsLayer.source as any).features = gsFeatures;
+        }
+
+        // Trigger sync callback to update the host's domain model
+        this.triggerSync();
+    }
+
     private setupEventListeners(): void {
         if (!this.olMap) return;
 
@@ -185,8 +216,14 @@ export class OpenLayersMapRenderer implements MapRenderer {
  * This bridges the gap between command intents and the GsMap domain model
  */
 export class OpenLayersMapOperations implements MapOperations {
+    private drawInteraction?: Draw;
+    private selectInteraction?: Select;
+    private activeSelectionLayer?: VectorLayer<VectorSource>;
+    private activeDrawingLayerIndex?: number;
+
     constructor(
-        private olMap: Map
+        private olMap: Map,
+        private renderer?: OpenLayersMapRenderer
     ) {
         if (!olMap) {
             throw new Error("OpenLayers map is required for operations");
@@ -330,5 +367,146 @@ export class OpenLayersMapOperations implements MapOperations {
 
     async removeOverlay(_index: number): Promise<void> {
         // UI does not support overlay removal
+    }
+
+    async enableDrawing(geometryType: 'Point' | 'LineString' | 'Polygon', layerIndex: number): Promise<void> {
+        this.disableSelection();
+        
+        if (this.drawInteraction) {
+            this.olMap.removeInteraction(this.drawInteraction);
+        }
+        
+        this.activeDrawingLayerIndex = layerIndex;
+        
+        const olLayers = this.olMap.getLayers();
+        const layer = olLayers.item(layerIndex);
+        
+        if (!(layer instanceof VectorLayer)) {
+            throw new Error('Drawing only supported on vector layers');
+        }
+        
+        const source = layer.getSource();
+        if (!source) {
+            throw new Error('Layer has no source');
+        }
+        
+        const layerSourceType = layer.get('sourceType');
+        if (layerSourceType && layerSourceType !== GsSourceType.Features) {
+            throw new Error('Drawing only supported on layers with in-memory features, not URL-loaded data');
+        }
+        
+        this.drawInteraction = new Draw({
+            source: source,
+            type: geometryType
+        });
+        
+        // Listen to the source's addfeature event which fires AFTER the feature is added
+        const onFeatureAdded = () => {
+            if (this.renderer && this.activeDrawingLayerIndex !== undefined) {
+                this.renderer.syncLayerFeaturesToModel(this.activeDrawingLayerIndex);
+            }
+            this.renderer?.triggerDirty();
+        };
+        
+        source.on('addfeature', onFeatureAdded);
+        
+        // Store the listener so we can remove it later
+        (this.drawInteraction as any)._featureAddedListener = onFeatureAdded;
+        (this.drawInteraction as any)._sourceRef = source;
+        
+        this.olMap.addInteraction(this.drawInteraction);
+    }
+
+    async disableDrawing(): Promise<void> {
+        if (this.drawInteraction) {
+            // Remove the addfeature listener
+            const listener = (this.drawInteraction as any)._featureAddedListener;
+            const source = (this.drawInteraction as any)._sourceRef;
+            if (listener && source) {
+                source.un('addfeature', listener);
+            }
+            
+            this.olMap.removeInteraction(this.drawInteraction);
+            this.drawInteraction = undefined;
+        }
+    }
+
+    async enableFeatureSelection(layerIndex: number): Promise<void> {
+        this.disableDrawing();
+        this.disableSelection();
+        
+        this.activeDrawingLayerIndex = layerIndex;
+        
+        const olLayers = this.olMap.getLayers();
+        const layer = olLayers.item(layerIndex);
+        
+        if (!(layer instanceof VectorLayer)) {
+            throw new Error('Selection only supported on vector layers');
+        }
+        
+        this.activeSelectionLayer = layer;
+        
+        const selectOptions: any = {
+            condition: click,
+            layers: [layer],
+            style: (_feature: any) => {
+                const stroke = new Stroke({
+                    color: 'rgba(255, 255, 0, 1)',
+                    width: 3
+                });
+                const fill = new Fill({
+                    color: 'rgba(255, 255, 0, 0.3)'
+                });
+                return new Style({
+                    image: new CircleStyle({
+                        radius: 7,
+                        fill: fill,
+                        stroke: stroke
+                    }),
+                    stroke: stroke,
+                    fill: fill
+                });
+            }
+        };
+        
+        this.selectInteraction = new Select(selectOptions);
+        this.olMap.addInteraction(this.selectInteraction);
+    }
+
+    async deleteSelectedFeatures(): Promise<void> {
+        if (!this.selectInteraction) {
+            throw new Error('No selection interaction active');
+        }
+        
+        const selectedFeatures = this.selectInteraction.getFeatures();
+        
+        if (selectedFeatures.getLength() === 0) {
+            throw new Error('No features selected');
+        }
+        
+        const source = this.activeSelectionLayer?.getSource();
+        if (!source) {
+            throw new Error('No active layer source');
+        }
+        
+        selectedFeatures.forEach((feature: any) => {
+            source.removeFeature(feature);
+        });
+        
+        selectedFeatures.clear();
+        
+        // Sync features back to domain model
+        if (this.renderer && this.activeDrawingLayerIndex !== undefined) {
+            this.renderer.syncLayerFeaturesToModel(this.activeDrawingLayerIndex);
+        }
+        this.renderer?.triggerDirty();
+    }
+
+    private disableSelection(): void {
+        if (this.selectInteraction) {
+            this.olMap.removeInteraction(this.selectInteraction);
+            this.selectInteraction = undefined;
+            this.activeSelectionLayer = undefined;
+        }
     }
 }

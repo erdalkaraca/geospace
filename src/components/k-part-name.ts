@@ -5,7 +5,7 @@ import {activePartSignal} from "../core/appstate.ts";
 import {SignalWatcher} from "@lit-labs/signals";
 import {contributionRegistry, HTMLContribution} from "../core/contributionregistry.ts";
 import {TOOLBAR_BOTTOM_CENTER} from "../core/constants.ts";
-import {icon} from "../core/k-utils.ts";
+import '../widgets/k-icon.ts';
 
 const NO_PART_LABEL = "<no part>";
 
@@ -34,7 +34,7 @@ export class KPartName extends SignalWatcher(KElement) {
                 appearance="plain"
                 size="small"
                 title="Active part">
-                <span slot="start">${icon(partIcon, "Part")}</span>
+                <k-icon slot="start" name="${partIcon}" label="Part"></k-icon>
                 ${this.getPartName()}
             </wa-button>
         `;

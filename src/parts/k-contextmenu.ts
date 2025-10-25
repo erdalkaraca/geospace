@@ -47,13 +47,6 @@ export class KContextMenu extends SignalWatcher(KElement) {
     public show(position: { x: number, y: number }) {
         this.position = position;
         this.isOpen = true;
-        
-        this.updateComplete.then(() => {
-            if (this.dropdownRef.value) {
-                // @ts-ignore - wa-dropdown show method
-                this.dropdownRef.value.show();
-            }
-        });
     }
 
     private onClose() {

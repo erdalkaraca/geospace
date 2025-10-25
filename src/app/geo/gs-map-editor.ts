@@ -1,11 +1,13 @@
 import { css, html, unsafeCSS } from 'lit'
 import { customElement, property } from 'lit/decorators.js'
 import { createRef, ref, Ref } from 'lit/directives/ref.js'
+import { when } from 'lit/directives/when.js'
 import { CommandStack } from "../../core/commandregistry.ts";
 import { KPart } from "../../parts/k-part.ts";
 import { EditorInput } from "../../core/editorregistry.ts";
-import { DEFAULT_GSMAP, GsMap } from "../rt";
+import { DEFAULT_GSMAP, GsMap, GsLayerType, GsSourceType } from "../rt";
 import { mapChangedSignal, MapEvents } from "./gs-signals.ts";
+import { watching } from "../../core/signals.ts";
 import olCSS from "../../../node_modules/ol/ol.css?raw";
 import { loadEnvs, replaceUris, revertBlobUris } from "./utils.ts";
 import { File } from '../../core/filesys.ts';
@@ -29,6 +31,12 @@ export class GsMapEditor extends KPart {
     private gsMap?: GsMap;
     private isFirstConnection = true;
     private initialView?: { center: [number, number], zoom: number };
+    
+    @property({ type: Number })
+    private activeDrawingLayerIndex?: number;
+    
+    @property({ type: String })
+    private interactionMode: 'draw' | 'select' | 'none' = 'none';
 
     chatContext: ChatContext = {
         history: []
@@ -43,7 +51,32 @@ export class GsMapEditor extends KPart {
         return this.operations!;
     }
 
+    @watching(mapChangedSignal)
+    protected onMapChanged({ part, event }: { part: KPart, event: MapEvents }) {
+        // Only respond to layer changes on this map editor
+        if (part !== this) return;
+        
+        // Update toolbar when layers are added, deleted, renamed, or moved
+        if (event === MapEvents.LAYER_ADDED || 
+            event === MapEvents.LAYER_DELETED || 
+            event === MapEvents.LAYER_UPDATED) {
+            this.updateToolbar();
+        }
+    }
+
     protected renderToolbar() {
+        const gsMap = this.getGsMap();
+        
+        const drawableLayers = gsMap?.layers
+            .map((l, idx) => ({ layer: l, index: idx }))
+            .filter(({ layer }) => {
+                const isVector = layer.type === GsLayerType.VECTOR;
+                const isFeatures = layer.source?.type === GsSourceType.Features;
+                return isVector && isFeatures;
+            }) || [];
+        
+        const hasActiveLayer = this.activeDrawingLayerIndex !== undefined;
+        
         return html`
             <k-command cmd="zoom_in" icon="magnifying-glass-plus" title="Zoom in"></k-command>
             <k-command cmd="zoom_out" icon="magnifying-glass-minus" title="Zoom out"></k-command>
@@ -56,8 +89,61 @@ export class GsMapEditor extends KPart {
             <k-command cmd="toggle_mobile_view" icon="mobile" title="Toggle mobile view"></k-command>
             
             <wa-divider orientation="vertical"></wa-divider>
-
             
+            <k-action icon="plus" 
+                      title="Create Drawing Layer"
+                      .action=${() => this.handleCreateDrawingLayer()}>
+            </k-action>
+            
+            ${when(drawableLayers.length > 0, () => html`
+                <wa-select 
+                    placeholder="Drawing layer"
+                    size="small"
+                    value="${this.activeDrawingLayerIndex ?? ''}"
+                    @change=${(e: any) => {
+                        const newIndex = e.target.value ? parseInt(e.target.value) : undefined;
+                        this.activeDrawingLayerIndex = newIndex;
+                        if (newIndex === undefined || newIndex === null || e.target.value === '') {
+                            this.operations?.disableDrawing();
+                            this.interactionMode = 'none';
+                        }
+                        this.updateToolbar();
+                    }}>
+                    <wa-option value="">Select layer</wa-option>
+                    ${drawableLayers.map(({ layer, index }) => html`
+                        <wa-option value="${index}">${layer.name || `Layer ${index + 1}`}</wa-option>
+                    `)}
+                </wa-select>
+                
+                <k-action icon="location-dot" 
+                          title="Draw Point"
+                          ?disabled=${!hasActiveLayer}
+                          .action=${() => this.handleDrawPoint()}>
+                </k-action>
+                <k-action icon="minus" 
+                          title="Draw LineString"
+                          ?disabled=${!hasActiveLayer}
+                          .action=${() => this.handleDrawLine()}>
+                </k-action>
+                <k-action icon="draw-polygon" 
+                          title="Draw Polygon"
+                          ?disabled=${!hasActiveLayer}
+                          .action=${() => this.handleDrawPolygon()}>
+                </k-action>
+                
+                <wa-divider orientation="vertical"></wa-divider>
+                
+                <k-action icon="hand-pointer" 
+                          title="Select Features"
+                          ?disabled=${!hasActiveLayer}
+                          .action=${() => this.handleSelectFeatures()}>
+                </k-action>
+                <k-action icon="trash" 
+                          title="Delete Selected Features"
+                          ?disabled=${this.interactionMode !== 'select'}
+                          .action=${() => this.handleDeleteSelected()}>
+                </k-action>
+            `)}
         `;
     }
 
@@ -127,11 +213,15 @@ export class GsMapEditor extends KPart {
             this.renderer.setOnDirty(() => this.markDirty(true));
             this.renderer.setOnSync((updatedGsMap: GsMap) => {
                 this.gsMap!.view = updatedGsMap.view;
+                this.gsMap!.layers = updatedGsMap.layers;
                 this.markDirty(true);
             });
             this.renderer.setOnClick?.(() => {
                 activePartSignal.set(this);
             });
+
+            // Update toolbar after map is fully loaded
+            this.updateToolbar();
 
             mapChangedSignal.set({ part: this, event: MapEvents.LOADED });
         } catch (error: any) {
@@ -236,6 +326,76 @@ export class GsMapEditor extends KPart {
         
         await this.operations.setCenter(this.initialView.center);
         await this.operations.setZoom(this.initialView.zoom);
+    }
+
+    private async handleDrawPoint() {
+        if (this.activeDrawingLayerIndex === undefined) return;
+        await this.operations?.enableDrawing('Point', this.activeDrawingLayerIndex);
+        this.interactionMode = 'draw';
+        this.updateToolbar();
+    }
+
+    private async handleDrawLine() {
+        if (this.activeDrawingLayerIndex === undefined) return;
+        await this.operations?.enableDrawing('LineString', this.activeDrawingLayerIndex);
+        this.interactionMode = 'draw';
+        this.updateToolbar();
+    }
+
+    private async handleDrawPolygon() {
+        if (this.activeDrawingLayerIndex === undefined) return;
+        await this.operations?.enableDrawing('Polygon', this.activeDrawingLayerIndex);
+        this.interactionMode = 'draw';
+        this.updateToolbar();
+    }
+
+    private async handleSelectFeatures() {
+        if (this.activeDrawingLayerIndex === undefined) return;
+        await this.operations?.enableFeatureSelection(this.activeDrawingLayerIndex);
+        this.interactionMode = 'select';
+        this.updateToolbar();
+    }
+
+    private async handleDeleteSelected() {
+        if (this.interactionMode !== 'select') return;
+        try {
+            await this.operations?.deleteSelectedFeatures();
+            toastInfo('Selected features deleted');
+        } catch (error: any) {
+            toastError(error.message);
+        }
+    }
+
+    private async handleCreateDrawingLayer() {
+        if (!this.gsMap) {
+            toastError('Map not initialized');
+            return;
+        }
+        
+        const layerName = prompt('Enter name for new drawing layer:', 'Drawing Layer');
+        
+        if (!layerName) {
+            return;
+        }
+        
+        const newLayer = {
+            name: layerName,
+            type: GsLayerType.VECTOR,
+            source: {
+                type: GsSourceType.Features,
+                features: []
+            },
+            visible: true
+        };
+        
+        await this.operations?.addLayer(newLayer, false);
+        
+        const newLayerIndex = this.gsMap.layers.length - 1;
+        this.activeDrawingLayerIndex = newLayerIndex;
+        
+        this.updateToolbar();
+        
+        toastInfo(`Created drawing layer: ${layerName}`);
     }
 
     protected doClose() {

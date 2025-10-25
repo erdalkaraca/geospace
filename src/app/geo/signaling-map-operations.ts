@@ -71,5 +71,22 @@ export class SignalingMapOperations implements MapOperations {
     async removeOverlay(_index: number): Promise<void> {
         // No-op - overlays don't need signaling
     }
+
+    async enableDrawing(_geometryType: 'Point' | 'LineString' | 'Polygon', _layerIndex: number): Promise<void> {
+        // No-op - drawing is a UI interaction, doesn't need signaling
+    }
+
+    async disableDrawing(): Promise<void> {
+        // No-op - drawing is a UI interaction, doesn't need signaling
+    }
+
+    async enableFeatureSelection(_layerIndex: number): Promise<void> {
+        // No-op - selection is a UI interaction, doesn't need signaling
+    }
+
+    async deleteSelectedFeatures(): Promise<void> {
+        // Trigger signal after features are deleted
+        mapChangedSignal.set({ part: this.source, event: MapEvents.LAYER_UPDATED });
+    }
 }
 

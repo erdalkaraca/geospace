@@ -1,7 +1,7 @@
-import { css, html, nothing } from 'lit'
+import { css, html } from 'lit'
 import { customElement, property } from 'lit/decorators.js'
 import { KWidget } from '../widgets/k-widget.ts'
-import { icon } from '../core/k-utils.ts'
+import '../widgets/k-icon.ts'
 
 @customElement('k-action')
 export class KAction extends KWidget {
@@ -40,20 +40,20 @@ export class KAction extends KWidget {
                 <wa-dropdown-item 
                     ?disabled=${this.disabled}
                     @click=${(e: Event) => this.handleClick(e)}>
-                    ${icon(this.icon, this.title)}
+                    <k-icon name="${this.icon}" label="${this.title}" slot="icon"></k-icon>
                     <slot></slot>
                 </wa-dropdown-item>
             `
         }
 
         return html`
-            <wa-button 
+            <wa-button
                 appearance=${this.appearance}
                 size=${this.size}
                 ?disabled=${this.disabled}
                 title=${this.title}
                 @click=${(e: Event) => this.handleClick(e)}>
-                ${icon(this.icon, this.title)}
+                <k-icon slot="start" name="${this.icon}" label="${this.title}"></k-icon>
                 <slot></slot>
             </wa-button>
         `

@@ -51,6 +51,14 @@ export interface MapOperations {
     // Overlay operations
     addOverlayFromModule(src: string, position?: string): Promise<void>;
     removeOverlay(index: number): Promise<void>;
+    
+    // Drawing operations (UI-only, no domain model changes until features are added)
+    enableDrawing(geometryType: 'Point' | 'LineString' | 'Polygon', layerIndex: number): Promise<void>;
+    disableDrawing(): Promise<void>;
+    
+    // Feature selection and deletion
+    enableFeatureSelection(layerIndex: number): Promise<void>;
+    deleteSelectedFeatures(): Promise<void>;
 }
 
 export const createProxy = (operations: MapOperations[]): MapOperations => {

@@ -1,24 +1,38 @@
 import {customElement, property} from 'lit/decorators.js'
+import {html, nothing, css} from 'lit';
 
 import {KWidget} from "./k-widget.ts";
-import { icon } from '../core/k-utils.ts';
 
 @customElement('k-icon')
 export class KIcon extends KWidget {
 
     @property()
-    private name?: string;
+    name?: string;
 
     @property()
-    private family?: string = "regular";
+    family?: string = "regular";
 
     @property()
-    private variant?: string;
+    variant?: string;
 
     @property()
-    private label?: string;
+    label?: string;
 
     render() {
-        return icon(this.name, this.label, this.family, this.variant)
+        if (!this.name) {
+            return ""
+        }
+        const parts = this.name.trim().split(/ +/)
+        const iconName = parts.pop()
+        const library = parts.pop()
+        return html`
+            <wa-icon library="${library || nothing}" variant="${this.variant || nothing}"
+                         family="${this.family || nothing}" name=${iconName} label="${this.label || this.name || nothing}"></wa-icon>`
     }
+
+    static styles = css`
+        :host {
+            display: contents;
+        }
+    `
 }

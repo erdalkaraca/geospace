@@ -4,7 +4,7 @@ import {KPart} from "../../parts/k-part.ts";
 import {TreeContribution, TreeNode} from "../../core/tree-utils.ts";
 import {contributionRegistry} from "../../core/contributionregistry.ts";
 import {activePartSignal, activeSelectionSignal} from "../../core/appstate.ts";
-import {icon} from "../../core/k-utils.ts";
+import '../../widgets/k-icon.ts';
 import {createRef, ref} from "lit/directives/ref.js";
 
 export const CID_CATALOG_ROOT = "catalog.root"
@@ -85,7 +85,7 @@ export class GsCatalog extends KPart {
         return html`
             <wa-tree-item
                     @dblclick=${this.nobubble(this.onItemDblClicked)} .model=${node} ?expanded=${expanded}>
-                <span>${icon(node.icon)} ${node.label}</span>
+                <span><k-icon name="${node.icon}"></k-icon> ${node.label}</span>
                 ${node.children?.map(child => this.createTreeItems(child))}
             </wa-tree-item>`
     }

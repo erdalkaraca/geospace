@@ -129,4 +129,21 @@ export class DomainMapOperations implements MapOperations {
         this.triggerDirty();
         await this.renderer.modelToUI();
     }
+
+    async enableDrawing(_geometryType: 'Point' | 'LineString' | 'Polygon', _layerIndex: number): Promise<void> {
+        // No domain model changes - this is UI-only
+    }
+
+    async disableDrawing(): Promise<void> {
+        // No domain model changes - this is UI-only
+    }
+
+    async enableFeatureSelection(_layerIndex: number): Promise<void> {
+        // No domain model changes - this is UI-only
+    }
+
+    async deleteSelectedFeatures(): Promise<void> {
+        // Features are removed from OpenLayers source, changes will sync
+        this.triggerDirty();
+    }
 }

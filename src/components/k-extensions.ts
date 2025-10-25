@@ -3,7 +3,7 @@ import {when} from "lit/directives/when.js";
 import {customElement, state} from 'lit/decorators.js'
 import {KPart} from "../parts/k-part.ts";
 import {Extension, extensionRegistry, TOPIC_EXTENSIONS_CHANGED} from "../core/extensionregistry.ts";
-import {icon} from "../core/k-utils.ts";
+import '../widgets/k-icon.ts';
 import {subscribe} from "../core/events.ts";
 
 
@@ -44,12 +44,12 @@ export class KExtensions extends KPart {
                          @wa-selection-change="${this.selectionChanged}">
                     ${extensionRegistry.getExtensions().map(e => html`
                         <wa-tree-item @dblclick=${this.nobubble(this.onExtensionDblClick)} .model=${e} expanded>
-                            <span>${icon(e.icon)} ${e.name}</span>
+                            <span><k-icon name="${e.icon}"></k-icon> ${e.name}</span>
                         </wa-tree-item>`)}
                 </wa-tree>
                 <div slot="end" style="padding: 1em;">
                     ${when(this.selectedExtension, (e) => html`
-                        <h1>${icon(e.icon)} ${e.name}</h1>
+                        <h1><k-icon name="${e.icon}"></k-icon> ${e.name}</h1>
                         <hr>
                         <div>
                             ${when(extensionRegistry.isEnabled(e.id), () => html`
