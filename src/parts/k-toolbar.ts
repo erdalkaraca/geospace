@@ -5,6 +5,7 @@ import {styleMap} from 'lit/directives/style-map.js';
 import {
     CommandContribution,
     Contribution,
+    ContributionChangeEvent,
     contributionRegistry,
     HTMLContribution,
     TOPIC_CONTRIBUTEIONS_CHANGED
@@ -28,13 +29,16 @@ export class KToolbar extends SignalWatcher(KElement) {
     private contributions: Contribution[] = [];
 
     protected doBeforeUI() {
-        if (this.getAttribute("id")) {
-            const id = this.getAttribute("id")!
+        const id = this.getAttribute("id");
+        if (id) {
             this.contributions = contributionRegistry.getContributions(id)
         }
         
-        subscribe(TOPIC_CONTRIBUTEIONS_CHANGED, () => {
-            this.requestUpdate()
+        subscribe(TOPIC_CONTRIBUTEIONS_CHANGED, (event: ContributionChangeEvent) => {
+            if (id && event.target === id) {
+                this.contributions = event.contributions;
+                this.requestUpdate()
+            }
         })
     }
 

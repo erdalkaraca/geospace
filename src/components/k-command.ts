@@ -3,7 +3,7 @@ import { customElement, property, state } from 'lit/decorators.js'
 import { KWidget } from '../widgets/k-widget.ts'
 import '../widgets/k-icon.ts'
 import { keyBindingManager } from '../core/keybindings.ts'
-import { contributionRegistry, Contribution, CommandContribution, HTMLContribution, TOPIC_CONTRIBUTEIONS_CHANGED } from '../core/contributionregistry.ts'
+import { contributionRegistry, Contribution, CommandContribution, HTMLContribution, ContributionChangeEvent, TOPIC_CONTRIBUTEIONS_CHANGED } from '../core/contributionregistry.ts'
 import { subscribe } from '../core/events.ts'
 import { Signal } from '@lit-labs/signals'
 import { unsafeHTML } from 'lit/directives/unsafe-html.js'
@@ -60,9 +60,10 @@ export class KCommand extends KWidget {
         if (this.dropdown) {
             this.loadDropdownContributions()
             
-            subscribe(TOPIC_CONTRIBUTEIONS_CHANGED, () => {
-                if (this.dropdown) {
-                    this.loadDropdownContributions()
+            subscribe(TOPIC_CONTRIBUTEIONS_CHANGED, (event: ContributionChangeEvent) => {
+                if (this.dropdown && event.target === this.dropdown) {
+                    this.dropdownContributions = event.contributions;
+                    this.requestUpdate();
                 }
             })
         }

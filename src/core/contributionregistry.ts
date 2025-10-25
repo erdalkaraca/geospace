@@ -5,6 +5,11 @@ import {rootContext} from "./di.ts";
 
 export const TOPIC_CONTRIBUTEIONS_CHANGED = "events/contributionregistry/contributionsChanged"
 
+export interface ContributionChangeEvent {
+    target: string;
+    contributions: Contribution[];
+}
+
 export interface Contribution {
     target?: string;
     label: string;
@@ -47,7 +52,7 @@ class ContributionRegistry {
             contribution.disabled = new Signal.Computed<boolean>(callback)
         }
         targetSlot.push(contribution);
-        publish(TOPIC_CONTRIBUTEIONS_CHANGED, this.contributions)
+        publish(TOPIC_CONTRIBUTEIONS_CHANGED, { target, contributions: targetSlot } as ContributionChangeEvent)
     }
 
     getContributions(target: string): Contribution[] {

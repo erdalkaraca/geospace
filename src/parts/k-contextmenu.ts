@@ -4,6 +4,7 @@ import {KElement} from "./k-element.ts";
 import {
     CommandContribution,
     Contribution,
+    ContributionChangeEvent,
     contributionRegistry,
     HTMLContribution,
     TOPIC_CONTRIBUTEIONS_CHANGED
@@ -36,9 +37,9 @@ export class KContextMenu extends SignalWatcher(KElement) {
             this.contributions = contributionRegistry.getContributions(id);
         }
         
-        subscribe(TOPIC_CONTRIBUTEIONS_CHANGED, () => {
-            if (this.getAttribute("id")) {
-                this.contributions = contributionRegistry.getContributions(this.getAttribute("id")!);
+        subscribe(TOPIC_CONTRIBUTEIONS_CHANGED, (event: ContributionChangeEvent) => {
+            if (id && event.target === id) {
+                this.contributions = event.contributions;
                 this.requestUpdate();
             }
         });

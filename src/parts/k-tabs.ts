@@ -1,7 +1,7 @@
 import {customElement, state} from "lit/decorators.js";
 import {css, html, nothing} from "lit";
 import {KContainer} from "./k-container.ts";
-import {contributionRegistry, TabContribution, TOPIC_CONTRIBUTEIONS_CHANGED} from "../core/contributionregistry.ts";
+import {contributionRegistry, ContributionChangeEvent, TabContribution, TOPIC_CONTRIBUTEIONS_CHANGED} from "../core/contributionregistry.ts";
 import {when} from "lit/directives/when.js";
 import {repeat} from "lit/directives/repeat.js";
 import '../widgets/k-icon.ts';
@@ -156,8 +156,8 @@ export class KTabs extends KContainer {
             });
         });
         
-        subscribe(TOPIC_CONTRIBUTEIONS_CHANGED, () => {
-            if (!this.containerId) return;
+        subscribe(TOPIC_CONTRIBUTEIONS_CHANGED, (event: ContributionChangeEvent) => {
+            if (!this.containerId || event.target !== this.containerId) return;
             
             this.loadAndResolveContributions();
             this.requestUpdate();

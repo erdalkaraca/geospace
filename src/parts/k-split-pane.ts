@@ -2,10 +2,11 @@ import {html, nothing} from 'lit'
 import {customElement, property, state} from 'lit/decorators.js'
 import {KElement} from "./k-element.ts";
 import {
+    contributionRegistry,
+    ContributionChangeEvent,
     PaneContribution,
     TOPIC_CONTRIBUTEIONS_CHANGED
 } from "../core/contributionregistry.ts";
-import {contributionRegistry} from "../core/contributionregistry.ts";
 import {SignalWatcher} from '@lit-labs/signals';
 import {subscribe} from "../core/events.ts";
 import {styleMap} from 'lit/directives/style-map.js';
@@ -76,8 +77,8 @@ export class KSplitPane extends SignalWatcher(KElement) {
     }
 
     protected doInitUI() {
-        subscribe(TOPIC_CONTRIBUTEIONS_CHANGED, () => {
-            if (!this.useDirectChildren && this.containerId) {
+        subscribe(TOPIC_CONTRIBUTEIONS_CHANGED, (event: ContributionChangeEvent) => {
+            if (!this.useDirectChildren && this.containerId && event.target === this.containerId) {
                 this.loadPanes(this.containerId);
             }
         });

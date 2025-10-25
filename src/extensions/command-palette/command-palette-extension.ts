@@ -519,18 +519,20 @@ export default ({ contributionRegistry, commandRegistry, toastInfo, toastError, 
         keyBinding: 'CTRL+SHIFT+P'
     });
 
+    // Create the command palette element once and reuse it
+    const commandPaletteElement = (() => {
+        const element = document.createElement('k-command-palette') as any;
+        element.commandRegistry = commandRegistry;
+        element.toastInfo = toastInfo;
+        element.toastError = toastError;
+        return element;
+    })();
+
     // Register UI component at the top center
     contributionRegistry.registerContribution(TOOLBAR_MAIN_CENTER, {
         label: "Command Palette",
         icon: "terminal",
-        html: () => {
-            // Create element and inject dependencies
-            const element = document.createElement('k-command-palette') as any;
-            element.commandRegistry = commandRegistry;
-            element.toastInfo = toastInfo;
-            element.toastError = toastError;
-            return html`${element}`;
-        }
+        html: () => html`${commandPaletteElement}`
     });
 
 }
