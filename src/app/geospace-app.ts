@@ -164,6 +164,13 @@ export const geospaceApp: AppDefinition = {
                 description: "OpenStreetMap Overpass API Integration for use with LLMs",
                 loader: () => import("./extensions/overpass-extension.ts"),
                 icon: "table"
+            },
+            {
+                id: "geospace.gtfs",
+                name: "GTFS to GeoJSON Converter",
+                description: "Convert GTFS zip archives to GeoJSON files",
+                loader: () => import("./extensions/gtfs/gtfs-extension.ts"),
+                icon: "map-location-dot"
             }
         ]
     },

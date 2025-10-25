@@ -99,11 +99,3 @@ extensionRegistry.registerExtension({
     loader: () => import("./memory-usage/memory-usage-extension.ts"),
     icon: "microchip",
 })
-
-extensionRegistry.registerExtension({
-    id: "system.gtfs",
-    name: "GTFS to GeoJSON Converter",
-    description: "Convert GTFS zip archives to GeoJSON files",
-    loader: () => import("./gtfs/gtfs-extension.ts"),
-    icon: "map-location-dot",
-})
