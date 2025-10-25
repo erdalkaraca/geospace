@@ -1,0 +1,44 @@
+name: Auto Tag on Version Commit
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  auto-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version and create tag
+        run: |
+          # Get the commit message
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          echo "Commit message: $COMMIT_MSG"
+          
+          # Extract version pattern (v0.12.9, v1.2.3, etc.)
+          VERSION=$(echo "$COMMIT_MSG" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | head -n 1)
+          
+          if [ -n "$VERSION" ]; then
+            echo "Found version: $VERSION"
+            
+            # Check if tag already exists
+            if git rev-parse "$VERSION" >/dev/null 2>&1; then
+              echo "Tag $VERSION already exists, skipping"
+            else
+              # Create and push the tag
+              git tag "$VERSION"
+              git push origin "$VERSION"
+              echo "Created and pushed tag: $VERSION"
+            fi
+          else
+            echo "No version pattern found in commit message"
+          fi
+
