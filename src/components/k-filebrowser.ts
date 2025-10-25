@@ -47,7 +47,7 @@ export class KFileBrowser extends KPart {
         return html`
             <k-command cmd="load_workspace" icon="folder-open" title="Load workspace folder"></k-command>
             <k-command cmd="reload_workspace" icon="repeat" title="Reload workspace folder"></k-command>
-            <k-command cmd="create_file" icon="plus" title="Create new file..."></k-command>
+            <k-command cmd="create_file" icon="plus" title="Create new..." dropdown="filebrowser.create"></k-command>
             <k-command cmd="rename_resource" icon="pen" ?disabled=${!canModify} title="Rename selected resource (F2)"></k-command>
             <k-command cmd="delete_resource" icon="trash" ?disabled=${!canModify} title="Delete selected resource"></k-command>
         `;
@@ -58,7 +58,7 @@ export class KFileBrowser extends KPart {
         
         return html`
             <k-command cmd="open_editor" icon="folder-open">Open</k-command>
-            <k-command cmd="create_file" icon="plus">Create new file...</k-command>
+            <k-command cmd="create_file" icon="plus" dropdown="filebrowser.create">Create new...</k-command>
             <k-command cmd="rename_resource" icon="pen" ?disabled=${!canModify}>Rename</k-command>
             <k-command cmd="delete_resource" icon="trash" ?disabled=${!canModify}>Delete</k-command>
         `;

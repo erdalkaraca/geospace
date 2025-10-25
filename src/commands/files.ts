@@ -25,6 +25,11 @@ registerAll({
                 "name": "ask",
                 "description": "whether to prompt the user for the file path",
                 "required": false
+            },
+            {
+                "name": "extension",
+                "description": "required file extension (e.g., '.geospace'), will be appended if missing",
+                "required": false
             }
         ]
     },
@@ -39,10 +44,23 @@ registerAll({
             let path = params?.path
             const contents = params?.contents
             const ask = params?.ask
+            const extension = params?.extension
 
             if (ask || !path) {
-                path = prompt("Enter path to new file (directories will be created if not exist):")
+                path = prompt("Enter path to new file (directories will be created if not exist):", path || "")
                 if (!path) {
+                    return
+                }
+            }
+
+            if (extension && !path.endsWith(extension)) {
+                path += extension
+            }
+
+            const existingResource = await workspaceDir.getResource(path)
+            if (existingResource) {
+                const overwrite = confirm(`File "${path}" already exists. Do you want to overwrite it?`)
+                if (!overwrite) {
                     return
                 }
             }
@@ -122,7 +140,6 @@ registerAll({
         "id": "delete_resource",
         "name": "Delete a resource (file or directory)",
         "description": "Deletes a resource (file or directory)",
-        "keyBinding": "DELETE",
         "parameters": [
             {
                 "name": "path",
@@ -199,7 +216,6 @@ registerAll({
         "id": "reload_workspace",
         "name": "Reload workspace folder",
         "description": "Reloads the active workspace folder",
-        "keyBinding": "F5",
         "parameters": []
     },
     handler: {

@@ -90,7 +90,7 @@ export class GSApp extends KContainer {
                 <k-resizable-grid 
                     id="center-layout" 
                     orientation="vertical" 
-                    sizes="70%, 30%">
+                    sizes="80%, 20%">
                     
                     <!-- Editor Area (fixed, never moves) -->
                     <k-tabs id="${EDITOR_AREA_MAIN}"></k-tabs>

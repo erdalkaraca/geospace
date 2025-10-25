@@ -27,7 +27,7 @@ import { editorRegistry } from "../core/editorregistry.ts";
 import { KPart } from "../parts/k-part.ts";
 import { commandRegistry, registerAll } from "../core/commandregistry.ts";
 import { activeSelectionSignal } from "../core/appstate.ts";
-import { GsSourceType } from "./rt/gs-model.ts";
+import { GsSourceType, DEFAULT_GSMAP } from "./rt/gs-model.ts";
 
 import {
     SIDEBAR_MAIN,
@@ -147,6 +147,12 @@ export const geospaceApp: AppDefinition = {
                     }
                     return !isSupportedSpatialFile(selection);
                 }
+            },
+            {
+                target: "filebrowser.create",
+                label: "geo!space map",
+                icon: "earth",
+                command: "create_geospace_file"
             }
         ] as any[],
 
@@ -250,6 +256,36 @@ export const geospaceApp: AppDefinition = {
 
                     // Call add_layer command with proper parameters
                     await commandRegistry.execute('add_layer', commandContext);
+                }
+            }
+        })
+
+        registerAll({
+            command: {
+                "id": "create_geospace_file",
+                "name": "Create GeoSpace Map File",
+                "description": "Creates a new .geospace map file",
+                "parameters": []
+            },
+            handler: {
+                execute: async () => {
+                    const gsMap = { 
+                        ...DEFAULT_GSMAP, 
+                        chatHistory: [],
+                        view: {
+                            center: [1105600, 6120800],
+                            zoom: 5,
+                            projection: 'EPSG:3857'
+                        }
+                    }
+                    await commandRegistry.execute("create_file", {
+                        params: {
+                            path: "map.geospace",
+                            contents: JSON.stringify(gsMap, null, 2),
+                            extension: ".geospace",
+                            ask: true
+                        }
+                    })
                 }
             }
         })
