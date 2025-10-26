@@ -11,6 +11,7 @@ import {GsLayer, GsControl, GsOverlay} from "../rt/gs-model.ts";
 import {getOriginalUri} from "./utils.ts";
 import {commandRegistry} from "../../core/commandregistry.ts";
 import "../../components/k-action.ts";
+import {confirmDialog} from "../../core/dialog.ts";
 
 @customElement('gs-map-props')
 export class GsMapProps extends KPart {
@@ -45,8 +46,8 @@ export class GsMapProps extends KPart {
         this.updateLater()
     }
 
-    private confirmAction(message: string, action: () => void) {
-        if (confirm(message)) {
+    private async confirmAction(message: string, action: () => void) {
+        if (await confirmDialog(message)) {
             action();
         }
     }

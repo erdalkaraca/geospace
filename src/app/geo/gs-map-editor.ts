@@ -13,6 +13,7 @@ import olCSS from "../../../node_modules/ol/ol.css?raw";
 import { loadEnvs, replaceUris, revertBlobUris } from "./utils.ts";
 import { File } from '../../core/filesys.ts';
 import { toastError, toastInfo } from "../../core/toast.ts";
+import { promptDialog } from "../../core/dialog.ts";
 import { ChatContext } from "../../core/chatservice.ts";
 import {MapRenderer, MapOperations, createProxy, MapSyncEvent} from "./map-renderer.ts";
 import { IFrameMapRenderer } from "./proxy-map-renderer.ts";
@@ -408,7 +409,7 @@ export class GsMapEditor extends KPart {
             return;
         }
         
-        const layerName = prompt('Enter name for new drawing layer:', 'Drawing Layer');
+        const layerName = await promptDialog('Enter name for new drawing layer:', 'Drawing Layer');
         
         if (!layerName) {
             return;

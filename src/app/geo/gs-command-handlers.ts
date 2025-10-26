@@ -3,6 +3,7 @@ import {fromLonLat} from "ol/proj";
 
 import {MapOperations} from "./map-renderer.ts";
 import {replaceUris} from "./utils.ts";
+import {promptDialog} from "../../core/dialog.ts";
 import {
     GsGeometry,
     GsGeometryType,
@@ -303,7 +304,7 @@ commandRegistry.registerAll({
 
             const currentName = gsMap.layers[index].name || `Layer ${index + 1}`;
             const newName = context.params?.newName || 
-                           prompt(`Enter new name for "${currentName}":`, currentName);
+                           await promptDialog(`Enter new name for "${currentName}":`, currentName);
             
             if (!newName || newName === currentName) {
                 return;

@@ -202,16 +202,19 @@ export class FileSysFileHandleResource extends File {
             return;
         }
 
-        if ('move' in this.fileHandle && typeof (this.fileHandle as any).move === 'function') {
+        if (!('move' in this.fileHandle) || typeof (this.fileHandle as any).move !== 'function') {
+            throw new Error('File rename not supported in this browser. Please use a browser with File System Access API move() support.');
+        }
+
+        try {
             await (this.fileHandle as any).move(newName);
-        } else {
-            const oldPath = this.getWorkspacePath();
-            const pathParts = oldPath.split('/');
-            pathParts[pathParts.length - 1] = newName;
-            const newPath = pathParts.join('/');
-            
-            await this.copyTo(newPath);
-            await this.delete();
+        } catch (error: any) {
+            if (error.name === 'NotAllowedError' || 
+                error.message?.includes('not allowed') ||
+                error.message?.includes('user agent')) {
+                throw new Error('File rename failed: The operation took too long and user activation expired. Please try again.');
+            }
+            throw error;
         }
         
         await parent.listChildren(true);
@@ -347,10 +350,19 @@ export class FileSysDirHandleResource extends Directory {
             return;
         }
 
-        if ('move' in this.dirHandle && typeof (this.dirHandle as any).move === 'function') {
-            await (this.dirHandle as any).move(newName);
-        } else {
+        if (!('move' in this.dirHandle) || typeof (this.dirHandle as any).move !== 'function') {
             throw new Error('Directory rename not supported in this browser. Please use a browser with File System Access API move() support.');
+        }
+
+        try {
+            await (this.dirHandle as any).move(newName);
+        } catch (error: any) {
+            if (error.name === 'NotAllowedError' || 
+                error.message?.includes('not allowed') ||
+                error.message?.includes('user agent')) {
+                throw new Error('Directory rename failed: The operation took too long and user activation expired. Please try again.');
+            }
+            throw error;
         }
         
         await parent.listChildren(true);

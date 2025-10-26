@@ -12,6 +12,7 @@ import {KToolbar} from "./k-toolbar.ts";
 import {KContextMenu} from "./k-contextmenu.ts";
 import {MouseButton, EDITOR_AREA_MAIN} from "../core/constants.ts";
 import {activePartSignal} from "../core/appstate.ts";
+import {confirmDialog} from "../core/dialog.ts";
 
 /**
  * KTabs - A dynamic tab container component
@@ -242,10 +243,10 @@ export class KTabs extends KContainer {
         }
     }
 
-    closeTab(event: Event, tabName: string): void {
+    async closeTab(event: Event, tabName: string): Promise<void> {
         event.stopPropagation();
         
-        if (this.isDirty(tabName) && !confirm("Unsaved changes will be lost: Do you really want to close?")) {
+        if (this.isDirty(tabName) && !await confirmDialog("Unsaved changes will be lost: Do you really want to close?")) {
             return;
         }
         

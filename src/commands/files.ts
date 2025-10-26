@@ -1,6 +1,7 @@
 import {registerAll} from "../core/commandregistry.ts";
 import {File, workspaceService} from "../core/filesys.ts";
 import {toastError, toastInfo} from "../core/toast.ts";
+import {promptDialog, confirmDialog} from "../core/dialog.ts";
 import {activeSelectionSignal} from "../core/appstate.ts";
 import {editorRegistry} from "../core/editorregistry.ts";
 
@@ -47,7 +48,7 @@ registerAll({
             const extension = params?.extension
 
             if (ask || !path) {
-                path = prompt("Enter path to new file (directories will be created if not exist):", path || "")
+                path = await promptDialog("Enter path to new file (directories will be created if not exist):", path || "")
                 if (!path) {
                     return
                 }
@@ -59,7 +60,7 @@ registerAll({
 
             const existingResource = await workspaceDir.getResource(path)
             if (existingResource) {
-                const overwrite = confirm(`File "${path}" already exists. Do you want to overwrite it?`)
+                const overwrite = await confirmDialog(`File "${path}" already exists. Do you want to overwrite it?`)
                 if (!overwrite) {
                     return
                 }
@@ -119,7 +120,7 @@ registerAll({
 
             const currentName = resource.getName()
             const newName = context.params?.newName || 
-                           prompt(`Enter new name for "${currentName}":`, currentName)
+                           await promptDialog(`Enter new name for "${currentName}":`, currentName)
             
             if (!newName || newName === currentName) {
                 return
@@ -173,10 +174,10 @@ registerAll({
                 return
             }
             path = resource.getWorkspacePath()
-            const confirm = context.params && context.params["confirm"]
+            const confirmParam = context.params && context.params["confirm"]
             let yes = true
-            if (confirm === undefined || confirm === true) {
-                yes = window.confirm(`Are you sure you want to delete ${path}?`)
+            if (confirmParam === undefined || confirmParam === true) {
+                yes = await confirmDialog(`Are you sure you want to delete ${path}?`)
             }
 
             if (yes) {

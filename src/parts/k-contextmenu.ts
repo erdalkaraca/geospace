@@ -54,12 +54,18 @@ export class KContextMenu extends SignalWatcher(KElement) {
         this.isOpen = false;
     }
 
+    private handleCommandClick(commandId: string) {
+        return async () => {
+            this.executeCommand(commandId, {});
+        };
+    }
+
     private renderContribution(contribution: Contribution) {
         if ("command" in contribution) {
             const commandContribution = contribution as CommandContribution;
             return html`
                 <wa-dropdown-item 
-                    @click=${this.command(commandContribution.command)}
+                    @click=${this.handleCommandClick(commandContribution.command)}
                     ?disabled="${(commandContribution.disabled as Signal.Computed<boolean>)?.get()}">
                     ${commandContribution.icon ? html`<wa-icon slot="icon" name=${commandContribution.icon}></wa-icon>` : ''}
                     ${commandContribution.label}
