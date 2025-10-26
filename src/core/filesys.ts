@@ -358,44 +358,182 @@ export class FileSysDirHandleResource extends Directory {
     }
 }
 
+/**
+ * Interface for workspace contributions
+ * 
+ * Allows extensions to register custom workspace implementations
+ */
+export interface WorkspaceContribution {
+    /**
+     * Unique identifier for this workspace type (e.g., 'filesystem', 'webdav')
+     */
+    type: string;
+
+    /**
+     * Display name for this workspace type
+     */
+    name: string;
+
+    /**
+     * Check if this contribution can handle the given connection input
+     */
+    canHandle(input: any): boolean;
+
+    /**
+     * Create a Directory from the given connection input
+     */
+    connect(input: any): Promise<Directory>;
+
+    /**
+     * Restore a workspace from persisted data
+     */
+    restore?(data: any): Promise<Directory | undefined>;
+
+    /**
+     * Prepare data for persistence
+     */
+    persist?(workspace: Directory): Promise<any>;
+}
+
+interface PersistedWorkspaceData {
+    type: string;
+    data: any;
+}
+
 export class WorkspaceService {
     private workspace?: Promise<Directory | undefined>;
-
+    private currentType?: string;
+    private contributions: Map<string, WorkspaceContribution> = new Map();
 
     constructor() {
-        this.workspace = persistenceService.getObject("workspace").then(async obj => {
-            return obj ? new FileSysDirHandleResource(obj, undefined) : undefined
-        })
+        this.workspace = this.loadPersistedWorkspace();
         this.workspace.then(workspace => {
-            publish(TOPIC_WORKSPACE_CONNECTED, workspace)
-        })
+            if (workspace) {
+                publish(TOPIC_WORKSPACE_CONNECTED, workspace);
+            }
+        });
     }
 
-    async connectWorkspace(input: FileSystemDirectoryHandle): Promise<Directory> {
-        await persistenceService.persistObject("workspace", input);
-        this.workspace = new Promise<Directory>(resolve => {
-            const workspace = new FileSysDirHandleResource(input)
-            resolve(workspace)
-        }).finally(() => {
-            this.workspace?.then(workspace => {
-                publish(TOPIC_WORKSPACE_CONNECTED, workspace);
-            })
-        })
-        // @ts-ignore
-        return this.workspace
+    /**
+     * Register a workspace contribution
+     */
+    registerContribution(contribution: WorkspaceContribution): void {
+        this.contributions.set(contribution.type, contribution);
+        console.log(`Workspace contribution registered: ${contribution.name} (${contribution.type})`);
+    }
+
+    /**
+     * Get all registered workspace contributions
+     */
+    getContributions(): WorkspaceContribution[] {
+        return Array.from(this.contributions.values());
+    }
+
+    private async loadPersistedWorkspace(): Promise<Directory | undefined> {
+        const persistedData = await persistenceService.getObject("workspace_data") as PersistedWorkspaceData | null;
+        
+        if (!persistedData) {
+            return undefined;
+        }
+
+        const contribution = this.contributions.get(persistedData.type);
+        if (!contribution) {
+            console.warn(`No contribution found for workspace type: ${persistedData.type}`);
+            return undefined;
+        }
+
+        try {
+            if (contribution.restore) {
+                const workspace = await contribution.restore(persistedData.data);
+                if (workspace) {
+                    this.currentType = persistedData.type;
+                }
+                return workspace;
+            }
+        } catch (error) {
+            console.error(`Failed to restore workspace of type ${persistedData.type}:`, error);
+        }
+
+        return undefined;
+    }
+
+    async connectWorkspace(input: any): Promise<Directory> {
+        // Find a contribution that can handle this input
+        const contribution = Array.from(this.contributions.values()).find(c => c.canHandle(input));
+        
+        if (!contribution) {
+            throw new Error('No workspace contribution can handle this input');
+        }
+
+        // Connect using the contribution
+        const workspace = await contribution.connect(input);
+        
+        // Persist the workspace data
+        const persistData = contribution.persist ? await contribution.persist(workspace) : input;
+        const workspaceData: PersistedWorkspaceData = {
+            type: contribution.type,
+            data: persistData
+        };
+        await persistenceService.persistObject("workspace_data", workspaceData);
+
+        // Update current workspace
+        this.currentType = contribution.type;
+        this.workspace = Promise.resolve(workspace);
+        publish(TOPIC_WORKSPACE_CONNECTED, workspace);
+
+        return workspace;
     }
 
     public async getWorkspace(): Promise<Directory | undefined> {
-        if (this.workspace) {
-            return await this.workspace;
+        if (!this.workspace) {
+            throw new Error('No workspace connected.');
         }
-        throw new Error('No workspace connected.');
+        return await this.workspace;
     }
 
-    public isConnected() {
-        return !!this.workspace
+    public isConnected(): boolean {
+        return !!this.workspace;
+    }
+
+    public getWorkspaceType(): string | undefined {
+        return this.currentType;
+    }
+
+    public async disconnectWorkspace(): Promise<void> {
+        this.workspace = undefined;
+        this.currentType = undefined;
+        await persistenceService.persistObject("workspace_data", null);
+        await persistenceService.persistObject("workspace", null); // Clean up legacy
     }
 }
 
 export const workspaceService = new WorkspaceService();
-rootContext.put("workspaceService", workspaceService)
+rootContext.put("workspaceService", workspaceService);
+
+// Register default filesystem contribution
+workspaceService.registerContribution({
+    type: 'filesystem',
+    name: 'Local File System',
+    
+    canHandle(input: any): boolean {
+        return input && 'kind' in input && input.kind === 'directory';
+    },
+    
+    async connect(input: FileSystemDirectoryHandle): Promise<Directory> {
+        return new FileSysDirHandleResource(input);
+    },
+    
+    async restore(data: any): Promise<Directory | undefined> {
+        if (data && 'kind' in data && data.kind === 'directory') {
+            return new FileSysDirHandleResource(data, undefined);
+        }
+        return undefined;
+    },
+    
+    async persist(workspace: Directory): Promise<any> {
+        if (workspace instanceof FileSysDirHandleResource) {
+            return workspace.getHandle();
+        }
+        return null;
+    }
+});

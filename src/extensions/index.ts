@@ -99,3 +99,11 @@ extensionRegistry.registerExtension({
     loader: () => import("./memory-usage/memory-usage-extension.ts"),
     icon: "microchip",
 })
+
+extensionRegistry.registerExtension({
+    id: "system.webdav",
+    name: "WebDAV Workspace",
+    description: "Connect to WebDAV servers (Nextcloud, ownCloud) as workspace folders for cloud storage integration",
+    loader: () => import("./webdav/webdav-extension.ts"),
+    icon: "cloud",
+})

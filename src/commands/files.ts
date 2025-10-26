@@ -190,11 +190,12 @@ registerAll({
     }
 })
 
+// Register local filesystem workspace contribution
 registerAll({
     command: {
         "id": "load_workspace",
-        "name": "Load workspace",
-        "description": "Loads a workspace",
+        "name": "Local Folder",
+        "description": "Connect to a local folder using File System Access API",
         "parameters": []
     },
     handler: {
@@ -208,6 +209,11 @@ registerAll({
                 toastError(err.message)
             });
         }
+    },
+    contribution: {
+        target: "filebrowser.connections",
+        label: "Local Folder",
+        icon: "folder-open"
     }
 })
 

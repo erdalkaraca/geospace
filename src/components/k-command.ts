@@ -124,10 +124,17 @@ export class KCommand extends KWidget {
                         appearance=${this.appearance}
                         size=${this.size}
                         ?disabled=${this.disabled}
+                        with-caret
                         title=${keybinding ? `${this.title} (${keybinding})` : this.title}>
                         <k-icon slot="start" name="${this.icon}" label="${this.title}"></k-icon>
                         <slot></slot>
                     </wa-button>
+                    
+                    ${this.title ? html`
+                        <h6 style="padding: var(--wa-spacing-2) var(--wa-spacing-3); margin: 0; color: var(--wa-color-neutral-50); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">
+                            ${this.title}
+                        </h6>
+                    ` : nothing}
                     
                     ${this.dropdownContributions.map(c => this.renderContribution(c))}
                     
