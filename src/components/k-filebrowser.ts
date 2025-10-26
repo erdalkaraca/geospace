@@ -66,7 +66,9 @@ export class KFileBrowser extends KPart {
 
     @topic(TOPIC_WORKSPACE_CHANGED)
     async onWorkspaceChanged(workspaceDir: Directory) {
+        activeSelectionSignal.set(undefined)
         await this.loadWorkspace(workspaceDir)
+        await this.syncTreeSelection()
     }
 
     @topic(TOPIC_WORKSPACE_CONNECTED)
@@ -80,6 +82,17 @@ export class KFileBrowser extends KPart {
             this.root = undefined
         } else {
             this.root = await this.resourceToTreeNode(workspaceDir)
+        }
+    }
+
+    private async syncTreeSelection() {
+        await this.updateComplete
+        const waTree = this.treeRef.value?.querySelector('wa-tree')
+        // @ts-ignore
+        const selectedItems = waTree?.selectedItems || []
+        if (selectedItems.length > 0) {
+            // @ts-ignore
+            activeSelectionSignal.set(selectedItems[0].model?.data)
         }
     }
 
@@ -131,8 +144,13 @@ export class KFileBrowser extends KPart {
 
     onSelectionChanged(event: Event) {
         // @ts-ignore
-        const node: TreeNode = event.detail.selection[0].model
-        activeSelectionSignal.set(node.data)
+        const selection = event.detail.selection
+        if (selection && selection.length > 0) {
+            const node: TreeNode = selection[0].model
+            activeSelectionSignal.set(node.data)
+        } else {
+            activeSelectionSignal.set(undefined)
+        }
     }
 
     render() {

@@ -181,11 +181,12 @@ registerAll({
             }
 
             if (yes) {
-                resource.delete().then(() => {
+                try {
+                    await resource.delete()
                     toastInfo("Resource deleted: " + path)
-                }).catch((err: Error) => {
-                    toastError(`Resource ${path} could not be deleted: ` + err)
-                })
+                } catch (err: any) {
+                    toastError(`Resource ${path} could not be deleted: ${err.message || err}`)
+                }
             }
         }
     }
