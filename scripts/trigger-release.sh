@@ -60,17 +60,22 @@ SUMMARY=""
 if [ -n "$OPENAI_API_KEY" ] && [ -n "$CHANGES" ]; then
     echo "Generating AI summary of changes..."
     
-    PROMPT="Summarize the following git commits at an abstract level for end users. Focus on features, fixes, and improvements without technical implementation details. Keep it concise (3-5 bullet points):\n\n$CHANGES"
+    # Escape the changes for JSON
+    CHANGES_ESCAPED=$(echo "$CHANGES" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
+    PROMPT="Summarize the following git commits at an abstract level for end users. Focus on features, fixes, and improvements without technical implementation details. Keep it concise (3-5 bullet points):\\n\\n$CHANGES_ESCAPED"
     
-    SUMMARY=$(curl -s https://api.openai.com/v1/chat/completions \
+    # Call OpenAI API and parse response
+    API_RESPONSE=$(curl -s https://api.openai.com/v1/chat/completions \
         -H "Content-Type: application/json" \
         -H "Authorization: Bearer $OPENAI_API_KEY" \
-        -d "{
-            \"model\": \"gpt-4o-mini\",
-            \"messages\": [{\"role\": \"user\", \"content\": \"$PROMPT\"}],
-            \"temperature\": 0.7,
-            \"max_tokens\": 500
-        }" | grep -o '"content":"[^"]*"' | head -1 | sed 's/"content":"\(.*\)"/\1/' | sed 's/\\n/\n/g')
+        -d "{\"model\":\"gpt-4o-mini\",\"messages\":[{\"role\":\"user\",\"content\":\"$PROMPT\"}],\"temperature\":0.7,\"max_tokens\":500}")
+    
+    # Extract content using python if available, otherwise fallback to grep/sed
+    if command -v python3 &> /dev/null; then
+        SUMMARY=$(echo "$API_RESPONSE" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data['choices'][0]['message']['content'] if 'choices' in data else '')" 2>/dev/null)
+    else
+        SUMMARY=$(echo "$API_RESPONSE" | grep -o '"content"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/"content"[[:space:]]*:[[:space:]]*"\(.*\)"/\1/')
+    fi
     
     if [ -n "$SUMMARY" ]; then
         echo ""
