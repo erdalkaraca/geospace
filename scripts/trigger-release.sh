@@ -99,9 +99,6 @@ if [ "$DRY_RUN" = true ]; then
         echo "No changes since last release."
     elif [ -n "$SUMMARY" ]; then
         echo "$SUMMARY"
-        echo ""
-        echo "Detailed changes:"
-        echo "$CHANGES"
     else
         echo "Changes since $LATEST_TAG:"
         echo "$CHANGES"
