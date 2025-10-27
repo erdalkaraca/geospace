@@ -21,12 +21,13 @@ jobs:
       - name: Extract version and create tag
         id: extract-version
         run: |
-          # Get the commit message
-          COMMIT_MSG=$(git log -1 --pretty=%B)
-          echo "Commit message: $COMMIT_MSG"
+          # Get the commit subject and body
+          COMMIT_SUBJECT=$(git log -1 --pretty=%s)
+          COMMIT_BODY=$(git log -1 --pretty=%b)
+          echo "Commit subject: $COMMIT_SUBJECT"
           
           # Extract version pattern (v0.12.9, v1.2.3, etc.)
-          VERSION_WITH_V=$(echo "$COMMIT_MSG" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | head -n 1)
+          VERSION_WITH_V=$(echo "$COMMIT_SUBJECT" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | head -n 1)
           
           if [ -n "$VERSION_WITH_V" ]; then
             # Strip the 'v' prefix to get semantic version
@@ -34,7 +35,13 @@ jobs:
             echo "Found version in commit: $VERSION_WITH_V"
             echo "Creating tag: $VERSION"
             echo "version=$VERSION" >> $GITHUB_OUTPUT
-            echo "commit_msg=$COMMIT_MSG" >> $GITHUB_OUTPUT
+            
+            # Save commit body for release notes (use multiline output)
+            {
+              echo "release_body<<EOF"
+              echo "$COMMIT_BODY"
+              echo "EOF"
+            } >> $GITHUB_OUTPUT
             
             # Check if tag already exists
             if git rev-parse "$VERSION" >/dev/null 2>&1; then
@@ -58,7 +65,7 @@ jobs:
         with:
           tag_name: ${{ steps.extract-version.outputs.version }}
           name: Release ${{ steps.extract-version.outputs.version }}
-          body: ${{ steps.extract-version.outputs.commit_msg }}
+          body: ${{ steps.extract-version.outputs.release_body }}
           draft: false
           prerelease: false
           make_latest: true
