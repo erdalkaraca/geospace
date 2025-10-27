@@ -62,7 +62,7 @@ if [ -n "$OPENAI_API_KEY" ] && [ -n "$CHANGES" ]; then
     
     # Escape the changes for JSON
     CHANGES_ESCAPED=$(echo "$CHANGES" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
-    PROMPT="Summarize the following git commits at an abstract level for end users. Focus on features, fixes, and improvements without technical implementation details. Keep it concise (3-5 bullet points):\\n\\n$CHANGES_ESCAPED"
+    PROMPT="Summarize the following git commits at an abstract level for end users. Focus on features, fixes, and improvements without technical implementation details. Keep it concise:\\n\\n$CHANGES_ESCAPED"
     
     # Call OpenAI API and parse response
     API_RESPONSE=$(curl -s https://api.openai.com/v1/chat/completions \
