@@ -7,7 +7,7 @@ import { CommandStack } from "../../core/commandregistry.ts";
 import { KPart } from "../../parts/k-part.ts";
 import { EditorInput } from "../../core/editorregistry.ts";
 import { DEFAULT_GSMAP, GsMap, GsLayerType, GsSourceType } from "../rt";
-import { mapChangedSignal, MapEvents } from "./gs-signals.ts";
+import { mapChangedSignal, MapEvents, FeatureSelection } from "./gs-signals.ts";
 import { watching } from "../../core/signals.ts";
 import olCSS from "../../../node_modules/ol/ol.css?raw";
 import { loadEnvs, replaceUris, revertBlobUris } from "./utils.ts";
@@ -245,11 +245,28 @@ export class GsMapEditor extends KPart {
                         break;
                         
                     case 'featureSelected':
-                        // Handle feature selection (future use)
+                        // Emit feature selection event
+                        const selectionPayload = {
+                            feature: event.feature,
+                            layerIndex: event.layerIndex,
+                            metrics: event.metrics
+                        } as FeatureSelection;
+                        console.info('Feature metrics:', selectionPayload.metrics);
+                        mapChangedSignal.set({ 
+                            part: this, 
+                            event: MapEvents.FEATURE_SELECTED,
+                            payload: selectionPayload
+                        });
                         break;
                         
                     case 'featureDeselected':
-                        // Handle feature deselection (future use)
+                        // Emit feature deselection (null payload)
+                        console.info('Feature deselected');
+                        mapChangedSignal.set({ 
+                            part: this, 
+                            event: MapEvents.FEATURE_SELECTED,
+                            payload: null
+                        });
                         break;
                 }
                 

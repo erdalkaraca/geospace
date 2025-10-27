@@ -9,6 +9,8 @@ import Draw from "ol/interaction/Draw.js";
 import Select from "ol/interaction/Select.js";
 import {click} from "ol/events/condition.js";
 import {Style, Stroke, Fill, Circle as CircleStyle} from "ol/style.js";
+import {getLength, getArea} from "ol/sphere.js";
+import LineString from "ol/geom/LineString.js";
 
 /**
  * OpenLayers map renderer that manages OpenLayers maps
@@ -480,6 +482,67 @@ export class OpenLayersMapOperations implements MapOperations {
         };
         
         this.selectInteraction = new Select(selectOptions);
+        
+        // Listen for feature selection events
+        this.selectInteraction.on('select', (event: any) => {
+            if (event.selected.length > 0) {
+                const selectedFeature = event.selected[0];
+                // Find which layer this feature belongs to
+                let featureLayerIndex = -1;
+                olLayers.getArray().forEach((layer, index) => {
+                    if (layer instanceof VectorLayer) {
+                        const source = layer.getSource();
+                        if (source && source.hasFeature(selectedFeature)) {
+                            featureLayerIndex = index;
+                        }
+                    }
+                });
+                
+                if (featureLayerIndex >= 0 && this.renderer) {
+                    const gsFeature = toGsFeature(selectedFeature);
+                    
+                    // Calculate metrics based on geometry type
+                    const geometry = selectedFeature.getGeometry();
+                    const metrics: { length?: number, area?: number } = {};
+                    
+                    if (geometry) {
+                        const geometryType = geometry.getType();
+                        
+                        try {
+                            if (geometryType === 'LineString' || geometryType === 'MultiLineString') {
+                                metrics.length = getLength(geometry, { projection: this.olMap.getView().getProjection() });
+                            } else if (geometryType === 'Polygon' || geometryType === 'MultiPolygon') {
+                                metrics.area = getArea(geometry, { projection: this.olMap.getView().getProjection() });
+                                // For polygons, also calculate perimeter
+                                const coordinates = geometryType === 'Polygon' 
+                                    ? (geometry as any).getCoordinates()[0]
+                                    : (geometry as any).getCoordinates()[0][0];
+                                
+                                if (coordinates && coordinates.length > 0) {
+                                    // Calculate perimeter by measuring the outer ring
+                                    const perimeterLine = new LineString(coordinates);
+                                    metrics.length = getLength(perimeterLine, { projection: this.olMap.getView().getProjection() });
+                                }
+                            }
+                        } catch (error) {
+                            console.warn('Error calculating feature metrics:', error);
+                        }
+                    }
+                    
+                    this.renderer.triggerSync({
+                        type: 'featureSelected',
+                        layerIndex: featureLayerIndex,
+                        feature: gsFeature,
+                        metrics
+                    });
+                }
+            } else if (event.deselected.length > 0) {
+                this.renderer?.triggerSync({
+                    type: 'featureDeselected'
+                });
+            }
+        });
+        
         this.olMap.addInteraction(this.selectInteraction);
         this.setCursor('pointer');
     }
@@ -519,6 +582,10 @@ export class OpenLayersMapOperations implements MapOperations {
             this.selectInteraction = undefined;
             this.activeSelectionLayer = undefined;
             this.setCursor('');
+            // Clear selection when disabling
+            this.renderer?.triggerSync({
+                type: 'featureDeselected'
+            });
         }
     }
 }

@@ -6,7 +6,7 @@ import {GsMap} from "../rt";
 export type MapSyncEvent = 
     | { type: 'viewChanged', view: { center: [number, number], zoom: number, rotation?: number } }
     | { type: 'featuresChanged', layerIndex: number, features: any[] }
-    | { type: 'featureSelected', layerIndex: number, featureId: string }
+    | { type: 'featureSelected', layerIndex: number, feature: any, metrics?: { length?: number, area?: number } }
     | { type: 'featureDeselected' };
 
 /**
