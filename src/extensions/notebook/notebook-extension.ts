@@ -1647,6 +1647,7 @@ export default ({ editorRegistry }: any) => {
                 title: input.getName(),
                 data: input,
                 key: input.getName(),
+                editorId: "notebook-editor",
                 icon: "k jupyter",
                 noOverflow: true,
                 state: {},

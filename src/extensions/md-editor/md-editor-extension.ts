@@ -13,6 +13,7 @@ editorRegistry.registerEditorInputHandler({
             title: input.getName(),
             data: input,
             key: input.getName(),
+            editorId: "md-editor",
             icon: "book",
             noOverflow: false,
             state: {},

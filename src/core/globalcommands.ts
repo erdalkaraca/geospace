@@ -171,6 +171,7 @@ registerAll({
                     }
                 },
                 key: "setting.json",
+                editorId: "monaco-editor",
                 icon: "gear",
                 state: {},
             } as EditorInput
@@ -199,6 +200,7 @@ registerAll({
                 title: "Extensions",
                 data: {},
                 key: "system.extensions",
+                editorId: "extensions-editor",
                 icon: "puzzle-piece",
                 state: {},
                 noOverflow: true,

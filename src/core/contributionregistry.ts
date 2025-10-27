@@ -28,6 +28,7 @@ export interface HTMLContribution extends Contribution {
 
 export interface TabContribution extends Contribution {
     name: string;
+    editorId?: string;
     closable?: boolean;
     noOverflow?: boolean;
     component?: (id: string) => TemplateResult;

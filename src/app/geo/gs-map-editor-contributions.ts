@@ -14,6 +14,7 @@ editorRegistry.registerEditorInputHandler({
             title: input.getName(),
             data: input,
             key: input.getName(),
+            editorId: "map-editor",
             icon: "location-dot",
             state: {}
         } as EditorInput

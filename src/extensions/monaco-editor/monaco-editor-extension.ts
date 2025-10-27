@@ -41,6 +41,7 @@ editorRegistry.registerEditorInputHandler({
             title: input.getName(),
             data: input,
             key: input.getName(),
+            editorId: "monaco-editor",
             icon: "file-pen",
             noOverflow: false,
             state: {},

@@ -12,6 +12,7 @@ export const EVENT_SHOW_EDITOR = "editors/showEditor";
 
 export interface EditorInput {
     key: string;
+    editorId: string;
     title: string;
     icon?: string;
     data: any;
@@ -131,6 +132,7 @@ class EditorRegistry {
 
         editorArea.open({
             name: editorInput.key,
+            editorId: editorInput.editorId,
             label: editorInput.title,
             icon: editorInput.icon,
             closable: true,
