@@ -1,0 +1,23 @@
+{
+  "center": [
+    1358481.0086569134,
+    6401897.789121482
+  ],
+  "zoom": 4.609768252054879,
+  "projection": "EPSG:3857",
+  "layers": [
+    {
+      "type": "TILE",
+      "source": {
+        "type": "XYZ",
+        "url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+      },
+      "visible": true
+    }
+  ],
+  "overlays": [],
+  "controls": [],
+  "state": {},
+  "styles": {}
+}
+
