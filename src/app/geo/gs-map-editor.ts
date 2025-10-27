@@ -138,22 +138,22 @@ export class GsMapEditor extends KPart {
                           .action=${() => this.handleDrawPolygon()}>
                 </k-action>
                 
-                <wa-divider orientation="vertical"></wa-divider>
-                
                 <k-action icon="trash" 
                           title="Delete Selected Features"
                           ?disabled=${this.interactionMode !== 'select'}
                           .action=${() => this.handleDeleteSelected()}>
                 </k-action>
+
+                <wa-divider orientation="vertical"></wa-divider>
             `
             })}
-            
-            <wa-divider orientation="vertical"></wa-divider>
             
             <k-action icon="hand-pointer" 
                       title="Select Features"
                       .action=${() => this.handleSelectFeatures()}>
             </k-action>
+
+            <wa-divider orientation="vertical"></wa-divider>
         `;
     }
 

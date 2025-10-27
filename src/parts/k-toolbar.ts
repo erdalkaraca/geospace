@@ -31,22 +31,37 @@ export class KToolbar extends SignalWatcher(KElement) {
     protected doBeforeUI() {
         const id = this.getAttribute("id");
         if (id) {
-            this.contributions = contributionRegistry.getContributions(id)
+            this.loadContributions(id);
         }
         
         subscribe(TOPIC_CONTRIBUTEIONS_CHANGED, (event: ContributionChangeEvent) => {
-            if (id && event.target === id) {
-                this.contributions = event.contributions;
+            if (!id) return;
+            
+            const wildcardTarget = id.includes(':') ? id.split(':')[0] + ':*' : null;
+            if (event.target === id || event.target === wildcardTarget) {
+                this.loadContributions(id);
                 this.requestUpdate()
             }
         })
+    }
+
+    private loadContributions(id: string) {
+        const specific = contributionRegistry.getContributions(id);
+        
+        if (id.includes(':')) {
+            const wildcardId = id.split(':')[0] + ':*';
+            const wildcard = contributionRegistry.getContributions(wildcardId);
+            this.contributions = [...wildcard, ...specific];
+        } else {
+            this.contributions = specific;
+        }
     }
 
     contributionCreator(contribution: Contribution) {
         if ("command" in contribution) {
             const commandContribution = contribution as CommandContribution
             return html`
-                <wa-button @click=${this.command(commandContribution.command)}
+                <wa-button @click=${() => this.executeCommand(commandContribution.command, commandContribution.params || {})}
                            title=${commandContribution.label}
                            ?disabled="${(commandContribution.disabled as Signal.Computed<boolean>)?.get()}"
                            appearance="plain" size="small">

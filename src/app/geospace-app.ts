@@ -136,7 +136,7 @@ export const geospaceApp: AppDefinition = {
                 command: "show_version_info"
             },
             {
-                target: "contextmenu.filebrowser",
+                target: "contextmenu:filebrowser",
                 label: "Add as Map Layer",
                 icon: "layer-group",
                 command: "add_layer_from_selection",

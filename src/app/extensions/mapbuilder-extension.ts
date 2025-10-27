@@ -16,7 +16,7 @@ export default ({commandRegistry}: { commandRegistry: CommandRegistry }) => {
             execute: _context => buildService.buildActiveMap()
         },
         contribution: {
-            target: TOOLBAR_MAIN,
+            target: "toolbar:map-editor",
             icon: "hammer",
             label: "Build map",
             disabled: () => {

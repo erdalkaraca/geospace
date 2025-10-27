@@ -124,7 +124,7 @@ registerAll({
         }
     },
     contribution: {
-        target: "contextmenu.filebrowser",
+        target: "contextmenu:filebrowser",
         icon: "map-location-dot",
         label: "Convert to GeoJSON",
         disabled: () => {

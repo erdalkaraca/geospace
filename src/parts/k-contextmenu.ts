@@ -34,15 +34,30 @@ export class KContextMenu extends SignalWatcher(KElement) {
     protected doBeforeUI() {
         const id = this.getAttribute("id");
         if (id) {
-            this.contributions = contributionRegistry.getContributions(id);
+            this.loadContributions(id);
         }
         
         subscribe(TOPIC_CONTRIBUTEIONS_CHANGED, (event: ContributionChangeEvent) => {
-            if (id && event.target === id) {
-                this.contributions = event.contributions;
+            if (!id) return;
+            
+            const wildcardTarget = id.includes(':') ? id.split(':')[0] + ':*' : null;
+            if (event.target === id || event.target === wildcardTarget) {
+                this.loadContributions(id);
                 this.requestUpdate();
             }
         });
+    }
+
+    private loadContributions(id: string) {
+        const specific = contributionRegistry.getContributions(id);
+        
+        if (id.includes(':')) {
+            const wildcardId = id.split(':')[0] + ':*';
+            const wildcard = contributionRegistry.getContributions(wildcardId);
+            this.contributions = [...wildcard, ...specific];
+        } else {
+            this.contributions = specific;
+        }
     }
 
     public show(position: { x: number, y: number }) {
@@ -54,9 +69,9 @@ export class KContextMenu extends SignalWatcher(KElement) {
         this.isOpen = false;
     }
 
-    private handleCommandClick(commandId: string) {
+    private handleCommandClick(commandId: string, params?: Record<string, any>) {
         return async () => {
-            this.executeCommand(commandId, {});
+            this.executeCommand(commandId, params || {});
         };
     }
 
@@ -65,7 +80,7 @@ export class KContextMenu extends SignalWatcher(KElement) {
             const commandContribution = contribution as CommandContribution;
             return html`
                 <wa-dropdown-item 
-                    @click=${this.handleCommandClick(commandContribution.command)}
+                    @click=${this.handleCommandClick(commandContribution.command, commandContribution.params)}
                     ?disabled="${(commandContribution.disabled as Signal.Computed<boolean>)?.get()}">
                     ${commandContribution.icon ? html`<wa-icon slot="icon" name=${commandContribution.icon}></wa-icon>` : ''}
                     ${commandContribution.label}
