@@ -84,6 +84,10 @@ export class SignalingMapOperations implements MapOperations {
         // No-op - selection is a UI interaction, doesn't need signaling
     }
 
+    async disableSelection(): Promise<void> {
+        // No-op - selection is a UI interaction, doesn't need signaling
+    }
+
     async deleteSelectedFeatures(): Promise<void> {
         // Trigger signal after features are deleted
         mapChangedSignal.set({ part: this.source, event: MapEvents.LAYER_UPDATED });

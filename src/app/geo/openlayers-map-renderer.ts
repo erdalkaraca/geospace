@@ -362,6 +362,13 @@ export class OpenLayersMapOperations implements MapOperations {
         // UI does not support overlay removal
     }
 
+    private setCursor(cursor: string): void {
+        const viewport = this.olMap.getViewport();
+        if (viewport) {
+            (viewport as HTMLElement).style.cursor = cursor;
+        }
+    }
+
     async enableDrawing(geometryType: 'Point' | 'LineString' | 'Polygon', layerIndex: number): Promise<void> {
         this.disableSelection();
         
@@ -370,6 +377,7 @@ export class OpenLayersMapOperations implements MapOperations {
         }
         
         this.activeDrawingLayerIndex = layerIndex;
+        this.setCursor('crosshair');
         
         const olLayers = this.olMap.getLayers();
         const layer = olLayers.item(layerIndex);
@@ -421,6 +429,7 @@ export class OpenLayersMapOperations implements MapOperations {
             
             this.olMap.removeInteraction(this.drawInteraction);
             this.drawInteraction = undefined;
+            this.setCursor('');
         }
     }
 
@@ -428,20 +437,28 @@ export class OpenLayersMapOperations implements MapOperations {
         this.disableDrawing();
         this.disableSelection();
         
-        this.activeDrawingLayerIndex = layerIndex;
-        
         const olLayers = this.olMap.getLayers();
-        const layer = olLayers.item(layerIndex);
         
-        if (!(layer instanceof VectorLayer)) {
-            throw new Error('Selection only supported on vector layers');
+        // Get all vector layers to enable selection across all of them
+        const vectorLayers = olLayers.getArray().filter(layer => layer instanceof VectorLayer) as VectorLayer<VectorSource>[];
+        
+        if (vectorLayers.length === 0) {
+            throw new Error('No vector layers available for selection');
         }
         
-        this.activeSelectionLayer = layer;
+        // Track the active layer for deletion purposes (if valid layer index provided)
+        if (layerIndex >= 0 && layerIndex < olLayers.getLength()) {
+            this.activeDrawingLayerIndex = layerIndex;
+            const activeLayer = olLayers.item(layerIndex);
+            if (activeLayer instanceof VectorLayer) {
+                this.activeSelectionLayer = activeLayer;
+            }
+        }
         
         const selectOptions: any = {
             condition: click,
-            layers: [layer],
+            layers: vectorLayers,
+            hitTolerance: 5,
             style: (_feature: any) => {
                 const stroke = new Stroke({
                     color: 'rgba(255, 255, 0, 1)',
@@ -464,6 +481,7 @@ export class OpenLayersMapOperations implements MapOperations {
         
         this.selectInteraction = new Select(selectOptions);
         this.olMap.addInteraction(this.selectInteraction);
+        this.setCursor('pointer');
     }
 
     async deleteSelectedFeatures(): Promise<void> {
@@ -495,11 +513,12 @@ export class OpenLayersMapOperations implements MapOperations {
         this.renderer?.triggerDirty();
     }
 
-    private disableSelection(): void {
+    async disableSelection(): Promise<void> {
         if (this.selectInteraction) {
             this.olMap.removeInteraction(this.selectInteraction);
             this.selectInteraction = undefined;
             this.activeSelectionLayer = undefined;
+            this.setCursor('');
         }
     }
 }

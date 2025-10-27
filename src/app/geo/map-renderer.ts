@@ -67,6 +67,7 @@ export interface MapOperations {
     
     // Feature selection and deletion
     enableFeatureSelection(layerIndex: number): Promise<void>;
+    disableSelection(): Promise<void>;
     deleteSelectedFeatures(): Promise<void>;
 }
 

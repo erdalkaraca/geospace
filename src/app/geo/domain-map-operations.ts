@@ -142,6 +142,10 @@ export class DomainMapOperations implements MapOperations {
         // No domain model changes - this is UI-only
     }
 
+    async disableSelection(): Promise<void> {
+        // No domain model changes - this is UI-only
+    }
+
     async deleteSelectedFeatures(): Promise<void> {
         // Features are removed from OpenLayers source, changes will sync
         this.triggerDirty();

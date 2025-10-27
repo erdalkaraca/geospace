@@ -140,11 +140,6 @@ export class GsMapEditor extends KPart {
                 
                 <wa-divider orientation="vertical"></wa-divider>
                 
-                <k-action icon="hand-pointer" 
-                          title="Select Features"
-                          ?disabled=${!hasActiveLayer}
-                          .action=${() => this.handleSelectFeatures()}>
-                </k-action>
                 <k-action icon="trash" 
                           title="Delete Selected Features"
                           ?disabled=${this.interactionMode !== 'select'}
@@ -152,6 +147,13 @@ export class GsMapEditor extends KPart {
                 </k-action>
             `
             })}
+            
+            <wa-divider orientation="vertical"></wa-divider>
+            
+            <k-action icon="hand-pointer" 
+                      title="Select Features"
+                      .action=${() => this.handleSelectFeatures()}>
+            </k-action>
         `;
     }
 
@@ -387,8 +389,7 @@ export class GsMapEditor extends KPart {
     }
 
     private async handleSelectFeatures() {
-        if (this.activeDrawingLayerIndex === undefined) return;
-        await this.operations?.enableFeatureSelection(this.activeDrawingLayerIndex);
+        await this.operations?.enableFeatureSelection(this.activeDrawingLayerIndex ?? -1);
         this.interactionMode = 'select';
         this.updateToolbar();
     }
