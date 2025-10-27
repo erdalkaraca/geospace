@@ -44,8 +44,8 @@ fi
 
 echo "Next version: $NEXT_VERSION"
 
-# Get changes since last tag
-CHANGES=$(git log $LATEST_TAG..HEAD --oneline --no-decorate)
+# Get changes since last tag (with file stats for better AI context)
+CHANGES=$(git log $LATEST_TAG..HEAD --oneline --no-decorate --stat)
 
 # Show changes
 echo ""
