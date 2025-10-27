@@ -1,4 +1,3 @@
-import {TOOLBAR_MAIN} from "../../core/constants.ts";
 import {activePartSignal} from "../../core/appstate.ts";
 import {GsMapEditor} from "../geo/gs-map-editor.ts";
 import type {CommandRegistry} from "../../core/commandregistry.ts";
