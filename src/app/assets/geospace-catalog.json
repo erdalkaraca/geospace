@@ -125,6 +125,22 @@
             "url": "${baseURL}/maps/topplus-wmts-light-gray.geospace",
             "type": "file"
           }
+        },
+        {
+          "label": "Esri World Imagery (Satellite)",
+          "icon": "satellite",
+          "state": {
+            "url": "${baseURL}/maps/esri-world-imagery.geospace",
+            "type": "file"
+          }
+        },
+        {
+          "label": "Sentinel-2 Cloudless (Satellite)",
+          "icon": "satellite",
+          "state": {
+            "url": "${baseURL}/maps/sentinel2-cloudless.geospace",
+            "type": "file"
+          }
         }
       ]
     },

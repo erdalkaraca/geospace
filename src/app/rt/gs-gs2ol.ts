@@ -29,7 +29,7 @@ import {MapOptions} from "ol/Map";
 import BaseObject from "ol/Object";
 import * as olGeom from "ol/geom";
 import {Icon, Style} from "ol/style";
-import {GeoTIFF, OSM, Source, TileWMS, WMTS} from "ol/source";
+import {GeoTIFF, OSM, Source, TileWMS, WMTS, XYZ} from "ol/source";
 import {optionsFromCapabilities} from "ol/source/WMTS";
 import FeatureFormat from "ol/format/Feature";
 import WMTSCapabilities from "ol/format/WMTSCapabilities";
@@ -91,6 +91,15 @@ export const OL_SOURCES: any = {}
 OL_SOURCES[GsSourceType.OSM] = (source: GsSource) => {
     const olSource = new OSM();
     olSource.set(KEY_LABEL, source.type)
+    return olSource
+}
+OL_SOURCES[GsSourceType.XYZ] = (source: GsSource) => {
+    const olSource = new XYZ({
+        url: source.url!,
+        crossOrigin: 'anonymous'
+    });
+    olSource.set(KEY_URL, source.url!)
+    olSource.set(KEY_LABEL, `${source.type}@${source.url}`)
     return olSource
 }
 OL_SOURCES[GsSourceType.WMS] = (source: GsSource) => {

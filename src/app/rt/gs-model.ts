@@ -23,7 +23,7 @@ export interface GsState {
 }
 
 export enum GsSourceType {
-    OSM = "OSM", GeoJSON = "GeoJSON", Features = "Features", KML = "KML", GeoTIFF = "GeoTIFF", GPX = "GPX", BM = "BM", WMS = "WMS", WMTS = "WMTS"
+    OSM = "OSM", GeoJSON = "GeoJSON", Features = "Features", KML = "KML", GeoTIFF = "GeoTIFF", GPX = "GPX", BM = "BM", WMS = "WMS", WMTS = "WMTS", XYZ = "XYZ"
 }
 
 export enum GsLayerType {

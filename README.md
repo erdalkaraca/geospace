@@ -28,7 +28,8 @@ geo!space is a powerful web application that combines professional mapping capab
 
 ### 🗺️ **Professional Mapping**
 - **Interactive Map Editor**: Create and edit maps using the custom `.geospace` format
-- **Multiple Data Sources**: Support for OSM, GeoJSON, KML, GeoTIFF, GPX, Features, BM (basemap.de), and Overpass API
+- **Multiple Data Sources**: Support for OSM, XYZ tiles, GeoJSON, KML, GeoTIFF, GPX, Features, BM (basemap.de), WMS, WMTS, and Overpass API
+- **Satellite Imagery**: Built-in access to Esri World Imagery and Sentinel-2 satellite imagery
 - **Layer Management**: Vector layers, tile layers, and layer groups with full styling control
 - **OpenLayers Integration**: Built on the industry-standard OpenLayers mapping library
 - **Advanced Styling**: Dynamic style loading and management system
@@ -255,7 +256,7 @@ A: Yes, for basic mapping features. AI assistance requires internet connection (
 A: Use the "Build map" button to create a PWA that can be deployed anywhere or shared as a standalone app.
 
 **Q: What file formats are supported?**
-A: Maps: `.geospace` (JSON), Data: GeoJSON, KML, GPX, GeoTIFF, Features, BM (basemap.de), Overpass API. Code: Python, JavaScript, and more.
+A: Maps: `.geospace` (JSON), Data: GeoJSON, KML, GPX, GeoTIFF, Features. Tile sources: OSM, XYZ, WMS, WMTS, BM (basemap.de), Satellite imagery (Esri, Sentinel-2). Code: Python, JavaScript, and more.
 
 **Q: Can I customize the interface?**
 A: Yes! Install extensions, create custom controls using WebAwesome components, or add your own extensions.
