@@ -8,7 +8,6 @@ on:
 jobs:
   build-check:
     uses: ./.github/workflows/reusable-build.yml
-    needs: validate
     with:
       node-version: '20'
       upload-artifacts: false
