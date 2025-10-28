@@ -18,6 +18,7 @@ import {HIDE_DOT_RESOURCE} from "../core/constants.ts";
 import {commandRegistry} from "../core/commandregistry.ts";
 import {TreeNode, treeNodeComparator} from "../core/tree-utils.ts";
 import {activeSelectionSignal} from "../core/appstate.ts";
+import {confirmDialog} from "../core/dialog.ts";
 
 
 @customElement('k-filebrowser')
@@ -30,6 +31,18 @@ export class KFileBrowser extends KPart {
 
     protected doBeforeUI() {
         this.initializeWorkspace();
+    }
+
+    protected firstUpdated(changedProperties: Map<string, any>) {
+        super.firstUpdated(changedProperties);
+        this.setupDragAndDrop();
+    }
+
+    protected updated(changedProperties: Map<string, any>) {
+        super.updated(changedProperties);
+        if (changedProperties.has('workspaceDir') && this.workspaceDir) {
+            this.setupDragAndDrop();
+        }
     }
 
     private async initializeWorkspace() {
@@ -153,6 +166,138 @@ export class KFileBrowser extends KPart {
         }
     }
 
+    private currentDropTarget?: HTMLElement;
+
+    private setupDragAndDrop() {
+        const treeElement = this.treeRef.value;
+        if (!treeElement) return;
+
+        const dragOverHandler = (e: DragEvent) => {
+            if (!e.dataTransfer?.types.includes('Files')) return;
+            
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'copy';
+            
+            treeElement.classList.add('drag-over');
+            
+            const target = e.target as HTMLElement;
+            const treeItem = target.closest('wa-tree-item') as HTMLElement;
+            
+            if (treeItem && treeItem !== this.currentDropTarget) {
+                this.currentDropTarget?.classList.remove('drop-target');
+                this.currentDropTarget = treeItem;
+                treeItem.classList.add('drop-target');
+            }
+        };
+
+        const dragEnterHandler = (e: DragEvent) => {
+            if (!e.dataTransfer?.types.includes('Files')) return;
+            
+            e.preventDefault();
+            treeElement.classList.add('drag-over');
+        };
+
+        const dragLeaveHandler = (e: DragEvent) => {
+            const rect = treeElement.getBoundingClientRect();
+            const x = e.clientX;
+            const y = e.clientY;
+            
+            if (x <= rect.left || x >= rect.right || y <= rect.top || y >= rect.bottom) {
+                treeElement.classList.remove('drag-over');
+                this.currentDropTarget?.classList.remove('drop-target');
+                this.currentDropTarget = undefined;
+            }
+        };
+
+        const dropHandler = async (e: DragEvent) => {
+            e.preventDefault();
+            treeElement.classList.remove('drag-over');
+            this.currentDropTarget?.classList.remove('drop-target');
+            this.currentDropTarget = undefined;
+
+            if (!e.dataTransfer || !this.workspaceDir) return;
+
+            const files = Array.from(e.dataTransfer.files);
+            if (files.length === 0) return;
+
+            const targetDir = await this.getDropTarget(e);
+            await this.handleFilesDrop(files, targetDir);
+        };
+
+        treeElement.removeEventListener('dragover', dragOverHandler as any);
+        treeElement.removeEventListener('dragenter', dragEnterHandler as any);
+        treeElement.removeEventListener('dragleave', dragLeaveHandler as any);
+        treeElement.removeEventListener('drop', dropHandler as any);
+
+        treeElement.addEventListener('dragover', dragOverHandler);
+        treeElement.addEventListener('dragenter', dragEnterHandler);
+        treeElement.addEventListener('dragleave', dragLeaveHandler);
+        treeElement.addEventListener('drop', dropHandler);
+    }
+
+    private async getDropTarget(e: DragEvent): Promise<Directory> {
+        const target = e.target as HTMLElement;
+        const treeItem = target.closest('wa-tree-item');
+        
+        if (treeItem) {
+            const node: TreeNode = (treeItem as any).model;
+            const resource = node.data as Resource;
+            
+            if (resource instanceof Directory) {
+                return resource;
+            }
+            const parent = resource.getParent();
+            if (parent) {
+                return parent;
+            }
+        }
+        
+        return this.workspaceDir!;
+    }
+
+    private async handleFilesDrop(files: globalThis.File[], targetDir: Directory) {
+        const total = files.length;
+        let processed = 0;
+        let failed = 0;
+        let skipped = 0;
+        
+        for (const file of files) {
+            try {
+                const targetPath = this.buildTargetPath(targetDir, file.name);
+                
+                const existingFile = await this.workspaceDir!.getResource(targetPath);
+                if (existingFile) {
+                    const overwrite = await confirmDialog(`File "${file.name}" already exists. Do you want to overwrite it?`);
+                    if (!overwrite) {
+                        skipped++;
+                        continue;
+                    }
+                }
+                
+                const workspaceFile = await this.workspaceDir!.getResource(
+                    targetPath, 
+                    { create: true }
+                ) as File;
+                
+                await workspaceFile.saveContents(file);
+                
+                processed++;
+            } catch (error) {
+                console.error(`Failed to upload ${file.name}:`, error);
+                failed++;
+            }
+        }
+        
+        console.log(`Uploaded ${processed}/${total} files${skipped > 0 ? `, ${skipped} skipped` : ''}${failed > 0 ? `, ${failed} failed` : ''}`);
+        
+        await this.loadWorkspace(this.workspaceDir);
+    }
+
+    private buildTargetPath(targetDir: Directory, fileName: string): string {
+        const dirPath = targetDir.getWorkspacePath();
+        return dirPath ? `${dirPath}/${fileName}` : fileName;
+    }
+
     render() {
         return html`
             <div class="tree" ${ref(this.treeRef)}>
@@ -169,6 +314,43 @@ export class KFileBrowser extends KPart {
 
     static styles = css`
         :host {
+        }
+        
+        .tree {
+            height: 100%;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+        
+        .tree.drag-over {
+            background-color: var(--wa-color-brand-fill-quiet);
+            outline: 2px dashed var(--wa-color-brand-border-normal);
+            outline-offset: -4px;
+            border-radius: var(--wa-border-radius-medium);
+        }
+        
+        .tree.drag-over::before {
+            content: '📁 Drop files here';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--wa-color-brand-fill-loud);
+            color: var(--wa-color-brand-on-loud);
+            padding: var(--wa-spacing-large);
+            border-radius: var(--wa-border-radius-large);
+            font-weight: bold;
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0.3;
+        }
+        
+        wa-tree-item.drop-target {
+            background-color: var(--wa-color-brand-fill-loud);
+            color: var(--wa-color-brand-on-loud);
+            border-radius: var(--wa-border-radius-small);
+            outline: 2px solid var(--wa-color-brand-border-loud);
+            outline-offset: -2px;
         }
     `;
 }

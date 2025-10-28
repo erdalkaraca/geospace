@@ -1,11 +1,11 @@
 # 🌐 geo!space
-
-**The Interactive Mapping IDE in Your Browser**
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/erdalkaraca/geospace)
 [![Browser Support](https://img.shields.io/badge/Chrome%20%7C%20Opera-Supported-brightgreen)](#-browser-compatibility)
 [![AI Providers](https://img.shields.io/badge/AI%20Providers-5-blue)](#-ai-configuration)
 [![PWA Ready](https://img.shields.io/badge/PWA-Ready-purple)](#-key-features)
 [![No Installation](https://img.shields.io/badge/Installation-None%20Required-orange)](#-quick-start)
+
+**The Interactive Mapping IDE in Your Browser**
 
 geo!space is a powerful web application that combines professional mapping capabilities with AI-powered automation tools. Create interactive maps, execute Python and JavaScript code, and automate repetitive tasks using natural language prompts - all without installing any software, directly in your browser.
 
