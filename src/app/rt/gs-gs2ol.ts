@@ -2,8 +2,10 @@ import {
     DEFAULT_GSMAP,
     GsControl,
     GsFeature,
+    GsFillStyle,
     GsGeometry,
     GsIcon,
+    GsImageStyle,
     GsLayer,
     GsLayerType,
     GsMap,
@@ -11,6 +13,9 @@ import {
     GsSource,
     GsSourceType,
     GsState,
+    GsStrokeStyle,
+    GsStyle,
+    GsTextStyle,
     KEY_ENV,
     KEY_FORMAT,
     KEY_GS_MANAGED,
@@ -26,7 +31,7 @@ import {Feature, Map, Overlay, View} from "ol";
 import {MapOptions} from "ol/Map";
 import BaseObject from "ol/Object";
 import * as olGeom from "ol/geom";
-import {Icon} from "ol/style";
+import {Circle as CircleStyle, Fill, Icon, RegularShape, Stroke, Style, Text} from "ol/style";
 import {GeoTIFF, OSM, Source, TileWMS, WMTS, XYZ} from "ol/source";
 import {optionsFromCapabilities} from "ol/source/WMTS";
 import FeatureFormat from "ol/format/Feature";
@@ -71,10 +76,144 @@ export const toOlResource = (resource: GsIcon) => {
     })
 }
 
+export const toOlStroke = (gsStroke: GsStrokeStyle): Stroke => {
+    return new Stroke({
+        color: gsStroke.color,
+        width: gsStroke.width,
+        lineDash: gsStroke.lineDash,
+        lineCap: gsStroke.lineCap,
+        lineJoin: gsStroke.lineJoin,
+        miterLimit: gsStroke.miterLimit
+    })
+}
+
+export const toOlFill = (gsFill: GsFillStyle): Fill => {
+    return new Fill({
+        color: gsFill.color
+    })
+}
+
+export const toOlCircleImage = (gsImage: GsImageStyle): CircleStyle => {
+    return new CircleStyle({
+        radius: gsImage.radius || 5,
+        fill: gsImage.fill ? toOlFill(gsImage.fill) : undefined,
+        stroke: gsImage.stroke ? toOlStroke(gsImage.stroke) : undefined,
+        displacement: gsImage.displacement,
+        scale: gsImage.scale,
+        rotation: gsImage.rotation,
+        rotateWithView: gsImage.rotateWithView,
+        declutterMode: undefined
+    })
+}
+
+export const toOlIconImage = (gsImage: GsImageStyle): Icon => {
+    if (!gsImage.src) {
+        throw new Error('Icon image requires src property')
+    }
+    return new Icon({
+        src: gsImage.src,
+        anchor: gsImage.anchor || [0.5, 1],
+        anchorXUnits: gsImage.anchorXUnits || 'fraction',
+        anchorYUnits: gsImage.anchorYUnits || 'fraction',
+        anchorOrigin: gsImage.anchorOrigin,
+        scale: gsImage.scale || 1,
+        opacity: gsImage.opacity,
+        rotation: gsImage.rotation,
+        rotateWithView: gsImage.rotateWithView,
+        displacement: gsImage.displacement,
+        offset: gsImage.offset,
+        offsetOrigin: gsImage.offsetOrigin,
+        size: gsImage.size,
+        color: gsImage.color,
+        crossOrigin: gsImage.crossOrigin,
+        declutterMode: undefined
+    })
+}
+
+export const toOlRegularShapeImage = (gsImage: GsImageStyle): RegularShape => {
+    return new RegularShape({
+        points: gsImage.points || 3,
+        radius: gsImage.radius || gsImage.radius1 || 5,
+        radius2: gsImage.radius2,
+        angle: gsImage.angle || 0,
+        displacement: gsImage.displacement,
+        fill: gsImage.fill ? toOlFill(gsImage.fill) : undefined,
+        stroke: gsImage.stroke ? toOlStroke(gsImage.stroke) : undefined,
+        rotation: gsImage.rotation,
+        rotateWithView: gsImage.rotateWithView,
+        scale: gsImage.scale,
+        declutterMode: undefined
+    })
+}
+
+export const toOlImage = (gsImage: GsImageStyle): CircleStyle | Icon | RegularShape => {
+    switch (gsImage.type) {
+        case 'circle':
+            return toOlCircleImage(gsImage)
+        case 'icon':
+            return toOlIconImage(gsImage)
+        case 'regular-shape':
+            return toOlRegularShapeImage(gsImage)
+        default:
+            throw new Error(`Unknown image type: ${gsImage.type}`)
+    }
+}
+
+export const toOlText = (gsText: GsTextStyle): Text => {
+    return new Text({
+        text: gsText.text,
+        font: gsText.font,
+        maxAngle: gsText.maxAngle,
+        offsetX: gsText.offsetX,
+        offsetY: gsText.offsetY,
+        overflow: gsText.overflow,
+        placement: gsText.placement,
+        repeat: gsText.repeat,
+        scale: gsText.scale,
+        rotateWithView: gsText.rotateWithView,
+        rotation: gsText.rotation,
+        textAlign: gsText.textAlign,
+        justify: gsText.justify,
+        textBaseline: gsText.textBaseline,
+        fill: gsText.fill ? toOlFill(gsText.fill) : undefined,
+        stroke: gsText.stroke ? toOlStroke(gsText.stroke) : undefined,
+        backgroundFill: gsText.backgroundFill ? toOlFill(gsText.backgroundFill) : undefined,
+        backgroundStroke: gsText.backgroundStroke ? toOlStroke(gsText.backgroundStroke) : undefined,
+        padding: gsText.padding,
+        declutterMode: undefined
+    })
+}
+
+export const toOlStyle = (gsStyle: GsStyle): Style => {
+    const styleOptions: any = {}
+    
+    if (gsStyle.stroke) {
+        styleOptions.stroke = toOlStroke(gsStyle.stroke)
+    }
+    
+    if (gsStyle.fill) {
+        styleOptions.fill = toOlFill(gsStyle.fill)
+    }
+    
+    if (gsStyle.image) {
+        styleOptions.image = toOlImage(gsStyle.image)
+    }
+    
+    if (gsStyle.text) {
+        styleOptions.text = toOlText(gsStyle.text)
+    }
+    
+    if (gsStyle.zIndex !== undefined) {
+        styleOptions.zIndex = gsStyle.zIndex
+    }
+    
+    return new Style(styleOptions)
+}
+
 export const toOlFeature = (feature: GsFeature): Feature => {
     return withState(feature, new Feature({
         geometry: toOLGeometry(feature.geometry),
-    }));
+    }))
 }
 
 export const OL_SOURCES: any = {}
@@ -199,13 +338,9 @@ export const toOlSource = (source: GsSource, olLayer?: TileLayer<TileSource>) =>
 
 export const OL_LAYERS: any = {}
 OL_LAYERS[GsLayerType.TILE] = (layer: GsLayer) => {
-    // Create the layer first
     const tileLayer = new TileLayer()
-    
-    // Then create the source with the layer reference
     const source = toOlSource(layer.source, tileLayer) as TileSource
     tileLayer.setSource(source)
-    
     return tileLayer
 }
 OL_LAYERS[GsLayerType.VECTOR] = (layer: GsLayer) => {

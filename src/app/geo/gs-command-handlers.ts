@@ -5,8 +5,6 @@ import {MapOperations} from "./map-renderer.ts";
 import {replaceUris} from "./utils.ts";
 import {promptDialog} from "../../core/dialog.ts";
 import {
-    GsGeometry,
-    GsGeometryType,
     GsLayer,
     GsSourceType,
     toGsLayerType,
@@ -123,70 +121,6 @@ commandRegistry.registerAll({
             const coords = fromLonLat([Number(context.params!["lon"]).valueOf(), Number(context.params!["lat"]).valueOf()]);
 
             await operations.setCenter([coords[0], coords[1]]);
-        }
-    }
-})
-
-commandRegistry.registerAll({
-    command: {
-        "id": "add_marker",
-        "name": "Add a marker",
-        "description": "Add a marker to the map",
-        "parameters": [
-            {
-                "name": "lat",
-                "description": "the latitude of the marker",
-                "required": true
-            },
-            {
-                "name": "lon",
-                "description": "the longitude of the marker",
-                "required": true
-            },
-            {
-                "name": "name",
-                "description": "a short name of the marker",
-                "required": true
-            },
-            {
-                "name": "description",
-                "description": "a description of the marker",
-                "required": true
-            },
-            {
-                "name": "iconPath",
-                "description": "the path within the workspace to the icon file in any graphics format such as png, jpg or svg; if no icon path provided, a marker.png file will be assumed to be located in the root of the workspace",
-                "required": false
-            },
-            {
-                "name": "layerName",
-                "description": "the name of the layer to add the marker to; if not provided, markers will be added to the default 'geocoded-markers' layer",
-                "required": false
-            }
-        ]
-    },
-    handler: {
-        canExecute,
-        execute: async context => {
-            const operations = getMapOperations(context);
-            const coords = fromLonLat([Number(context.params!["lon"]).valueOf(), Number(context.params!["lat"]).valueOf()]);
-            const iconPath = context.params!["iconPath"] || "marker.png"
-
-            // Create marker in domain model format
-            const marker = {
-                state: {
-                    name: context.params!["name"],
-                    description: context.params!["description"],
-                },
-                style: iconPath,
-                geometry: {
-                    type: GsGeometryType.Point,
-                    coordinates: [...coords]
-                } as GsGeometry
-            };
-
-            await operations.addMarker(marker, context.params!["layerName"]);
-            // Signal automatically triggered by SignalingMapOperations
         }
     }
 })

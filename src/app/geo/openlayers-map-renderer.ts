@@ -1,8 +1,11 @@
 import {MapOperations, MapRenderer, MapSyncEvent} from "./map-renderer.ts";
-import {GsFeature, gsLib, GsMap, GsSourceType, KEY_NAME, toOlFeature, toOlLayer} from "../rt/gs-lib.ts";
+import {gsLib, GsMap, GsSourceType, KEY_NAME, toOlLayer, KEY_STATE} from "../rt/gs-lib.ts";
 import {toGsFeature} from "../rt/gs-ol2gs.ts";
-import {Map} from "ol";
-import type {Feature} from "ol";
+import {toOlStyle} from "../rt/gs-gs2ol.ts";
+import {getStyleForFeature, GsFeature, GsGeometry} from "../rt/gs-model.ts";
+import {Map as OlMap} from "ol";
+import {Feature} from "ol";
+import type {FeatureLike} from "ol/Feature";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
 import Draw from "ol/interaction/Draw.js";
@@ -11,6 +14,22 @@ import {click} from "ol/events/condition.js";
 import {Style, Stroke, Fill, Circle as CircleStyle} from "ol/style.js";
 import {getLength, getArea} from "ol/sphere.js";
 import LineString from "ol/geom/LineString.js";
+import type {Geometry} from "ol/geom";
+
+/**
+ * Lightweight helper to extract minimal GsFeature data for style evaluation
+ * Avoids the overhead of full toGsFeature() conversion
+ */
+function getFeatureStyleData(feature: Feature): GsFeature {
+    const geometry = feature.getGeometry() as Geometry;
+    return {
+        geometry: {
+            type: geometry.getType(),
+            coordinates: []  // Not needed for style rules
+        } as GsGeometry,
+        state: feature.get(KEY_STATE)
+    } as GsFeature;
+}
 
 /**
  * OpenLayers map renderer that manages OpenLayers maps
@@ -18,13 +37,14 @@ import LineString from "ol/geom/LineString.js";
  * User modules are handled by the toOlMap() function
  */
 export class OpenLayersMapRenderer implements MapRenderer {
-    public olMap?: Map; // Made public for backward compatibility
+    public olMap?: OlMap; // Made public for backward compatibility
     gsMap: GsMap;
     private env?: any;
     private onDirtyCallback?: () => void;
     private onSyncCallback?: (event: MapSyncEvent) => void;
     private isDestroyed: boolean = false;
     private operations?: OpenLayersMapOperations;
+    private styleCache: Map<string, Style> = new Map();
 
     constructor(gsMap: GsMap, env?: any) {
         this.gsMap = gsMap;
@@ -51,6 +71,9 @@ export class OpenLayersMapRenderer implements MapRenderer {
             // Create operations after map is available
             this.operations = new OpenLayersMapOperations(this.olMap, this);
             
+            // Apply styling to all vector layers
+            this.applyStylesToLayers();
+            
             // Set up event listeners after the map is rendered
             this.olMap.once('rendercomplete', () => {
                 this.setupEventListeners();
@@ -62,6 +85,63 @@ export class OpenLayersMapRenderer implements MapRenderer {
         }
     }
     
+    private applyStylesToLayers(): void {
+        if (!this.olMap) return;
+        
+        const layers = this.olMap.getLayers().getArray();
+        layers.forEach(layer => {
+            if (layer instanceof VectorLayer) {
+                this.applyStyleToVectorLayer(layer);
+            }
+        });
+    }
+    
+    private applyStyleToVectorLayer(layer: VectorLayer): void {
+        const layerName = layer.get(KEY_NAME);
+        
+        // Create a style function that applies rules to each feature
+        const styleFunction = (feature: FeatureLike) => {
+            // Only process actual Feature objects (not RenderFeature)
+            if (!(feature instanceof Feature)) {
+                return undefined;
+            }
+            
+            // Extract minimal data needed for style evaluation (lightweight, no coordinate conversion)
+            const featureStyleData = getFeatureStyleData(feature);
+            const styleRules = this.gsMap.styleRules;
+            const stylesMap = this.gsMap.styles;
+            
+            if (styleRules && stylesMap) {
+                // TODO: Optimize performance - this is called for every feature every frame
+                // Consider caching: 1) rule evaluation results by feature ID, 2) sorted rules array
+                // Current cost: O(n log n) sort + O(n) rule iteration per call
+                const gsStyle = getStyleForFeature(featureStyleData, styleRules, stylesMap, layerName);
+                if (gsStyle && gsStyle.id) {
+                    // Check cache first
+                    let olStyle = this.styleCache.get(gsStyle.id);
+                    if (!olStyle) {
+                        // Convert and cache
+                        olStyle = toOlStyle(gsStyle);
+                        this.styleCache.set(gsStyle.id, olStyle);
+                    }
+                    return olStyle;
+                } else if (gsStyle) {
+                    // Style without ID - can't cache, convert directly
+                    return toOlStyle(gsStyle);
+                }
+            }
+            
+            // Return undefined to use default OpenLayers styling
+            return undefined;
+        };
+        
+        layer.setStyle(styleFunction);
+    }
+    
+    private clearStyleCache(): void {
+        this.styleCache.clear();
+    }
+    
     async modelToUI(updatedGsMap?: GsMap): Promise<void> {
         if (!this.olMap) {
             throw new Error('Map not initialized');
@@ -71,6 +151,9 @@ export class OpenLayersMapRenderer implements MapRenderer {
         if (updatedGsMap) {
             this.gsMap = updatedGsMap;
         }
+        
+        // Clear style cache when model changes (styles/rules may have changed)
+        this.clearStyleCache();
         
         // Get the container before destroying the map
         const target = this.olMap.getTarget();
@@ -193,6 +276,7 @@ export class OpenLayersMapRenderer implements MapRenderer {
     
     destroy(): void {
         this.isDestroyed = true;
+        this.clearStyleCache();
         this.olMap?.dispose();
         this.olMap = undefined;
     }
@@ -210,7 +294,7 @@ export class OpenLayersMapOperations implements MapOperations {
     private activeDrawingLayerIndex?: number;
 
     constructor(
-        private olMap: Map,
+        private olMap: OlMap,
         private renderer?: OpenLayersMapRenderer
     ) {
         if (!olMap) {
@@ -290,26 +374,6 @@ export class OpenLayersMapOperations implements MapOperations {
         if (index >= 0 && index < olLayers.getLength()) {
             olLayers.item(index).setVisible(visible);
         }
-    }
-
-    async addMarker(marker: GsFeature, layerName?: string): Promise<void> {
-        const targetLayerName = layerName || 'geocoded-markers';
-        const olLayers = this.olMap.getLayers();
-        
-        // Find existing markers layer
-        let olLayer = olLayers.getArray().find((layer: any) => layer.get(KEY_NAME) === targetLayerName) as VectorLayer;
-        
-        if (!olLayer) {
-            // Create new markers layer
-            olLayer = new VectorLayer({
-                source: new VectorSource(),
-                [KEY_NAME]: targetLayerName
-            } as any);
-            olLayers.push(olLayer);
-        }
-
-        const olFeature = toOlFeature(marker);
-        olLayer.getSource()?.addFeature(olFeature);
     }
 
     async addControlFromModule(_src: string): Promise<void> {
@@ -421,11 +485,14 @@ export class OpenLayersMapOperations implements MapOperations {
             }
         }
         
+        const gsMap = this.renderer?.gsMap;
+        const selectionStyle = gsMap?.styles?.['selection'];
+        
         const selectOptions: any = {
             condition: click,
             layers: vectorLayers,
             hitTolerance: 5,
-            style: (_feature: any) => {
+            style: selectionStyle ? toOlStyle(selectionStyle) : (_feature: any) => {
                 const stroke = new Stroke({
                     color: 'rgba(255, 255, 0, 1)',
                     width: 3

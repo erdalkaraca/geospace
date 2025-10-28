@@ -49,9 +49,6 @@ export interface MapOperations {
     moveLayer(fromIndex: number, toIndex: number): Promise<void>;
     setLayerVisible(index: number, visible: boolean): Promise<void>;
     
-    // Marker operations
-    addMarker(marker: any, layerName?: string): Promise<void>;
-    
     // Control operations
     addControlFromModule(src: string): Promise<void>;
     removeControl(index: number): Promise<void>;

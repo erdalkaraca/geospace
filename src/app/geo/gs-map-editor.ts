@@ -6,7 +6,7 @@ import { keyed } from 'lit/directives/keyed.js'
 import { CommandStack } from "../../core/commandregistry.ts";
 import { KPart } from "../../parts/k-part.ts";
 import { EditorInput } from "../../core/editorregistry.ts";
-import { DEFAULT_GSMAP, GsMap, GsLayerType, GsSourceType } from "../rt";
+import { DEFAULT_GSMAP, GsMap, GsLayerType, GsSourceType, DEFAULT_STYLES, DEFAULT_STYLE_RULES } from "../rt";
 import { mapChangedSignal, MapEvents, FeatureSelection } from "./gs-signals.ts";
 import { watching } from "../../core/signals.ts";
 import olCSS from "../../../node_modules/ol/ol.css?raw";
@@ -287,47 +287,62 @@ export class GsMapEditor extends KPart {
     }
 
     /**
-     * Migrates old GsMap structure to new view field structure
-     * Handles maps that still have center, zoom, projection as direct properties
+     * Migrates old GsMap structure to current version
+     * Handles:
+     * - Old center, zoom, projection as direct properties -> view field
+     * - Missing styles and styleRules -> apply defaults
      */
     private migrateGsMap(gsMap: any): GsMap {
-        // Check if this map already has the new view structure
-        if (gsMap.view) {
-            // Already has new structure, no migration needed
-            return gsMap as GsMap;
+        const migratedMap: any = { ...gsMap };
+        let migrationPerformed = false;
+
+        // Migrate view structure
+        if (!gsMap.view) {
+            console.log('Creating view field and migrating old properties...');
+            migrationPerformed = true;
+            migratedMap.view = {};
+
+            if (gsMap.center !== undefined) {
+                migratedMap.view.center = gsMap.center;
+                delete migratedMap.center;
+            }
+
+            if (gsMap.zoom !== undefined) {
+                migratedMap.view.zoom = gsMap.zoom;
+                delete migratedMap.zoom;
+            }
+
+            if (gsMap.projection !== undefined) {
+                migratedMap.view.projection = gsMap.projection;
+                delete migratedMap.projection;
+            }
+
+            if (migratedMap.view.center === undefined) {
+                migratedMap.view.center = [0, 0];
+            }
+            if (migratedMap.view.zoom === undefined) {
+                migratedMap.view.zoom = 0;
+            }
+            if (migratedMap.view.projection === undefined) {
+                migratedMap.view.projection = 'EPSG:3857';
+            }
         }
 
-        // Create view object if it doesn't exist
-        console.log('Creating view field and migrating old properties...');
-        const migratedMap: any = {
-            ...gsMap,
-            view: {}
-        };
-
-        // Check each old field and transfer it to the view
-        if (gsMap.center !== undefined) {
-            migratedMap.view.center = gsMap.center;
-            delete migratedMap.center;
+        // Migrate styling system
+        if (!gsMap.styles || Object.keys(gsMap.styles).length === 0) {
+            console.log('Adding default styles to map...');
+            migrationPerformed = true;
+            migratedMap.styles = { ...DEFAULT_STYLES };
         }
 
-        if (gsMap.zoom !== undefined) {
-            migratedMap.view.zoom = gsMap.zoom;
-            delete migratedMap.zoom;
+        if (!gsMap.styleRules || gsMap.styleRules.length === 0) {
+            console.log('Adding default style rules to map...');
+            migrationPerformed = true;
+            migratedMap.styleRules = [...DEFAULT_STYLE_RULES];
         }
 
-        if (gsMap.projection !== undefined) {
-            migratedMap.view.projection = gsMap.projection;
-            delete migratedMap.projection;
-        }
-
-        if (migratedMap.view.center === undefined) {
-            migratedMap.view.center = [0, 0];
-        }
-        if (migratedMap.view.zoom === undefined) {
-            migratedMap.view.zoom = 0;
-        }
-        if (migratedMap.view.projection === undefined) {
-            migratedMap.view.projection = 'EPSG:3857';
+        if (migrationPerformed) {
+            console.log('Map migration completed');
         }
 
         return migratedMap as GsMap;

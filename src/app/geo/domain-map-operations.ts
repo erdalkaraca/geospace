@@ -72,24 +72,6 @@ export class DomainMapOperations implements MapOperations {
         this.triggerDirty();
     }
 
-    async addMarker(marker: any, layerName?: string): Promise<void> {
-        // Find or create markers layer
-        let markersLayer = this.gsMap.layers.find(layer => layer.name === (layerName || 'Markers'));
-        if (!markersLayer) {
-            markersLayer = {
-                name: layerName || 'Markers',
-                type: 'vector' as any,
-                source: { type: 'features' as any, features: [] },
-                visible: true
-            };
-            this.gsMap.layers.push(markersLayer);
-        }
-        if (markersLayer.source && (markersLayer.source as any).features) {
-            (markersLayer.source as any).features.push(marker);
-        }
-        this.triggerDirty();
-    }
-
     async addControlFromModule(src: string): Promise<void> {
         this.gsMap.controls.push({ src, type: 'module' } as any);
         this.triggerDirty();

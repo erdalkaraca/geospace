@@ -89,11 +89,198 @@ export interface GsView extends GsState {
     projection: string
 }
 
+export interface GsStrokeStyle {
+    color?: string
+    width?: number
+    lineDash?: number[]
+    lineCap?: 'butt' | 'round' | 'square'
+    lineJoin?: 'bevel' | 'round' | 'miter'
+    miterLimit?: number
+}
+
+export interface GsFillStyle {
+    color?: string
+}
+
+export interface GsImageStyle {
+    type: 'circle' | 'icon' | 'regular-shape'
+    
+    radius?: number
+    fill?: GsFillStyle
+    stroke?: GsStrokeStyle
+    
+    src?: string
+    scale?: number
+    anchor?: [number, number]
+    anchorXUnits?: 'fraction' | 'pixels'
+    anchorYUnits?: 'fraction' | 'pixels'
+    anchorOrigin?: 'bottom-left' | 'bottom-right' | 'top-left' | 'top-right'
+    color?: string
+    crossOrigin?: string
+    offset?: [number, number]
+    offsetOrigin?: 'bottom-left' | 'bottom-right' | 'top-left' | 'top-right'
+    size?: [number, number]
+    
+    points?: number
+    radius1?: number
+    radius2?: number
+    angle?: number
+    
+    opacity?: number
+    rotation?: number
+    rotateWithView?: boolean
+    displacement?: [number, number]
+}
+
+export interface GsTextStyle {
+    text?: string
+    font?: string
+    maxAngle?: number
+    offsetX?: number
+    offsetY?: number
+    overflow?: boolean
+    placement?: 'point' | 'line'
+    repeat?: number
+    scale?: number
+    rotateWithView?: boolean
+    rotation?: number
+    textAlign?: 'left' | 'center' | 'right' | 'end' | 'start'
+    justify?: 'left' | 'center' | 'right'
+    textBaseline?: 'bottom' | 'top' | 'middle' | 'alphabetic' | 'hanging' | 'ideographic'
+    fill?: GsFillStyle
+    stroke?: GsStrokeStyle
+    backgroundFill?: GsFillStyle
+    backgroundStroke?: GsStrokeStyle
+    padding?: [number, number, number, number]
+}
+
 export interface GsStyle {
+    id?: string
+    stroke?: GsStrokeStyle
+    fill?: GsFillStyle
+    image?: GsImageStyle
+    text?: GsTextStyle
+    zIndex?: number
 }
 
 export interface GsStylesMap {
     [key: string]: GsStyle
+}
+
+export const DEFAULT_STYLES: GsStylesMap = {
+    'default-point': {
+        id: 'default-point',
+        image: {
+            type: 'circle',
+            radius: 5,
+            fill: { color: 'rgba(0, 100, 255, 0.8)' },
+            stroke: { color: 'white', width: 2 }
+        }
+    },
+    'default-line': {
+        id: 'default-line',
+        stroke: {
+            color: 'rgba(0, 100, 255, 0.8)',
+            width: 2
+        }
+    },
+    'default-polygon': {
+        id: 'default-polygon',
+        fill: { color: 'rgba(0, 100, 255, 0.3)' },
+        stroke: {
+            color: 'rgba(0, 100, 255, 0.8)',
+            width: 2
+        }
+    },
+    'selection': {
+        id: 'selection',
+        image: {
+            type: 'circle',
+            radius: 7,
+            fill: { color: 'rgba(255, 255, 0, 0.3)' },
+            stroke: { color: 'rgba(255, 255, 0, 1)', width: 3 }
+        },
+        stroke: {
+            color: 'rgba(255, 255, 0, 1)',
+            width: 3
+        },
+        fill: {
+            color: 'rgba(255, 255, 0, 0.3)'
+        }
+    }
+}
+
+export interface GsStyleRule {
+    id?: string
+    condition: {
+        geometryType?: GsGeometryType | GsGeometryType[]
+        layerName?: string
+        property?: {
+            key: string
+            value?: any
+            operator?: 'equals' | 'not-equals' | 'contains' | 'greater-than' | 'less-than' | 'exists'
+        }
+    }
+    styleId: string
+    priority?: number
+}
+
+export function evaluateStyleRule(rule: GsStyleRule, feature: GsFeature, layerName?: string): boolean {
+    const condition = rule.condition
+    
+    if (condition.geometryType) {
+        const types = Array.isArray(condition.geometryType) ? condition.geometryType : [condition.geometryType]
+        if (!types.includes(feature.geometry.type)) {
+            return false
+        }
+    }
+    
+    if (condition.layerName && condition.layerName !== layerName) {
+        return false
+    }
+    
+    if (condition.property) {
+        const prop = condition.property
+        const featureValue = feature.state?.[prop.key]
+        
+        if (!prop.operator || prop.operator === 'exists') {
+            return featureValue !== undefined
+        }
+        
+        if (prop.operator === 'equals') {
+            return featureValue === prop.value
+        }
+        
+        if (prop.operator === 'not-equals') {
+            return featureValue !== prop.value
+        }
+        
+        if (prop.operator === 'contains' && typeof featureValue === 'string' && typeof prop.value === 'string') {
+            return featureValue.includes(prop.value)
+        }
+        
+        if (prop.operator === 'greater-than' && typeof featureValue === 'number' && typeof prop.value === 'number') {
+            return featureValue > prop.value
+        }
+        
+        if (prop.operator === 'less-than' && typeof featureValue === 'number' && typeof prop.value === 'number') {
+            return featureValue < prop.value
+        }
+    }
+    
+    return true
+}
+
+export function getStyleForFeature(feature: GsFeature, rules: GsStyleRule[], stylesMap: GsStylesMap, layerName?: string): GsStyle | undefined {
+    const sortedRules = [...rules].sort((a, b) => (b.priority || 0) - (a.priority || 0))
+    
+    for (const rule of sortedRules) {
+        if (evaluateStyleRule(rule, feature, layerName)) {
+            return stylesMap[rule.styleId]
+        }
+    }
+    
+    return undefined
 }
 
 export interface GsMap extends GsState {
@@ -103,8 +290,36 @@ export interface GsMap extends GsState {
     controls: GsControl[],
     interactions: GsInteraction[],
     styles: GsStylesMap,
+    styleRules: GsStyleRule[],
     chatHistory: any[]
 }
+
+export const DEFAULT_STYLE_RULES: GsStyleRule[] = [
+    {
+        id: 'default-points',
+        condition: {
+            geometryType: [GsGeometryType.Point, GsGeometryType.MultiPoint]
+        },
+        styleId: 'default-point',
+        priority: 0
+    },
+    {
+        id: 'default-lines',
+        condition: {
+            geometryType: [GsGeometryType.LineString, GsGeometryType.MultiLineString]
+        },
+        styleId: 'default-line',
+        priority: 0
+    },
+    {
+        id: 'default-polygons',
+        condition: {
+            geometryType: [GsGeometryType.Polygon, GsGeometryType.MultiPolygon, GsGeometryType.Circle]
+        },
+        styleId: 'default-polygon',
+        priority: 0
+    }
+]
 
 export const DEFAULT_GSMAP = {
     view: {
@@ -122,5 +337,6 @@ export const DEFAULT_GSMAP = {
     controls: [] as GsControl[],
     interactions: [] as GsInteraction[],
     state: {},
-    styles: {}
+    styles: { ...DEFAULT_STYLES },
+    styleRules: [...DEFAULT_STYLE_RULES]
 } as GsMap
