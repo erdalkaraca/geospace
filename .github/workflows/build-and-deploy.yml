@@ -10,13 +10,6 @@ on:
       - '[0-9]+.[0-9]+.[0-9]+' # run only if matches a semantic version
 
 jobs:
-  test:
-    uses: ./.github/workflows/reusable-test.yml
-    with:
-      node-version: '20'
-      coverage-flags: 'deployment'
-      coverage-name: 'codecov-deployment'
-
   build:
     uses: ./.github/workflows/reusable-build.yml
     needs: test

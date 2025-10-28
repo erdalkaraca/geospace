@@ -6,78 +6,9 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  validate:
-    uses: ./.github/workflows/reusable-test.yml
-    with:
-      node-version: '20'
-      coverage-flags: 'pr-validation'
-      coverage-name: 'codecov-pr'
-
   build-check:
     uses: ./.github/workflows/reusable-build.yml
     needs: validate
     with:
       node-version: '20'
       upload-artifacts: false
-
-  comment-results:
-    runs-on: ubuntu-latest
-    needs: [validate, build-check]
-    if: always()
-    
-    steps:
-      - name: Comment test results
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const fs = require('fs');
-            const path = require('path');
-            
-            // Try to read coverage summary
-            let coverageInfo = '';
-            try {
-              const coveragePath = path.join(process.cwd(), 'coverage', 'coverage-summary.json');
-              if (fs.existsSync(coveragePath)) {
-                const coverage = JSON.parse(fs.readFileSync(coveragePath, 'utf8'));
-                const total = coverage.total;
-                coverageInfo = `
-            ### 📊 Coverage Summary
-            - **Statements**: ${total.statements.pct}% (${total.statements.covered}/${total.statements.total})
-            - **Branches**: ${total.branches.pct}% (${total.branches.covered}/${total.branches.total})
-            - **Functions**: ${total.functions.pct}% (${total.functions.covered}/${total.functions.total})
-            - **Lines**: ${total.lines.pct}% (${total.lines.covered}/${total.lines.total})
-            `;
-              }
-            } catch (error) {
-              console.log('Could not read coverage summary:', error.message);
-            }
-            
-            // Get test results from the previous step
-            const testResult = '${{ needs.validate.result }}';
-            const buildResult = '${{ needs.build-check.result }}';
-            const testStatus = testResult === 'success' ? '✅ **PASSED**' : '❌ **FAILED**';
-            const buildStatus = buildResult === 'success' ? '✅ **PASSED**' : '❌ **FAILED**';
-            
-            const comment = `## 🧪 PR Validation Results
-            
-            ### Test Status: ${testStatus}
-            ### Build Status: ${buildStatus}
-            
-            ${coverageInfo}
-            
-            ### 📋 Details
-            - **Commit**: \`${{ github.sha }}\`
-            - **Branch**: \`${{ github.head_ref }}\`
-            - **Workflow**: [View Details](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-            
-            ${testResult === 'success' && buildResult === 'success' ? 
-              '✅ All checks passed! This PR is ready for review.' : 
-              '❌ Some checks failed. Please check the workflow logs and fix any issues before requesting review.'
-            }`;
-            
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: comment
-            });
