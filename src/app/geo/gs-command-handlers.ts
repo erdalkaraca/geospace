@@ -317,36 +317,6 @@ commandRegistry.registerAll({
 
 commandRegistry.registerAll({
     command: {
-        "id": "apply_styles",
-        "name": "Apply styles",
-        "description": "Applies a styles json file to a layer",
-        "parameters": [
-            {
-                "name": "stylesPath",
-                "description": "the path to the json file containing style definitions",
-                "required": true
-            },
-            {
-                "name": "layer",
-                "description": "the layer to apply the styles to: can be either a name or the index pointing to a layer in the layers stack",
-                "required": true
-            }
-        ]
-    },
-    handler: {
-        canExecute,
-        execute: async context => {
-            const operations = getMapOperations(context);
-            const layer = context.params!["layer"]
-            const stylesPath = context.params!["stylesPath"]?.trim().toLowerCase()
-
-            await operations.applyStyles(layer, stylesPath);
-        }
-    }
-})
-
-commandRegistry.registerAll({
-    command: {
         "id": "switch_color_mode",
         "name": "Switch color mode",
         "description": "Switches the current color mode to either dark or light (default)",

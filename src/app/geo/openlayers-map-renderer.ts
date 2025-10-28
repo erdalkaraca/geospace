@@ -292,32 +292,6 @@ export class OpenLayersMapOperations implements MapOperations {
         }
     }
 
-    async applyStyles(layerIdentifier: string | number, _stylesPath: string): Promise<void> {
-        const olLayers = this.olMap.getLayers();
-        let olLayer: any;
-
-        // Find layer by index or name
-        if (typeof layerIdentifier === "number" || (typeof layerIdentifier === "string" && layerIdentifier.trim().match(/\d+/))) {
-            const index = parseInt(layerIdentifier.toString()) - 1; // Convert to 0-based index
-            if (index >= 0 && index < olLayers.getLength()) {
-                olLayer = olLayers.item(index);
-            }
-        } else {
-            const layerName = layerIdentifier.toString().trim().toLowerCase();
-            for (let i = 0; i < olLayers.getLength(); i++) {
-                const layer = olLayers.item(i);
-                if (layer.get(KEY_NAME) === layerName) {
-                    olLayer = layer;
-                    break;
-                }
-            }
-        }
-
-        if (!olLayer) {
-            throw new Error(`Layer not found: ${layerIdentifier}`);
-        }
-    }
-
     async addMarker(marker: GsFeature, layerName?: string): Promise<void> {
         const targetLayerName = layerName || 'geocoded-markers';
         const olLayers = this.olMap.getLayers();

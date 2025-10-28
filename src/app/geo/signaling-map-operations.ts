@@ -47,10 +47,6 @@ export class SignalingMapOperations implements MapOperations {
         // No-op - visibility changes don't need signaling
     }
 
-    async applyStyles(_layerIdentifier: string | number, _stylesPath: string): Promise<void> {
-        // No-op - style changes don't need signaling
-    }
-
     async addMarker(_marker: any, _layerName?: string): Promise<void> {
         // Trigger signal after marker is added by other operations
         mapChangedSignal.set({ part: this.source, event: MapEvents.LAYER_ADDED });

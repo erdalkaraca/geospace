@@ -48,7 +48,6 @@ export interface MapOperations {
     renameLayer(index: number, newName: string): Promise<void>;
     moveLayer(fromIndex: number, toIndex: number): Promise<void>;
     setLayerVisible(index: number, visible: boolean): Promise<void>;
-    applyStyles(layerIdentifier: string | number, stylesPath: string): Promise<void>;
     
     // Marker operations
     addMarker(marker: any, layerName?: string): Promise<void>;

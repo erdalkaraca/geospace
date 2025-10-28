@@ -72,18 +72,6 @@ export class DomainMapOperations implements MapOperations {
         this.triggerDirty();
     }
 
-    async applyStyles(layerIdentifier: string | number, stylesPath: string): Promise<void> {
-        // Store style information in domain model
-        const layer = typeof layerIdentifier === 'number' 
-            ? this.gsMap.layers[layerIdentifier]
-            : this.gsMap.layers.find(l => l.name === layerIdentifier);
-        
-        if (layer) {
-            layer.stylesPath = stylesPath;
-        }
-        this.triggerDirty();
-    }
-
     async addMarker(marker: any, layerName?: string): Promise<void> {
         // Find or create markers layer
         let markersLayer = this.gsMap.layers.find(layer => layer.name === (layerName || 'Markers'));
