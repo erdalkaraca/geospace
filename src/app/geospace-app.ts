@@ -73,6 +73,7 @@ export const geospaceApp: AppDefinition = {
     description: "A geospatial IDE for working with spatial data",
 
     extensions: [
+        "geospace.styleEditor",
         "system.mdeditor",
         "system.monaco",
         "system.download",
@@ -163,6 +164,13 @@ export const geospaceApp: AppDefinition = {
                 description: "Compile a geo!space file to an interactive website",
                 loader: () => import("./extensions/mapbuilder-extension.ts"),
                 icon: "earth"
+            },
+            {
+                id: "geospace.styleEditor",
+                name: "Style Editor",
+                description: "Visual editor for defining and managing map styles and rules",
+                loader: () => import("./extensions/style-editor/style-editor-extension.ts"),
+                icon: "palette"
             },
             {
                 id: "geospace.overpass",

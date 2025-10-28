@@ -204,6 +204,12 @@ export class GsMapProps extends KPart {
                     </wa-tree-item>
                     <wa-tree-item expanded>
                         <k-icon name="highlighter"></k-icon> Styles
+                        <wa-tree-item>
+                            <span>Defined Styles: ${Object.keys(this.mapEditor!.getGsMap()?.styles || {}).length}</span>
+                        </wa-tree-item>
+                        <wa-tree-item>
+                            <span>Style Rules: ${this.mapEditor!.getGsMap()?.styleRules?.length || 0}</span>
+                        </wa-tree-item>
                     </wa-tree-item>
                 </wa-tree>
             `
