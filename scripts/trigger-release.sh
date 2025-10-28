@@ -111,7 +111,7 @@ else
     if [ -z "$CHANGES" ]; then
         git commit --allow-empty -m "Release: v$NEXT_VERSION" -m "No changes since last release."
     elif [ -n "$SUMMARY" ]; then
-        git commit --allow-empty -m "Release: v$NEXT_VERSION" -m "$SUMMARY" -m "" -m "Detailed changes:" -m "$CHANGES"
+        git commit --allow-empty -m "Release: v$NEXT_VERSION" -m "$SUMMARY"
     else
         git commit --allow-empty -m "Release: v$NEXT_VERSION" -m "Changes since $LATEST_TAG:" -m "$CHANGES"
     fi
