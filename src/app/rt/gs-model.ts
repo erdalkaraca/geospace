@@ -65,7 +65,6 @@ export interface GsLayer extends GsState {
     name?: string
     type: GsLayerType,
     source: GsSource,
-    stylesPath?: string,
     visible?: boolean
 }
 
