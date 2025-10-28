@@ -3,8 +3,6 @@ export const KEY_NAME = "name";
 export const KEY_URL = "url";
 export const KEY_FORMAT = "format";
 export const KEY_ICON_PATH = "iconPath";
-export const KEY_STYLE = "style"
-export const KEY_STYLES_PATH = "stylePath";
 export const KEY_STATE = "_state";
 export const KEY_SRC = "src";
 export const KEY_SOURCETYPE = "sourceType"
@@ -54,7 +52,6 @@ export interface GsIcon extends GsResource {
 }
 
 export interface GsFeature extends GsState {
-    style?: string,
     geometry: GsGeometry
 }
 

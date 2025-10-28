@@ -20,8 +20,6 @@ import {
     KEY_NAME, KEY_SOURCETYPE,
     KEY_SRC,
     KEY_STATE,
-    KEY_STYLE,
-    KEY_STYLES_PATH,
     KEY_URL
 } from "./gs-model.ts";
 import BaseObject from "ol/Object";
@@ -89,7 +87,6 @@ export function toGsGeometry(geometry: olGeom.SimpleGeometry): GsGeometry {
 
 export function toGsFeature(feature: Feature) {
     return withGsState(feature, {
-        style: feature.get(KEY_STYLE),
         geometry: toGsGeometry(feature.getGeometry() as olGeom.SimpleGeometry)
     } as GsFeature)
 }
@@ -160,7 +157,6 @@ const GS_LAYERS: Rule[] = [
         matches: (context: BaseLayer) => context instanceof VectorLayer,
         apply: (context: VectorLayer): GsLayer => {
             return {
-                stylesPath: context.get(KEY_STYLES_PATH),
                 type: GsLayerType.VECTOR,
                 source: toGsSource(context.getSource() as Source)
             } as GsLayer
@@ -193,7 +189,6 @@ export const toGsLayer = (layer: BaseLayer): GsLayer => {
     const gsLayer = GS_LAYERS.find((rule: Rule) => rule.matches(layer))?.apply(layer) as GsLayer
     gsLayer.visible = layer.getVisible()
     gsLayer.name = layer.get(KEY_NAME)
-    gsLayer.stylesPath = layer.get(KEY_STYLES_PATH)
     return withGsState(layer, gsLayer)
 }
 

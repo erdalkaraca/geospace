@@ -11,7 +11,6 @@ import {
     GsSource,
     GsSourceType,
     GsState,
-    GsStyle,
     KEY_ENV,
     KEY_FORMAT,
     KEY_GS_MANAGED,
@@ -21,7 +20,6 @@ import {
     KEY_SOURCETYPE,
     KEY_SRC,
     KEY_STATE,
-    KEY_STYLES_PATH,
     KEY_URL
 } from "./gs-model.ts";
 import {Feature, Map, Overlay, View} from "ol";
@@ -227,7 +225,6 @@ export const toOlLayer = (layer: GsLayer) => {
     const olLayer: BaseLayer = withState(layer, OL_LAYERS[layer.type](layer))
     olLayer.set(KEY_LABEL, layer.type)
     olLayer.set(KEY_NAME, layer.name)
-    olLayer.set(KEY_STYLES_PATH, layer.stylesPath)
     olLayer.set(KEY_GS_MANAGED, true)
     olLayer.setVisible(layer.visible ?? true)
     return olLayer
