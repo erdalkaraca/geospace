@@ -28,6 +28,7 @@ import BaseObject from "ol/Object";
 import FeatureFormat from "ol/format/Feature";
 import LayerGroup from "ol/layer/Group";
 import {GsOlControl} from "./gs-gs2ol.ts";
+import Control from "ol/control/Control";
 
 const sourceTypes = Object.values(GsSourceType)
 
@@ -203,7 +204,7 @@ export const toGsOverlay = (olOverlay: Overlay): GsOverlay => {
     } as GsOverlay)
 }
 
-export const toGsControl = (olControl: GsOlControl): GsControl => {
+export const toGsControl = (olControl: Control): GsControl => {
     return withGsState(olControl, {
         src: olControl.get(KEY_SRC),
     } as GsControl)
