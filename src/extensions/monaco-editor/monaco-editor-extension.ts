@@ -15,6 +15,7 @@ import {PyEnv} from "../../core/pyservice.ts";
 import {File, workspaceService} from "../../core/filesys.ts";
 import {ChatContext} from "../../core/chatservice.ts";
 import logger from '../../core/logger.ts';
+import {pythonPackageManagerService} from "../python-package-manager/package-manager-extension.ts";
 
 self.MonacoEnvironment = {
     getWorker(_: any, label: string) {
@@ -69,6 +70,9 @@ export class KMonacoEditor extends KPart {
     @state()
     private pyenv?: PyEnv;
 
+    @state()
+    private requiredPackages: string[] = [];
+
     chatContext: ChatContext = {
         history: []
     }
@@ -105,6 +109,11 @@ export class KMonacoEditor extends KPart {
             this.markDirty(true)
         })
         this.editor.setModel(this.model)
+
+        // Parse required packages from magic comment
+        if (this.canExecute) {
+            this.requiredPackages = this.parsePackagesFromContent(textContents as string)
+        }
     }
 
     public getEditor() {
@@ -157,6 +166,14 @@ export class KMonacoEditor extends KPart {
                        appearance="plain" size="small">
                 <wa-icon name="circle" label="Connection status"></wa-icon>
             </wa-button>
+            <wa-button 
+                size="small" 
+                appearance="plain"
+                @click=${() => this.openPackageManager()}
+                title="Manage required Python packages">
+                <wa-icon name="box" label="Packages"></wa-icon>
+                Packages
+            </wa-button>
         `;
     }
 
@@ -172,6 +189,96 @@ export class KMonacoEditor extends KPart {
         this.pyenv = new PyEnv()
         const workspace = await workspaceService.getWorkspace()
         await this.pyenv.init(workspace!)
+
+        // Load required packages if any
+        if (this.requiredPackages.length > 0) {
+            try {
+                await this.pyenv.loadPackages(this.requiredPackages)
+            } catch (error) {
+                logger.error("Failed to load required packages: " + String(error))
+            }
+        }
+    }
+
+    /**
+     * Parses the magic comment from file content to extract required packages.
+     * Format: # @gs-packages: pandas, numpy, geopandas
+     */
+    private parsePackagesFromContent(content: string): string[] {
+        const lines = content.split('\n')
+        const magicCommentRegex = /^#\s*@gs-packages:\s*(.+)$/i
+        
+        for (const line of lines) {
+            const match = line.match(magicCommentRegex)
+            if (match) {
+                return match[1]
+                    .split(',')
+                    .map(pkg => pkg.trim())
+                    .filter(pkg => pkg.length > 0)
+            }
+        }
+        
+        return []
+    }
+
+    /**
+     * Updates or adds the magic comment in the file with the current package list.
+     */
+    private updatePackagesInContent(): void {
+        if (!this.model) return
+
+        const content = this.model.getValue()
+        const lines = content.split('\n')
+        const magicCommentRegex = /^#\s*@gs-packages:/i
+        
+        // Find existing magic comment line
+        let magicCommentLineIndex = -1
+        for (let i = 0; i < lines.length; i++) {
+            if (magicCommentRegex.test(lines[i])) {
+                magicCommentLineIndex = i
+                break
+            }
+        }
+
+        const newMagicComment = this.requiredPackages.length > 0
+            ? `# @gs-packages: ${this.requiredPackages.join(', ')}`
+            : null
+
+        if (newMagicComment) {
+            if (magicCommentLineIndex >= 0) {
+                // Update existing comment
+                lines[magicCommentLineIndex] = newMagicComment
+            } else {
+                // Add new comment at the top (after shebang if present)
+                const insertIndex = lines[0]?.startsWith('#!') ? 1 : 0
+                lines.splice(insertIndex, 0, newMagicComment)
+            }
+        } else if (magicCommentLineIndex >= 0) {
+            // Remove magic comment if no packages
+            lines.splice(magicCommentLineIndex, 1)
+        }
+
+        const newContent = lines.join('\n')
+        if (newContent !== content) {
+            this.model.setValue(newContent)
+        }
+    }
+
+    private openPackageManager() {
+        pythonPackageManagerService.showPackageManager({
+            packages: this.requiredPackages,
+            pyenv: this.pyenv,
+            onPackageAdded: (packageName: string) => {
+                if (!this.requiredPackages.includes(packageName)) {
+                    this.requiredPackages = [...this.requiredPackages, packageName]
+                    this.updatePackagesInContent()
+                }
+            },
+            onPackageRemoved: (packageName: string) => {
+                this.requiredPackages = this.requiredPackages.filter(pkg => pkg !== packageName)
+                this.updatePackagesInContent()
+            }
+        })
     }
 
     render() {

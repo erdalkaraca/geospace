@@ -8,14 +8,54 @@ import logger from "./logger.ts";
 export const TOPIC_EXTENSIONS_CHANGED = "events/extensionsregistry/extensionsConfigChanged"
 const KEY_EXTENSIONS_CONFIG = "extensions"
 
+/**
+ * Extension definition for the extension registry.
+ * 
+ * @example
+ * ```typescript
+ * extensionRegistry.registerExtension({
+ *     id: "system.myextension",
+ *     name: "My Extension",
+ *     description: "An example extension",
+ *     loader: () => import("./my-extension.ts"),
+ *     icon: "puzzle-piece",
+ *     dependencies: ["system.dependency1", "system.dependency2"]
+ * })
+ * ```
+ */
 export interface Extension {
+    /** Unique identifier for the extension (e.g., "system.notebook") */
     id: string;
+    
+    /** Human-readable name of the extension */
     name: string;
+    
+    /** Optional description of what the extension does */
     description?: string;
+    
+    /** Optional URL to load the extension module from */
     url?: string;
+    
+    /** Function that dynamically imports the extension module */
     loader?: () => any;
+    
+    /** Optional icon identifier (FontAwesome or custom icon) */
     icon?: string;
+    
+    /** Whether this extension is marked as experimental */
     experimental?: boolean;
+    
+    /**
+     * Optional list of extension IDs that must be loaded before this extension.
+     * Dependencies are loaded recursively and automatically when this extension is loaded.
+     * The system includes circular dependency detection.
+     * 
+     * @example
+     * ```typescript
+     * dependencies: ["system.pythonpackagemanager", "system.pyterminal"]
+     * ```
+     */
+    dependencies?: string[];
 }
 
 export interface ExtensionSetting {
@@ -29,6 +69,7 @@ class ExtensionRegistry {
     private extensionsSettings?: ExtensionsConfig;
     private extensions: { [key: string]: Extension } = {}
     private loadedExtensions: Set<string> = new Set()
+    private loadingPromises: Map<string, Promise<void>> = new Map()
 
     constructor() {
         subscribe(TOPIC_SETTINGS_CHANGED, () => {
@@ -36,14 +77,16 @@ class ExtensionRegistry {
             this.checkExtensionsConfig().then()
         })
 
-        this.checkExtensionsConfig().then(() => {
-            this.extensionsSettings?.forEach(extensionSetting => {
-                if (this.isEnabled(extensionSetting.id)) {
-                    this.load(extensionSetting.id).catch(e => {
+        this.checkExtensionsConfig().then(async () => {
+            const loadPromises = this.extensionsSettings
+                ?.filter(setting => this.isEnabled(setting.id))
+                .map(setting => 
+                    this.load(setting.id).catch(e => {
                         toastError("Extension could not be loaded: " + e.message)
                     })
-                }
-            })
+                ) || []
+            
+            await Promise.all(loadPromises)
         })
     }
 
@@ -87,9 +130,42 @@ class ExtensionRegistry {
         })
     }
 
-    public async load(extensionId: string) {
+    /**
+     * Loads an extension and all its dependencies.
+     * 
+     * Features:
+     * - Automatically loads all dependencies recursively before loading the extension
+     * - Ensures each extension is loaded only once (idempotent)
+     * - Dependencies are loaded in the order they are declared
+     * - If an extension is already being loaded, waits for that load to complete
+     * - Detects circular dependencies in the dependency chain
+     * 
+     * @param extensionId - The ID of the extension to load
+     * @param loadingChain - Internal parameter to track the dependency chain for circular detection
+     * @throws Error if the extension is not found or if a circular dependency is detected
+     * 
+     * @example
+     * ```typescript
+     * // This will automatically load system.pythonpackagemanager first
+     * await extensionRegistry.load('system.notebook')
+     * ```
+     */
+    public async load(extensionId: string, loadingChain: string[] = []): Promise<void> {
+        // Already loaded, return immediately
         if (this.loadedExtensions.has(extensionId)) {
             return
+        }
+        
+        // Currently loading by another call chain, wait for that promise to complete
+        const existingPromise = this.loadingPromises.get(extensionId)
+        if (existingPromise) {
+            return existingPromise
+        }
+        
+        // Check for circular dependency
+        if (loadingChain.includes(extensionId)) {
+            const chain = [...loadingChain, extensionId].join(' → ')
+            throw new Error(`Circular dependency detected: ${chain}`)
         }
         
         const extension = this.extensions[extensionId]
@@ -97,19 +173,50 @@ class ExtensionRegistry {
             throw new Error("Extension not found: " + extensionId)
         }
         
-        this.loadedExtensions.add(extensionId)
-        
-        const module = await taskService.runAsync("Loading extension: " + extension.name, () => {
-            if (extension.loader) {
-                return extension.loader()
-            } else if (extension.url) {
-                return import(extension.url)
-            }
-        })
+        // Create and track the loading promise
+        const loadingPromise = (async () => {
+            try {
+                if (extension.dependencies && extension.dependencies.length > 0) {
+                    logger.debug(`Loading dependencies for ${extensionId}: ${extension.dependencies.join(', ')}`)
+                    const newChain = [...loadingChain, extensionId]
+                    for (const depId of extension.dependencies) {
+                        await this.load(depId, newChain)
+                        // Enable the dependency if it's not already enabled
+                        if (!this.isEnabled(depId)) {
+                            await this.updateEnablementAsync(depId, true, false)
+                            logger.debug(`Auto-enabled dependency: ${depId}`)
+                        }
+                    }
+                }
+                
+                const module = await taskService.runAsync("Loading extension: " + extension.name, () => {
+                    if (extension.loader) {
+                        return extension.loader()
+                    } else if (extension.url) {
+                        return import(extension.url)
+                    }
+                })
 
-        if (module?.default instanceof Function) {
-            module?.default(uiContext.getProxy())
-        }
+                // Mark as loaded BEFORE executing the module
+                this.loadedExtensions.add(extensionId)
+
+                if (module?.default instanceof Function) {
+                    module?.default(uiContext.getProxy())
+                }
+                
+                logger.debug(`Extension loaded: ${extensionId}`)
+            } catch (error) {
+                // If loading failed, remove from loaded set
+                this.loadedExtensions.delete(extensionId)
+                throw error
+            } finally {
+                // Always clean up the promise
+                this.loadingPromises.delete(extensionId)
+            }
+        })()
+        
+        this.loadingPromises.set(extensionId, loadingPromise)
+        return loadingPromise
     }
 
     public disable(extensionId: string, informUser: boolean = false) {
@@ -139,6 +246,26 @@ class ExtensionRegistry {
                 publish(TOPIC_EXTENSIONS_CHANGED, this.extensionsSettings)
             })
         })
+    }
+
+    private async updateEnablementAsync(extensionId: string, enabled: boolean, informUser: boolean) {
+        await this.checkExtensionsConfig()
+        const extension = this.extensionsSettings?.find(e => e.id == extensionId)
+        if (extension) {
+            extension.enabled = enabled
+        } else {
+            this.extensionsSettings?.push({id: extensionId, enabled: enabled})
+        }
+        await appSettings.set(KEY_EXTENSIONS_CONFIG, this.extensionsSettings)
+        if (informUser) {
+            const extObj = this.extensions[extensionId]
+            if (enabled) {
+                toastInfo(extObj.name + " enabled.")
+            } else {
+                toastInfo(extObj.name + " disabled " + " - Please restart to take effect")
+            }
+        }
+        publish(TOPIC_EXTENSIONS_CHANGED, this.extensionsSettings)
     }
 }
 

@@ -45,11 +45,20 @@ extensionRegistry.registerExtension({
 })
 
 extensionRegistry.registerExtension({
+    id: "system.pythonpackagemanager",
+    name: "Python Package Manager",
+    description: "Manage Python packages for notebooks and other Python-based extensions",
+    loader: () => import("./python-package-manager/package-manager-extension.ts"),
+    icon: "box",
+})
+
+extensionRegistry.registerExtension({
     id: "system.notebook",
     name: "Jupyter Notebook Editor",
     description: "View and execute Jupyter notebooks (.ipynb) with Python code execution and markdown rendering",
     loader: () => import("./notebook/notebook-extension.ts"),
     icon: "k jupyter",
+    dependencies: ["system.pythonpackagemanager"],
 })
 
 extensionRegistry.registerExtension({
@@ -90,6 +99,7 @@ extensionRegistry.registerExtension({
     description: "Code editor with syntax highlighting, code completion, and Python execution support",
     loader: () => import("./monaco-editor/monaco-editor-extension.ts"),
     icon: "file-pen",
+    dependencies: ["system.pythonpackagemanager"],
 })
 
 extensionRegistry.registerExtension({

@@ -11,6 +11,7 @@ import type { EditorInput } from "../../core/editorregistry.ts";
 import { File, workspaceService } from "../../core/filesys.ts";
 import { PyEnv } from "../../core/pyservice.ts";
 import { KPart } from "../../parts/k-part.ts";
+import { pythonPackageManagerService } from "../python-package-manager/package-manager-extension.ts";
 
 interface NotebookCell {
     cell_type: 'code' | 'markdown' | 'raw';
@@ -67,15 +68,6 @@ export class KNotebookEditor extends KPart {
 
     @state()
     private highlightedCellIndex: number = -1;
-
-    @state()
-    private showPackageManager: boolean = false;
-
-    @state()
-    private loadingPackages: boolean = false;
-
-    @state()
-    private packageLoadError?: string;
 
     private cancelRunAll: boolean = false;
 
@@ -244,7 +236,7 @@ export class KNotebookEditor extends KPart {
             <wa-button 
                 size="small" 
                 appearance="plain"
-                @click=${() => this.showPackageManager = true}
+                @click=${() => this.openPackageManager()}
                 title="Manage required packages for this notebook">
                 <wa-icon name="box" label="Packages"></wa-icon>
                 Packages
@@ -411,15 +403,10 @@ export class KNotebookEditor extends KPart {
                 // Load required packages from notebook metadata
                 const requiredPackages = this.notebook?.metadata?.required_packages || [];
                 if (requiredPackages.length > 0) {
-                    this.loadingPackages = true;
-                    this.packageLoadError = undefined;
                     try {
                         await this.pyenv.loadPackages(requiredPackages);
                     } catch (error) {
                         console.error("Failed to load required packages:", error);
-                        this.packageLoadError = String(error);
-                    } finally {
-                        this.loadingPackages = false;
                     }
                 }
 
@@ -1061,148 +1048,36 @@ except ImportError:
         return 'vs-dark';
     }
 
-    private addPackage(packageName: string) {
-        if (!this.notebook) return;
-        if (!packageName || packageName.trim() === '') return;
-
-        if (!this.notebook.metadata) {
-            this.notebook.metadata = {};
-        }
-        if (!this.notebook.metadata.required_packages) {
-            this.notebook.metadata.required_packages = [];
-        }
-
-        const trimmedName = packageName.trim();
-        if (!this.notebook.metadata.required_packages.includes(trimmedName)) {
-            this.notebook.metadata.required_packages.push(trimmedName);
-            this.markDirty(true);
-            this.requestUpdate();
-        }
-    }
-
-    private removePackage(packageName: string) {
-        if (!this.notebook?.metadata?.required_packages) return;
-
-        const index = this.notebook.metadata.required_packages.indexOf(packageName);
-        if (index > -1) {
-            this.notebook.metadata.required_packages.splice(index, 1);
-            this.markDirty(true);
-            this.requestUpdate();
-        }
-    }
-
-    private renderPackageManager() {
-        if (!this.showPackageManager) return '';
-
+    private openPackageManager() {
         const packages = this.notebook?.metadata?.required_packages || [];
-        let newPackageInput: HTMLInputElement | undefined;
-
-        return html`
-            <wa-dialog 
-                label="Manage Required Packages" 
-                ?open=${this.showPackageManager}
-                @wa-after-hide=${() => this.showPackageManager = false}>
-                <div class="package-manager">
-                    <p class="package-manager-description">
-                        Specify Python packages that should be automatically loaded when connecting to the kernel.
-                    </p>
-
-                    ${this.loadingPackages ? html`
-                        <wa-alert variant="primary" open>
-                            <wa-icon slot="icon" name="circle-notch" library="fa" class="spinning"></wa-icon>
-                            Loading packages...
-                        </wa-alert>
-                    ` : ''}
-
-                    ${this.packageLoadError ? html`
-                        <wa-alert variant="danger" open closable @wa-after-hide=${() => this.packageLoadError = undefined}>
-                            <wa-icon slot="icon" name="exclamation-triangle"></wa-icon>
-                            <strong>Package Load Error:</strong><br>
-                            ${this.packageLoadError}
-                        </wa-alert>
-                    ` : ''}
-
-                    <div class="package-input-group">
-                        <wa-input 
-                            placeholder="Package name (e.g., pandas, numpy)" 
-                            ${ref((el: any) => newPackageInput = el)}
-                            @keydown=${(e: KeyboardEvent) => {
-                                if (e.key === 'Enter' && newPackageInput) {
-                                    this.addPackage(newPackageInput.value);
-                                    newPackageInput.value = '';
-                                }
-                            }}>
-                            <wa-icon slot="prefix" name="box"></wa-icon>
-                        </wa-input>
-                        <wa-button 
-                            @click=${() => {
-                                if (newPackageInput) {
-                                    this.addPackage(newPackageInput.value);
-                                    newPackageInput.value = '';
-                                }
-                            }}
-                            variant="primary">
-                            <wa-icon slot="prefix" name="plus"></wa-icon>
-                            Add
-                        </wa-button>
-                    </div>
-
-                    ${packages.length === 0 ? html`
-                        <div class="empty-state">
-                            <wa-icon name="box" style="font-size: 3rem; opacity: 0.3;"></wa-icon>
-                            <p>No packages configured</p>
-                            <p style="font-size: 0.9rem; opacity: 0.7;">Add packages above to auto-load them when the kernel connects</p>
-                        </div>
-                    ` : html`
-                        <div class="package-list">
-                            <div class="package-list-header">
-                                <strong>Required Packages (${packages.length})</strong>
-                            </div>
-                            ${repeat(packages, pkg => pkg, pkg => html`
-                                <div class="package-item">
-                                    <wa-icon name="box" style="opacity: 0.5;"></wa-icon>
-                                    <span class="package-name">${pkg}</span>
-                                    <wa-button 
-                                        size="small" 
-                                        variant="text"
-                                        @click=${() => this.removePackage(pkg)}
-                                        title="Remove package">
-                                        <wa-icon name="xmark"></wa-icon>
-                                    </wa-button>
-                                </div>
-                            `)}
-                        </div>
-                    `}
-                </div>
-                <div slot="footer" class="package-manager-footer">
-                    ${this.pyConnected && packages.length > 0 ? html`
-                        <wa-button 
-                            variant="default"
-                            @click=${async () => {
-                                if (!this.pyenv) return;
-                                this.loadingPackages = true;
-                                this.packageLoadError = undefined;
-                                try {
-                                    await this.pyenv.loadPackages(packages);
-                                } catch (error) {
-                                    this.packageLoadError = String(error);
-                                } finally {
-                                    this.loadingPackages = false;
-                                }
-                            }}
-                            ?disabled=${this.loadingPackages}>
-                            <wa-icon slot="prefix" name="arrows-rotate"></wa-icon>
-                            Reload Packages
-                        </wa-button>
-                    ` : ''}
-                    <wa-button 
-                        variant="primary"
-                        @click=${() => this.showPackageManager = false}>
-                        Done
-                    </wa-button>
-                </div>
-            </wa-dialog>
-        `;
+        
+        pythonPackageManagerService.showPackageManager({
+            packages,
+            pyenv: this.pyenv,
+            onPackageAdded: (packageName: string) => {
+                if (!this.notebook) return;
+                if (!this.notebook.metadata) {
+                    this.notebook.metadata = {};
+                }
+                if (!this.notebook.metadata.required_packages) {
+                    this.notebook.metadata.required_packages = [];
+                }
+                
+                if (!this.notebook.metadata.required_packages.includes(packageName)) {
+                    this.notebook.metadata.required_packages.push(packageName);
+                    this.markDirty(true);
+                }
+            },
+            onPackageRemoved: (packageName: string) => {
+                if (!this.notebook?.metadata?.required_packages) return;
+                
+                const index = this.notebook.metadata.required_packages.indexOf(packageName);
+                if (index > -1) {
+                    this.notebook.metadata.required_packages.splice(index, 1);
+                    this.markDirty(true);
+                }
+            }
+        });
     }
 
     protected updated(changedProperties: Map<string, any>) {
@@ -1287,7 +1162,6 @@ except ImportError:
                     (cell, index) => this.renderCell(cell, index)
                 )}
             </div>
-            ${this.renderPackageManager()}
         `;
     }
 
@@ -1541,100 +1415,6 @@ except ImportError:
         .markdown-placeholder wa-icon {
             font-size: 1.5rem;
         }
-
-        .package-manager {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            padding: 1rem;
-        }
-
-        .package-manager-description {
-            margin: 0;
-            font-size: 0.95rem;
-            opacity: 0.8;
-            line-height: 1.5;
-        }
-
-        .package-input-group {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .package-input-group wa-input {
-            flex: 1;
-        }
-
-        .package-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            max-height: 400px;
-            overflow-y: auto;
-        }
-
-        .package-list-header {
-            padding: 0.5rem;
-            border-bottom: 1px solid var(--wa-color-outline);
-            margin-bottom: 0.5rem;
-        }
-
-        .package-item {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.75rem;
-            border-radius: 4px;
-            background: var(--wa-color-surface-variant);
-            transition: background 0.2s;
-        }
-
-        .package-item:hover {
-            background: var(--wa-color-surface-container-highest);
-        }
-
-        .package-name {
-            flex: 1;
-            font-family: monospace;
-            font-size: 0.95rem;
-        }
-
-        .empty-state {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 0.75rem;
-            padding: 3rem 1rem;
-            text-align: center;
-            opacity: 0.6;
-        }
-
-        .empty-state p {
-            margin: 0;
-        }
-
-        .package-manager-footer {
-            display: flex;
-            gap: 0.5rem;
-            justify-content: flex-end;
-            padding-top: 1rem;
-            border-top: 1px solid var(--wa-color-outline);
-        }
-
-        .spinning {
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            from {
-                transform: rotate(0deg);
-            }
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
     `;
 }
 
