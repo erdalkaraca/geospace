@@ -28,7 +28,7 @@ import {Feature, Map, Overlay, View} from "ol";
 import {MapOptions} from "ol/Map";
 import BaseObject from "ol/Object";
 import * as olGeom from "ol/geom";
-import {Icon, Style} from "ol/style";
+import {Icon} from "ol/style";
 import {GeoTIFF, OSM, Source, TileWMS, WMTS, XYZ} from "ol/source";
 import {optionsFromCapabilities} from "ol/source/WMTS";
 import FeatureFormat from "ol/format/Feature";
@@ -40,7 +40,6 @@ import TileSource from "ol/source/Tile";
 import VectorLayer from "ol/layer/Vector";
 import BaseLayer from "ol/layer/Base";
 import {apply as applyMapboxStyle} from "ol-mapbox-style";
-import {stylesLoader} from "./gs-style-loader.ts";
 import LayerGroup from "ol/layer/Group";
 import {Control} from "ol/control";
 import {html} from "lit";
@@ -72,12 +71,6 @@ export const toOlResource = (resource: GsIcon) => {
     return new Icon({
         src: resource.src
     })
-}
-
-export const toOlStyle = (style: GsStyle) => {
-    const options: any = {}
-    options[style.type] = toOlResource(style.resource as GsIcon)
-    return new Style(options)
 }
 
 export const toOlFeature = (feature: GsFeature): Feature => {
@@ -385,10 +378,6 @@ export const toOlMap = async (gsMap: GsMap, options?: MapOptions, env?: any, imp
         const olControl = toOlControl(control)
         olMap.addControl(olControl)
         await importControlSource(olControl, control.src, importer)
-    }
-
-    if (gsMap.styles) {
-        stylesLoader.cacheStylesMap(gsMap.styles).then()
     }
 
     return olMap

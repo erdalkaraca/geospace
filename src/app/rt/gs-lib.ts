@@ -7,7 +7,6 @@ import "../../externals/webawesome.ts"
 
 export * from "./gs-model.ts";
 export * from "./gs-gs2ol.ts";
-export * from "./gs-style-loader.ts";
 
 export interface GsAppOptions {
     containerSelector: string | HTMLElement,

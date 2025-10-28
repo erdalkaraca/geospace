@@ -46,20 +46,11 @@ export interface GsGeometry extends GsState {
     coordinates: number[]
 }
 
-export enum GsStyleType {
-    IMAGE = "image"
-}
-
 export interface GsResource {
 }
 
 export interface GsIcon extends GsResource {
     src: string
-}
-
-export interface GsStyle {
-    type: GsStyleType
-    resource: GsResource
 }
 
 export interface GsFeature extends GsState {
@@ -81,10 +72,6 @@ export interface GsLayer extends GsState {
     visible?: boolean
 }
 
-export interface GsStylesMap {
-    [key: string]: GsStyle
-}
-
 export interface GsScript extends GsState {
     src: string,
 }
@@ -104,6 +91,13 @@ export interface GsView extends GsState {
     center: number[],
     zoom: number,
     projection: string
+}
+
+export interface GsStyle {
+}
+
+export interface GsStylesMap {
+    [key: string]: GsStyle
 }
 
 export interface GsMap extends GsState {

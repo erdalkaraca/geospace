@@ -1,5 +1,5 @@
 import {MapOperations, MapRenderer, MapSyncEvent} from "./map-renderer.ts";
-import {GsFeature, gsLib, GsMap, GsSourceType, KEY_NAME, stylesLoader, toOlFeature, toOlLayer} from "../rt/gs-lib.ts";
+import {GsFeature, gsLib, GsMap, GsSourceType, KEY_NAME, toOlFeature, toOlLayer} from "../rt/gs-lib.ts";
 import {toGsFeature} from "../rt/gs-ol2gs.ts";
 import {Map} from "ol";
 import type {Feature} from "ol";
@@ -51,17 +51,10 @@ export class OpenLayersMapRenderer implements MapRenderer {
             // Create operations after map is available
             this.operations = new OpenLayersMapOperations(this.olMap, this);
             
-            // Bind styles to layers
-            if (this.olMap) {
-            this.olMap.getLayers().getArray().forEach((olLayer) => {
-                stylesLoader.bindToLayer(olLayer);
+            // Set up event listeners after the map is rendered
+            this.olMap.once('rendercomplete', () => {
+                this.setupEventListeners();
             });
-            
-                // Set up event listeners after the map is rendered
-                this.olMap.once('rendercomplete', () => {
-                    this.setupEventListeners();
-                });
-            }
             
         } catch (error) {
             console.error('Failed to render map:', error);
@@ -268,7 +261,6 @@ export class OpenLayersMapOperations implements MapOperations {
         } else {
             this.olMap.getLayers().push(olLayer);
         }
-        stylesLoader.bindToLayer(olLayer);
     }
 
     async deleteLayer(index: number): Promise<void> {
@@ -324,8 +316,6 @@ export class OpenLayersMapOperations implements MapOperations {
         if (!olLayer) {
             throw new Error(`Layer not found: ${layerIdentifier}`);
         }
-
-        stylesLoader.bindToLayer(olLayer);
     }
 
     async addMarker(marker: GsFeature, layerName?: string): Promise<void> {
