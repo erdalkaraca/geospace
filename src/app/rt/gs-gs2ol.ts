@@ -73,7 +73,6 @@ export const toOlResource = (resource: GsIcon) => {
 
 export const toOlFeature = (feature: GsFeature): Feature => {
     return withState(feature, new Feature({
-        style: feature.style,
         geometry: toOLGeometry(feature.geometry),
     }));
 }
