@@ -70,10 +70,10 @@ registerAll({
         }
     },
     contribution: {
-        target: TOOLBAR_MAIN,
+        target: "toolbar:.system.editors",
         icon: "floppy-disk",
         label: "Save active editor",
-        slot: "end",
+        slot: "start",
         disabled: () => {
             const part = activePartSignal.get()
             return !part || !part.isDirty()

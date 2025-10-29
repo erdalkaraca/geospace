@@ -19,6 +19,9 @@ export class KToolbar extends SignalWatcher(KElement) {
     @property()
     private position: "start" | "center" | "end" = "start";
 
+    @property({type: Boolean, attribute: 'is-editor'})
+    private isEditor: boolean = false;
+
     @property({attribute: false})
     public partToolbarContent?: any = undefined;
 
@@ -37,24 +40,57 @@ export class KToolbar extends SignalWatcher(KElement) {
         subscribe(TOPIC_CONTRIBUTEIONS_CHANGED, (event: ContributionChangeEvent) => {
             if (!id) return;
             
-            const wildcardTarget = id.includes(':') ? id.split(':')[0] + ':*' : null;
-            if (event.target === id || event.target === wildcardTarget) {
+            const shouldReload = this.matchesTarget(id, event.target);
+            if (shouldReload) {
                 this.loadContributions(id);
                 this.requestUpdate()
             }
         })
     }
 
+    private matchesTarget(id: string, target: string): boolean {
+        if (target === id) return true;
+        
+        if (!id.includes(':')) return false;
+        
+        const [prefix] = id.split(':');
+        if (target === `${prefix}:*`) return true;
+        
+        const targetParts = target.split(':');
+        if (targetParts.length === 2) {
+            const categoryToken = targetParts[1];
+            if (categoryToken === 'system.editors' || categoryToken === '.system.editors') {
+                return this.isEditor && id.startsWith(`${prefix}:`);
+            }
+        }
+        
+        return false;
+    }
+
     private loadContributions(id: string) {
         const specific = contributionRegistry.getContributions(id);
         
-        if (id.includes(':')) {
-            const wildcardId = id.split(':')[0] + ':*';
-            const wildcard = contributionRegistry.getContributions(wildcardId);
-            this.contributions = [...wildcard, ...specific];
-        } else {
+        if (!id.includes(':')) {
             this.contributions = specific;
+            return;
         }
+        
+        const [prefix] = id.split(':');
+        const wildcardId = `${prefix}:*`;
+        const wildcard = contributionRegistry.getContributions(wildcardId);
+        
+        const categoryMatches: Contribution[] = [];
+        
+        if (this.isEditor) {
+            const allCategories = ['system.editors', '.system.editors'];
+            for (const category of allCategories) {
+                const categoryId = `${prefix}:${category}`;
+                const matches = contributionRegistry.getContributions(categoryId);
+                categoryMatches.push(...matches);
+            }
+        }
+        
+        this.contributions = [...wildcard, ...categoryMatches, ...specific];
     }
 
     contributionCreator(contribution: Contribution) {

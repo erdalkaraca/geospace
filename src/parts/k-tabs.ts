@@ -398,11 +398,14 @@ export class KTabs extends KContainer {
                             `)}
                         </wa-tab>
                         <wa-tab-panel name="${c.name}">
-                            <k-toolbar id="toolbar:${c.editorId ?? c.name}" class="tab-toolbar"></k-toolbar>
+                            <k-toolbar id="toolbar:${c.editorId ?? c.name}" 
+                                       class="tab-toolbar"
+                                       ?is-editor="${this.containerId === EDITOR_AREA_MAIN}"></k-toolbar>
                             <wa-scroller class="tab-content" orientation="vertical">
                                 ${c.component ? c.component(c.name) : nothing}
                             </wa-scroller>
-                            <k-contextmenu id="contextmenu:${c.name}"></k-contextmenu>
+                            <k-contextmenu id="contextmenu:${c.name}"
+                                           ?is-editor="${this.containerId === EDITOR_AREA_MAIN}"></k-contextmenu>
                         </wa-tab-panel>
                     `
                 )}
