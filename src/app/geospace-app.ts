@@ -2,6 +2,8 @@ import { html } from "lit";
 import { AppDefinition, appLoaderService } from "../core/apploader.ts";
 import { createLogger } from "../core/logger.ts";
 import { version as appVersion } from "../../package.json";
+import { infoDialog } from "../core/dialog.ts";
+import { fetchLatestRelease, fetchReleaseByTag, isNewerVersion } from "../core/github-service.ts";
 
 // Side-effect imports: Initialize core services and register components
 import '../core/init.ts'
@@ -231,7 +233,36 @@ export const geospaceApp: AppDefinition = {
             },
             handler: {
                 execute: async _context => {
-                    alert(`${geospaceApp.name}\nVersion: ${geospaceApp.version}\nAlpha Release\n\n${geospaceApp.description}`)
+                    const isDev = geospaceApp.version === '0.0.0';
+                    
+                    if (isDev) {
+                        await infoDialog(
+                            geospaceApp.name,
+                            `**Development Build**\n\n${geospaceApp.description}`,
+                            true
+                        );
+                        return;
+                    }
+
+                    const release = await fetchReleaseByTag(geospaceApp.version);
+                    const latest = await fetchLatestRelease();
+                    
+                    let message = `**Version:** ${geospaceApp.version}\n\n`;
+                    
+                    if (release) {
+                        const publishDate = new Date(release.published_at).toLocaleDateString();
+                        message += `**Released:** ${publishDate}\n\n`;
+                        
+                        if (release.body) {
+                            message += `---\n\n${release.body}\n\n`;
+                        }
+                    }
+                    
+                    if (latest && isNewerVersion(geospaceApp.version, latest.tag_name)) {
+                        message += `---\n\n⚠️ **New version available:** ${latest.tag_name}`;
+                    }
+                    
+                    await infoDialog(geospaceApp.name, message, true);
                 }
             }
         })
