@@ -17,6 +17,26 @@ const REPO_OWNER = 'erdalkaraca';
 const REPO_NAME = 'geospace';
 
 /**
+ * Fetches all releases from GitHub (up to 100 most recent)
+ */
+export async function fetchReleases(perPage: number = 100): Promise<GitHubRelease[]> {
+    try {
+        const response = await fetch(
+            `${GITHUB_API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/releases?per_page=${perPage}`
+        );
+        
+        if (!response.ok) {
+            return [];
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error('Failed to fetch releases:', error);
+        return [];
+    }
+}
+
+/**
  * Fetches the latest release from GitHub
  */
 export async function fetchLatestRelease(): Promise<GitHubRelease | null> {
