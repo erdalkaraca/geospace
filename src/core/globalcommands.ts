@@ -1,6 +1,6 @@
 import {commandRegistry, registerAll} from "./commandregistry.ts";
 import {StringFile, workspaceService} from "./filesys.ts";
-import {TOOLBAR_MAIN, TOOLBAR_MAIN_RIGHT} from "./constants.ts";
+import {TOOLBAR_MAIN_RIGHT} from "./constants.ts";
 import {PyEnv} from "./pyservice.ts";
 import {EditorInput, editorRegistry} from "./editorregistry.ts";
 import {html} from "lit";
