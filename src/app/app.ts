@@ -50,7 +50,8 @@ export class GSApp extends KContainer {
                     align-items: center;
                     flex-shrink: 0;
                     min-height: 32px;
-                    padding: 0 var(--wa-space-xs);
+                    padding: 0 var(--wa-space-s);
+                    box-sizing: border-box;
                 }
                 
                 gs-app .main-layout {

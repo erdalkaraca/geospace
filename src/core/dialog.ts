@@ -324,65 +324,6 @@ export const navigableInfoDialog = async (
                             color: var(--wa-color-neutral-700);
                         }
                         
-                        .markdown-content {
-                            line-height: 1.6;
-                        }
-                        
-                        .markdown-content h1,
-                        .markdown-content h2,
-                        .markdown-content h3 {
-                            margin-top: 1rem;
-                            margin-bottom: 0.5rem;
-                            font-weight: 600;
-                        }
-                        
-                        .markdown-content h1 { font-size: 1.5rem; }
-                        .markdown-content h2 { font-size: 1.3rem; }
-                        .markdown-content h3 { font-size: 1.1rem; }
-                        
-                        .markdown-content p {
-                            margin: 0.5rem 0;
-                        }
-                        
-                        .markdown-content ul,
-                        .markdown-content ol {
-                            margin: 0.5rem 0;
-                            padding-left: 1.5rem;
-                        }
-                        
-                        .markdown-content code {
-                            background: var(--wa-color-neutral-100);
-                            padding: 0.125rem 0.25rem;
-                            border-radius: 3px;
-                            font-family: monospace;
-                            font-size: 0.9em;
-                        }
-                        
-                        .markdown-content pre {
-                            background: var(--wa-color-neutral-100);
-                            padding: 0.75rem;
-                            border-radius: 4px;
-                            overflow-x: auto;
-                        }
-                        
-                        .markdown-content pre code {
-                            background: none;
-                            padding: 0;
-                        }
-                        
-                        .markdown-content hr {
-                            border: none;
-                            border-top: 1px solid var(--wa-color-neutral-300);
-                            margin: 1rem 0;
-                        }
-                        
-                        .markdown-content blockquote {
-                            border-left: 3px solid var(--wa-color-neutral-300);
-                            padding-left: 1rem;
-                            margin: 0.5rem 0;
-                            color: var(--wa-color-neutral-600);
-                        }
-                        
                         .dialog-actions {
                             display: flex;
                             gap: 0.5rem;

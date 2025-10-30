@@ -96,12 +96,14 @@ export class KToolbar extends SignalWatcher(KElement) {
     contributionCreator(contribution: Contribution) {
         if ("command" in contribution) {
             const commandContribution = contribution as CommandContribution
+            const showLabel = !!commandContribution.showLabel
             return html`
                 <wa-button @click=${() => this.executeCommand(commandContribution.command, commandContribution.params || {})}
                            title=${commandContribution.label}
                            ?disabled="${(commandContribution.disabled as Signal.Computed<boolean>)?.get()}"
                            appearance="plain" size="small">
                     <wa-icon name=${commandContribution.icon} label="${commandContribution.label}"></wa-icon>
+                    ${showLabel ? commandContribution.label : ''}
                 </wa-button>
             `
         } else if ("html" in contribution) {

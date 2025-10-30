@@ -136,7 +136,8 @@ export const geospaceApp: AppDefinition = {
                 target: TOOLBAR_BOTTOM_END,
                 label: `v${appVersion}`,
                 icon: "circle-info",
-                command: "show_version_info"
+                command: "show_version_info",
+                showLabel: true,
             },
             {
                 target: "contextmenu:filebrowser",
