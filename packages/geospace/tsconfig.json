@@ -15,8 +15,8 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "paths": {
-      "@kispace/appspace": ["../appspace/dist"],
-      "@kispace/appspace/*": ["../appspace/dist/*"]
+      "@kispace/appspace": ["../appspace/src"],
+      "@kispace/appspace/*": ["../appspace/src/*"]
     }
   },
   "include": ["src"],

@@ -1,5 +1,5 @@
 import {commandRegistry, registerAll} from "./commandregistry";
-import {StringFile, workspaceService} from "./filesys";
+import {workspaceService} from "./filesys";
 import {TOOLBAR_MAIN_RIGHT} from "./constants";
 import {PyEnv} from "./pyservice";
 import {EditorInput, editorRegistry} from "./editorregistry";
