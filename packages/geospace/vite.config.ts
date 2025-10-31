@@ -51,6 +51,7 @@ export default defineConfig({
         format: 'es'
     },
     build: {
+        outDir: path.resolve(__dirname, '../../dist'),
         rollupOptions: {
             input: {
                 main: path.resolve(__dirname, 'index.html'),

@@ -39,7 +39,7 @@ jobs:
       - name: Set package.json version from tag
         run: |
           VERSION=${GITHUB_REF_NAME}
-          npm version --no-commit-hooks --no-git-tag-version "$VERSION"
+          npm version --no-commit-hooks --no-git-tag-version "$VERSION" --workspace=@kispace/geospace
 
       - name: Build runtime library
         run: npm run build-gslib
