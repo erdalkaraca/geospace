@@ -1,12 +1,12 @@
-import {GsMap} from "../rt";
+import {GsMap, GsLayer, GsControl, GsOverlay} from "../rt";
 
 /**
  * Sync event types that describe what changed in the map
  */
 export type MapSyncEvent = 
     | { type: 'viewChanged', view: { center: [number, number], zoom: number, rotation?: number } }
-    | { type: 'featuresChanged', layerIndex: number, features: any[] }
-    | { type: 'featureSelected', layerIndex: number, feature: any, metrics?: { length?: number, area?: number } }
+    | { type: 'featuresChanged', layerUuid: string, features: any[] }
+    | { type: 'featureSelected', layerUuid: string, feature: any, metrics?: { length?: number, area?: number } }
     | { type: 'featureDeselected' };
 
 /**
@@ -30,6 +30,30 @@ export interface MapRenderer {
     destroy(): void;
 }
 
+export function findLayerByUuid(gsMap: GsMap, uuid: string): GsLayer | undefined {
+    return gsMap.layers.find(layer => layer.uuid === uuid);
+}
+
+export function findLayerIndexByUuid(gsMap: GsMap, uuid: string): number {
+    return gsMap.layers.findIndex(layer => layer.uuid === uuid);
+}
+
+export function findControlByUuid(gsMap: GsMap, uuid: string): GsControl | undefined {
+    return gsMap.controls.find(control => control.uuid === uuid);
+}
+
+export function findControlIndexByUuid(gsMap: GsMap, uuid: string): number {
+    return gsMap.controls.findIndex(control => control.uuid === uuid);
+}
+
+export function findOverlayByUuid(gsMap: GsMap, uuid: string): GsOverlay | undefined {
+    return gsMap.overlays.find(overlay => overlay.uuid === uuid);
+}
+
+export function findOverlayIndexByUuid(gsMap: GsMap, uuid: string): number {
+    return gsMap.overlays.findIndex(overlay => overlay.uuid === uuid);
+}
+
 /**
  * Map operations interface for high-level map commands
  * These operations work with the domain model and are framework-agnostic
@@ -44,25 +68,25 @@ export interface MapOperations {
     
     // Layer operations
     addLayer(layer: any, isBasemap?: boolean): Promise<void>;
-    deleteLayer(index: number): Promise<void>;
-    renameLayer(index: number, newName: string): Promise<void>;
-    moveLayer(fromIndex: number, toIndex: number): Promise<void>;
-    setLayerVisible(index: number, visible: boolean): Promise<void>;
+    deleteLayer(uuid: string): Promise<void>;
+    renameLayer(uuid: string, newName: string): Promise<void>;
+    moveLayer(uuid: string, targetUuid?: string): Promise<void>;
+    setLayerVisible(uuid: string, visible: boolean): Promise<void>;
     
     // Control operations
     addControlFromModule(src: string): Promise<void>;
-    removeControl(index: number): Promise<void>;
+    removeControl(uuid: string): Promise<void>;
     
     // Overlay operations
     addOverlayFromModule(src: string, position?: string): Promise<void>;
-    removeOverlay(index: number): Promise<void>;
+    removeOverlay(uuid: string): Promise<void>;
     
     // Drawing operations (UI-only, no domain model changes until features are added)
-    enableDrawing(geometryType: 'Point' | 'LineString' | 'Polygon', layerIndex: number): Promise<void>;
+    enableDrawing(geometryType: 'Point' | 'LineString' | 'Polygon', layerUuid: string): Promise<void>;
     disableDrawing(): Promise<void>;
     
     // Feature selection and deletion
-    enableFeatureSelection(layerIndex: number): Promise<void>;
+    enableFeatureSelection(layerUuid: string): Promise<void>;
     disableSelection(): Promise<void>;
     deleteSelectedFeatures(): Promise<void>;
 }

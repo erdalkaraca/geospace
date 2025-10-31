@@ -25,6 +25,7 @@ import {
     KEY_SOURCETYPE,
     KEY_SRC,
     KEY_STATE,
+    KEY_UUID,
     KEY_URL
 } from "./gs-model.ts";
 import {Feature, Map, Overlay, View} from "ol";
@@ -55,6 +56,9 @@ import {rtUtils} from "./index.ts";
 import Layer from "ol/layer/Layer";
 
 const withState = <T extends BaseObject>(state: GsState, olObject: T): T => {
+    if (state.uuid) {
+        olObject.set(KEY_UUID, state.uuid)
+    }
     if (state.state) {
         // add as properties for easy access via get(...)
         for (let stateKey in state.state) {

@@ -21,6 +21,7 @@ import {
     KEY_NAME, KEY_SOURCETYPE,
     KEY_SRC,
     KEY_STATE,
+    KEY_UUID,
     KEY_URL
 } from "./gs-model.ts";
 import BaseObject from "ol/Object";
@@ -75,6 +76,10 @@ interface Rule {
 }
 
 const withGsState = <T extends GsState>(olObj: BaseObject, gsState: T): T => {
+    const uuid = olObj.get(KEY_UUID)
+    if (uuid && !gsState.uuid) {
+        gsState.uuid = uuid
+    }
     const state = olObj.get(KEY_STATE)
     gsState.state = state
     if (state?.uuid && !gsState.uuid) {

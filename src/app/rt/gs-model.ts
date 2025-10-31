@@ -11,6 +11,7 @@ export const KEY_SOURCETYPE = "sourceType"
 export const KEY_ENV = "_env"
 export const KEY_GS_MANAGED = "gsManaged"
 export const KEY_SETTINGS = "settings"
+export const KEY_UUID = "uuid"
 
 export const LAYER_GEOCODED_MARKERS = "geocoded-markers"
 

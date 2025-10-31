@@ -8,7 +8,7 @@ export enum MapEvents {
 
 export interface FeatureSelection {
     feature: any;
-    layerIndex: number;
+    layerUuid: string;
     metrics?: {
         length?: number;
         area?: number;

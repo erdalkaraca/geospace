@@ -1,10 +1,11 @@
 import {MapOperations, MapRenderer, MapSyncEvent} from "./map-renderer.ts";
-import {gsLib, GsMap, GsSourceType, KEY_NAME, toOlLayer, KEY_STATE} from "../rt/gs-lib.ts";
+import {gsLib, GsMap, GsSourceType, KEY_NAME, toOlLayer, KEY_STATE, KEY_UUID} from "../rt/gs-lib.ts";
 import {toGsFeature} from "../rt/gs-ol2gs.ts";
 import {toOlStyle} from "../rt/gs-gs2ol.ts";
 import {ensureUuid, getStyleForFeature, GsFeature, GsGeometry} from "../rt/gs-model.ts";
 import {Map as OlMap} from "ol";
 import {Feature} from "ol";
+import BaseLayer from "ol/layer/Base";
 import type {FeatureLike} from "ol/Feature";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
@@ -222,13 +223,20 @@ export class OpenLayersMapRenderer implements MapRenderer {
         }
     }
 
-    public syncLayerFeaturesToModel(layerIndex: number): void {
+    public syncLayerFeaturesToModel(layerUuid: string): void {
         if (!this.olMap) return;
 
-        const olLayers = this.olMap.getLayers();
-        const olLayer = olLayers.item(layerIndex);
-
-        if (!(olLayer instanceof VectorLayer)) return;
+        const layers = this.olMap.getLayers();
+        let olLayer: BaseLayer | undefined;
+        for (let i = 0; i < layers.getLength(); i++) {
+            const layer = layers.item(i);
+            if (layer.get(KEY_UUID) === layerUuid) {
+                olLayer = layer;
+                break;
+            }
+        }
+        
+        if (!olLayer || !(olLayer instanceof VectorLayer)) return;
 
         const source = olLayer.getSource();
         if (!source) return;
@@ -241,7 +249,7 @@ export class OpenLayersMapRenderer implements MapRenderer {
         // Host decides whether to apply based on its own layer structure
         this.triggerSync({
             type: 'featuresChanged',
-            layerIndex,
+            layerUuid,
             features: gsFeatures
         });
     }
@@ -291,7 +299,7 @@ export class OpenLayersMapOperations implements MapOperations {
     private drawInteraction?: Draw;
     private selectInteraction?: Select;
     private activeSelectionLayer?: VectorLayer<VectorSource>;
-    private activeDrawingLayerIndex?: number;
+    private activeDrawingLayerUuid?: string;
 
     constructor(
         private olMap: OlMap,
@@ -347,32 +355,66 @@ export class OpenLayersMapOperations implements MapOperations {
         }
     }
 
-    async deleteLayer(index: number): Promise<void> {
-        this.olMap.getLayers().removeAt(index);
-    }
-
-    async renameLayer(index: number, newName: string): Promise<void> {
-        const olLayers = this.olMap.getLayers();
-        if (index >= 0 && index < olLayers.getLength()) {
-            olLayers.item(index).set(KEY_NAME, newName);
+    async deleteLayer(uuid: string): Promise<void> {
+        const layers = this.olMap.getLayers();
+        for (let i = 0; i < layers.getLength(); i++) {
+            const layer = layers.item(i);
+            if (layer.get(KEY_UUID) === uuid) {
+                layers.removeAt(i);
+                return;
+            }
         }
     }
 
-    async moveLayer(fromIndex: number, toIndex: number): Promise<void> {
-        const olLayers = this.olMap.getLayers();
-        if (fromIndex >= 0 && fromIndex < olLayers.getLength() &&
-            toIndex >= 0 && toIndex < olLayers.getLength() &&
-            fromIndex !== toIndex) {
-            const layer = olLayers.item(fromIndex);
-            olLayers.removeAt(fromIndex);
-            olLayers.insertAt(toIndex, layer);
+    async renameLayer(uuid: string, newName: string): Promise<void> {
+        const layers = this.olMap.getLayers();
+        for (let i = 0; i < layers.getLength(); i++) {
+            const layer = layers.item(i);
+            if (layer.get(KEY_UUID) === uuid) {
+                layer.set(KEY_NAME, newName);
+                return;
+            }
         }
     }
 
-    async setLayerVisible(index: number, visible: boolean): Promise<void> {
-        const olLayers = this.olMap.getLayers();
-        if (index >= 0 && index < olLayers.getLength()) {
-            olLayers.item(index).setVisible(visible);
+    async moveLayer(uuid: string, targetUuid?: string): Promise<void> {
+        const layers = this.olMap.getLayers();
+        let fromIndex = -1;
+        let toIndex = -1;
+        
+        for (let i = 0; i < layers.getLength(); i++) {
+            const layer = layers.item(i);
+            if (layer.get(KEY_UUID) === uuid) {
+                fromIndex = i;
+            }
+            if (targetUuid && layer.get(KEY_UUID) === targetUuid) {
+                toIndex = i;
+            }
+        }
+        
+        if (fromIndex < 0) return;
+        
+        if (targetUuid) {
+            if (toIndex < 0 || fromIndex === toIndex) return;
+        } else {
+            toIndex = fromIndex > 0 ? fromIndex - 1 : fromIndex + 1;
+        }
+
+        if (toIndex >= 0 && toIndex < layers.getLength() && fromIndex !== toIndex) {
+            const layer = layers.item(fromIndex);
+            layers.removeAt(fromIndex);
+            layers.insertAt(toIndex, layer);
+        }
+    }
+
+    async setLayerVisible(uuid: string, visible: boolean): Promise<void> {
+        const layers = this.olMap.getLayers();
+        for (let i = 0; i < layers.getLength(); i++) {
+            const layer = layers.item(i);
+            if (layer.get(KEY_UUID) === uuid) {
+                layer.setVisible(visible);
+                return;
+            }
         }
     }
 
@@ -380,7 +422,7 @@ export class OpenLayersMapOperations implements MapOperations {
         // UI does not support control creation
     }
 
-    async removeControl(_index: number): Promise<void> {
+    async removeControl(_uuid: string): Promise<void> {
         // UI does not support control removal
     }
 
@@ -388,7 +430,7 @@ export class OpenLayersMapOperations implements MapOperations {
         // UI does not support overlay creation
     }
 
-    async removeOverlay(_index: number): Promise<void> {
+    async removeOverlay(_uuid: string): Promise<void> {
         // UI does not support overlay removal
     }
 
@@ -399,20 +441,27 @@ export class OpenLayersMapOperations implements MapOperations {
         }
     }
 
-    async enableDrawing(geometryType: 'Point' | 'LineString' | 'Polygon', layerIndex: number): Promise<void> {
+    async enableDrawing(geometryType: 'Point' | 'LineString' | 'Polygon', layerUuid: string): Promise<void> {
         this.disableSelection();
         
         if (this.drawInteraction) {
             this.olMap.removeInteraction(this.drawInteraction);
         }
         
-        this.activeDrawingLayerIndex = layerIndex;
+        this.activeDrawingLayerUuid = layerUuid;
         this.setCursor('crosshair');
         
-        const olLayers = this.olMap.getLayers();
-        const layer = olLayers.item(layerIndex);
+        const layers = this.olMap.getLayers();
+        let layer: BaseLayer | undefined;
+        for (let i = 0; i < layers.getLength(); i++) {
+            const l = layers.item(i);
+            if (l.get(KEY_UUID) === layerUuid) {
+                layer = l;
+                break;
+            }
+        }
         
-        if (!(layer instanceof VectorLayer)) {
+        if (!layer || !(layer instanceof VectorLayer)) {
             throw new Error('Drawing only supported on vector layers');
         }
         
@@ -433,8 +482,8 @@ export class OpenLayersMapOperations implements MapOperations {
         
         // Listen to the source's addfeature event which fires AFTER the feature is added
         const onFeatureAdded = () => {
-            if (this.renderer && this.activeDrawingLayerIndex !== undefined) {
-                this.renderer.syncLayerFeaturesToModel(this.activeDrawingLayerIndex);
+            if (this.renderer && this.activeDrawingLayerUuid) {
+                this.renderer.syncLayerFeaturesToModel(this.activeDrawingLayerUuid);
             }
             this.renderer?.triggerDirty();
         };
@@ -463,7 +512,7 @@ export class OpenLayersMapOperations implements MapOperations {
         }
     }
 
-    async enableFeatureSelection(layerIndex: number): Promise<void> {
+    async enableFeatureSelection(layerUuid: string): Promise<void> {
         this.disableDrawing();
         this.disableSelection();
         
@@ -476,12 +525,13 @@ export class OpenLayersMapOperations implements MapOperations {
             throw new Error('No vector layers available for selection');
         }
         
-        // Track the active layer for deletion purposes (if valid layer index provided)
-        if (layerIndex >= 0 && layerIndex < olLayers.getLength()) {
-            this.activeDrawingLayerIndex = layerIndex;
-            const activeLayer = olLayers.item(layerIndex);
-            if (activeLayer instanceof VectorLayer) {
-                this.activeSelectionLayer = activeLayer;
+        // Track the active layer for deletion purposes
+        for (let i = 0; i < olLayers.getLength(); i++) {
+            const layer = olLayers.item(i);
+            if (layer.get(KEY_UUID) === layerUuid && layer instanceof VectorLayer) {
+                this.activeSelectionLayer = layer;
+                this.activeDrawingLayerUuid = layerUuid;
+                break;
             }
         }
         
@@ -519,17 +569,20 @@ export class OpenLayersMapOperations implements MapOperations {
             if (event.selected.length > 0) {
                 const selectedFeature = event.selected[0];
                 // Find which layer this feature belongs to
-                let featureLayerIndex = -1;
-                olLayers.getArray().forEach((layer, index) => {
+                let featureLayerUuid: string | undefined;
+                olLayers.getArray().forEach((layer) => {
                     if (layer instanceof VectorLayer) {
                         const source = layer.getSource();
                         if (source && source.hasFeature(selectedFeature)) {
-                            featureLayerIndex = index;
+                            const uuid = layer.get(KEY_UUID);
+                            if (uuid) {
+                                featureLayerUuid = uuid;
+                            }
                         }
                     }
                 });
                 
-                if (featureLayerIndex >= 0 && this.renderer) {
+                if (featureLayerUuid && this.renderer) {
                     const gsFeature = toGsFeature(selectedFeature);
                     
                     // Calculate metrics based on geometry type
@@ -562,7 +615,7 @@ export class OpenLayersMapOperations implements MapOperations {
                     
                     this.renderer.triggerSync({
                         type: 'featureSelected',
-                        layerIndex: featureLayerIndex,
+                        layerUuid: featureLayerUuid,
                         feature: gsFeature,
                         metrics
                     });
@@ -601,8 +654,8 @@ export class OpenLayersMapOperations implements MapOperations {
         selectedFeatures.clear();
         
         // Sync features back to domain model
-        if (this.renderer && this.activeDrawingLayerIndex !== undefined) {
-            this.renderer.syncLayerFeaturesToModel(this.activeDrawingLayerIndex);
+        if (this.renderer && this.activeDrawingLayerUuid) {
+            this.renderer.syncLayerFeaturesToModel(this.activeDrawingLayerUuid);
         }
         this.renderer?.triggerDirty();
     }

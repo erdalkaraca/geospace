@@ -7,6 +7,7 @@ import { CommandStack } from "../../core/commandregistry.ts";
 import { KPart } from "../../parts/k-part.ts";
 import { EditorInput } from "../../core/editorregistry.ts";
 import { DEFAULT_GSMAP, ensureUuidsRecursive, GsMap, GsLayerType, GsSourceType, DEFAULT_STYLES, DEFAULT_STYLE_RULES } from "../rt";
+import { findLayerByUuid } from "./map-renderer.ts";
 import { mapChangedSignal, MapEvents, FeatureSelection } from "./gs-signals.ts";
 import { watching } from "../../core/signals.ts";
 import olCSS from "../../../node_modules/ol/ol.css?raw";
@@ -34,8 +35,8 @@ export class GsMapEditor extends KPart {
     private isFirstConnection = true;
     private initialView?: { center: [number, number], zoom: number };
 
-    @property({ type: Number })
-    private activeDrawingLayerIndex?: number;
+    @property({ type: String })
+    private activeDrawingLayerUuid?: string;
 
     @property({ type: String })
     private interactionMode: 'draw' | 'select' | 'none' = 'none';
@@ -70,14 +71,13 @@ export class GsMapEditor extends KPart {
         const gsMap = this.getGsMap();
 
         const drawableLayers = gsMap?.layers
-            .map((l, idx) => ({ layer: l, index: idx }))
-            .filter(({ layer }) => {
+            .filter((layer) => {
                 const isVector = layer.type === GsLayerType.VECTOR;
                 const isFeatures = layer.source?.type === GsSourceType.Features;
                 return isVector && isFeatures;
             }) || [];
 
-        const hasActiveLayer = this.activeDrawingLayerIndex !== undefined;
+        const hasActiveLayer = this.activeDrawingLayerUuid !== undefined;
 
         return html`
             <k-command cmd="zoom_in" icon="magnifying-glass-plus" title="Zoom in"></k-command>
@@ -98,26 +98,26 @@ export class GsMapEditor extends KPart {
             </k-action>
             
             ${when(drawableLayers.length > 0, () => {
-            // Create a key based on layer names to force wa-select to re-render when names change
-            const layerKey = drawableLayers.map(({ layer, index }) => `${index}:${layer.name}`).join('|');
+            // Create a key based on layer names and UUIDs to force wa-select to re-render when names change
+            const layerKey = drawableLayers.map((layer) => `${layer.uuid}:${layer.name}`).join('|');
             return html`
                 ${keyed(layerKey, html`
                     <wa-select 
                         placeholder="Drawing layer"
                         size="small"
-                        value="${this.activeDrawingLayerIndex ?? ''}"
+                        value="${this.activeDrawingLayerUuid ?? ''}"
                         @change=${(e: any) => {
-                    const newIndex = e.target.value ? parseInt(e.target.value) : undefined;
-                    this.activeDrawingLayerIndex = newIndex;
-                    if (newIndex === undefined || newIndex === null || e.target.value === '') {
+                    const newUuid = e.target.value || undefined;
+                    this.activeDrawingLayerUuid = newUuid;
+                    if (newUuid === undefined || e.target.value === '') {
                         this.operations?.disableDrawing();
                         this.interactionMode = 'none';
                     }
                     this.updateToolbar();
                 }}>
                         <wa-option value="">Select layer</wa-option>
-                        ${drawableLayers.map(({ layer, index }) => html`
-                            <wa-option value="${index}">${layer.name || `Layer ${index + 1}`}</wa-option>
+                        ${drawableLayers.map((layer) => html`
+                            <wa-option value="${layer.uuid}">${layer.name || 'Layer'}</wa-option>
                         `)}
                     </wa-select>
                 `)}
@@ -241,7 +241,7 @@ export class GsMapEditor extends KPart {
 
                     case 'featuresChanged':
                         // Update features for specific layer (drawing/deleting)
-                        const layer = this.gsMap.layers[event.layerIndex];
+                        const layer = findLayerByUuid(this.gsMap, event.layerUuid);
                         if (layer && layer.source?.type === GsSourceType.Features) {
                             (layer.source as any).features = event.features;
                         }
@@ -251,7 +251,7 @@ export class GsMapEditor extends KPart {
                         // Emit feature selection event
                         const selectionPayload = {
                             feature: event.feature,
-                            layerIndex: event.layerIndex,
+                            layerUuid: event.layerUuid,
                             metrics: event.metrics
                         } as FeatureSelection;
                         console.info(`Feature[${selectionPayload.feature.uuid}] metrics:`, selectionPayload.metrics);
@@ -403,28 +403,29 @@ export class GsMapEditor extends KPart {
     }
 
     private async handleDrawPoint() {
-        if (this.activeDrawingLayerIndex === undefined) return;
-        await this.operations?.enableDrawing('Point', this.activeDrawingLayerIndex);
+        if (!this.activeDrawingLayerUuid) return;
+        await this.operations?.enableDrawing('Point', this.activeDrawingLayerUuid);
         this.interactionMode = 'draw';
         this.updateToolbar();
     }
 
     private async handleDrawLine() {
-        if (this.activeDrawingLayerIndex === undefined) return;
-        await this.operations?.enableDrawing('LineString', this.activeDrawingLayerIndex);
+        if (!this.activeDrawingLayerUuid) return;
+        await this.operations?.enableDrawing('LineString', this.activeDrawingLayerUuid);
         this.interactionMode = 'draw';
         this.updateToolbar();
     }
 
     private async handleDrawPolygon() {
-        if (this.activeDrawingLayerIndex === undefined) return;
-        await this.operations?.enableDrawing('Polygon', this.activeDrawingLayerIndex);
+        if (!this.activeDrawingLayerUuid) return;
+        await this.operations?.enableDrawing('Polygon', this.activeDrawingLayerUuid);
         this.interactionMode = 'draw';
         this.updateToolbar();
     }
 
     private async handleSelectFeatures() {
-        await this.operations?.enableFeatureSelection(this.activeDrawingLayerIndex ?? -1);
+        if (!this.activeDrawingLayerUuid) return;
+        await this.operations?.enableFeatureSelection(this.activeDrawingLayerUuid);
         this.interactionMode = 'select';
         this.updateToolbar();
     }
@@ -463,8 +464,10 @@ export class GsMapEditor extends KPart {
 
         await this.operations?.addLayer(newLayer, false);
 
-        const newLayerIndex = this.gsMap.layers.length - 1;
-        this.activeDrawingLayerIndex = newLayerIndex;
+        const addedLayer = this.gsMap.layers[this.gsMap.layers.length - 1];
+        if (addedLayer?.uuid) {
+            this.activeDrawingLayerUuid = addedLayer.uuid;
+        }
 
         this.updateToolbar();
 

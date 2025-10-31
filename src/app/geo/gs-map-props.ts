@@ -12,13 +12,14 @@ import {getOriginalUri} from "./utils.ts";
 import {commandRegistry} from "../../core/commandregistry.ts";
 import "../../components/k-action.ts";
 import {confirmDialog} from "../../core/dialog.ts";
+import {findLayerByUuid, findLayerIndexByUuid} from "./map-renderer.ts";
 
 @customElement('gs-map-props')
 export class GsMapProps extends KPart {
     private mapEditor?: GsMapEditor;
 
     @state()
-    private selectedLayerIndex?: number;
+    private selectedLayerUuid?: string;
 
     @watching(activePartSignal)
     protected onPartChanged(part: KPart) {
@@ -36,13 +37,15 @@ export class GsMapProps extends KPart {
         }
     }
 
-    private toggleVisible(index: number) {
+    private toggleVisible(uuid: string) {
         const gsMap = this.mapEditor!.getGsMap()
-        const layer = gsMap!.layers[index]
+        const layer = findLayerByUuid(gsMap!, uuid)
+        if (!layer) return
+        
         const currentVisible = layer.visible !== false
         const newVisible = !currentVisible
         
-        this.mapEditor?.mapOperations?.setLayerVisible(index, newVisible)
+        this.mapEditor?.mapOperations?.setLayerVisible(uuid, newVisible)
         this.updateLater()
     }
 
@@ -52,18 +55,23 @@ export class GsMapProps extends KPart {
         }
     }
 
-    private selectLayer(index: number) {
-        this.selectedLayerIndex = index;
+    private selectLayer(uuid: string) {
+        this.selectedLayerUuid = uuid;
         this.updateToolbar();
         this.updateContextMenu();
     }
 
-    private renameLayer(index?: number) {
+    private renameLayer(uuid?: string) {
         if (!this.mapEditor) return;
 
-        const layerIndex = index !== undefined ? index : this.selectedLayerIndex;
-        if (layerIndex === undefined) return;
+        const layerUuid = uuid || this.selectedLayerUuid;
+        if (!layerUuid) return;
 
+        const gsMap = this.mapEditor.getGsMap();
+        const layer = findLayerByUuid(gsMap!, layerUuid);
+        if (!layer) return;
+
+        const layerIndex = findLayerIndexByUuid(gsMap!, layerUuid);
         const context = commandRegistry.createExecutionContext(this, {
             index: layerIndex + 1
         });
@@ -71,41 +79,56 @@ export class GsMapProps extends KPart {
         commandRegistry.execute("rename_layer", context);
     }
 
-    private deleteLayer(index?: number) {
+    private deleteLayer(uuid?: string) {
         if (!this.mapEditor) return;
 
-        const layerIndex = index !== undefined ? index : this.selectedLayerIndex;
-        if (layerIndex === undefined) return;
+        const layerUuid = uuid || this.selectedLayerUuid;
+        if (!layerUuid) return;
 
         const gsMap = this.mapEditor.getGsMap();
-        const layer = gsMap?.layers[layerIndex];
+        const layer = findLayerByUuid(gsMap!, layerUuid);
         if (!layer) return;
 
         this.confirmAction(
-            `Delete layer "${layer.name || `Layer ${layerIndex + 1}`}"?`,
-            () => this.withRefresh(() => this.mapEditor?.mapOperations?.deleteLayer(layerIndex))
+            `Delete layer "${layer.name || 'Layer'}"?`,
+            () => this.withRefresh(() => this.mapEditor?.mapOperations?.deleteLayer(layerUuid))
         );
     }
 
-    private moveLayerUp(index: number) {
-        if (!this.mapEditor || index <= 0) return;
-        
-        this.withRefresh(() => this.mapEditor?.mapOperations?.moveLayer(index, index - 1));
-        this.selectedLayerIndex = index - 1;
-    }
-
-    private moveLayerDown(index: number) {
+    private moveLayerUp(uuid: string) {
         if (!this.mapEditor) return;
         
         const gsMap = this.mapEditor.getGsMap();
-        if (!gsMap || index >= gsMap.layers.length - 1) return;
+        if (!gsMap) return;
         
-        this.withRefresh(() => this.mapEditor?.mapOperations?.moveLayer(index, index + 1));
-        this.selectedLayerIndex = index + 1;
+        const currentIndex = findLayerIndexByUuid(gsMap, uuid);
+        if (currentIndex <= 0) return;
+        
+        const targetUuid = gsMap.layers[currentIndex - 1]?.uuid;
+        if (targetUuid) {
+            this.withRefresh(() => this.mapEditor?.mapOperations?.moveLayer(uuid, targetUuid));
+            this.selectedLayerUuid = targetUuid;
+        }
+    }
+
+    private moveLayerDown(uuid: string) {
+        if (!this.mapEditor) return;
+        
+        const gsMap = this.mapEditor.getGsMap();
+        if (!gsMap) return;
+        
+        const currentIndex = findLayerIndexByUuid(gsMap, uuid);
+        if (currentIndex < 0 || currentIndex >= gsMap.layers.length - 1) return;
+        
+        const targetUuid = gsMap.layers[currentIndex + 1]?.uuid;
+        if (targetUuid) {
+            this.withRefresh(() => this.mapEditor?.mapOperations?.moveLayer(uuid, targetUuid));
+            this.selectedLayerUuid = targetUuid;
+        }
     }
 
     protected renderToolbar() {
-        const hasSelection = this.selectedLayerIndex !== undefined;
+        const hasSelection = this.selectedLayerUuid !== undefined;
         
         return html`
             <k-action ?disabled=${!hasSelection} 
@@ -122,7 +145,7 @@ export class GsMapProps extends KPart {
     }
 
     protected renderContextMenu() {
-        const hasSelection = this.selectedLayerIndex !== undefined;
+        const hasSelection = this.selectedLayerUuid !== undefined;
         
         return html`
             <k-action ?disabled=${!hasSelection} 
@@ -146,8 +169,8 @@ export class GsMapProps extends KPart {
                     <wa-tree-item expanded>
                         <k-icon name="fg layers"></k-icon> Layers
                         ${this.mapEditor!.getGsMap()?.layers.map((layer: GsLayer, i: number) => html`
-                            <wa-tree-item @click="${() => this.selectLayer(i)}" 
-                                          class="${this.selectedLayerIndex === i ? 'selected' : ''}">
+                            <wa-tree-item @click="${() => layer.uuid && this.selectLayer(layer.uuid)}" 
+                                          class="${this.selectedLayerUuid === layer.uuid ? 'selected' : ''}">
                                 <div class="layer-item">
                                     <div class="layer-name">
                                         <span>${layer.name ?? `Layer ${i + 1}`}${i == 0 ? html`
@@ -157,19 +180,19 @@ export class GsMapProps extends KPart {
                                         <k-action size="small"
                                                   icon="${layer.visible !== false ? "eye" : "eye-slash"}"
                                                   title="${layer.visible !== false ? 'Hide layer' : 'Show layer'}"
-                                                  .action=${() => this.toggleVisible(i)}>
+                                                  .action=${() => layer.uuid && this.toggleVisible(layer.uuid)}>
                                         </k-action>
                                         <k-action size="small"
                                                   icon="arrow-up"
                                                   title="Move layer up"
                                                   ?disabled="${i === 0}"
-                                                  .action=${() => this.moveLayerUp(i)}>
+                                                  .action=${() => layer.uuid && this.moveLayerUp(layer.uuid)}>
                                         </k-action>
                                         <k-action size="small"
                                                   icon="arrow-down"
                                                   title="Move layer down"
                                                   ?disabled="${i === this.mapEditor!.getGsMap()!.layers.length - 1}"
-                                                  .action=${() => this.moveLayerDown(i)}>
+                                                  .action=${() => layer.uuid && this.moveLayerDown(layer.uuid)}>
                                         </k-action>
                                     </div>
                                 </div>
@@ -178,26 +201,34 @@ export class GsMapProps extends KPart {
                     </wa-tree-item>
                     <wa-tree-item expanded>
                         <k-icon name="fg map-control"></k-icon> Controls
-                        ${this.mapEditor?.getGsMap()?.controls.map((control: GsControl, i: number) => html`
+                        ${this.mapEditor?.getGsMap()?.controls.map((control: GsControl) => html`
                             <wa-tree-item>
                                 <span>${getOriginalUri(control.src)}</span>
                                 <k-action size="small"
                                           icon="trash"
                                           title="Delete control"
-                                          .action=${() => this.confirmAction(`Delete control "${getOriginalUri(control.src)}"?`, () => this.withRefresh(() => this.mapEditor?.mapOperations?.removeControl(i)))}>
+                                          .action=${() => {
+                                              if (control.uuid) {
+                                                  this.confirmAction(`Delete control "${getOriginalUri(control.src)}"?`, () => this.withRefresh(() => this.mapEditor?.mapOperations?.removeControl(control.uuid!)))
+                                              }
+                                          }}>
                                 </k-action>
                             </wa-tree-item>
                         `)}
                     </wa-tree-item>
                     <wa-tree-item expanded>
                         <k-icon name="fg map-poi"></k-icon> Overlays
-                        ${this.mapEditor?.getGsMap()?.overlays.map((overlay: GsOverlay, i: number) => html`
+                        ${this.mapEditor?.getGsMap()?.overlays.map((overlay: GsOverlay) => html`
                             <wa-tree-item>
                                 <span>${getOriginalUri(overlay.src)}</span>
                                 <k-action size="small"
                                           icon="trash"
                                           title="Delete overlay"
-                                          .action=${() => this.confirmAction(`Delete overlay "${getOriginalUri(overlay.src)}"?`, () => this.withRefresh(() => this.mapEditor?.mapOperations?.removeOverlay(i)))}>
+                                          .action=${() => {
+                                              if (overlay.uuid) {
+                                                  this.confirmAction(`Delete overlay "${getOriginalUri(overlay.src)}"?`, () => this.withRefresh(() => this.mapEditor?.mapOperations?.removeOverlay(overlay.uuid!)))
+                                              }
+                                          }}>
                                 </k-action>
                             </wa-tree-item>
                         `)}

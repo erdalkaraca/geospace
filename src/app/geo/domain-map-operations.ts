@@ -1,4 +1,4 @@
-import { MapOperations, MapRenderer } from "./map-renderer.ts";
+import { MapOperations, MapRenderer, findLayerByUuid, findLayerIndexByUuid, findControlIndexByUuid, findOverlayIndexByUuid } from "./map-renderer.ts";
 import { GsMap } from "../rt/gs-model.ts";
 
 /**
@@ -41,35 +41,47 @@ export class DomainMapOperations implements MapOperations {
         this.triggerDirty();
     }
 
-    async deleteLayer(index: number): Promise<void> {
-        if (index >= 0 && index < this.gsMap.layers.length) {
+    async deleteLayer(uuid: string): Promise<void> {
+        const index = findLayerIndexByUuid(this.gsMap, uuid);
+        if (index >= 0) {
             this.gsMap.layers.splice(index, 1);
+            this.triggerDirty();
         }
-        this.triggerDirty();
     }
 
-    async renameLayer(index: number, newName: string): Promise<void> {
-        if (index >= 0 && index < this.gsMap.layers.length) {
-            this.gsMap.layers[index].name = newName;
+    async renameLayer(uuid: string, newName: string): Promise<void> {
+        const layer = findLayerByUuid(this.gsMap, uuid);
+        if (layer) {
+            layer.name = newName;
+            this.triggerDirty();
         }
-        this.triggerDirty();
     }
 
-    async moveLayer(fromIndex: number, toIndex: number): Promise<void> {
-        if (fromIndex >= 0 && fromIndex < this.gsMap.layers.length &&
-            toIndex >= 0 && toIndex < this.gsMap.layers.length &&
-            fromIndex !== toIndex) {
+    async moveLayer(uuid: string, targetUuid?: string): Promise<void> {
+        const fromIndex = findLayerIndexByUuid(this.gsMap, uuid);
+        if (fromIndex < 0) return;
+
+        let toIndex: number;
+        if (targetUuid) {
+            toIndex = findLayerIndexByUuid(this.gsMap, targetUuid);
+            if (toIndex < 0 || fromIndex === toIndex) return;
+        } else {
+            toIndex = fromIndex > 0 ? fromIndex - 1 : fromIndex + 1;
+        }
+
+        if (toIndex >= 0 && toIndex < this.gsMap.layers.length && fromIndex !== toIndex) {
             const [layer] = this.gsMap.layers.splice(fromIndex, 1);
             this.gsMap.layers.splice(toIndex, 0, layer);
+            this.triggerDirty();
         }
-        this.triggerDirty();
     }
 
-    async setLayerVisible(index: number, visible: boolean): Promise<void> {
-        if (index >= 0 && index < this.gsMap.layers.length) {
-            this.gsMap.layers[index].visible = visible;
+    async setLayerVisible(uuid: string, visible: boolean): Promise<void> {
+        const layer = findLayerByUuid(this.gsMap, uuid);
+        if (layer) {
+            layer.visible = visible;
+            this.triggerDirty();
         }
-        this.triggerDirty();
     }
 
     async addControlFromModule(src: string): Promise<void> {
@@ -78,12 +90,13 @@ export class DomainMapOperations implements MapOperations {
         await this.renderer.modelToUI();
     }
 
-    async removeControl(index: number): Promise<void> {
-        if (index >= 0 && index < this.gsMap.controls.length) {
+    async removeControl(uuid: string): Promise<void> {
+        const index = findControlIndexByUuid(this.gsMap, uuid);
+        if (index >= 0) {
             this.gsMap.controls.splice(index, 1);
+            this.triggerDirty();
+            await this.renderer.modelToUI();
         }
-        this.triggerDirty();
-        await this.renderer.modelToUI();
     }
 
     async addOverlayFromModule(src: string, position?: string): Promise<void> {
@@ -92,15 +105,16 @@ export class DomainMapOperations implements MapOperations {
         await this.renderer.modelToUI();
     }
 
-    async removeOverlay(index: number): Promise<void> {
-        if (index >= 0 && index < this.gsMap.overlays.length) {
+    async removeOverlay(uuid: string): Promise<void> {
+        const index = findOverlayIndexByUuid(this.gsMap, uuid);
+        if (index >= 0) {
             this.gsMap.overlays.splice(index, 1);
+            this.triggerDirty();
+            await this.renderer.modelToUI();
         }
-        this.triggerDirty();
-        await this.renderer.modelToUI();
     }
 
-    async enableDrawing(_geometryType: 'Point' | 'LineString' | 'Polygon', _layerIndex: number): Promise<void> {
+    async enableDrawing(_geometryType: 'Point' | 'LineString' | 'Polygon', _layerUuid: string): Promise<void> {
         // No domain model changes - this is UI-only
     }
 
@@ -108,7 +122,7 @@ export class DomainMapOperations implements MapOperations {
         // No domain model changes - this is UI-only
     }
 
-    async enableFeatureSelection(_layerIndex: number): Promise<void> {
+    async enableFeatureSelection(_layerUuid: string): Promise<void> {
         // No domain model changes - this is UI-only
     }
 

@@ -206,13 +206,18 @@ commandRegistry.registerAll({
         canExecute,
         execute: async context => {
             const operations = getMapOperations(context);
+            const editor = context.activeEditor as GsMapEditor;
+            const gsMap = editor.getGsMap();
             const index = parseInt(context.params!["index"]) - 1
 
-            if (index < 0) {
+            if (index < 0 || !gsMap || index >= gsMap.layers.length) {
                 return;
             }
 
-            await operations.deleteLayer(index);
+            const layer = gsMap.layers[index];
+            if (layer?.uuid) {
+                await operations.deleteLayer(layer.uuid);
+            }
         }
     }
 })
@@ -247,7 +252,12 @@ commandRegistry.registerAll({
                 return;
             }
 
-            const currentName = gsMap.layers[index].name || `Layer ${index + 1}`;
+            const layer = gsMap.layers[index];
+            if (!layer?.uuid) {
+                return;
+            }
+
+            const currentName = layer.name || `Layer ${index + 1}`;
             const newName = context.params?.newName || 
                            await promptDialog(`Enter new name for "${currentName}":`, currentName);
             
@@ -255,7 +265,7 @@ commandRegistry.registerAll({
                 return;
             }
 
-            await operations.renameLayer(index, newName);
+            await operations.renameLayer(layer.uuid, newName);
         }
     }
 })
