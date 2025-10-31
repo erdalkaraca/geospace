@@ -39,6 +39,9 @@ export class KTabs extends KContainer {
     /** Cached container ID (this element's 'id' attribute) */
     private containerId: string | null = null;
 
+    /** Map to track ResizeObservers for cleanup */
+    private resizeObservers = new WeakMap<HTMLElement, ResizeObserver>();
+
     // ============= Lifecycle Methods =============
 
     protected doBeforeUI() {
@@ -62,6 +65,11 @@ export class KTabs extends KContainer {
                 if (tabPanel) {
                     // Update toolbar from component's renderToolbar() method
                     this.updateToolbarFromComponent(tabPanel);
+                    // Update toolbar height variable for calc() positioning
+                    requestAnimationFrame(() => {
+                        this.updateToolbarHeightVariable(tabPanel);
+                        this.setupToolbarResizeObserver(tabPanel);
+                    });
                     this.dispatchEvent(new CustomEvent('tab-shown', {detail: tabPanel}));
                 }
             });
@@ -72,6 +80,8 @@ export class KTabs extends KContainer {
                 const tabPanel = component.closest('wa-tab-panel') as HTMLElement | null;
                 if (tabPanel) {
                     this.updateToolbarFromComponent(tabPanel);
+                    // Update toolbar height variable for calc() positioning
+                    requestAnimationFrame(() => this.updateToolbarHeightVariable(tabPanel));
                 }
             });
 
@@ -186,6 +196,8 @@ export class KTabs extends KContainer {
                         part.isEditor = isEditorArea;
                     }
                 }
+                
+                requestAnimationFrame(() => this.updateToolbarHeightVariable(tabPanel));
             });
         }
     }
@@ -232,6 +244,8 @@ export class KTabs extends KContainer {
                 // Give component time to initialize
                 requestAnimationFrame(() => {
                     this.updateToolbarFromComponent(tabPanel);
+                    this.updateToolbarHeightVariable(tabPanel);
+                    this.setupToolbarResizeObserver(tabPanel);
                 });
             }
         });
@@ -296,10 +310,18 @@ export class KTabs extends KContainer {
      * Cleans up a tab instance when the tab is closed.
      * 
      * Cleanup Process:
-     * 1. Call component's close() method if available (disposes resources)
-     * 2. DOM element is removed by caller (closeTab method)
+     * 1. Disconnect ResizeObserver if one exists
+     * 2. Call component's close() method if available (disposes resources)
+     * 3. DOM element is removed by caller (closeTab method)
      */
     private cleanupTabInstance(tabPanel: HTMLElement): void {
+        // Clean up ResizeObserver
+        const observer = this.resizeObservers.get(tabPanel);
+        if (observer) {
+            observer.disconnect();
+            this.resizeObservers.delete(tabPanel);
+        }
+        
         // Explicitly close the component inside the tab before removing
         // This allows components to dispose resources (e.g., Monaco editor models, event listeners)
         const contentDiv = tabPanel.querySelector('.tab-content');
@@ -380,6 +402,35 @@ export class KTabs extends KContainer {
         }
     }
 
+    /**
+     * Updates the toolbar height CSS variable for calc() positioning.
+     */
+    private updateToolbarHeightVariable(tabPanel: HTMLElement): void {
+        const toolbar = tabPanel.querySelector('.tab-toolbar') as HTMLElement | null;
+        if (!toolbar) return;
+        
+        const toolbarHeight = toolbar.offsetHeight;
+        tabPanel.style.setProperty('--toolbar-height', `${toolbarHeight}px`);
+    }
+
+    /**
+     * Sets up a ResizeObserver to update toolbar height variable when toolbar size changes.
+     * Reuses existing observer if one already exists for this tab panel.
+     */
+    private setupToolbarResizeObserver(tabPanel: HTMLElement): void {
+        // Check if observer already exists
+        if (this.resizeObservers.has(tabPanel)) return;
+        
+        const toolbar = tabPanel.querySelector('.tab-toolbar') as HTMLElement | null;
+        if (!toolbar) return;
+
+        const observer = new ResizeObserver(() => {
+            this.updateToolbarHeightVariable(tabPanel);
+        });
+        observer.observe(toolbar);
+        this.resizeObservers.set(tabPanel, observer);
+    }
+
     // ============= Render Method =============
 
     render() {
@@ -424,10 +475,6 @@ export class KTabs extends KContainer {
             width: 100%;
         }
 
-        wa-tab::part(base) {
-            padding: 3px 0.5rem;
-        }
-
         wa-tab-group::part(base) {
             display: grid;
             grid-template-rows: auto minmax(0, 1fr);
@@ -441,6 +488,19 @@ export class KTabs extends KContainer {
             height: 100%;
             width: 100%;
             overflow: hidden;
+            position: relative;
+        }
+
+        .tab-content {
+            position: absolute;
+            top: calc(var(--toolbar-height, 0px));
+            right: 0;
+            left: 0;
+            height: calc(100% - var(--toolbar-height, 0px));
+        }
+
+        wa-tab::part(base) {
+            padding: 3px 0.5rem;
         }
 
         wa-tab-panel {
