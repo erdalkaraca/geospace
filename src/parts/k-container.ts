@@ -1,4 +1,4 @@
-import {KElement} from "./k-element.ts";
+import {KElement} from "./k-element";
 
 export abstract class KContainer extends KElement {
 }

@@ -1,8 +1,8 @@
-import {Directory, File, FileSysDirHandleResource, TOPIC_WORKSPACE_CHANGED, workspaceService} from "./filesys.ts";
+import {Directory, File, FileSysDirHandleResource, TOPIC_WORKSPACE_CHANGED, workspaceService} from "./filesys";
 import {parsePipRequirementsFile} from "pip-requirements-js";
-import {publish} from "./events.ts";
-import type {PyWorkerMessage, PyWorkerResponse} from "./pyworker.ts";
-import PyWorker from "./pyworker.ts?worker";
+import {publish} from "./events";
+import type {PyWorkerMessage, PyWorkerResponse} from "./pyworker";
+import PyWorker from "./pyworker?worker";
 
 // Message counter for tracking requests/responses
 let messageId = 0;

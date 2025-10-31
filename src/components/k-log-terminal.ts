@@ -1,8 +1,8 @@
 import { css, html } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
-import { KPart } from '../parts/k-part.ts';
+import { KPart } from '../parts/k-part';
 import { createRef, ref, Ref } from 'lit/directives/ref.js';
-import { registerLogHandler, unregisterLogHandler, type LogLevel } from '../core/logger.ts';
+import { registerLogHandler, unregisterLogHandler, type LogLevel } from '../core/logger';
 
 export interface LogMessage {
     timestamp: Date;

@@ -1,4 +1,4 @@
-import {GsCatalog} from "./gs-catalog.ts";
+import {GsCatalog} from "./gs-catalog";
 import {
     registerAll,
     File,
@@ -8,10 +8,10 @@ import {
     activeSelectionSignal,
     toastError,
     toastInfo
-} from "../../api/index.ts";
+} from "../../api/index";
 
 import gsCatalog from "../assets/geospace-catalog.json";
-import {registerCatalog} from "./utils.ts";
+import {registerCatalog} from "./utils";
 
 registerAll({
     command: {

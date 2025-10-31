@@ -1,18 +1,18 @@
 import {customElement, state} from "lit/decorators.js";
 import {css, html, nothing} from "lit";
-import {KContainer} from "./k-container.ts";
-import {contributionRegistry, ContributionChangeEvent, TabContribution, TOPIC_CONTRIBUTEIONS_CHANGED} from "../core/contributionregistry.ts";
+import {KContainer} from "./k-container";
+import {contributionRegistry, ContributionChangeEvent, TabContribution, TOPIC_CONTRIBUTEIONS_CHANGED} from "../core/contributionregistry";
 import {when} from "lit/directives/when.js";
 import {repeat} from "lit/directives/repeat.js";
-import '../widgets/k-icon.ts';
+import '../widgets/k-icon';
 import {createRef, ref} from "lit/directives/ref.js";
-import {subscribe} from "../core/events.ts";
-import {KPart} from "./k-part.ts";
-import {KToolbar} from "./k-toolbar.ts";
-import {KContextMenu} from "./k-contextmenu.ts";
-import {MouseButton, EDITOR_AREA_MAIN} from "../core/constants.ts";
-import {activePartSignal} from "../core/appstate.ts";
-import {confirmDialog} from "../core/dialog.ts";
+import {subscribe} from "../core/events";
+import {KPart} from "./k-part";
+import {KToolbar} from "./k-toolbar";
+import {KContextMenu} from "./k-contextmenu";
+import {MouseButton, EDITOR_AREA_MAIN} from "../core/constants";
+import {activePartSignal} from "../core/appstate";
+import {confirmDialog} from "../core/dialog";
 
 /**
  * KTabs - A dynamic tab container component

@@ -1,6 +1,6 @@
 import {css, html, nothing} from 'lit'
 import {customElement, property, state} from 'lit/decorators.js'
-import {KElement} from "./k-element.ts";
+import {KElement} from "./k-element";
 import {
     CommandContribution,
     Contribution,
@@ -8,10 +8,10 @@ import {
     contributionRegistry,
     HTMLContribution,
     TOPIC_CONTRIBUTEIONS_CHANGED
-} from "../core/contributionregistry.ts";
+} from "../core/contributionregistry";
 import {Signal, SignalWatcher} from '@lit-labs/signals';
 import {unsafeHTML} from "lit/directives/unsafe-html.js";
-import {subscribe} from "../core/events.ts";
+import {subscribe} from "../core/events";
 import {createRef, ref} from "lit/directives/ref.js";
 
 @customElement('k-contextmenu')

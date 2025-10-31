@@ -27,7 +27,7 @@ import {
     KEY_STATE,
     KEY_UUID,
     KEY_URL
-} from "./gs-model.ts";
+} from "./gs-model";
 import {Feature, Map, Overlay, View} from "ol";
 import {MapOptions} from "ol/Map";
 import BaseObject from "ol/Object";
@@ -48,11 +48,11 @@ import LayerGroup from "ol/layer/Group";
 import {Control} from "ol/control";
 import {html} from "lit";
 import {when} from "lit/directives/when.js";
-import * as ol from "./gs-olns.ts"
+import * as ol from "./gs-olns"
 import {createRef, ref} from "lit/directives/ref.js";
 import {v4 as uuidv4} from 'uuid'
-import {GsControlAdapter, GsOverlayAdapter} from "./gs-ol-adapters.ts";
-import {rtUtils} from "./index.ts";
+import {GsControlAdapter, GsOverlayAdapter} from "./gs-ol-adapters";
+import {rtUtils} from "./index";
 import Layer from "ol/layer/Layer";
 
 const withState = <T extends BaseObject>(state: GsState, olObject: T): T => {

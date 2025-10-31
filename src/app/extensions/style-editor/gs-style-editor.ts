@@ -1,6 +1,6 @@
 import { css, html, LitElement } from 'lit'
 import { customElement, property, state } from 'lit/decorators.js'
-import { GsMap, GsStyle, GsStyleRule, GsStylesMap } from "../../rt/gs-model.ts";
+import { GsMap, GsStyle, GsStyleRule, GsStylesMap } from "../../rt/gs-model";
 
 @customElement('gs-style-editor')
 export class GsStyleEditor extends LitElement {

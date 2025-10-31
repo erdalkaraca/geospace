@@ -1,9 +1,9 @@
-import {GsMapEditor} from "../geo/gs-map-editor.ts";
-import {buildService} from "../build/buildservice.ts";
+import {GsMapEditor} from "../geo/gs-map-editor";
+import {buildService} from "../build/buildservice";
 import {
     activePartSignal,
     type CommandRegistry
-} from "../../api/index.ts";
+} from "../../api/index";
 
 export default ({commandRegistry}: { commandRegistry: CommandRegistry }) => {
     commandRegistry.registerAll({

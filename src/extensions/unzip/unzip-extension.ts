@@ -1,10 +1,10 @@
-import {registerAll} from "../../core/commandregistry.ts";
-import {File, FileContentType, workspaceService} from "../../core/filesys.ts";
-import {TOOLBAR_MAIN} from "../../core/constants.ts";
-import {activeSelectionSignal} from "../../core/appstate.ts";
-import {toastError, toastInfo} from "../../core/toast.ts";
+import {registerAll} from "../../core/commandregistry";
+import {File, FileContentType, workspaceService} from "../../core/filesys";
+import {TOOLBAR_MAIN} from "../../core/constants";
+import {activeSelectionSignal} from "../../core/appstate";
+import {toastError, toastInfo} from "../../core/toast";
 import JSZip from "jszip";
-import {taskService} from "../../core/taskservice.ts";
+import {taskService} from "../../core/taskservice";
 
 registerAll({
     command: {

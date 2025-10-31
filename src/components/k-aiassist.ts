@@ -1,6 +1,6 @@
 import {css, html, PropertyValues} from 'lit'
 import {customElement, state, query} from 'lit/decorators.js'
-import {KPart} from "../parts/k-part.ts";
+import {KPart} from "../parts/k-part";
 
 import {marked} from "marked";
 import {unsafeHTML} from 'lit/directives/unsafe-html.js';
@@ -10,18 +10,18 @@ import {
     ChatProvider,
     chatService,
     TOPIC_AICONFIG_CHANGED
-} from "../core/chatservice.ts";
-import {toastError} from "../core/toast.ts";
+} from "../core/chatservice";
+import {toastError} from "../core/toast";
 import {when} from "lit/directives/when.js";
-import {topic} from "../core/events.ts";
-import {taskService} from "../core/taskservice.ts";
-import {activePartSignal} from "../core/appstate.ts";
+import {topic} from "../core/events";
+import {taskService} from "../core/taskservice";
+import {activePartSignal} from "../core/appstate";
 import {
     commandRegistry as globalCommandRegistry,
     CommandRegistry
-} from "../core/commandregistry.ts";
-import {uiContext} from "../core/di.ts";
-import {watching} from "../core/signals.ts";
+} from "../core/commandregistry";
+import {uiContext} from "../core/di";
+import {watching} from "../core/signals";
 
 @customElement('k-aiassist')
 export class KAIAssist extends KPart {

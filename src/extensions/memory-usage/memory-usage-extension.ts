@@ -1,6 +1,6 @@
-import {contributionRegistry, HTMLContribution} from "../../core/contributionregistry.ts";
-import {TOOLBAR_BOTTOM} from "../../core/constants.ts";
-import "./k-memory-usage.ts";
+import {contributionRegistry, HTMLContribution} from "../../core/contributionregistry";
+import {TOOLBAR_BOTTOM} from "../../core/constants";
+import "./k-memory-usage";
 
 contributionRegistry.registerContribution(TOOLBAR_BOTTOM, {
     target: TOOLBAR_BOTTOM,

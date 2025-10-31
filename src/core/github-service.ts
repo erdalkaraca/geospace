@@ -2,7 +2,7 @@
  * GitHub API service for fetching release information
  */
 
-import { appLoaderService } from './apploader.ts';
+import { appLoaderService } from './apploader';
 
 export interface GitHubRelease {
     tag_name: string;

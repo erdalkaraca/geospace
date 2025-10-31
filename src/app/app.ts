@@ -14,7 +14,7 @@ import {
     TOOLBAR_BOTTOM_CENTER,
     TOOLBAR_BOTTOM_END,
     KContainer
-} from "../api/index.ts";
+} from "../api/index";
 
 @customElement('gs-app')
 export class GSApp extends KContainer {

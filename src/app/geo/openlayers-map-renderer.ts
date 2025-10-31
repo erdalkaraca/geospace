@@ -1,8 +1,8 @@
-import {MapOperations, MapRenderer, MapSyncEvent} from "./map-renderer.ts";
-import {gsLib, GsMap, GsSourceType, KEY_NAME, toOlLayer, KEY_STATE, KEY_UUID} from "../rt/gs-lib.ts";
-import {toGsFeature} from "../rt/gs-ol2gs.ts";
-import {toOlStyle} from "../rt/gs-gs2ol.ts";
-import {ensureUuid, getStyleForFeature, GsFeature, GsGeometry} from "../rt/gs-model.ts";
+import {MapOperations, MapRenderer, MapSyncEvent} from "./map-renderer";
+import {gsLib, GsMap, GsSourceType, KEY_NAME, toOlLayer, KEY_STATE, KEY_UUID} from "../rt/gs-lib";
+import {toGsFeature} from "../rt/gs-ol2gs";
+import {toOlStyle} from "../rt/gs-gs2ol";
+import {ensureUuid, getStyleForFeature, GsFeature, GsGeometry} from "../rt/gs-model";
 import {v4 as uuidv4} from 'uuid';
 import {Map as OlMap} from "ol";
 import {Feature} from "ol";

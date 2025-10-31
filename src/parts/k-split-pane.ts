@@ -1,14 +1,14 @@
 import {html, nothing} from 'lit'
 import {customElement, property, state} from 'lit/decorators.js'
-import {KElement} from "./k-element.ts";
+import {KElement} from "./k-element";
 import {
     contributionRegistry,
     ContributionChangeEvent,
     PaneContribution,
     TOPIC_CONTRIBUTEIONS_CHANGED
-} from "../core/contributionregistry.ts";
+} from "../core/contributionregistry";
 import {SignalWatcher} from '@lit-labs/signals';
-import {subscribe} from "../core/events.ts";
+import {subscribe} from "../core/events";
 import {styleMap} from 'lit/directives/style-map.js';
 import {ref, createRef, Ref} from 'lit/directives/ref.js';
 

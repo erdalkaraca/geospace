@@ -1,6 +1,6 @@
-import {publish} from "./events.ts";
-import {persistenceService} from "./persistenceservice.ts";
-import {rootContext} from "./di.ts";
+import {publish} from "./events";
+import {persistenceService} from "./persistenceservice";
+import {rootContext} from "./di";
 
 export const SETTINGS_FILE_PATH = ".geospace/settings.json"
 

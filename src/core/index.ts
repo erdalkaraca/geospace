@@ -11,5 +11,5 @@
 //   import { appLoaderService, commandRegistry } from './core/api/index.ts'  // Use API
 
 // Bootstrap the framework (initialize services, register components, etc.)
-import './bootstrap.ts';
+import './bootstrap';
 

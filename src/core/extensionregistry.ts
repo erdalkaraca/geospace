@@ -1,9 +1,9 @@
-import {appSettings, TOPIC_SETTINGS_CHANGED} from "./settingsservice.ts";
-import {publish, subscribe} from "./events.ts";
-import {toastError, toastInfo} from "./toast.ts";
-import {taskService} from "./taskservice.ts";
-import {rootContext, uiContext} from "./di.ts";
-import logger from "./logger.ts";
+import {appSettings, TOPIC_SETTINGS_CHANGED} from "./settingsservice";
+import {publish, subscribe} from "./events";
+import {toastError, toastInfo} from "./toast";
+import {taskService} from "./taskservice";
+import {rootContext, uiContext} from "./di";
+import logger from "./logger";
 
 export const TOPIC_EXTENSIONS_CHANGED = "events/extensionsregistry/extensionsConfigChanged"
 const KEY_EXTENSIONS_CONFIG = "extensions"

@@ -1,11 +1,11 @@
 import {css, html} from 'lit'
 import {when} from "lit/directives/when.js";
 import {customElement, state} from 'lit/decorators.js'
-import {KPart} from "../parts/k-part.ts";
-import {Extension, extensionRegistry, TOPIC_EXTENSIONS_CHANGED} from "../core/extensionregistry.ts";
-import '../widgets/k-icon.ts';
-import {subscribe} from "../core/events.ts";
-import {appLoaderService} from "../core/apploader.ts";
+import {KPart} from "../parts/k-part";
+import {Extension, extensionRegistry, TOPIC_EXTENSIONS_CHANGED} from "../core/extensionregistry";
+import '../widgets/k-icon';
+import {subscribe} from "../core/events";
+import {appLoaderService} from "../core/apploader";
 
 
 @customElement('k-extensions')

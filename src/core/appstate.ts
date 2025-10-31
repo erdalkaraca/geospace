@@ -1,6 +1,6 @@
 import {signal} from '@lit-labs/signals';
-import {SignalPort} from "./signals.ts";
-import {KPart} from "../parts/k-part.ts";
+import {SignalPort} from "./signals";
+import {KPart} from "../parts/k-part";
 
 export const EMPTY_SIGNALPORT = {} as SignalPort
 

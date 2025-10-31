@@ -1,13 +1,13 @@
 import {css, html} from 'lit'
 import {customElement, state} from 'lit/decorators.js'
 import {when} from "lit/directives/when.js";
-import {GsMapEditor} from "./gs-map-editor.ts";
-import {mapChangedSignal} from "./gs-signals.ts";
-import '../../widgets/k-icon.ts';
-import {GsLayer, GsControl, GsOverlay} from "../rt/gs-model.ts";
-import {getOriginalUri} from "./utils.ts";
-import "../../components/k-action.ts";
-import {findLayerByUuid, findLayerIndexByUuid} from "./map-renderer.ts";
+import {GsMapEditor} from "./gs-map-editor";
+import {mapChangedSignal} from "./gs-signals";
+import '../../widgets/k-icon';
+import {GsLayer, GsControl, GsOverlay} from "../rt/gs-model";
+import {getOriginalUri} from "./utils";
+import "../../components/k-action";
+import {findLayerByUuid, findLayerIndexByUuid} from "./map-renderer";
 import {
     KPart,
     activePartSignal,
@@ -15,7 +15,7 @@ import {
     watching,
     commandRegistry,
     confirmDialog
-} from "../../api/index.ts";
+} from "../../api/index";
 
 @customElement('gs-map-props')
 export class GsMapProps extends KPart {

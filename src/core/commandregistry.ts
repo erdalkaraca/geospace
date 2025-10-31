@@ -1,7 +1,7 @@
-import logger from "./logger.ts";
-import {CommandContribution, Contribution, contributionRegistry} from "./contributionregistry.ts";
-import {rootContext} from "./di.ts";
-import {activePartSignal, activeEditorSignal} from "./appstate.ts";
+import logger from "./logger";
+import {CommandContribution, Contribution, contributionRegistry} from "./contributionregistry";
+import {rootContext} from "./di";
+import {activePartSignal, activeEditorSignal} from "./appstate";
 
 export interface Parameter {
     name: string;

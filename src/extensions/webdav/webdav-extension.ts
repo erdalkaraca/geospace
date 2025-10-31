@@ -14,20 +14,20 @@
  * Import this file to register the WebDAV extension and its commands.
  */
 
-import { workspaceService } from '../../core/filesys.ts';
-import { WebDAVClient, type WebDAVConnectionInfo } from './webdav-client.ts';
-import { WebDAVDirectoryResource } from './webdav-filesys.ts';
-import type { WebDAVResource } from './webdav-client.ts';
+import { workspaceService } from '../../core/filesys';
+import { WebDAVClient, type WebDAVConnectionInfo } from './webdav-client';
+import { WebDAVDirectoryResource } from './webdav-filesys';
+import type { WebDAVResource } from './webdav-client';
 
 // Export all WebDAV types and classes
-export { WebDAVClient, type WebDAVConnectionInfo, type WebDAVResource } from './webdav-client.ts';
-export { WebDAVFileResource, WebDAVDirectoryResource } from './webdav-filesys.ts';
+export { WebDAVClient, type WebDAVConnectionInfo, type WebDAVResource } from './webdav-client';
+export { WebDAVFileResource, WebDAVDirectoryResource } from './webdav-filesys';
 
 // Import UI component (registers itself)
-import './k-webdav-connect.ts';
+import './k-webdav-connect';
 
 // Import commands (registers themselves)
-import './webdav-commands.ts';
+import './webdav-commands';
 
 // Register WebDAV as a workspace contribution
 workspaceService.registerContribution({

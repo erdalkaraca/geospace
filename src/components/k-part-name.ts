@@ -1,11 +1,11 @@
 import {customElement} from "lit/decorators.js";
-import {KElement} from "../parts/k-element.ts";
+import {KElement} from "../parts/k-element";
 import {html} from "lit";
-import {activePartSignal} from "../core/appstate.ts";
+import {activePartSignal} from "../core/appstate";
 import {SignalWatcher} from "@lit-labs/signals";
-import {contributionRegistry, HTMLContribution} from "../core/contributionregistry.ts";
-import {TOOLBAR_BOTTOM_CENTER} from "../core/constants.ts";
-import '../widgets/k-icon.ts';
+import {contributionRegistry, HTMLContribution} from "../core/contributionregistry";
+import {TOOLBAR_BOTTOM_CENTER} from "../core/constants";
+import '../widgets/k-icon';
 
 const NO_PART_LABEL = "<no part>";
 

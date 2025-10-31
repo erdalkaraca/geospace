@@ -1,4 +1,4 @@
-import {Contribution} from "./contributionregistry.ts";
+import {Contribution} from "./contributionregistry";
 
 export interface TreeNode {
     data: any;

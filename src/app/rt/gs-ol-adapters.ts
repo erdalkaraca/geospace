@@ -1,5 +1,5 @@
 import {Map} from "ol";
-import {GsOlControl, GsOlOverlay} from "./gs-gs2ol.ts";
+import {GsOlControl, GsOlOverlay} from "./gs-gs2ol";
 import {render as litRender} from "lit";
 
 export class GsOlAdapter<T extends GsOlControl | GsOlOverlay> {

@@ -13,10 +13,10 @@
  */
 
 import {render, TemplateResult} from "lit";
-import {rootContext} from "./di.ts";
-import {createLogger} from "./logger.ts";
-import {extensionRegistry, Extension} from "./extensionregistry.ts";
-import {contributionRegistry, Contribution} from "./contributionregistry.ts";
+import {rootContext} from "./di";
+import {createLogger} from "./logger";
+import {extensionRegistry, Extension} from "./extensionregistry";
+import {contributionRegistry, Contribution} from "./contributionregistry";
 
 const logger = createLogger('AppLoader');
 

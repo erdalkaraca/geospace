@@ -4,7 +4,7 @@ import {
     type CommandRegistry,
     type WorkspaceService,
     type File
-} from "../../api/index.ts";
+} from "../../api/index";
 
 export default ({commandRegistry, workspaceService}: {
     commandRegistry: CommandRegistry,

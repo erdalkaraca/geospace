@@ -1,7 +1,7 @@
 import { html, render, TemplateResult } from "lit";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { marked } from "marked";
-import { uiContext } from "./di.ts";
+import { uiContext } from "./di";
 
 // Singleton dialog container to prevent DOM memory leaks
 let dialogContainer: HTMLElement | null = null;

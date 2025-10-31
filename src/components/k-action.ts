@@ -1,7 +1,7 @@
 import { css, html } from 'lit'
 import { customElement, property } from 'lit/decorators.js'
-import { KWidget } from '../widgets/k-widget.ts'
-import '../widgets/k-icon.ts'
+import { KWidget } from '../widgets/k-widget'
+import '../widgets/k-icon'
 
 @customElement('k-action')
 export class KAction extends KWidget {

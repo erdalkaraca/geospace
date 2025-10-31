@@ -1,7 +1,7 @@
 import {css, html} from 'lit'
 import {customElement, property} from 'lit/decorators.js'
 
-import {KWidget} from "./k-widget.ts";
+import {KWidget} from "./k-widget";
 
 @customElement('k-no-content')
 export class KNoContent extends KWidget {

@@ -1,12 +1,12 @@
-import {EDITOR_AREA_MAIN} from "./constants.ts";
-import {KPart} from "../parts/k-part.ts";
-import {activePartSignal, activeEditorSignal, partDirtySignal} from "./appstate.ts";
-import {watchSignal} from "./signals.ts";
-import {subscribe} from "./events.ts";
-import {TOPIC_WORKSPACE_CONNECTED} from "./filesys.ts";
-import {KTabs} from "../parts/k-tabs.ts";
-import {TabContribution} from "./contributionregistry.ts";
-import {rootContext} from "./di.ts";
+import {EDITOR_AREA_MAIN} from "./constants";
+import {KPart} from "../parts/k-part";
+import {activePartSignal, activeEditorSignal, partDirtySignal} from "./appstate";
+import {watchSignal} from "./signals";
+import {subscribe} from "./events";
+import {TOPIC_WORKSPACE_CONNECTED} from "./filesys";
+import {KTabs} from "../parts/k-tabs";
+import {TabContribution} from "./contributionregistry";
+import {rootContext} from "./di";
 
 export const EVENT_SHOW_EDITOR = "editors/showEditor";
 

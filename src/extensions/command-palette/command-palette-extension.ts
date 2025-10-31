@@ -9,9 +9,9 @@ import { html } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { css } from "lit";
 import { createRef, ref, Ref } from "lit/directives/ref.js";
-import { KPart } from "../../parts/k-part.ts";
-import { TOOLBAR_MAIN_CENTER } from "../../core/constants.ts";
-import { subscribe } from "../../core/events.ts";
+import { KPart } from "../../parts/k-part";
+import { TOOLBAR_MAIN_CENTER } from "../../core/constants";
+import { subscribe } from "../../core/events";
 
 // Event topic for opening the command palette
 const TOPIC_OPEN_COMMAND_PALETTE = "commandpalette/open";

@@ -12,20 +12,20 @@
 
 // Bootstrap framework when API is first accessed
 // This ensures framework is initialized before any API is used
-import '../core/index.ts';
+import '../core/index';
 
 // Export all public services
-export * from './services.ts';
+export * from './services';
 
 // Export base classes
-export * from './base-classes.ts';
+export * from './base-classes';
 
 // Export constants
-export * from './constants.ts';
+export * from './constants';
 
 // Export types
-export * from './types.ts';
+export * from './types';
 
 // Re-export AppDefinition for convenience
-export type { AppDefinition, AppContributions } from '../core/apploader.ts';
+export type { AppDefinition, AppContributions } from '../core/apploader';
 

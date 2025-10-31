@@ -1,9 +1,9 @@
 import {LitElement, PropertyValues} from "lit";
-import {subscribe as event_subscribe} from "../core/events.ts";
-import {toastError, toastInfo} from "../core/toast.ts";
-import {commandRegistry, ExecuteParams} from "../core/commandregistry.ts";
+import {subscribe as event_subscribe} from "../core/events";
+import {toastError, toastInfo} from "../core/toast";
+import {commandRegistry, ExecuteParams} from "../core/commandregistry";
 import {Signal} from "@lit-labs/signals";
-import {watchSignal} from "../core/signals.ts";
+import {watchSignal} from "../core/signals";
 
 Object.defineProperty(LitElement.prototype, "model", {
     enumerable: true,

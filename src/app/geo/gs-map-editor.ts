@@ -4,14 +4,14 @@ import { createRef, ref, Ref } from 'lit/directives/ref.js'
 import { when } from 'lit/directives/when.js'
 import { keyed } from 'lit/directives/keyed.js'
 import { DEFAULT_GSMAP, ensureUuidsRecursive, GsMap, GsLayerType, GsSourceType, DEFAULT_STYLES, DEFAULT_STYLE_RULES } from "../rt";
-import { findLayerByUuid } from "./map-renderer.ts";
-import { mapChangedSignal, MapEvents, FeatureSelection } from "./gs-signals.ts";
+import { findLayerByUuid } from "./map-renderer";
+import { mapChangedSignal, MapEvents, FeatureSelection } from "./gs-signals";
 import olCSS from "../../../node_modules/ol/ol.css?raw";
-import { loadEnvs, replaceUris, revertBlobUris } from "./utils.ts";
-import { MapRenderer, MapOperations, createProxy, MapSyncEvent } from "./map-renderer.ts";
-import { IFrameMapRenderer } from "./proxy-map-renderer.ts";
-import { DomainMapOperations } from "./domain-map-operations.ts";
-import { SignalingMapOperations } from "./signaling-map-operations.ts";
+import { loadEnvs, replaceUris, revertBlobUris } from "./utils";
+import { MapRenderer, MapOperations, createProxy, MapSyncEvent } from "./map-renderer";
+import { IFrameMapRenderer } from "./proxy-map-renderer";
+import { DomainMapOperations } from "./domain-map-operations";
+import { SignalingMapOperations } from "./signaling-map-operations";
 import {
     CommandStack,
     KPart,
@@ -24,7 +24,7 @@ import {
     activePartSignal,
     watching,
     createLogger
-} from "../../api/index.ts";
+} from "../../api/index";
 
 const logger = createLogger('GsMapEditor');
 

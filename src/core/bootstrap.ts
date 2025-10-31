@@ -9,17 +9,17 @@
 // Apps can opt-in to bootstrap by importing this module.
 
 // Initialize core services (set up global event listeners and state)
-import './keybindings.ts';  // Sets up global keyboard event listener
-import './dialog.ts';       // Initializes dialog utilities
+import './keybindings';  // Sets up global keyboard event listener
+import './dialog';       // Initializes dialog utilities
 
 // Register framework parts (k-* components)
-import '../parts/index.ts';
+import '../parts/index';
 
 // Register framework components
 import '../components';
 
 // Register framework widgets
-import '../widgets/index.ts';
+import '../widgets/index';
 
 // Register framework extensions (system extensions)
 import '../extensions';

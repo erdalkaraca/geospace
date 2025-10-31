@@ -7,11 +7,11 @@ import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { marked } from "marked";
 import * as monaco from 'monaco-editor';
 import monacoStyles from "monaco-editor/min/vs/editor/editor.main.css?raw";
-import type { EditorInput } from "../../core/editorregistry.ts";
-import { File, workspaceService } from "../../core/filesys.ts";
-import { PyEnv } from "../../core/pyservice.ts";
-import { KPart } from "../../parts/k-part.ts";
-import { pythonPackageManagerService } from "../python-package-manager/package-manager-extension.ts";
+import type { EditorInput } from "../../core/editorregistry";
+import { File, workspaceService } from "../../core/filesys";
+import { PyEnv } from "../../core/pyservice";
+import { KPart } from "../../parts/k-part";
+import { pythonPackageManagerService } from "../python-package-manager/package-manager-extension";
 
 interface NotebookCell {
     cell_type: 'code' | 'markdown' | 'raw';

@@ -1,9 +1,9 @@
-import {KContainer} from "./k-container.ts";
+import {KContainer} from "./k-container";
 import {property} from "lit/decorators.js";
 import {PropertyValues, TemplateResult, nothing} from "lit";
-import {partDirtySignal, activePartSignal} from "../core/appstate.ts";
-import {CommandStack} from "../core/commandregistry.ts";
-import {TabContribution} from "../core/contributionregistry.ts";
+import {partDirtySignal, activePartSignal} from "../core/appstate";
+import {CommandStack} from "../core/commandregistry";
+import {TabContribution} from "../core/contributionregistry";
 
 export abstract class KPart extends KContainer {
     @property()

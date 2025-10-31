@@ -1,7 +1,7 @@
 import {Signal} from "@lit-labs/signals";
 import {TemplateResult} from "lit";
-import {publish} from "./events.ts";
-import {rootContext} from "./di.ts";
+import {publish} from "./events";
+import {rootContext} from "./di";
 
 export const TOPIC_CONTRIBUTEIONS_CHANGED = "events/contributionregistry/contributionsChanged"
 

@@ -1,5 +1,5 @@
 // Re-export framework types for app usage
-export type { AppDefinition, AppContributions } from '../core/apploader.ts';
+export type { AppDefinition, AppContributions } from '../core/apploader';
 export type { 
     Command, 
     Parameter, 
@@ -11,36 +11,36 @@ export type {
     Commands,
     CommandStack,
     CommandRegistry
-} from '../core/commandregistry.ts';
+} from '../core/commandregistry';
 export type { 
     Extension 
-} from '../core/extensionregistry.ts';
+} from '../core/extensionregistry';
 export type {
     Contribution
-} from '../core/contributionregistry.ts';
+} from '../core/contributionregistry';
 export type {
     Resource,
     WorkspaceService
-} from '../core/filesys.ts';
+} from '../core/filesys';
 export type {
     EditorInput
-} from '../core/editorregistry.ts';
+} from '../core/editorregistry';
 export type {
     LogLevel
-} from '../core/logger.ts';
+} from '../core/logger';
 export type {
     SignalPort
-} from '../core/signals.ts';
+} from '../core/signals';
 export type {
     SysPromptContribution,
     ChatContext,
     ChatMessage
-} from '../core/chatservice.ts';
+} from '../core/chatservice';
 export type {
     NavigableDialogAction
-} from '../core/dialog.ts';
+} from '../core/dialog';
 export type {
     TreeNode,
     TreeContribution
-} from '../core/tree-utils.ts';
+} from '../core/tree-utils';
 

@@ -9,7 +9,7 @@ import {
     toastError,
     contributionRegistry,
     TreeContribution
-} from "../../api/index.ts";
+} from "../../api/index";
 
 export const findOlLayer = (name: string, olMap: Map, notFound?: Function) => {
     const layers = olMap.getLayers()

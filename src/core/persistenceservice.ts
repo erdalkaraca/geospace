@@ -1,5 +1,5 @@
 import {get, set} from 'idb-keyval';
-import {rootContext} from "./di.ts";
+import {rootContext} from "./di";
 
 export class PersistenceService {
     async persistObject(key: string, value: any) {

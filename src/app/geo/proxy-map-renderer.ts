@@ -1,4 +1,4 @@
-import {MapOperations, MapRenderer, MapSyncEvent} from "./map-renderer.ts";
+import {MapOperations, MapRenderer, MapSyncEvent} from "./map-renderer";
 import {GsMap} from "../rt";
 
 const iframeSrc = "iframe-map-renderer.html";
@@ -167,7 +167,7 @@ export class IFrameMapRenderer implements MapRenderer {
     private async handleAssetResolution(id: string, path: string): Promise<void> {
         try {
             // Import the toBlobUri function from the host context
-            const { toBlobUri } = await import('./utils.ts');
+            const { toBlobUri } = await import('./utils');
             const assetUrl = await toBlobUri(path);
             
             // Send the resolved URL back to the iframe with the same ID

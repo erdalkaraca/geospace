@@ -1,9 +1,9 @@
 import {customElement} from "lit/decorators.js";
-import {KElement} from "../parts/k-element.ts";
+import {KElement} from "../parts/k-element";
 import {html} from "lit";
-import {workspaceService, TOPIC_WORKSPACE_CONNECTED} from "../core/filesys.ts";
-import {subscribe} from "../core/events.ts";
-import {commandRegistry} from "../core/commandregistry.ts";
+import {workspaceService, TOPIC_WORKSPACE_CONNECTED} from "../core/filesys";
+import {subscribe} from "../core/events";
+import {commandRegistry} from "../core/commandregistry";
 
 const NO_WORKSPACE_LABEL = "<no workspace>";
 

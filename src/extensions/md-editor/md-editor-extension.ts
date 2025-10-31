@@ -1,10 +1,10 @@
 import {customElement, property, state} from "lit/decorators.js";
-import {KPart} from "../../parts/k-part.ts";
+import {KPart} from "../../parts/k-part";
 import {html} from "lit";
 import {marked} from "marked";
-import {EditorInput, editorRegistry} from "../../core/editorregistry.ts";
+import {EditorInput, editorRegistry} from "../../core/editorregistry";
 import {unsafeHTML} from "lit/directives/unsafe-html.js";
-import {File} from "../../core/filesys.ts";
+import {File} from "../../core/filesys";
 
 editorRegistry.registerEditorInputHandler({
     canHandle: input => input instanceof File && input.getName().toLowerCase().endsWith(".md"),

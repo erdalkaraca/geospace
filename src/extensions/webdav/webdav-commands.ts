@@ -2,10 +2,10 @@
  * Commands for WebDAV workspace integration
  */
 
-import { registerAll } from "../../core/commandregistry.ts";
-import { workspaceService } from "../../core/filesys.ts";
-import { createLogger } from "../../core/logger.ts";
-import type { WebDAVConnectionInfo } from "./webdav-client.ts";
+import { registerAll } from "../../core/commandregistry";
+import { workspaceService } from "../../core/filesys";
+import { createLogger } from "../../core/logger";
+import type { WebDAVConnectionInfo } from "./webdav-client";
 import { html, render } from "lit";
 
 const logger = createLogger('WebDAV');

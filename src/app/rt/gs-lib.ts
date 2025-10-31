@@ -1,12 +1,12 @@
-import {toOlMap} from "./gs-gs2ol.ts";
-import {GsMap} from "./gs-model.ts";
+import {toOlMap} from "./gs-gs2ol";
+import {GsMap} from "./gs-model";
 import "../../../node_modules/ol/ol.css";
 import {defaults as defaultControls} from 'ol/control/defaults';
 import {defaults as defaultInteractions} from "ol/interaction/defaults";
-import "../../externals/webawesome.ts"
+import "../../externals/webawesome"
 
-export * from "./gs-model.ts";
-export * from "./gs-gs2ol.ts";
+export * from "./gs-model";
+export * from "./gs-gs2ol";
 
 export interface GsAppOptions {
     containerSelector: string | HTMLElement,

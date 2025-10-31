@@ -1,5 +1,5 @@
 import {customElement} from "lit/decorators.js";
-import {KElement} from "../../parts/k-element.ts";
+import {KElement} from "../../parts/k-element";
 import {html} from "lit";
 
 @customElement('k-memory-usage')

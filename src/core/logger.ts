@@ -1,4 +1,4 @@
-import { rootContext } from './di.ts';
+import { rootContext } from './di';
 
 export type LogLevel = 'info' | 'warning' | 'error' | 'debug';
 

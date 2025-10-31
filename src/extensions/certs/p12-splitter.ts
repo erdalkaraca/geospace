@@ -1,5 +1,5 @@
 import pyScript from "./p12splitter.py?raw"
-import {PyEnv} from "../../core/pyservice.ts";
+import {PyEnv} from "../../core/pyservice";
 
 export default ({toastError, toastInfo, commandRegistry, taskService, workspaceService}: any) => {
     commandRegistry.registerAll({

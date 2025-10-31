@@ -6,9 +6,9 @@ import {
     FileContentsOptions, 
     FileContentType,
     TOPIC_WORKSPACE_CHANGED 
-} from '../../core/filesys.ts';
-import { WebDAVClient, WebDAVResource } from './webdav-client.ts';
-import { publish } from '../../core/events.ts';
+} from '../../core/filesys';
+import { WebDAVClient, WebDAVResource } from './webdav-client';
+import { publish } from '../../core/events';
 
 export class WebDAVFileResource extends File {
     private client: WebDAVClient;

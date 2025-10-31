@@ -6,16 +6,16 @@ import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker';
 import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker';
 import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
 import {customElement, property, state} from "lit/decorators.js";
-import {KPart} from "../../parts/k-part.ts";
+import {KPart} from "../../parts/k-part";
 import {css, html} from "lit";
 import {createRef, ref} from "lit/directives/ref.js";
-import {EditorInput, editorRegistry} from "../../core/editorregistry.ts";
+import {EditorInput, editorRegistry} from "../../core/editorregistry";
 import {styleMap} from "lit/directives/style-map.js";
-import {PyEnv} from "../../core/pyservice.ts";
-import {File, workspaceService} from "../../core/filesys.ts";
-import {ChatContext} from "../../core/chatservice.ts";
-import logger from '../../core/logger.ts';
-import {pythonPackageManagerService} from "../python-package-manager/package-manager-extension.ts";
+import {PyEnv} from "../../core/pyservice";
+import {File, workspaceService} from "../../core/filesys";
+import {ChatContext} from "../../core/chatservice";
+import logger from '../../core/logger';
+import {pythonPackageManagerService} from "../python-package-manager/package-manager-extension";
 
 self.MonacoEnvironment = {
     getWorker(_: any, label: string) {

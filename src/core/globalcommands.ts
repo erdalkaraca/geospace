@@ -1,14 +1,14 @@
-import {commandRegistry, registerAll} from "./commandregistry.ts";
-import {StringFile, workspaceService} from "./filesys.ts";
-import {TOOLBAR_MAIN_RIGHT} from "./constants.ts";
-import {PyEnv} from "./pyservice.ts";
-import {EditorInput, editorRegistry} from "./editorregistry.ts";
+import {commandRegistry, registerAll} from "./commandregistry";
+import {StringFile, workspaceService} from "./filesys";
+import {TOOLBAR_MAIN_RIGHT} from "./constants";
+import {PyEnv} from "./pyservice";
+import {EditorInput, editorRegistry} from "./editorregistry";
 import {html} from "lit";
 import README from "../../README.md?raw"
-import {toastError, toastInfo} from "./toast.ts";
-import {activePartSignal} from "./appstate.ts";
-import {appSettings} from "./settingsservice.ts";
-import "../commands/files.ts";
+import {toastError, toastInfo} from "./toast";
+import {activePartSignal} from "./appstate";
+import {appSettings} from "./settingsservice";
+import "../commands/files";
 
 registerAll({
     command: {

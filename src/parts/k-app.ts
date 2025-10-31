@@ -1,6 +1,6 @@
 import {css, html} from 'lit'
 import {customElement} from 'lit/decorators.js'
-import {KElement} from "./k-element.ts";
+import {KElement} from "./k-element";
 
 @customElement('k-app')
 export class KApp extends KElement {

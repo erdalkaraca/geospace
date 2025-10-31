@@ -1,5 +1,5 @@
 import Toastify from "toastify-js";
-import {uiContext} from "./di.ts";
+import {uiContext} from "./di";
 
 export const toastInfo = (msg: string) => {
     console.info("[TOAST] INFO: ", msg)

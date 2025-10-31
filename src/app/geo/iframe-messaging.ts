@@ -1,5 +1,5 @@
-import { OpenLayersMapRenderer } from './openlayers-map-renderer.ts';
-import { rtUtils } from '../rt/index.ts';
+import { OpenLayersMapRenderer } from './openlayers-map-renderer';
+import { rtUtils } from '../rt/index';
 
 // Override asset resolution to use the existing resolveAssetInHost function
 rtUtils.resolveUrl = async (path: string) => {

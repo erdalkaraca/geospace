@@ -1,7 +1,7 @@
-export * from "./gs-model.ts"
-export * from "./gs-gs2ol.ts"
-export * from "./gs-ol2gs.ts"
-export * from "./gs-ol-adapters.ts"
+export * from "./gs-model"
+export * from "./gs-gs2ol"
+export * from "./gs-ol2gs"
+export * from "./gs-ol-adapters"
 
 export const rtUtils = {
     async resolveUrl(url: string) {

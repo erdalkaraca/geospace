@@ -1,6 +1,6 @@
 import {css, html, TemplateResult} from 'lit'
 import {customElement, state} from 'lit/decorators.js'
-import '../../widgets/k-icon.ts';
+import '../../widgets/k-icon';
 import {createRef, ref} from "lit/directives/ref.js";
 import {
     KPart,
@@ -9,7 +9,7 @@ import {
     contributionRegistry,
     activePartSignal,
     activeSelectionSignal
-} from "../../api/index.ts";
+} from "../../api/index";
 
 export const CID_CATALOG_ROOT = "catalog.root"
 

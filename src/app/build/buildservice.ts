@@ -3,8 +3,8 @@ import {OnLoadArgs, OnResolveArgs} from 'esbuild-wasm'
 import wasmUrl from '../../../node_modules/esbuild-wasm/esbuild.wasm?url'
 import manifestJson from "../../../public/pwa/manifest.json"
 import {GsMap, GsScript} from "../rt";
-import {GsMapEditor} from "../geo/gs-map-editor.ts";
-import {loadEnvs} from "../geo/utils.ts";
+import {GsMapEditor} from "../geo/gs-map-editor";
+import {loadEnvs} from "../geo/utils";
 import {
     Directory,
     File,
@@ -13,8 +13,8 @@ import {
     toastError,
     toastInfo,
     taskService
-} from "../../api/index.ts";
-import {rootContext} from "../../core/di.ts";
+} from "../../api/index";
+import {rootContext} from "../../core/di";
 
 const indexHtml = (vars: any) => `
 <!doctype html>

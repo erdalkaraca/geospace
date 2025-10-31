@@ -1,7 +1,7 @@
-import gitService from "./gitservice.ts";
-import {toastInfo} from "../../core/toast.ts";
-import {registerAll} from "../../core/commandregistry.ts";
-import {TOOLBAR_MAIN} from "../../core/constants.ts";
+import gitService from "./gitservice";
+import {toastInfo} from "../../core/toast";
+import {registerAll} from "../../core/commandregistry";
+import {TOOLBAR_MAIN} from "../../core/constants";
 
 export function registerGitCommands() {
     registerAll({

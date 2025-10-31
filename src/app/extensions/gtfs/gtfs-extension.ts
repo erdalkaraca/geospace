@@ -8,7 +8,7 @@ import {
     toastInfo,
     taskService,
     PyEnv
-} from "../../../api/index.ts";
+} from "../../../api/index";
 
 registerAll({
     command: {

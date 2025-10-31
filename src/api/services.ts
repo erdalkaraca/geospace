@@ -1,10 +1,10 @@
 // Re-export framework services for app usage
-export { appLoaderService } from '../core/apploader.ts';
-export { commandRegistry, CommandStack, registerAll, CommandRegistry } from '../core/commandregistry.ts';
-export { contributionRegistry } from '../core/contributionregistry.ts';
-export { extensionRegistry } from '../core/extensionregistry.ts';
-export { workspaceService, File, Directory, FileContentType, WorkspaceService } from '../core/filesys.ts';
-export { editorRegistry } from '../core/editorregistry.ts';
+export { appLoaderService } from '../core/apploader';
+export { commandRegistry, CommandStack, registerAll, CommandRegistry } from '../core/commandregistry';
+export { contributionRegistry } from '../core/contributionregistry';
+export { extensionRegistry } from '../core/extensionregistry';
+export { workspaceService, File, Directory, FileContentType, WorkspaceService } from '../core/filesys';
+export { editorRegistry } from '../core/editorregistry';
 export { 
     activePartSignal,
     activeEditorSignal,
@@ -13,30 +13,30 @@ export {
     activeSelectionSignal,
     perspectiveSwitchedSignal,
     EMPTY_SIGNALPORT
-} from '../core/appstate.ts';
+} from '../core/appstate';
 export { 
     createLogger,
     setLogLevel,
     type LogLevel,
     type Logger
-} from '../core/logger.ts';
+} from '../core/logger';
 export { 
     infoDialog,
     navigableInfoDialog,
     confirmDialog,
     promptDialog,
     type NavigableDialogAction
-} from '../core/dialog.ts';
+} from '../core/dialog';
 export { 
     toastInfo,
     toastError,
     toastWarning
-} from '../core/toast.ts';
-export { taskService } from '../core/taskservice.ts';
-export { PyEnv } from '../core/pyservice.ts';
-export { publish, subscribe } from '../core/events.ts';
-export { watching } from '../core/signals.ts';
-export { CID_PROMPTS } from '../core/chatservice.ts';
+} from '../core/toast';
+export { taskService } from '../core/taskservice';
+export { PyEnv } from '../core/pyservice';
+export { publish, subscribe } from '../core/events';
+export { watching } from '../core/signals';
+export { CID_PROMPTS } from '../core/chatservice';
 export { 
     fetchReleases,
     fetchLatestRelease,
@@ -44,8 +44,8 @@ export {
     isNewerVersion,
     getGitHubConfig,
     type GitHubRelease
-} from '../core/github-service.ts';
-export { configureFramework, getFrameworkConfig } from '../core/config.ts';
-export { treeNodeComparator } from '../core/tree-utils.ts';
-export type { TreeContribution, TreeNode } from '../core/tree-utils.ts';
+} from '../core/github-service';
+export { configureFramework, getFrameworkConfig } from '../core/config';
+export { treeNodeComparator } from '../core/tree-utils';
+export type { TreeContribution, TreeNode } from '../core/tree-utils';
 

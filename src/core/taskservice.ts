@@ -1,5 +1,5 @@
-import {activeTasksSignal} from "./appstate.ts";
-import {rootContext} from "./di.ts";
+import {activeTasksSignal} from "./appstate";
+import {rootContext} from "./di";
 
 export interface ProgressMonitor {
     name: string

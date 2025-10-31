@@ -1,11 +1,11 @@
-import { GsMapEditor } from "../../geo/gs-map-editor.ts";
-import { GsStyleEditor } from "./gs-style-editor.ts";
+import { GsMapEditor } from "../../geo/gs-map-editor";
+import { GsStyleEditor } from "./gs-style-editor";
 import {
     activeEditorSignal,
     toastError,
     toastInfo,
     type CommandRegistry
-} from "../../../api/index.ts";
+} from "../../../api/index";
 
 export default ({ commandRegistry }: { commandRegistry: CommandRegistry }) => {
     commandRegistry.registerAll({

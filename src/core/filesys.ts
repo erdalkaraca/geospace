@@ -1,6 +1,6 @@
-import {persistenceService} from "./persistenceservice.ts";
-import {publish} from "./events.ts";
-import {rootContext} from "./di.ts";
+import {persistenceService} from "./persistenceservice";
+import {publish} from "./events";
+import {rootContext} from "./di";
 
 
 export const TOPIC_WORKSPACE_CHANGED = "events/filesys/workspaceChanged"

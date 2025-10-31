@@ -1,7 +1,7 @@
-import {registerAll} from "../../core/commandregistry.ts";
-import {File, FileContentType, workspaceService} from "../../core/filesys.ts";
-import {toastError, toastInfo} from "../../core/toast.ts";
-import {taskService} from "../../core/taskservice.ts";
+import {registerAll} from "../../core/commandregistry";
+import {File, FileContentType, workspaceService} from "../../core/filesys";
+import {toastError, toastInfo} from "../../core/toast";
+import {taskService} from "../../core/taskservice";
 
 registerAll({
     command: {

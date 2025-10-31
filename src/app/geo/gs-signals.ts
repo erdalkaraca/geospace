@@ -2,7 +2,7 @@ import {signal} from "@lit-labs/signals";
 import {
     SignalPort,
     EMPTY_SIGNALPORT
-} from "../../api/index.ts";
+} from "../../api/index";
 
 export enum MapEvents {
     LOADED, LAYER_ADDED, LAYER_DELETED, LAYER_UPDATED, FEATURE_SELECTED

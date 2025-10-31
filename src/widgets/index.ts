@@ -1,2 +1,2 @@
-import "./k-nocontent.ts"
-import "./k-icon.ts"
+import "./k-nocontent"
+import "./k-icon"

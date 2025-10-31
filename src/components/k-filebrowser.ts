@@ -1,7 +1,7 @@
 
 import {css, html, TemplateResult} from 'lit'
 import {customElement, state} from 'lit/decorators.js'
-import {KPart} from "../parts/k-part.ts";
+import {KPart} from "../parts/k-part";
 import {
     Directory,
     File,
@@ -9,16 +9,16 @@ import {
     TOPIC_WORKSPACE_CHANGED,
     TOPIC_WORKSPACE_CONNECTED,
     workspaceService
-} from "../core/filesys.ts";
+} from "../core/filesys";
 import {when} from "lit/directives/when.js";
-import {topic} from "../core/events.ts";
+import {topic} from "../core/events";
 import {createRef, ref} from "lit/directives/ref.js";
-import {HIDE_DOT_RESOURCE} from "../core/constants.ts";
+import {HIDE_DOT_RESOURCE} from "../core/constants";
 
-import {commandRegistry} from "../core/commandregistry.ts";
-import {TreeNode, treeNodeComparator} from "../core/tree-utils.ts";
-import {activeSelectionSignal} from "../core/appstate.ts";
-import {confirmDialog} from "../core/dialog.ts";
+import {commandRegistry} from "../core/commandregistry";
+import {TreeNode, treeNodeComparator} from "../core/tree-utils";
+import {activeSelectionSignal} from "../core/appstate";
+import {confirmDialog} from "../core/dialog";
 
 
 @customElement('k-filebrowser')

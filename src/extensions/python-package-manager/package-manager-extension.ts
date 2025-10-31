@@ -2,8 +2,8 @@ import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { ref } from "lit/directives/ref.js";
 import { repeat } from "lit/directives/repeat.js";
-import { PyEnv } from "../../core/pyservice.ts";
-import { rootContext } from "../../core/di.ts";
+import { PyEnv } from "../../core/pyservice";
+import { rootContext } from "../../core/di";
 
 export interface PackageManagerOptions {
     packages: string[];

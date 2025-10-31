@@ -19,7 +19,7 @@
  */
 import {customElement, property, state} from "lit/decorators.js";
 import {html, nothing} from "lit";
-import {KElement} from "./k-element.ts";
+import {KElement} from "./k-element";
 
 @customElement('k-resizable-grid')
 export class KResizableGrid extends KElement {

@@ -1,9 +1,9 @@
 import { customElement, state } from "lit/decorators.js";
-import { KElement } from "../../parts/k-element.ts";
+import { KElement } from "../../parts/k-element";
 import { html } from "lit";
-import { workspaceService } from "../../core/filesys.ts";
-import type { WebDAVConnectionInfo } from "./webdav-client.ts";
-import { createLogger } from "../../core/logger.ts";
+import { workspaceService } from "../../core/filesys";
+import type { WebDAVConnectionInfo } from "./webdav-client";
+import { createLogger } from "../../core/logger";
 
 const logger = createLogger('WebDAV');
 

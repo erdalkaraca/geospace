@@ -1,5 +1,5 @@
-import { MapOperations } from "./map-renderer.ts";
-import { mapChangedSignal, MapEvents } from "./gs-signals.ts";
+import { MapOperations } from "./map-renderer";
+import { mapChangedSignal, MapEvents } from "./gs-signals";
 
 /**
  * MapOperations implementation that automatically triggers mapChangedSignal

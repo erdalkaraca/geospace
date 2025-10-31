@@ -1,11 +1,11 @@
 import {rtUtils} from "../rt";
-import {toBlobUri} from "./utils.ts";
+import {toBlobUri} from "./utils";
 import {html} from "lit";
 import {
     EditorInput,
     editorRegistry,
     File
-} from "../../api/index.ts";
+} from "../../api/index";
 
 rtUtils.resolveUrl = path => toBlobUri(path);
 

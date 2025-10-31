@@ -5,11 +5,11 @@
  * Supports standard modifiers: CTRL, ALT, SHIFT, META (CMD on Mac)
  */
 
-import logger from "./logger.ts";
-import { commandRegistry } from "./commandregistry.ts";
-import { rootContext } from "./di.ts";
+import logger from "./logger";
+import { commandRegistry } from "./commandregistry";
+import { rootContext } from "./di";
 
-import type { Command } from "./commandregistry.ts";
+import type { Command } from "./commandregistry";
 
 export interface KeyBinding {
     commandId: string;

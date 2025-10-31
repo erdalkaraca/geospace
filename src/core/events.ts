@@ -1,5 +1,5 @@
 import PubSub from 'pubsub-js'
-import {rootContext} from "./di.ts";
+import {rootContext} from "./di";
 
 export const subscribe = (topic: string, callback: (data: any) => any) => {
     PubSub.subscribe(topic, (_topic, data) => callback(data));

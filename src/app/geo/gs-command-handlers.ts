@@ -1,6 +1,6 @@
 import {fromLonLat} from "ol/proj";
-import {MapOperations} from "./map-renderer.ts";
-import {replaceUris} from "./utils.ts";
+import {MapOperations} from "./map-renderer";
+import {replaceUris} from "./utils";
 import {
     ensureUuid,
     GsLayer,
@@ -10,14 +10,14 @@ import {
     toGsSourceType,
     toSourceUrl
 } from "../rt";
-import {GsMapEditor} from "./gs-map-editor.ts";
+import {GsMapEditor} from "./gs-map-editor";
 import {
     commandRegistry,
     activePartSignal,
     promptDialog,
     createLogger,
     type ExecutionContext
-} from "../../api/index.ts";
+} from "../../api/index";
 
 const logger = createLogger('GsCommandHandlers');
 

@@ -1,8 +1,8 @@
-import "./globalcommands.ts"
-import {appSettings, TOPIC_SETTINGS_CHANGED} from "./settingsservice.ts";
-import {publish, subscribe} from "./events.ts";
-import {DependencyContext, rootContext} from "./di.ts";
-import {Contribution, contributionRegistry} from "./contributionregistry.ts";
+import "./globalcommands"
+import {appSettings, TOPIC_SETTINGS_CHANGED} from "./settingsservice";
+import {publish, subscribe} from "./events";
+import {DependencyContext, rootContext} from "./di";
+import {Contribution, contributionRegistry} from "./contributionregistry";
 
 export const TOPIC_AICONFIG_CHANGED = "events/chatservice/aiConfigChanged"
 const KEY_AI_CONFIG = "aiConfig";
@@ -270,7 +270,7 @@ export class ChatService {
 
             return handleFinalPrompt()
         })
-        const messages = (await Promise.all(all.filter(m => !!m)))
+        const messages = (await Promise.all(all.filter(m => !!m))) as ChatMessage[]
         chatContext.history.push(...messages)
     }
 }

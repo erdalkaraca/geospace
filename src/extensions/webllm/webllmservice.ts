@@ -1,5 +1,5 @@
 import {ChatCompletionMessageParam, MLCEngine} from "@mlc-ai/web-llm";
-import type {ChatMessage, ChatProvider, ChatService, FetcherParams} from "../../core/chatservice.ts";
+import type {ChatMessage, ChatProvider, ChatService, FetcherParams} from "../../core/chatservice";
 
 export default ({chatService}: { chatService: ChatService }) => {
     let engine: MLCEngine;

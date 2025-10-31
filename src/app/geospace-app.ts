@@ -30,19 +30,19 @@ import {
     type SysPromptContribution,
     type Extension,
     type KPart
-} from "../api/index.ts";
+} from "../api/index";
 
 // App-specific imports
-import "./geo/gs-map-editor-contributions.ts"
-import './geo/gs-map-editor.ts'
-import './geo/gs-map-props.ts'
-import './geo/gs-catalog-contributions.ts'
-import './geo/gs-command-handlers.ts'
-import './geo/gs-catalog.ts'
-import "./app.ts" // Registers gs-app component
+import "./geo/gs-map-editor-contributions"
+import './geo/gs-map-editor'
+import './geo/gs-map-props'
+import './geo/gs-catalog-contributions'
+import './geo/gs-command-handlers'
+import './geo/gs-catalog'
+import "./app" // Registers gs-app component
 
 import APP_SYS_PROMPT from "./geospace-sysprompt.txt?raw"
-import { GsSourceType, DEFAULT_GSMAP } from "./rt/gs-model.ts";
+import { GsSourceType, DEFAULT_GSMAP } from "./rt/gs-model";
 
 const logger = createLogger('GeoSpaceApp');
 
@@ -174,28 +174,28 @@ export const geospaceApp: AppDefinition = {
                 id: "geospace.mapBuilder",
                 name: "geo!space Map Builder",
                 description: "Compile a geo!space file to an interactive website",
-                loader: () => import("./extensions/mapbuilder-extension.ts"),
+                loader: () => import("./extensions/mapbuilder-extension"),
                 icon: "earth"
             },
             {
                 id: "geospace.styleEditor",
                 name: "Style Editor",
                 description: "Visual editor for defining and managing map styles and rules",
-                loader: () => import("./extensions/style-editor/style-editor-extension.ts"),
+                loader: () => import("./extensions/style-editor/style-editor-extension"),
                 icon: "palette"
             },
             {
                 id: "geospace.overpass",
                 name: "OpenStreetMap Overpass",
                 description: "OpenStreetMap Overpass API Integration for use with LLMs",
-                loader: () => import("./extensions/overpass-extension.ts"),
+                loader: () => import("./extensions/overpass-extension"),
                 icon: "table"
             },
             {
                 id: "geospace.gtfs",
                 name: "GTFS to GeoJSON Converter",
                 description: "Convert GTFS zip archives to GeoJSON files",
-                loader: () => import("./extensions/gtfs/gtfs-extension.ts"),
+                loader: () => import("./extensions/gtfs/gtfs-extension"),
                 icon: "map-location-dot"
             }
         ]

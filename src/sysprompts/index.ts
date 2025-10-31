@@ -1,15 +1,15 @@
-import {commandRegistry, CommandRegistry, CommandStack} from "../core/commandregistry.ts";
-import {ChatMessage, CID_PROMPTS, SysPromptContribution} from "../core/chatservice.ts";
-import {contributionRegistry} from "../core/contributionregistry.ts";
+import {commandRegistry, CommandRegistry, CommandStack} from "../core/commandregistry";
+import {ChatMessage, CID_PROMPTS, SysPromptContribution} from "../core/chatservice";
+import {contributionRegistry} from "../core/contributionregistry";
 
 import COMMANDS_EXEC_PLAN_SYS_PROMPT from "./commands-exec-plan.txt?raw"
 import PYODIDE_SYS_PROMPT from "./py-programming.txt?raw"
 import JAVASCRIPT_SYS_PROMPT from "./js-programming.txt?raw"
-import {taskService} from "../core/taskservice.ts";
-import logger from "../core/logger.ts";
-import {KPart} from "../parts/k-part.ts";
-import {editorRegistry} from "../core/editorregistry.ts";
-import {StringFile} from "../core/filesys.ts";
+import {taskService} from "../core/taskservice";
+import logger from "../core/logger";
+import {KPart} from "../parts/k-part";
+import {editorRegistry} from "../core/editorregistry";
+import {StringFile} from "../core/filesys";
 
 let counter = 0
 

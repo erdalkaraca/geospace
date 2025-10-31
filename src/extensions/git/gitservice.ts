@@ -6,8 +6,8 @@
 import * as lgMod from "wasm-git/lg2_async.js";
 
 import wasmUrl from 'wasm-git/lg2_async.wasm?url'
-import type {WorkspaceService} from "../../core/filesys.ts";
-import {workspaceService} from "../../core/filesys.ts";
+import type {WorkspaceService} from "../../core/filesys";
+import {workspaceService} from "../../core/filesys";
 
 // Custom FS interface for wasm-git that delegates to workspaceService
 

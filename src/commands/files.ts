@@ -1,9 +1,9 @@
-import {registerAll} from "../core/commandregistry.ts";
-import {File, workspaceService} from "../core/filesys.ts";
-import {toastError, toastInfo} from "../core/toast.ts";
-import {promptDialog, confirmDialog} from "../core/dialog.ts";
-import {activeSelectionSignal} from "../core/appstate.ts";
-import {editorRegistry} from "../core/editorregistry.ts";
+import {registerAll} from "../core/commandregistry";
+import {File, workspaceService} from "../core/filesys";
+import {toastError, toastInfo} from "../core/toast";
+import {promptDialog, confirmDialog} from "../core/dialog";
+import {activeSelectionSignal} from "../core/appstate";
+import {editorRegistry} from "../core/editorregistry";
 
 registerAll({
     command: {
