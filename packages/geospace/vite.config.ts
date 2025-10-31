@@ -16,6 +16,25 @@ const PYODIDE_EXCLUDE = [
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
+/**
+ * Copies Pyodide files from node_modules to the build output for local serving.
+ * 
+ * This function bundles Pyodide files with the build instead of loading from a CDN.
+ * 
+ * **Why it's currently disabled:**
+ * - Pyodide is currently loaded from CDN (cdn.jsdelivr.net) for simplicity and smaller builds
+ * - Bundling Pyodide locally would significantly increase build size (~50-100MB+)
+ * - CDN loading provides better caching and reduces initial bundle size
+ * 
+ * **When to enable:**
+ * - If you need offline functionality without CDN dependency
+ * - If you want full control over Pyodide version distribution
+ * - If you're deploying to an environment that blocks external CDN requests
+ * 
+ * **To enable:**
+ * 1. Uncomment the plugin call in the plugins array below
+ * 2. Update pyworker.ts to use local path: `indexURL: '/assets/pyodide'` instead of CDN URL
+ */
 export function viteStaticCopyPyodide() {
     const pyodideDir = dirname(fileURLToPath(import.meta.resolve("pyodide")));
     return viteStaticCopy({
