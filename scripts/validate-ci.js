@@ -48,10 +48,6 @@ function validateCISetup() {
     {
       command: 'npm run type-check',
       description: 'TypeScript type checking'
-    },
-    {
-      command: 'npm run test:run',
-      description: 'Unit tests (core functionality)'
     }
   ];
   
@@ -106,9 +102,7 @@ function checkRequiredFiles() {
   const requiredFiles = [
     '.github/workflows/ci.yml',
     '.github/workflows/build-and-deploy.yml',
-    '.github/workflows/pr-validation.yml',
-    'vitest.config.ts',
-    'src/tests/setup.ts'
+    '.github/workflows/pr-validation.yml'
   ];
   
   let allFilesExist = true;

@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false,
+    "module": "ESNext",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "paths": {
+      "@kispace/appspace": ["../appspace/dist"],
+      "@kispace/appspace/*": ["../appspace/dist/*"]
+    }
+  },
+  "include": ["src"],
+  "exclude": ["src/tests/**/*", "src/**/*.test.ts", "src/**/*.spec.ts"]
+}
