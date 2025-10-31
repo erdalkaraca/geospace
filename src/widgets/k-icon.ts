@@ -2,6 +2,7 @@ import {customElement, property} from 'lit/decorators.js'
 import {html, nothing, css} from 'lit';
 
 import {KWidget} from "./k-widget.ts";
+import "../core/k-utils.ts";
 
 @customElement('k-icon')
 export class KIcon extends KWidget {

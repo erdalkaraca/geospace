@@ -5,12 +5,16 @@ import {KPart} from "../parts/k-part.ts";
 import {Extension, extensionRegistry, TOPIC_EXTENSIONS_CHANGED} from "../core/extensionregistry.ts";
 import '../widgets/k-icon.ts';
 import {subscribe} from "../core/events.ts";
+import {appLoaderService} from "../core/apploader.ts";
 
 
 @customElement('k-extensions')
 export class KExtensions extends KPart {
     @state()
     private selectedExtension?: Extension;
+
+    @state()
+    private filterText: string = '';
 
     protected doInitUI() {
         subscribe(TOPIC_EXTENSIONS_CHANGED, () => {
@@ -32,20 +36,123 @@ export class KExtensions extends KPart {
         this.requestUpdate()
     }
 
+    private isExtensionRequired(extensionId: string): boolean {
+        const currentApp = appLoaderService.getCurrentApp();
+        if (!currentApp || !currentApp.extensions) {
+            return false;
+        }
+        return currentApp.extensions.includes(extensionId);
+    }
+
     selectionChanged(e: CustomEvent) {
-        // @ts-ignore
-        this.selectedExtension = e.detail.selection[0].model
+        const selection = e.detail.selection || [];
+        if (selection.length > 0 && selection[0].model) {
+            // @ts-ignore
+            this.selectedExtension = selection[0].model;
+        } else {
+            this.selectedExtension = undefined;
+        }
+    }
+
+    private getFilteredExtensions(): Extension[] {
+        if (!this.filterText.trim()) {
+            return extensionRegistry.getExtensions();
+        }
+        const filter = this.filterText.toLowerCase();
+        return extensionRegistry.getExtensions().filter(ext => {
+            return ext.name.toLowerCase().includes(filter) ||
+                   (ext.description?.toLowerCase().includes(filter) ?? false) ||
+                   ext.id.toLowerCase().includes(filter);
+        });
+    }
+
+    private getGroupedExtensions(): { enabled: Extension[], available: Extension[] } {
+        const filtered = this.getFilteredExtensions();
+        const enabled: Extension[] = [];
+        const available: Extension[] = [];
+        
+        filtered.forEach(ext => {
+            if (extensionRegistry.isEnabled(ext.id)) {
+                enabled.push(ext);
+            } else {
+                available.push(ext);
+            }
+        });
+        
+        enabled.sort((a, b) => a.name.localeCompare(b.name));
+        available.sort((a, b) => a.name.localeCompare(b.name));
+        
+        return { enabled, available };
+    }
+
+    private handleFilterInput(e: Event) {
+        this.filterText = (e.target as HTMLInputElement).value;
+        this.requestUpdate();
+    }
+
+    private clearFilter() {
+        this.filterText = '';
+        this.requestUpdate();
+    }
+
+    protected renderToolbar() {
+        return html`
+            <wa-input
+                placeholder="Filter extensions..."
+                .value=${this.filterText}
+                @input=${(e: Event) => this.handleFilterInput(e)}
+                @wa-clear=${() => this.clearFilter()}
+                with-clear
+                size="small"
+                style="width: 300px;">
+                <wa-icon slot="start" name="magnifying-glass" label="Filter"></wa-icon>
+            </wa-input>
+        `;
     }
 
     render() {
+        const grouped = this.getGroupedExtensions();
+        const hasAnyExtensions = grouped.enabled.length > 0 || grouped.available.length > 0;
+        
         return html`
             <wa-split-panel position="30" style="height: 100%">
-                <wa-tree style="--indent-guide-width: 1px;" slot="start"
-                         @wa-selection-change="${this.selectionChanged}">
-                    ${extensionRegistry.getExtensions().map(e => html`
-                        <wa-tree-item @dblclick=${this.nobubble(this.onExtensionDblClick)} .model=${e} expanded>
-                            <span><k-icon name="${e.icon}"></k-icon> ${e.name}</span>
-                        </wa-tree-item>`)}
+                <wa-tree 
+                    selection="leaf"
+                    style="--indent-guide-width: 1px;" 
+                    slot="start"
+                    @wa-selection-change="${this.selectionChanged}">
+                    ${hasAnyExtensions ? html`
+                        ${grouped.enabled.length > 0 ? html`
+                            <wa-tree-item expanded>
+                                <span>
+                                    <wa-icon name="check-circle" style="color: var(--wa-color-success-50);"></wa-icon>
+                                    Installed (${grouped.enabled.length})
+                                </span>
+                                ${grouped.enabled.map(e => html`
+                                    <wa-tree-item @dblclick=${this.nobubble(this.onExtensionDblClick)} .model=${e}>
+                                        <span><k-icon name="${e.icon}"></k-icon> ${e.name}</span>
+                                    </wa-tree-item>
+                                `)}
+                            </wa-tree-item>
+                        ` : ''}
+                        ${grouped.available.length > 0 ? html`
+                            <wa-tree-item expanded>
+                                <span>
+                                    <wa-icon name="circle" style="color: var(--wa-color-neutral-50);"></wa-icon>
+                                    Available (${grouped.available.length})
+                                </span>
+                                ${grouped.available.map(e => html`
+                                    <wa-tree-item @dblclick=${this.nobubble(this.onExtensionDblClick)} .model=${e}>
+                                        <span><k-icon name="${e.icon}"></k-icon> ${e.name}</span>
+                                    </wa-tree-item>
+                                `)}
+                            </wa-tree-item>
+                        ` : ''}
+                    ` : html`
+                        <div style="padding: 1em; text-align: center; opacity: 0.7;">
+                            No extensions match "${this.filterText}"
+                        </div>
+                    `}
                 </wa-tree>
                 <div slot="end" style="padding: 1em;">
                     ${when(this.selectedExtension, (e) => html`
@@ -53,10 +160,21 @@ export class KExtensions extends KPart {
                         <hr>
                         <div>
                             ${when(extensionRegistry.isEnabled(e.id), () => html`
-                                <wa-button title="Disable this extension" @click="${() => this.disable(e)}"
-                                           variant="danger" appearance="plain">
+                                <wa-button 
+                                    title="${this.isExtensionRequired(e.id) ? 'This extension is required by the current app and cannot be uninstalled' : 'Disable this extension'}" 
+                                    @click="${() => this.disable(e)}"
+                                    variant="danger" 
+                                    appearance="plain"
+                                    ?disabled=${this.isExtensionRequired(e.id)}>
                                     <wa-icon name="xmark" label="Uninstall"></wa-icon>&nbsp;Uninstall (requires restart)
-                                </wa-button>`, () => html`
+                                </wa-button>
+                                ${when(this.isExtensionRequired(e.id), () => html`
+                                    <div class="required-hint">
+                                        <wa-icon name="info-circle" style="color: var(--wa-color-primary-50);"></wa-icon>
+                                        <span>This extension is required by the current app and cannot be uninstalled</span>
+                                    </div>
+                                `)}
+                            `, () => html`
                                 <wa-button title="Enable this extension" @click="${() => this.enable(e)}"
                                            variant="brand" appearance="plain">
                                     <wa-icon name="download" label="Install"></wa-icon>&nbsp;Install
@@ -115,6 +233,16 @@ export class KExtensions extends KPart {
         :host {
         }
 
+        wa-tree-item > span {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        wa-tree-item:has(> wa-tree-item) {
+            font-weight: 500;
+        }
+
         .dependencies-list {
             display: flex;
             flex-direction: column;
@@ -148,6 +276,26 @@ export class KExtensions extends KPart {
             border-radius: 4px;
             background: var(--wa-color-warning-100);
             color: var(--wa-color-warning-900);
+        }
+
+        .required-hint {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+            padding: 0.5rem;
+            border-radius: 4px;
+            background: var(--wa-color-primary-10);
+            color: var(--wa-color-primary-70);
+            font-size: 0.875rem;
+        }
+
+        .required-hint wa-icon {
+            flex-shrink: 0;
+        }
+
+        .required-hint span {
+            line-height: 1.4;
         }
     `;
 }

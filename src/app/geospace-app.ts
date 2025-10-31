@@ -80,7 +80,8 @@ export const geospaceApp: AppDefinition = {
         "system.monaco",
         "system.download",
         "system.commandpalette",
-        "system.memoryusage"
+        "system.memoryusage",
+        "system.pythonpackagemanager"
     ],
 
     contributions: {

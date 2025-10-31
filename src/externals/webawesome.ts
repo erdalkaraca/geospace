@@ -22,6 +22,7 @@ import '@awesome.me/webawesome/dist/components/format-date/format-date.js';
 import '@awesome.me/webawesome/dist/components/format-number/format-number.js';
 import '@awesome.me/webawesome/dist/components/icon/icon.js';
 import '@awesome.me/webawesome/dist/components/include/include.js';
+import '@awesome.me/webawesome/dist/components/input/input.js';
 import '@awesome.me/webawesome/dist/components/mutation-observer/mutation-observer.js';
 import '@awesome.me/webawesome/dist/components/popover/popover.js';
 import '@awesome.me/webawesome/dist/components/popup/popup.js';
