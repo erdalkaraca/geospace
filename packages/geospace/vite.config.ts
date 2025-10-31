@@ -29,6 +29,7 @@ export function viteStaticCopyPyodide() {
 }
 
 export default defineConfig({
+    root: __dirname,
     resolve: {
         alias: {
             '@kispace/appspace': path.resolve(__dirname, '../appspace/src')
