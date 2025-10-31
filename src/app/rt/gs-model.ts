@@ -1,3 +1,5 @@
+import { v4 as uuidv4 } from 'uuid'
+
 export const KEY_LABEL = "label";
 export const KEY_NAME = "name";
 export const KEY_URL = "url";
@@ -16,7 +18,53 @@ export interface GsBag {
     [key: string]: any
 }
 
+export function ensureUuid<T extends GsState>(obj: T): T {
+    if (!obj.uuid) {
+        obj.uuid = uuidv4()
+    }
+    return obj
+}
+
+export function ensureUuidsRecursive<T extends GsState>(obj: T): T {
+    ensureUuid(obj)
+    
+    if ('geometry' in obj && (obj as any).geometry) {
+        ensureUuid((obj as any).geometry)
+    }
+    
+    if ('source' in obj && (obj as any).source) {
+        const source = (obj as any).source
+        ensureUuid(source)
+        if (source.features && Array.isArray(source.features)) {
+            source.features.forEach((feature: any) => ensureUuidsRecursive(feature))
+        }
+    }
+    
+    if ('layers' in obj && Array.isArray((obj as any).layers)) {
+        (obj as any).layers.forEach((layer: any) => ensureUuidsRecursive(layer))
+    }
+    
+    if ('overlays' in obj && Array.isArray((obj as any).overlays)) {
+        (obj as any).overlays.forEach((overlay: any) => ensureUuid(overlay))
+    }
+    
+    if ('controls' in obj && Array.isArray((obj as any).controls)) {
+        (obj as any).controls.forEach((control: any) => ensureUuid(control))
+    }
+    
+    if ('interactions' in obj && Array.isArray((obj as any).interactions)) {
+        (obj as any).interactions.forEach((interaction: any) => ensureUuid(interaction))
+    }
+    
+    if ('view' in obj && (obj as any).view) {
+        ensureUuid((obj as any).view)
+    }
+    
+    return obj
+}
+
 export interface GsState {
+    uuid?: string
     state?: GsBag
 }
 
@@ -321,22 +369,22 @@ export const DEFAULT_STYLE_RULES: GsStyleRule[] = [
     }
 ]
 
-export const DEFAULT_GSMAP = {
-    view: {
+export const DEFAULT_GSMAP = ensureUuid({
+    view: ensureUuid({
         center: [0, 0],
         zoom: 0,
         projection: 'EPSG:3857'
-    } as GsView,
-    layers: [{
+    } as GsView),
+    layers: [ensureUuid({
         type: GsLayerType.TILE,
-        source: {
+        source: ensureUuid({
             type: GsSourceType.OSM
-        } as GsSource,
-    } as GsLayer],
+        } as GsSource),
+    } as GsLayer)],
     overlays: [] as GsOverlay[],
     controls: [] as GsControl[],
     interactions: [] as GsInteraction[],
     state: {},
     styles: { ...DEFAULT_STYLES },
     styleRules: [...DEFAULT_STYLE_RULES]
-} as GsMap
+} as GsMap)

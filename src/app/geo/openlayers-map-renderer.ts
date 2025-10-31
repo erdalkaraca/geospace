@@ -2,7 +2,7 @@ import {MapOperations, MapRenderer, MapSyncEvent} from "./map-renderer.ts";
 import {gsLib, GsMap, GsSourceType, KEY_NAME, toOlLayer, KEY_STATE} from "../rt/gs-lib.ts";
 import {toGsFeature} from "../rt/gs-ol2gs.ts";
 import {toOlStyle} from "../rt/gs-gs2ol.ts";
-import {getStyleForFeature, GsFeature, GsGeometry} from "../rt/gs-model.ts";
+import {ensureUuid, getStyleForFeature, GsFeature, GsGeometry} from "../rt/gs-model.ts";
 import {Map as OlMap} from "ol";
 import {Feature} from "ol";
 import type {FeatureLike} from "ol/Feature";
@@ -22,13 +22,13 @@ import type {Geometry} from "ol/geom";
  */
 function getFeatureStyleData(feature: Feature): GsFeature {
     const geometry = feature.getGeometry() as Geometry;
-    return {
-        geometry: {
+    return ensureUuid({
+        geometry: ensureUuid({
             type: geometry.getType(),
             coordinates: []  // Not needed for style rules
-        } as GsGeometry,
+        } as GsGeometry),
         state: feature.get(KEY_STATE)
-    } as GsFeature;
+    } as GsFeature);
 }
 
 /**

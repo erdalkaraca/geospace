@@ -6,6 +6,7 @@ import {OSM, Source, TileWMS, WMTS, XYZ} from "ol/source";
 import VectorSource from "ol/source/Vector";
 import * as olGeom from "ol/geom";
 import {
+    ensureUuid,
     GsControl,
     GsFeature,
     GsGeometry,
@@ -74,8 +75,12 @@ interface Rule {
 }
 
 const withGsState = <T extends GsState>(olObj: BaseObject, gsState: T): T => {
-    gsState.state = olObj.get(KEY_STATE)
-    return gsState
+    const state = olObj.get(KEY_STATE)
+    gsState.state = state
+    if (state?.uuid && !gsState.uuid) {
+        gsState.uuid = state.uuid
+    }
+    return ensureUuid(gsState)
 }
 
 export function toGsGeometry(geometry: olGeom.SimpleGeometry): GsGeometry {
@@ -176,10 +181,10 @@ const GS_LAYERS: Rule[] = [
         apply: (context: LayerGroup): GsLayer => {
             return {
                 type: GsLayerType.GROUP,
-                source: {
+                source: withGsState(context, {
                     type: toGsSourceType(context.get(KEY_SOURCETYPE)),
                     url: context.get(KEY_URL)
-                }
+                } as GsSource)
             } as GsLayer
         }
     } as Rule
@@ -228,4 +233,5 @@ export const olMapToGsMap = (gsMap: GsMap, olMap: Map) => {
         gsMap.controls.push(gsControl)
     })
     withGsState(olMap, gsMap)
+    ensureUuid(gsMap.view)
 }

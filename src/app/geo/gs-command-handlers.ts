@@ -5,7 +5,9 @@ import {MapOperations} from "./map-renderer.ts";
 import {replaceUris} from "./utils.ts";
 import {promptDialog} from "../../core/dialog.ts";
 import {
+    ensureUuid,
     GsLayer,
+    GsSource,
     GsSourceType,
     toGsLayerType,
     toGsSourceType,
@@ -172,14 +174,14 @@ commandRegistry.registerAll({
             }
 
             // Create layer in domain model format
-            const gsLayer = {
+            const gsLayer = ensureUuid({
                 name,
                 type: toGsLayerType(source),
-                source: {
+                source: ensureUuid({
                     type: sourceType,
                     url: url ?? toSourceUrl(sourceType)
-                }
-            } as GsLayer
+                } as GsSource)
+            } as GsLayer)
 
             await replaceUris(gsLayer, "url");
             await operations.addLayer(gsLayer, isBasemap);
