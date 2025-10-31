@@ -83,6 +83,16 @@ registerAll({
 
 registerAll({
     command: {
+        "id": "run_python",
+        "name": "Run Python Cell",
+        "description": "Runs active Python code in a supporting context (e.g. notebook, terminal, etc.)",
+        "keyBinding": "CTRL+R",
+        "parameters": []
+    }
+})
+
+registerAll({
+    command: {
         "id": "switch_theme",
         "name": "Switch theme",
         "description": "Switches between dark and light theme",

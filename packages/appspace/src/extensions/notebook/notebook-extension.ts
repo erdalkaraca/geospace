@@ -12,6 +12,8 @@ import { File, workspaceService } from "../../core/filesys";
 import { PyEnv } from "../../core/pyservice";
 import { KPart } from "../../parts/k-part";
 import { pythonPackageManagerService } from "../python-package-manager/package-manager-extension";
+import { activeEditorSignal } from "../../core/appstate";
+import type { ExecutionContext } from "../../core/commandregistry";
 
 interface NotebookCell {
     cell_type: 'code' | 'markdown' | 'raw';
@@ -37,7 +39,7 @@ export class KNotebookEditor extends KPart {
     public input?: EditorInput;
 
     @state()
-    private notebook?: NotebookData;
+    public notebook?: NotebookData;
 
     @state()
     private cellOutputs: Map<number, any> = new Map();
@@ -69,6 +71,7 @@ export class KNotebookEditor extends KPart {
     @state()
     private highlightedCellIndex: number = -1;
 
+    public focusedCellIndex: number = -1;
     private cancelRunAll: boolean = false;
 
     private monacoEditors: Map<number, monaco.editor.IStandaloneCodeEditor> = new Map();
@@ -85,8 +88,8 @@ export class KNotebookEditor extends KPart {
         this.monacoEditors.forEach(editor => editor.dispose());
         this.monacoEditors.clear();
         this.cellRefs.clear();
+        this.focusedCellIndex = -1;
 
-        // Disconnect theme observer
         if (this.themeObserver) {
             this.themeObserver.disconnect();
             this.themeObserver = undefined;
@@ -108,38 +111,10 @@ export class KNotebookEditor extends KPart {
             // Update cell contents from Monaco editors before saving
             this.saveEditorContents();
 
-            // Update cell outputs before saving
             this.notebook.cells.forEach((cell, index) => {
                 if (cell.cell_type === 'code') {
                     const output = this.cellOutputs.get(index);
-                    if (output) {
-                        // Convert our internal output format to Jupyter notebook format
-                        if (output.type === 'execute_result') {
-                            const data: any = {};
-                            if (output.imageData) {
-                                data['image/png'] = output.imageData;
-                            }
-                            if (output.data) {
-                                data['text/plain'] = output.data;
-                            }
-                            cell.outputs = [{
-                                output_type: 'execute_result',
-                                data: data,
-                                execution_count: cell.execution_count,
-                                metadata: {}
-                            }];
-                        } else if (output.type === 'error') {
-                            cell.outputs = [{
-                                output_type: 'error',
-                                ename: 'Error',
-                                evalue: output.data,
-                                traceback: [output.data]
-                            }];
-                        }
-                    } else {
-                        // Clear outputs if cell hasn't been executed
-                        cell.outputs = [];
-                    }
+                    cell.outputs = output ? this.convertOutputToJupyter(output, cell.execution_count) : [];
                 }
             });
 
@@ -182,6 +157,18 @@ export class KNotebookEditor extends KPart {
                 ? "var(--wa-color-warning-500)"
                 : "var(--wa-color-red-40)";
 
+        const runAllButton = this.isRunningAll ? html`
+            <wa-button size="small" appearance="plain" @click=${() => this.cancelAllCells()} title="Cancel running all cells">
+                <wa-icon name="stop" label="Stop"></wa-icon>
+                Cancel All
+            </wa-button>
+        ` : html`
+            <wa-button size="small" appearance="plain" @click=${() => this.runAllCells()} title="Run all code cells sequentially">
+                <wa-icon name="play" label="Run"></wa-icon>
+                Run All
+            </wa-button>
+        `;
+
         return html`
             <wa-button 
                 appearance="plain" 
@@ -197,25 +184,7 @@ export class KNotebookEditor extends KPart {
                 ></wa-icon>
                 ${connectionText}
             </wa-button>
-            ${this.isRunningAll ? html`
-                <wa-button 
-                    size="small" 
-                    appearance="plain"
-                    @click=${() => this.cancelAllCells()}
-                    title="Cancel running all cells">
-                    <wa-icon name="stop" label="Stop"></wa-icon>
-                    Cancel All
-                </wa-button>
-            ` : html`
-                <wa-button 
-                    size="small" 
-                    appearance="plain"
-                    @click=${() => this.runAllCells()}
-                    title="Run all code cells sequentially">
-                    <wa-icon name="play" label="Run"></wa-icon>
-                    Run All
-                </wa-button>
-            `}
+            ${runAllButton}
             <wa-button 
                 size="small" 
                 appearance="plain"
@@ -245,7 +214,6 @@ export class KNotebookEditor extends KPart {
     }
 
     protected doInitUI() {
-        // Set up theme observer to update Monaco editors when theme changes
         this.setupThemeObserver();
     }
 
@@ -273,21 +241,11 @@ export class KNotebookEditor extends KPart {
                 .reduce((max, count) => Math.max(max, count), 0);
             this.executionCounter = maxCount;
 
-            // Load existing outputs from saved notebook
             this.notebook.cells.forEach((cell, index) => {
                 if (cell.cell_type === 'code' && cell.outputs && cell.outputs.length > 0) {
-                    const output = cell.outputs[0];
-                    if (output.output_type === 'execute_result' && output.data) {
-                        this.cellOutputs.set(index, {
-                            type: 'execute_result',
-                            data: output.data['text/plain'] || '',
-                            imageData: output.data['image/png'] || undefined
-                        });
-                    } else if (output.output_type === 'error') {
-                        this.cellOutputs.set(index, {
-                            type: 'error',
-                            data: output.evalue || output.traceback?.join('\n') || 'Unknown error'
-                        });
+                    const output = this.convertOutputFromJupyter(cell.outputs[0]);
+                    if (output) {
+                        this.cellOutputs.set(index, output);
                     }
                 }
             });
@@ -314,26 +272,61 @@ export class KNotebookEditor extends KPart {
     }
 
     private getCellSource(cell: NotebookCell): string {
-        if (Array.isArray(cell.source)) {
-            return cell.source.join('');
-        }
-        return cell.source;
+        return Array.isArray(cell.source) ? cell.source.join('') : cell.source;
     }
 
-    // Render top cell actions (add before)
+    private convertOutputToJupyter(output: any, executionCount: number | null | undefined): any[] {
+        if (output.type === 'execute_result') {
+            const data: any = {};
+            if (output.imageData) data['image/png'] = output.imageData;
+            if (output.data) data['text/plain'] = output.data;
+            return [{
+                output_type: 'execute_result',
+                data,
+                execution_count: executionCount,
+                metadata: {}
+            }];
+        } else if (output.type === 'error') {
+            return [{
+                output_type: 'error',
+                ename: 'Error',
+                evalue: output.data,
+                traceback: [output.data]
+            }];
+        }
+        return [];
+    }
+
+    private convertOutputFromJupyter(jupyterOutput: any): any | null {
+        if (jupyterOutput.output_type === 'execute_result' && jupyterOutput.data) {
+            return {
+                type: 'execute_result',
+                data: jupyterOutput.data['text/plain'] || '',
+                imageData: jupyterOutput.data['image/png'] || undefined
+            };
+        } else if (jupyterOutput.output_type === 'error') {
+            return {
+                type: 'error',
+                data: jupyterOutput.evalue || jupyterOutput.traceback?.join('\n') || 'Unknown error'
+            };
+        }
+        return null;
+    }
+
     private renderHeaderActions(index: number, additionalButton?: any) {
         return html`
             <div class="cell-header-actions">
-                <wa-button size="small" appearance="plain" @click=${() => this.addCellBefore(index, 'code')} title="Add code cell before">
+                ${additionalButton || ''}
+                ${additionalButton ? html`<span class="divider"></span>` : ''}
+                <wa-button size="small" appearance="plain" @click=${() => this.addCell(index, 'code')} title="Add code cell before">
                     <wa-icon name="plus"></wa-icon>
                     <wa-icon name="code" label="Code"></wa-icon>
                 </wa-button>
-                <wa-button size="small" appearance="plain" @click=${() => this.addCellBefore(index, 'markdown')} title="Add markdown cell before">
+                <wa-button size="small" appearance="plain" @click=${() => this.addCell(index, 'markdown')} title="Add markdown cell before">
                     <wa-icon name="plus"></wa-icon>
                     <wa-icon name="font" label="Markdown"></wa-icon>
                 </wa-button>
                 <span class="divider"></span>
-                ${additionalButton || ''}
                 <wa-button size="small" appearance="plain" @click=${() => this.deleteCell(index)} title="Delete cell" ?disabled=${this.notebook!.cells.length <= 1}>
                     <wa-icon name="trash" label="Delete cell"></wa-icon>
                 </wa-button>
@@ -344,11 +337,11 @@ export class KNotebookEditor extends KPart {
     private renderFooterActions(index: number) {
         return html`
             <div class="cell-footer">
-                <wa-button size="small" appearance="plain" @click=${() => this.addCellAfter(index, 'code')} title="Add code cell after">
+                <wa-button size="small" appearance="plain" @click=${() => this.addCell(index + 1, 'code')} title="Add code cell after">
                     <wa-icon name="code" label="Code"></wa-icon>
                     <wa-icon name="plus"></wa-icon>
                 </wa-button>
-                <wa-button size="small" appearance="plain" @click=${() => this.addCellAfter(index, 'markdown')} title="Add markdown cell after">
+                <wa-button size="small" appearance="plain" @click=${() => this.addCell(index + 1, 'markdown')} title="Add markdown cell after">
                     <wa-icon name="font" label="Markdown"></wa-icon>
                     <wa-icon name="plus"></wa-icon>
                 </wa-button>
@@ -448,7 +441,7 @@ except ImportError:
         }
     }
 
-    private async executeCell(cellIndex: number) {
+    public async executeCell(cellIndex: number) {
         const cell = this.notebook!.cells[cellIndex];
         if (cell.cell_type !== 'code') return;
 
@@ -717,8 +710,8 @@ except ImportError:
                         @wa-finish=${() => this.highlightedCellIndex = -1}>
                         <div class="cell markdown-cell editing">
                             <div class="cell-header">
-                                <span class="cell-label">Markdown</span>
                                 ${this.renderHeaderActions(index, editButtons)}
+                                <span class="cell-label">Markdown</span>
                             </div>
                             <textarea 
                                 class="markdown-editor"
@@ -754,8 +747,8 @@ except ImportError:
                     @wa-finish=${() => this.highlightedCellIndex = -1}>
                     <div class="cell markdown-cell ${isEmpty ? 'empty' : ''}" @dblclick=${() => this.toggleMarkdownEdit(index)}>
                         <div class="cell-header">
-                            <span class="cell-label"></span>
                             ${this.renderHeaderActions(index, editButton)}
+                            <span class="cell-label"></span>
                         </div>
                         <div class="cell-content">
                             ${isEmpty ? html`
@@ -782,19 +775,23 @@ except ImportError:
         }
         const cellRef = this.cellRefs.get(index)!;
 
-        const runButton = html`
+        const runButton = isExecuting ? html`
             <wa-button 
                 size="small" 
                 appearance="plain"
-                @click=${() => isExecuting ? this.cancelExecution(index) : this.executeCell(index)}
-                title=${isExecuting ? "Stop execution" : "Run cell"}
-                class="run-button-left">
-                ${isExecuting ? html`
-                    <wa-icon name="stop" label="Stop" style="color: var(--wa-color-danger-500);"></wa-icon>
-                ` : html`
-                    <wa-icon name="play" label="Run"></wa-icon>
-                `}
+                @click=${() => this.cancelExecution(index)}
+                title="Stop execution">
+                <wa-icon name="stop" label="Stop" style="color: var(--wa-color-danger-500);"></wa-icon>
             </wa-button>
+        ` : html`
+            <k-command 
+                cmd="run_python"
+                icon="play"
+                title="Run cell"
+                size="small"
+                appearance="plain"
+                .params=${{ cellIndex: index }}>
+            </k-command>
         `;
 
         return html`
@@ -807,17 +804,16 @@ except ImportError:
                     @wa-finish=${() => this.highlightedCellIndex = -1}>
                     <div class="cell code-cell ${isExecuting ? 'executing' : ''}">
                         <div class="cell-header">
-                            ${runButton}
                             <span class="cell-label">
                                 ${isExecuting ? html`
                                     In [<wa-animation name="pulse" duration="1000" iterations="Infinity" ?play=${isExecuting}>
                                         <span class="executing-indicator">*</span>
-                                    </wa-animation>]:
+                                    </wa-animation>]
                                 ` : html`
-                                    In [${cell.execution_count ?? ' '}]:
+                                    In [${cell.execution_count ?? ' '}]
                                 `}
                             </span>
-                            ${this.renderHeaderActions(index)}
+                            ${this.renderHeaderActions(index, runButton)}
                         </div>
                         <div class="cell-input monaco-container" ${ref(cellRef)} data-cell-index="${index}"></div>
                         ${output ? html`
@@ -867,13 +863,6 @@ except ImportError:
         }
     }
 
-    private addCellBefore(index: number, cellType: 'code' | 'markdown' = 'code') {
-        this.addCell(index, cellType);
-    }
-
-    private addCellAfter(index: number, cellType: 'code' | 'markdown' = 'code') {
-        this.addCell(index + 1, cellType);
-    }
 
     private addCell(index: number, cellType: 'code' | 'markdown' = 'code') {
         if (!this.notebook) return;
@@ -881,8 +870,7 @@ except ImportError:
         // Save editor contents BEFORE modifying the cells array
         this.saveEditorContents();
         
-        // Shift indices in state maps for all cells at index and beyond
-        this.shiftIndicesUp(index);
+        this.shiftIndices(index, 'up');
         
         this.notebook.cells.splice(index, 0, this.createCell(cellType));
         
@@ -962,89 +950,117 @@ except ImportError:
         
         this.notebook.cells.splice(index, 1);
         
-        // Shift indices in state maps for all cells after the deleted one
-        this.shiftIndicesDown(index);
+        this.shiftIndices(index, 'down');
         
         this.resetCellState();
     }
 
-    // Shift all indices >= startIndex up by 1 (used when inserting a cell)
-    private shiftIndicesUp(startIndex: number) {
-        // Process indices in reverse order to avoid overwriting
-        const indicesToShift = Array.from(this.cellOutputs.keys())
-            .filter(idx => idx >= startIndex)
-            .sort((a, b) => b - a);
-        
-        indicesToShift.forEach(oldIndex => {
-            const output = this.cellOutputs.get(oldIndex);
-            this.cellOutputs.delete(oldIndex);
-            this.cellOutputs.set(oldIndex + 1, output);
-        });
+    private shiftIndices(startIndex: number, direction: 'up' | 'down') {
+        const shift = direction === 'up' ? 1 : -1;
+        const filterFn = direction === 'up' 
+            ? (idx: number) => idx >= startIndex
+            : (idx: number) => idx > startIndex;
+        const sortFn = direction === 'up'
+            ? (a: number, b: number) => b - a
+            : (a: number, b: number) => a - b;
 
-        // Shift executingCells
-        const executingToShift = Array.from(this.executingCells)
-            .filter(idx => idx >= startIndex)
-            .sort((a, b) => b - a);
-        
-        executingToShift.forEach(oldIndex => {
-            this.executingCells.delete(oldIndex);
-            this.executingCells.add(oldIndex + 1);
-        });
+        const shiftMap = <T>(map: Map<number, T>) => {
+            const indices = Array.from(map.keys()).filter(filterFn).sort(sortFn);
+            indices.forEach(oldIndex => {
+                const value = map.get(oldIndex);
+                map.delete(oldIndex);
+                map.set(oldIndex + shift, value!);
+            });
+        };
 
-        // Shift editingMarkdownCells
-        const editingToShift = Array.from(this.editingMarkdownCells)
-            .filter(idx => idx >= startIndex)
-            .sort((a, b) => b - a);
-        
-        editingToShift.forEach(oldIndex => {
-            this.editingMarkdownCells.delete(oldIndex);
-            this.editingMarkdownCells.add(oldIndex + 1);
-        });
+        const shiftSet = (set: Set<number>) => {
+            const indices = Array.from(set).filter(filterFn).sort(sortFn);
+            indices.forEach(oldIndex => {
+                set.delete(oldIndex);
+                set.add(oldIndex + shift);
+            });
+        };
+
+        shiftMap(this.cellOutputs);
+        shiftSet(this.executingCells);
+        shiftSet(this.editingMarkdownCells);
     }
 
-    // Shift all indices > startIndex down by 1 (used when deleting a cell)
-    private shiftIndicesDown(startIndex: number) {
-        // Process indices in forward order
-        const indicesToShift = Array.from(this.cellOutputs.keys())
-            .filter(idx => idx > startIndex)
-            .sort((a, b) => a - b);
-        
-        indicesToShift.forEach(oldIndex => {
-            const output = this.cellOutputs.get(oldIndex);
-            this.cellOutputs.delete(oldIndex);
-            this.cellOutputs.set(oldIndex - 1, output);
+    private initializeMonacoEditor(container: HTMLElement, cell: NotebookCell, index: number) {
+        const source = this.getCellSource(cell);
+        const lineCount = source.split('\n').length;
+        const lineHeight = 19;
+        const padding = 10;
+        const minHeight = 100;
+        const calculatedHeight = Math.max(minHeight, lineCount * lineHeight + padding);
+
+        container.style.height = `${calculatedHeight}px`;
+
+        const editor = monaco.editor.create(container, {
+            value: source,
+            language: 'python',
+            theme: this.getMonacoTheme(),
+            minimap: { enabled: false },
+            scrollBeyondLastLine: false,
+            lineNumbers: 'on',
+            renderLineHighlight: 'all',
+            automaticLayout: true,
+            fontSize: 14,
+            tabSize: 4,
+            wordWrap: 'on',
         });
 
-        // Shift executingCells
-        const executingToShift = Array.from(this.executingCells)
-            .filter(idx => idx > startIndex)
-            .sort((a, b) => a - b);
-        
-        executingToShift.forEach(oldIndex => {
-            this.executingCells.delete(oldIndex);
-            this.executingCells.add(oldIndex - 1);
+        let isEditorFocused = false;
+        editor.onDidFocusEditorText(() => { 
+            isEditorFocused = true;
+            this.focusedCellIndex = index;
+        });
+        editor.onDidBlurEditorText(() => { 
+            isEditorFocused = false;
+            if (this.focusedCellIndex === index) {
+                this.focusedCellIndex = -1;
+            }
         });
 
-        // Shift editingMarkdownCells
-        const editingToShift = Array.from(this.editingMarkdownCells)
-            .filter(idx => idx > startIndex)
-            .sort((a, b) => a - b);
-        
-        editingToShift.forEach(oldIndex => {
-            this.editingMarkdownCells.delete(oldIndex);
-            this.editingMarkdownCells.add(oldIndex - 1);
+        container.addEventListener('wheel', (e: WheelEvent) => {
+            if (!isEditorFocused) {
+                const scrollTop = editor.getScrollTop();
+                const scrollHeight = editor.getScrollHeight();
+                const contentHeight = editor.getContentHeight();
+                const canScroll = scrollHeight > contentHeight;
+                const atBoundary = (e.deltaY < 0 && scrollTop <= 0) || 
+                                 (e.deltaY > 0 && scrollTop + contentHeight >= scrollHeight);
+
+                if (!canScroll || atBoundary) {
+                    e.stopImmediatePropagation();
+                }
+            }
+        }, { passive: true, capture: true });
+
+        editor.onDidContentSizeChange(() => {
+            const contentHeight = editor.getContentHeight();
+            container.style.height = `${Math.max(minHeight, contentHeight + padding)}px`;
+            editor.layout();
         });
+
+        editor.onDidChangeModelContent(() => {
+            const currentValue = editor.getValue();
+            const originalValue = this.getCellSource(cell);
+            if (currentValue !== originalValue) {
+                this.markDirty(true);
+            }
+        });
+
+        this.monacoEditors.set(index, editor);
     }
 
     private getMonacoTheme(): string {
-        // Check if the root HTML element has wa-dark or wa-light class
         const rootElement = document.documentElement;
         if (rootElement.classList.contains('wa-dark')) {
             return 'vs-dark';
         } else if (rootElement.classList.contains('wa-light')) {
             return 'vs';
         }
-        // Default to dark if neither is set
         return 'vs-dark';
     }
 
@@ -1091,55 +1107,12 @@ except ImportError:
             this.updateToolbar();
         }
 
-        // Initialize Monaco editors for code cells
-        if (this.notebook && this.notebook.cells) {
+        if (this.notebook?.cells) {
             this.notebook.cells.forEach((cell, index) => {
                 if (cell.cell_type === 'code') {
                     const ref = this.cellRefs.get(index);
-                    if (ref && ref.value && !this.monacoEditors.has(index)) {
-                        const container = ref.value;
-                        const source = this.getCellSource(cell);
-
-                        // Calculate height based on number of lines
-                        const lineCount = source.split('\n').length;
-                        const lineHeight = 19; // Monaco default line height
-                        const padding = 10;
-                        const minHeight = 100;
-                        const calculatedHeight = Math.max(minHeight, lineCount * lineHeight + padding);
-
-                        container.style.height = `${calculatedHeight}px`;
-
-                        const editor = monaco.editor.create(container, {
-                            value: source,
-                            language: 'python',
-                            theme: this.getMonacoTheme(),
-                            minimap: { enabled: false },
-                            scrollBeyondLastLine: false,
-                            lineNumbers: 'on',
-                            renderLineHighlight: 'all',
-                            automaticLayout: true,
-                            fontSize: 14,
-                            tabSize: 4,
-                            wordWrap: 'on',
-                        });
-
-                        // Update height when content changes
-                        editor.onDidContentSizeChange(() => {
-                            const contentHeight = editor.getContentHeight();
-                            container.style.height = `${Math.max(minHeight, contentHeight + padding)}px`;
-                            editor.layout();
-                        });
-
-                        // Mark dirty when content changes
-                        editor.onDidChangeModelContent(() => {
-                            const currentValue = editor.getValue();
-                            const originalValue = this.getCellSource(cell);
-                            if (currentValue !== originalValue) {
-                                this.markDirty(true);
-                            }
-                        });
-
-                        this.monacoEditors.set(index, editor);
+                    if (ref?.value && !this.monacoEditors.has(index)) {
+                        this.initializeMonacoEditor(ref.value, cell, index);
                     }
                 }
             });
@@ -1228,7 +1201,7 @@ except ImportError:
             display: flex;
             gap: 0.5rem;
             align-items: center;
-            justify-content: flex-end;
+            justify-content: flex-start;
             padding: 0.5rem;
             border-top: 1px solid var(--wa-color-outline);
             opacity: 0.5;
@@ -1259,10 +1232,6 @@ except ImportError:
         
         .markdown-cell.editing .cell-actions {
             display: none;
-        }
-
-        .markdown-cell .cell-content {
-            line-height: 1.6;
         }
 
         .markdown-editor {
@@ -1304,14 +1273,10 @@ except ImportError:
         .cell-header {
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: flex-start;
             gap: 0.5rem;
             padding: 0.5rem 1rem;
             flex-wrap: nowrap;
-        }
-        
-        .run-button-left {
-            margin-right: 0.25rem;
         }
 
         .cell-label {
@@ -1387,16 +1352,6 @@ except ImportError:
             font-size: 1.2rem;
         }
 
-        /* Minimal markdown styling - let browser defaults + CSS vars handle the rest */
-        .markdown-cell img {
-            max-width: 100%;
-            height: auto;
-        }
-        
-        .markdown-cell pre {
-            overflow-x: auto;
-        }
-
         .markdown-placeholder {
             display: flex;
             align-items: center;
@@ -1419,7 +1374,7 @@ except ImportError:
 }
 
 // Extension export
-export default ({ editorRegistry }: any) => {
+export default ({ editorRegistry, commandRegistry }: any) => {
     editorRegistry.registerEditorInputHandler({
         canHandle: (input: any) => input instanceof File && input.getName().toLowerCase().endsWith(".ipynb"),
         handle: async (input: File) => {
@@ -1438,4 +1393,27 @@ export default ({ editorRegistry }: any) => {
         },
         ranking: 100,
     })
+
+    commandRegistry.registerHandler('run_python', {
+        canExecute: (context: ExecutionContext) => {
+            const activeEditor = activeEditorSignal.get();
+            if (activeEditor instanceof KNotebookEditor) {
+                const cellIndex = context.params?.cellIndex;
+                if (cellIndex !== undefined) {
+                    return cellIndex >= 0 && cellIndex < (activeEditor.notebook?.cells.length ?? 0);
+                }
+                return activeEditor.focusedCellIndex >= 0;
+            }
+            return false;
+        },
+        execute: async (context: ExecutionContext) => {
+            const activeEditor = activeEditorSignal.get();
+            if (activeEditor instanceof KNotebookEditor) {
+                const cellIndex = context.params?.cellIndex ?? activeEditor.focusedCellIndex;
+                if (cellIndex >= 0) {
+                    await activeEditor.executeCell(cellIndex);
+                }
+            }
+        }
+    });
 }
