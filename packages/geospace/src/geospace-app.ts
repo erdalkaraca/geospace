@@ -1,5 +1,5 @@
 import { html } from "lit";
-import { version as appVersion } from "../../package.json";
+import { version as appVersion } from "../package.json";
 
 // Framework API imports
 import { 
@@ -44,7 +44,7 @@ import './geo/gs-catalog'
 import "./app" // Registers gs-app component
 
 import APP_SYS_PROMPT from "./geospace-sysprompt.txt?raw"
-import README from "../../../../README.md?raw"
+import README from "../../../README.md?raw"
 import { GsSourceType, DEFAULT_GSMAP } from "./rt/gs-model";
 
 const logger = createLogger('GeoSpaceApp');

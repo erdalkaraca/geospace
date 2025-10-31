@@ -1,7 +1,7 @@
 import * as esbuild from 'esbuild-wasm'
 import {OnLoadArgs, OnResolveArgs} from 'esbuild-wasm'
 import wasmUrl from 'esbuild-wasm/esbuild.wasm?url'
-import manifestJson from "../../../public/pwa/manifest.json"
+import manifestJson from "../../public/pwa/manifest.json"
 import {GsMap, GsScript} from "../rt";
 import {GsMapEditor} from "../geo/gs-map-editor";
 import {loadEnvs} from "../geo/utils";
