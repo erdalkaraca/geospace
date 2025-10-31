@@ -1,7 +1,6 @@
 import {Feature} from "ol";
 import * as olGeom from "ol/geom";
 import {
-    ensureUuid,
     GsFeature,
     GsGeometry,
     GsLayerType,
