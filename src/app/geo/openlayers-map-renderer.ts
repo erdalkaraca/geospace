@@ -286,6 +286,13 @@ export class OpenLayersMapRenderer implements MapRenderer {
     destroy(): void {
         this.isDestroyed = true;
         this.clearStyleCache();
+        // Cleanup operations (removes keyboard listeners) before destroying map
+        if (this.operations) {
+            const ops = this.operations as any;
+            if (ops.cleanup) {
+                ops.cleanup();
+            }
+        }
         this.olMap?.dispose();
         this.olMap = undefined;
     }
@@ -300,6 +307,7 @@ export class OpenLayersMapOperations implements MapOperations {
     private drawInteraction?: Draw;
     private selectInteraction?: Select;
     private activeDrawingLayerUuid?: string;
+    private keyDownListener?: (event: KeyboardEvent) => void;
 
     constructor(
         private olMap: OlMap,
@@ -307,6 +315,32 @@ export class OpenLayersMapOperations implements MapOperations {
     ) {
         if (!olMap) {
             throw new Error("OpenLayers map is required for operations");
+        }
+        
+        // Setup ESC key handler to disable drawing/selection when iframe is focused
+        this.keyDownListener = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                if (this.drawInteraction) {
+                    this.disableDrawing();
+                    // Notify parent that drawing was disabled
+                    this.renderer?.triggerSync({
+                        type: 'drawingDisabled'
+                    } as any);
+                }
+                if (this.selectInteraction) {
+                    this.disableSelection();
+                    // featureDeselected event already sent by disableSelection()
+                    // Parent will update interaction mode when it receives the event
+                }
+            }
+        };
+        
+        // Listen on the map's target element (the container, in the iframe)
+        const target = this.olMap.getTargetElement();
+        if (target && target instanceof HTMLElement) {
+            // Make the target focusable for keyboard events
+            target.setAttribute('tabindex', '-1');
+            target.addEventListener('keydown', this.keyDownListener);
         }
     }
 
@@ -520,6 +554,18 @@ export class OpenLayersMapOperations implements MapOperations {
             this.olMap.removeInteraction(this.drawInteraction);
             this.drawInteraction = undefined;
             this.setCursor('');
+        }
+    }
+    
+    // Cleanup method to remove event listeners
+    // Called by OpenLayersMapRenderer.destroy() to prevent memory leaks
+    cleanup(): void {
+        if (this.keyDownListener) {
+            const target = this.olMap.getTargetElement();
+            if (target && target instanceof HTMLElement) {
+                target.removeEventListener('keydown', this.keyDownListener);
+            }
+            this.keyDownListener = undefined;
         }
     }
 

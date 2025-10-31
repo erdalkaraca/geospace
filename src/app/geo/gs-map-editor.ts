@@ -270,6 +270,19 @@ export class GsMapEditor extends KPart {
                             event: MapEvents.FEATURE_SELECTED,
                             payload: null
                         });
+                        // Update interaction mode when selection is disabled
+                        if (this.interactionMode === 'select') {
+                            this.interactionMode = 'none';
+                            this.updateToolbar();
+                        }
+                        break;
+                        
+                    case 'drawingDisabled':
+                        // Update interaction mode when drawing is disabled via ESC
+                        if (this.interactionMode === 'draw') {
+                            this.interactionMode = 'none';
+                            this.updateToolbar();
+                        }
                         break;
                 }
 
@@ -278,6 +291,7 @@ export class GsMapEditor extends KPart {
             this.renderer.setOnClick?.(() => {
                 activePartSignal.set(this);
             });
+
 
             // Update toolbar after map is fully loaded
             this.updateToolbar();
@@ -452,7 +466,7 @@ export class GsMapEditor extends KPart {
             return;
         }
 
-        const newLayer = {
+        const newLayer = ensureUuidsRecursive({
             name: layerName,
             type: GsLayerType.VECTOR,
             source: {
@@ -460,15 +474,18 @@ export class GsMapEditor extends KPart {
                 features: []
             },
             visible: true
-        };
+        } as any);
 
         await this.operations?.addLayer(newLayer, false);
 
-        const addedLayer = this.gsMap.layers[this.gsMap.layers.length - 1];
+        // Find the added layer by UUID to ensure we have the correct reference
+        const addedLayer = this.gsMap?.layers.find(layer => layer.uuid === newLayer.uuid);
         if (addedLayer?.uuid) {
             this.activeDrawingLayerUuid = addedLayer.uuid;
         }
 
+        // Force a re-render after the layer is added
+        await this.updateComplete;
         this.updateToolbar();
 
         toastInfo(`Created drawing layer: ${layerName}`);

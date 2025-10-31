@@ -7,7 +7,8 @@ export type MapSyncEvent =
     | { type: 'viewChanged', view: { center: [number, number], zoom: number, rotation?: number } }
     | { type: 'featuresChanged', layerUuid: string, features: any[] }
     | { type: 'featureSelected', layerUuid: string, feature: any, metrics?: { length?: number, area?: number } }
-    | { type: 'featureDeselected' };
+    | { type: 'featureDeselected' }
+    | { type: 'drawingDisabled' };
 
 /**
  * Abstract interface for map rendering
