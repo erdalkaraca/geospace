@@ -162,8 +162,18 @@ commandRegistry.registerAll({
             const sourceType = toGsSourceType(source)
             const isBasemap = context?.params && context.params["basemap"] == true
 
+            let name: string | undefined;
+            if (url) {
+                name = url.split('/').pop();
+            }
+            // Fallback to sourceType if name not derived from url
+            if (!name && sourceType) {
+                name = sourceType;
+            }
+
             // Create layer in domain model format
             const gsLayer = {
+                name,
                 type: toGsLayerType(source),
                 source: {
                     type: sourceType,
@@ -173,7 +183,6 @@ commandRegistry.registerAll({
 
             await replaceUris(gsLayer, "url");
             await operations.addLayer(gsLayer, isBasemap);
-            // Signal automatically triggered by SignalingMapOperations
         }
     }
 })
