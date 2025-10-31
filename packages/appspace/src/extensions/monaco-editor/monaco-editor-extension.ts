@@ -295,9 +295,9 @@ export class KMonacoEditor extends KPart {
         :host {
             display: flex;
             flex-direction: column;
-
-            --editor-width: 100%;
-            --editor-height: 100vh;
+            position: relative;
+            width: 100%;
+            height: 100%;
         }
 
         input.prompt {
@@ -306,8 +306,11 @@ export class KMonacoEditor extends KPart {
         }
 
         div.monaco-editor-container {
-            width: var(--editor-width);
-            height: var(--editor-height);
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
         }
     `;
 }
