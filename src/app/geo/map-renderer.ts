@@ -86,7 +86,7 @@ export interface MapOperations {
     disableDrawing(): Promise<void>;
     
     // Feature selection and deletion
-    enableFeatureSelection(layerUuid: string): Promise<void>;
+    enableFeatureSelection(): Promise<void>;
     disableSelection(): Promise<void>;
     deleteSelectedFeatures(): Promise<void>;
 }

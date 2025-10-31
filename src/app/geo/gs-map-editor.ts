@@ -424,8 +424,8 @@ export class GsMapEditor extends KPart {
     }
 
     private async handleSelectFeatures() {
-        if (!this.activeDrawingLayerUuid) return;
-        await this.operations?.enableFeatureSelection(this.activeDrawingLayerUuid);
+        // Feature selection works on all vector layers - let OpenLayers handle it
+        await this.operations?.enableFeatureSelection();
         this.interactionMode = 'select';
         this.updateToolbar();
     }

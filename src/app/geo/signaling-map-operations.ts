@@ -71,7 +71,7 @@ export class SignalingMapOperations implements MapOperations {
         // No-op - drawing is a UI interaction, doesn't need signaling
     }
 
-    async enableFeatureSelection(_layerUuid: string): Promise<void> {
+    async enableFeatureSelection(): Promise<void> {
         // No-op - selection is a UI interaction, doesn't need signaling
     }
 

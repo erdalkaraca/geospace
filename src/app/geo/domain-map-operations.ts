@@ -122,7 +122,7 @@ export class DomainMapOperations implements MapOperations {
         // No domain model changes - this is UI-only
     }
 
-    async enableFeatureSelection(_layerUuid: string): Promise<void> {
+    async enableFeatureSelection(): Promise<void> {
         // No domain model changes - this is UI-only
     }
 

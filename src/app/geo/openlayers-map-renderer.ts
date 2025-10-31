@@ -299,7 +299,6 @@ export class OpenLayersMapRenderer implements MapRenderer {
 export class OpenLayersMapOperations implements MapOperations {
     private drawInteraction?: Draw;
     private selectInteraction?: Select;
-    private activeSelectionLayer?: VectorLayer<VectorSource>;
     private activeDrawingLayerUuid?: string;
 
     constructor(
@@ -524,7 +523,7 @@ export class OpenLayersMapOperations implements MapOperations {
         }
     }
 
-    async enableFeatureSelection(layerUuid: string): Promise<void> {
+    async enableFeatureSelection(): Promise<void> {
         this.disableDrawing();
         this.disableSelection();
         
@@ -535,16 +534,6 @@ export class OpenLayersMapOperations implements MapOperations {
         
         if (vectorLayers.length === 0) {
             throw new Error('No vector layers available for selection');
-        }
-        
-        // Track the active layer for deletion purposes
-        for (let i = 0; i < olLayers.getLength(); i++) {
-            const layer = olLayers.item(i);
-            if (layer.get(KEY_UUID) === layerUuid && layer instanceof VectorLayer) {
-                this.activeSelectionLayer = layer;
-                this.activeDrawingLayerUuid = layerUuid;
-                break;
-            }
         }
         
         const gsMap = this.renderer?.gsMap;
@@ -654,20 +643,37 @@ export class OpenLayersMapOperations implements MapOperations {
             throw new Error('No features selected');
         }
         
-        const source = this.activeSelectionLayer?.getSource();
-        if (!source) {
-            throw new Error('No active layer source');
-        }
+        // Track which layers have features deleted so we can sync them
+        const layersToSync = new Set<string>();
         
+        const olLayers = this.olMap.getLayers();
+        
+        // Delete features from their respective sources
         selectedFeatures.forEach((feature: any) => {
-            source.removeFeature(feature);
+            // Find which layer this feature belongs to
+            for (let i = 0; i < olLayers.getLength(); i++) {
+                const layer = olLayers.item(i);
+                if (layer instanceof VectorLayer) {
+                    const source = layer.getSource();
+                    if (source && source.hasFeature(feature)) {
+                        source.removeFeature(feature);
+                        const layerUuid = layer.get(KEY_UUID);
+                        if (layerUuid) {
+                            layersToSync.add(layerUuid);
+                        }
+                        break;
+                    }
+                }
+            }
         });
         
         selectedFeatures.clear();
         
-        // Sync features back to domain model
-        if (this.renderer && this.activeDrawingLayerUuid) {
-            this.renderer.syncLayerFeaturesToModel(this.activeDrawingLayerUuid);
+        // Sync features back to domain model for each affected layer
+        if (this.renderer && layersToSync.size > 0) {
+            layersToSync.forEach(layerUuid => {
+                this.renderer!.syncLayerFeaturesToModel(layerUuid);
+            });
         }
         this.renderer?.triggerDirty();
     }
@@ -676,7 +682,6 @@ export class OpenLayersMapOperations implements MapOperations {
         if (this.selectInteraction) {
             this.olMap.removeInteraction(this.selectInteraction);
             this.selectInteraction = undefined;
-            this.activeSelectionLayer = undefined;
             this.setCursor('');
             // Clear selection when disabling
             this.renderer?.triggerSync({
