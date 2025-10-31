@@ -18,7 +18,10 @@ export class KAction extends KWidget {
     disabled: boolean = false
 
     @property()
-    appearance: 'default' | 'plain' | 'outline' = 'plain'
+    appearance: 'accent' | 'filled-outlined' | 'filled' | 'outlined' | 'plain' = 'plain'
+
+    @property()
+    variant: 'neutral' | 'brand' | 'success' | 'warning' | 'danger' = 'neutral'
 
     @property()
     size: 'small' | 'medium' | 'large' = 'small'
@@ -49,6 +52,7 @@ export class KAction extends KWidget {
         return html`
             <wa-button
                 appearance=${this.appearance}
+                variant=${this.variant}
                 size=${this.size}
                 ?disabled=${this.disabled}
                 title=${this.title}

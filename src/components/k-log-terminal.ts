@@ -45,8 +45,8 @@ export class KLogTerminal extends KPart {
         };
         
         this.messages = [...this.messages, logMessage];
+        this.updateToolbar();
         
-        // Auto-scroll to bottom
         if (this.autoScroll) {
             this.updateComplete.then(() => {
                 const container = this.containerRef.value;
@@ -59,6 +59,7 @@ export class KLogTerminal extends KPart {
 
     public clear() {
         this.messages = [];
+        this.updateToolbar();
     }
 
     private getFilteredMessages() {
@@ -95,73 +96,101 @@ export class KLogTerminal extends KPart {
         }
     }
 
+    protected renderToolbar() {
+        const infoCount = this.messages.filter(m => m.level === 'info').length;
+        const warningCount = this.messages.filter(m => m.level === 'warning').length;
+        const errorCount = this.messages.filter(m => m.level === 'error').length;
+        const debugCount = this.messages.filter(m => m.level === 'debug').length;
+
+        return html`
+            <k-action 
+                icon="list"
+                title="All logs"
+                appearance="${this.filter === 'all' ? 'filled' : 'plain'}"
+                variant="${this.filter === 'all' ? 'brand' : 'neutral'}"
+                .action=${() => {
+                    this.filter = 'all';
+                    this.updateToolbar();
+                }}>
+                All (${this.messages.length})
+            </k-action>
+
+            <k-action 
+                icon="circle-info"
+                title="Info logs"
+                appearance="${this.filter === 'info' ? 'filled' : 'plain'}"
+                variant="${this.filter === 'info' ? 'brand' : 'neutral'}"
+                .action=${() => {
+                    this.filter = 'info';
+                    this.updateToolbar();
+                }}>
+                Info${infoCount > 0 ? ` (${infoCount})` : ''}
+            </k-action>
+
+            <k-action 
+                icon="triangle-exclamation"
+                title="Warning logs"
+                appearance="${this.filter === 'warning' ? 'filled' : 'plain'}"
+                variant="${this.filter === 'warning' ? 'brand' : 'neutral'}"
+                .action=${() => {
+                    this.filter = 'warning';
+                    this.updateToolbar();
+                }}>
+                Warnings${warningCount > 0 ? ` (${warningCount})` : ''}
+            </k-action>
+
+            <k-action 
+                icon="circle-xmark"
+                title="Error logs"
+                appearance="${this.filter === 'error' ? 'filled' : 'plain'}"
+                variant="${this.filter === 'error' ? 'brand' : 'neutral'}"
+                .action=${() => {
+                    this.filter = 'error';
+                    this.updateToolbar();
+                }}>
+                Errors${errorCount > 0 ? ` (${errorCount})` : ''}
+            </k-action>
+
+            <k-action 
+                icon="bug"
+                title="Debug logs"
+                appearance="${this.filter === 'debug' ? 'filled' : 'plain'}"
+                variant="${this.filter === 'debug' ? 'brand' : 'neutral'}"
+                .action=${() => {
+                    this.filter = 'debug';
+                    this.updateToolbar();
+                }}>
+                Debug${debugCount > 0 ? ` (${debugCount})` : ''}
+            </k-action>
+
+            <wa-divider orientation="vertical"></wa-divider>
+
+            <k-action 
+                icon="arrow-down" 
+                title="${this.autoScroll ? 'Auto-scroll enabled' : 'Auto-scroll disabled'}"
+                appearance="${this.autoScroll ? 'filled' : 'plain'}"
+                variant="${this.autoScroll ? 'brand' : 'neutral'}"
+                .action=${() => {
+                    this.autoScroll = !this.autoScroll;
+                    this.updateToolbar();
+                }}>
+                ${this.autoScroll ? 'Auto-scroll' : 'Manual'}
+            </k-action>
+
+            <k-action 
+                icon="trash" 
+                title="Clear logs"
+                .action=${() => this.clear()}>
+                Clear
+            </k-action>
+        `;
+    }
+
     render() {
         const filteredMessages = this.getFilteredMessages();
 
         return html`
             <div class="log-terminal">
-                <!-- Toolbar -->
-                <div class="toolbar">
-                    <div class="filters">
-                        <wa-button-group>
-                            <wa-button 
-                                size="small" 
-                                appearance="plain"
-                                variant="${this.filter === 'all' ? 'primary' : 'default'}"
-                                @click=${() => this.filter = 'all'}>
-                                All (${this.messages.length})
-                            </wa-button>
-                            <wa-button 
-                                size="small" 
-                                appearance="plain"
-                                variant="${this.filter === 'info' ? 'primary' : 'default'}"
-                                @click=${() => this.filter = 'info'}>
-                                <wa-icon name="circle-info" label="Info"></wa-icon> Info
-                            </wa-button>
-                            <wa-button 
-                                size="small" 
-                                appearance="plain"
-                                variant="${this.filter === 'warning' ? 'primary' : 'default'}"
-                                @click=${() => this.filter = 'warning'}>
-                                <wa-icon name="triangle-exclamation" label="Warnings"></wa-icon> Warnings
-                            </wa-button>
-                            <wa-button 
-                                size="small" 
-                                appearance="plain"
-                                variant="${this.filter === 'error' ? 'primary' : 'default'}"
-                                @click=${() => this.filter = 'error'}>
-                                <wa-icon name="circle-xmark" label="Errors"></wa-icon> Errors
-                            </wa-button>
-                            <wa-button 
-                                size="small" 
-                                appearance="plain"
-                                variant="${this.filter === 'debug' ? 'primary' : 'default'}"
-                                @click=${() => this.filter = 'debug'}>
-                                <wa-icon name="bug" label="Debug"></wa-icon> Debug
-                            </wa-button>
-                        </wa-button-group>
-                    </div>
-                    
-                    <div class="actions">
-                        <wa-button 
-                            size="small" 
-                            appearance="plain"
-                            variant="${this.autoScroll ? 'primary' : 'default'}"
-                            @click=${() => this.autoScroll = !this.autoScroll}>
-                            <wa-icon name="arrow-down" label="Auto-scroll"></wa-icon>
-                            ${this.autoScroll ? 'Auto-scroll' : 'Manual'}
-                        </wa-button>
-                        <wa-button 
-                            size="small" 
-                            appearance="plain"
-                            @click=${() => this.clear()}>
-                            <wa-icon name="trash" label="Clear logs"></wa-icon>
-                            Clear
-                        </wa-button>
-                    </div>
-                </div>
-
-                <!-- Messages -->
                 <div class="messages" ${ref(this.containerRef)}>
                     ${filteredMessages.length === 0 
                         ? html`<div class="empty-state">No log messages</div>`
@@ -196,22 +225,6 @@ export class KLogTerminal extends KPart {
             flex-direction: column;
             height: 100%;
             width: 100%;
-        }
-
-        .toolbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.5rem;
-            border-bottom: 1px solid var(--wa-color-neutral-border);
-            flex-shrink: 0;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-        }
-
-        .filters, .actions {
-            display: flex;
-            gap: 0.5rem;
         }
 
         .messages {
