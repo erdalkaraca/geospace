@@ -2,7 +2,6 @@ import {persistenceService} from "./persistenceservice.ts";
 import {publish} from "./events.ts";
 import {rootContext} from "./di.ts";
 
-export let WORKSPACE_METADATA_DIR = ".geospace";
 
 export const TOPIC_WORKSPACE_CHANGED = "events/filesys/workspaceChanged"
 export const TOPIC_WORKSPACE_CONNECTED = "events/filesys/workspaceConnected"

@@ -13,13 +13,46 @@ export interface GitHubRelease {
 }
 
 const GITHUB_API_BASE = 'https://api.github.com';
-const REPO_OWNER = 'erdalkaraca';
-const REPO_NAME = 'geospace';
+
+// Repository configuration (must be set via configureGitHub)
+let REPO_OWNER: string | undefined = undefined;
+let REPO_NAME: string | undefined = undefined;
+
+/**
+ * Configure GitHub repository for release fetching
+ * This should be called during framework bootstrap if custom config is provided
+ */
+export function configureGitHub(owner: string, repo: string): void {
+    REPO_OWNER = owner;
+    REPO_NAME = repo;
+}
+
+/**
+ * Get current GitHub repository configuration
+ */
+export function getGitHubConfig(): { owner: string; repo: string } | undefined {
+    if (REPO_OWNER && REPO_NAME) {
+        return { owner: REPO_OWNER, repo: REPO_NAME };
+    }
+    return undefined;
+}
+
+/**
+ * Check if GitHub repository is configured
+ */
+function isGitHubConfigured(): boolean {
+    return REPO_OWNER !== undefined && REPO_NAME !== undefined;
+}
 
 /**
  * Fetches all releases from GitHub (up to 100 most recent)
  */
 export async function fetchReleases(perPage: number = 100): Promise<GitHubRelease[]> {
+    if (!isGitHubConfigured()) {
+        console.warn('GitHub repository not configured. Call configureGitHub() first.');
+        return [];
+    }
+    
     try {
         const response = await fetch(
             `${GITHUB_API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/releases?per_page=${perPage}`
@@ -40,6 +73,11 @@ export async function fetchReleases(perPage: number = 100): Promise<GitHubReleas
  * Fetches the latest release from GitHub
  */
 export async function fetchLatestRelease(): Promise<GitHubRelease | null> {
+    if (!isGitHubConfigured()) {
+        console.warn('GitHub repository not configured. Call configureGitHub() first.');
+        return null;
+    }
+    
     try {
         const response = await fetch(
             `${GITHUB_API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/releases/latest`
@@ -60,6 +98,11 @@ export async function fetchLatestRelease(): Promise<GitHubRelease | null> {
  * Fetches a specific release by tag name
  */
 export async function fetchReleaseByTag(tag: string): Promise<GitHubRelease | null> {
+    if (!isGitHubConfigured()) {
+        console.warn('GitHub repository not configured. Call configureGitHub() first.');
+        return null;
+    }
+    
     try {
         const response = await fetch(
             `${GITHUB_API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/releases/tags/${tag}`

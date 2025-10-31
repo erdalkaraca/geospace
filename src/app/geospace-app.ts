@@ -1,45 +1,57 @@
 import { html } from "lit";
-import { AppDefinition, appLoaderService } from "../core/apploader.ts";
-import { createLogger } from "../core/logger.ts";
 import { version as appVersion } from "../../package.json";
-import { infoDialog, navigableInfoDialog, NavigableDialogAction } from "../core/dialog.ts";
-import { fetchReleases, isNewerVersion } from "../core/github-service.ts";
 
-// Side-effect imports: Initialize core services and register components
-import '../core/init.ts'
-import '../parts/index.ts'
-import '../components'
-import '../widgets/index.ts'
-import "./geo/gs-map-editor-contributions.ts"
-import './geo/gs-map-editor.ts'
-import './geo/gs-map-props.ts'
-import './geo/gs-catalog-contributions.ts'
-import './geo/gs-command-handlers.ts'
-import './geo/gs-catalog.ts'
-import "./../extensions"
-import "./../sysprompts"
-import "./app.ts" // Registers gs-app component
-
-import APP_SYS_PROMPT from "./geospace-sysprompt.txt?raw"
-import { CID_PROMPTS, SysPromptContribution } from "../core/chatservice.ts";
-import { contributionRegistry } from "../core/contributionregistry.ts";
-import { Extension, extensionRegistry } from "../core/extensionregistry.ts";
-import { workspaceService, File } from "../core/filesys.ts";
-import { editorRegistry } from "../core/editorregistry.ts";
-import { KPart } from "../parts/k-part.ts";
-import { commandRegistry, registerAll } from "../core/commandregistry.ts";
-import { activeSelectionSignal } from "../core/appstate.ts";
-import { GsSourceType, DEFAULT_GSMAP } from "./rt/gs-model.ts";
-
-import {
+// Framework API imports
+import { 
+    AppDefinition, 
+    appLoaderService,
+    createLogger,
+    infoDialog,
+    navigableInfoDialog,
+    fetchReleases,
+    isNewerVersion,
+    CID_PROMPTS,
+    contributionRegistry,
+    extensionRegistry,
+    workspaceService,
+    editorRegistry,
+    commandRegistry,
+    registerAll,
+    activeSelectionSignal,
     SIDEBAR_MAIN,
     SIDEBAR_MAIN_BOTTOM,
     SIDEBAR_AUXILIARY,
     PANEL_BOTTOM,
     TOOLBAR_MAIN,
     TOOLBAR_BOTTOM,
-    TOOLBAR_BOTTOM_END
-} from "../core/constants.ts";
+    TOOLBAR_BOTTOM_END,
+    File,
+    configureFramework,
+    type NavigableDialogAction,
+    type SysPromptContribution,
+    type Extension,
+    type KPart
+} from "../core/index.ts";
+
+// App-specific imports
+import "./geo/gs-map-editor-contributions.ts"
+import './geo/gs-map-editor.ts'
+import './geo/gs-map-props.ts'
+import './geo/gs-catalog-contributions.ts'
+import './geo/gs-command-handlers.ts'
+import './geo/gs-catalog.ts'
+import "./app.ts" // Registers gs-app component
+
+import APP_SYS_PROMPT from "./geospace-sysprompt.txt?raw"
+import { GsSourceType, DEFAULT_GSMAP } from "./rt/gs-model.ts";
+
+// Configure framework for geospace app
+configureFramework({
+    github: {
+        owner: 'erdalkaraca',
+        repo: 'geospace'
+    }
+});
 
 const logger = createLogger('GeoSpaceApp');
 

@@ -12,9 +12,9 @@ import {
     TOOLBAR_MAIN_RIGHT,
     TOOLBAR_BOTTOM,
     TOOLBAR_BOTTOM_CENTER,
-    TOOLBAR_BOTTOM_END
-} from "../core/constants.ts";
-import {KContainer} from "../parts/k-container.ts";
+    TOOLBAR_BOTTOM_END,
+    KContainer
+} from "../core/index.ts";
 
 @customElement('gs-app')
 export class GSApp extends KContainer {
