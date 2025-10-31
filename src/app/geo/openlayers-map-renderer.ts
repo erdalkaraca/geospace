@@ -3,6 +3,7 @@ import {gsLib, GsMap, GsSourceType, KEY_NAME, toOlLayer, KEY_STATE, KEY_UUID} fr
 import {toGsFeature} from "../rt/gs-ol2gs.ts";
 import {toOlStyle} from "../rt/gs-gs2ol.ts";
 import {ensureUuid, getStyleForFeature, GsFeature, GsGeometry} from "../rt/gs-model.ts";
+import {v4 as uuidv4} from 'uuid';
 import {Map as OlMap} from "ol";
 import {Feature} from "ol";
 import BaseLayer from "ol/layer/Base";
@@ -481,7 +482,18 @@ export class OpenLayersMapOperations implements MapOperations {
         });
         
         // Listen to the source's addfeature event which fires AFTER the feature is added
-        const onFeatureAdded = () => {
+        const onFeatureAdded = (event: any) => {
+            // Assign UUID to newly drawn features (app-managed features)
+            const feature = event.feature;
+            if (feature && !feature.get(KEY_UUID)) {
+                const uuid = uuidv4();
+                feature.set(KEY_UUID, uuid);
+                // Also store in state
+                const state = feature.get(KEY_STATE) || {};
+                state.uuid = uuid;
+                feature.set(KEY_STATE, state);
+            }
+            
             if (this.renderer && this.activeDrawingLayerUuid) {
                 this.renderer.syncLayerFeaturesToModel(this.activeDrawingLayerUuid);
             }

@@ -254,7 +254,7 @@ export class GsMapEditor extends KPart {
                             layerUuid: event.layerUuid,
                             metrics: event.metrics
                         } as FeatureSelection;
-                        console.info(`Feature[${selectionPayload.feature.uuid}] metrics:`, selectionPayload.metrics);
+                        console.info(`Feature metrics:`, selectionPayload.metrics);
                         mapChangedSignal.set({
                             part: this,
                             event: MapEvents.FEATURE_SELECTED,
