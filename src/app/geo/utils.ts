@@ -1,12 +1,15 @@
 import BaseLayer from "ol/layer/Base";
 import {Map} from "ol";
-import {File, workspaceService} from "../../core/filesys.ts";
 import jsonata from "jsonata";
-import {toastError} from "../../core/toast.ts";
-import {KEY_NAME} from "../rt";
-import {contributionRegistry} from "../../core/contributionregistry.ts";
-import {TreeContribution} from "../../core/tree-utils.ts";
 import {parse} from "dotenv";
+import {KEY_NAME} from "../rt";
+import {
+    File,
+    workspaceService,
+    toastError,
+    contributionRegistry,
+    TreeContribution
+} from "../../api/index.ts";
 
 export const findOlLayer = (name: string, olMap: Map, notFound?: Function) => {
     const layers = olMap.getLayers()

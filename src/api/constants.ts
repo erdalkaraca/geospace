@@ -1,3 +1,3 @@
 // Re-export framework constants for app usage
-export * from '../constants.ts';
+export * from '../core/constants.ts';
 

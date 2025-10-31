@@ -1,9 +1,6 @@
-import {commandRegistry, ExecutionContext} from "../../core/commandregistry.ts";
 import {fromLonLat} from "ol/proj";
-
 import {MapOperations} from "./map-renderer.ts";
 import {replaceUris} from "./utils.ts";
-import {promptDialog} from "../../core/dialog.ts";
 import {
     ensureUuid,
     GsLayer,
@@ -13,9 +10,16 @@ import {
     toGsSourceType,
     toSourceUrl
 } from "../rt";
-import {activePartSignal} from "../../core/appstate.ts";
 import {GsMapEditor} from "./gs-map-editor.ts";
-import logger from "../../core/logger.ts";
+import {
+    commandRegistry,
+    activePartSignal,
+    promptDialog,
+    createLogger,
+    type ExecutionContext
+} from "../../api/index.ts";
+
+const logger = createLogger('GsCommandHandlers');
 
 const canExecute = (context: ExecutionContext) => {
     return context.activeEditor instanceof GsMapEditor;

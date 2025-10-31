@@ -1,15 +1,19 @@
 import * as esbuild from 'esbuild-wasm'
 import {OnLoadArgs, OnResolveArgs} from 'esbuild-wasm'
-import {Directory, File, workspaceService} from "../../core/filesys.ts";
-import {GsMap, GsScript} from "../rt";
 import wasmUrl from '../../../node_modules/esbuild-wasm/esbuild.wasm?url'
-
 import manifestJson from "../../../public/pwa/manifest.json"
-import {activePartSignal} from "../../core/appstate.ts";
+import {GsMap, GsScript} from "../rt";
 import {GsMapEditor} from "../geo/gs-map-editor.ts";
-import {toastError, toastInfo} from "../../core/toast.ts";
 import {loadEnvs} from "../geo/utils.ts";
-import {taskService} from "../../core/taskservice.ts";
+import {
+    Directory,
+    File,
+    workspaceService,
+    activePartSignal,
+    toastError,
+    toastInfo,
+    taskService
+} from "../../api/index.ts";
 import {rootContext} from "../../core/di.ts";
 
 const indexHtml = (vars: any) => `

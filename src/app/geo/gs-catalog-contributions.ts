@@ -1,8 +1,14 @@
-import {registerAll} from "../../core/commandregistry.ts";
-import {File, FileContentType, workspaceService} from "../../core/filesys.ts";
-import {activePartSignal, activeSelectionSignal} from "../../core/appstate.ts";
 import {GsCatalog} from "./gs-catalog.ts";
-import {toastError, toastInfo} from "../../core/toast.ts";
+import {
+    registerAll,
+    File,
+    FileContentType,
+    workspaceService,
+    activePartSignal,
+    activeSelectionSignal,
+    toastError,
+    toastInfo
+} from "../../api/index.ts";
 
 import gsCatalog from "../assets/geospace-catalog.json";
 import {registerCatalog} from "./utils.ts";

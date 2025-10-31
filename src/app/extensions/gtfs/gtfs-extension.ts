@@ -1,10 +1,14 @@
-import {registerAll} from "../../../core/commandregistry.ts";
-import {File, workspaceService} from "../../../core/filesys.ts";
-import {activeSelectionSignal} from "../../../core/appstate.ts";
-import {toastError, toastInfo} from "../../../core/toast.ts";
-import {taskService} from "../../../core/taskservice.ts";
-import {PyEnv} from "../../../core/pyservice.ts";
 import scriptContent from "./gtfs_to_geojson.py?raw";
+import {
+    registerAll,
+    File,
+    workspaceService,
+    activeSelectionSignal,
+    toastError,
+    toastInfo,
+    taskService,
+    PyEnv
+} from "../../../api/index.ts";
 
 registerAll({
     command: {

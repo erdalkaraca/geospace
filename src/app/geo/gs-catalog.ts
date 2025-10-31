@@ -1,11 +1,15 @@
 import {css, html, TemplateResult} from 'lit'
 import {customElement, state} from 'lit/decorators.js'
-import {KPart} from "../../parts/k-part.ts";
-import {TreeContribution, TreeNode} from "../../core/tree-utils.ts";
-import {contributionRegistry} from "../../core/contributionregistry.ts";
-import {activePartSignal, activeSelectionSignal} from "../../core/appstate.ts";
 import '../../widgets/k-icon.ts';
 import {createRef, ref} from "lit/directives/ref.js";
+import {
+    KPart,
+    TreeContribution,
+    TreeNode,
+    contributionRegistry,
+    activePartSignal,
+    activeSelectionSignal
+} from "../../api/index.ts";
 
 export const CID_CATALOG_ROOT = "catalog.root"
 

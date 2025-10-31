@@ -1,8 +1,11 @@
-import { activeEditorSignal } from "../../../core/appstate.ts";
 import { GsMapEditor } from "../../geo/gs-map-editor.ts";
-import type { CommandRegistry } from "../../../core/commandregistry.ts";
-import { toastError, toastInfo } from "../../../core/toast.ts";
 import { GsStyleEditor } from "./gs-style-editor.ts";
+import {
+    activeEditorSignal,
+    toastError,
+    toastInfo,
+    type CommandRegistry
+} from "../../../api/index.ts";
 
 export default ({ commandRegistry }: { commandRegistry: CommandRegistry }) => {
     commandRegistry.registerAll({
@@ -13,7 +16,7 @@ export default ({ commandRegistry }: { commandRegistry: CommandRegistry }) => {
             "parameters": []
         },
         handler: {
-            execute: async (_context) => {
+            execute: async (_context: any) => {
                 const activeEditor = activeEditorSignal.get();
                 if (!(activeEditor instanceof GsMapEditor)) {
                     toastError('No active map editor');

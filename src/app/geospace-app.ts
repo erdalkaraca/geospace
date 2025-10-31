@@ -31,7 +31,7 @@ import {
     type SysPromptContribution,
     type Extension,
     type KPart
-} from "../core/index.ts";
+} from "../api/index.ts";
 
 // App-specific imports
 import "./geo/gs-map-editor-contributions.ts"

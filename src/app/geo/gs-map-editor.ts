@@ -3,25 +3,30 @@ import { customElement, property } from 'lit/decorators.js'
 import { createRef, ref, Ref } from 'lit/directives/ref.js'
 import { when } from 'lit/directives/when.js'
 import { keyed } from 'lit/directives/keyed.js'
-import { CommandStack } from "../../core/commandregistry.ts";
-import { KPart } from "../../parts/k-part.ts";
-import { EditorInput } from "../../core/editorregistry.ts";
 import { DEFAULT_GSMAP, ensureUuidsRecursive, GsMap, GsLayerType, GsSourceType, DEFAULT_STYLES, DEFAULT_STYLE_RULES } from "../rt";
 import { findLayerByUuid } from "./map-renderer.ts";
 import { mapChangedSignal, MapEvents, FeatureSelection } from "./gs-signals.ts";
-import { watching } from "../../core/signals.ts";
 import olCSS from "../../../node_modules/ol/ol.css?raw";
 import { loadEnvs, replaceUris, revertBlobUris } from "./utils.ts";
-import { File } from '../../core/filesys.ts';
-import { toastError, toastInfo } from "../../core/toast.ts";
-import { promptDialog } from "../../core/dialog.ts";
-import { ChatContext } from "../../core/chatservice.ts";
 import { MapRenderer, MapOperations, createProxy, MapSyncEvent } from "./map-renderer.ts";
 import { IFrameMapRenderer } from "./proxy-map-renderer.ts";
 import { DomainMapOperations } from "./domain-map-operations.ts";
 import { SignalingMapOperations } from "./signaling-map-operations.ts";
-import { activePartSignal } from "../../core/appstate.ts";
-import logger from '../../core/logger.ts';
+import {
+    CommandStack,
+    KPart,
+    EditorInput,
+    File,
+    toastError,
+    toastInfo,
+    promptDialog,
+    ChatContext,
+    activePartSignal,
+    watching,
+    createLogger
+} from "../../api/index.ts";
+
+const logger = createLogger('GsMapEditor');
 
 @customElement('gs-map')
 export class GsMapEditor extends KPart {

@@ -1,6 +1,8 @@
 import {signal} from "@lit-labs/signals";
-import {SignalPort} from "../../core/signals.ts";
-import {EMPTY_SIGNALPORT} from "../../core/appstate.ts";
+import {
+    SignalPort,
+    EMPTY_SIGNALPORT
+} from "../../api/index.ts";
 
 export enum MapEvents {
     LOADED, LAYER_ADDED, LAYER_DELETED, LAYER_UPDATED, FEATURE_SELECTED

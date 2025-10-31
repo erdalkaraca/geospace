@@ -1,7 +1,9 @@
-import {activePartSignal} from "../../core/appstate.ts";
 import {GsMapEditor} from "../geo/gs-map-editor.ts";
-import type {CommandRegistry} from "../../core/commandregistry.ts";
 import {buildService} from "../build/buildservice.ts";
+import {
+    activePartSignal,
+    type CommandRegistry
+} from "../../api/index.ts";
 
 export default ({commandRegistry}: { commandRegistry: CommandRegistry }) => {
     commandRegistry.registerAll({
@@ -12,7 +14,7 @@ export default ({commandRegistry}: { commandRegistry: CommandRegistry }) => {
             "parameters": []
         },
         handler: {
-            execute: _context => buildService.buildActiveMap()
+            execute: (_context: any) => buildService.buildActiveMap()
         },
         contribution: {
             target: "toolbar:map-editor",

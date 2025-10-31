@@ -1,18 +1,21 @@
 import {css, html} from 'lit'
 import {customElement, state} from 'lit/decorators.js'
-import {KPart} from "../../parts/k-part.ts";
 import {when} from "lit/directives/when.js";
 import {GsMapEditor} from "./gs-map-editor.ts";
-import {activePartSignal} from "../../core/appstate.ts";
-import {SignalPort, watching} from "../../core/signals.ts";
 import {mapChangedSignal} from "./gs-signals.ts";
 import '../../widgets/k-icon.ts';
 import {GsLayer, GsControl, GsOverlay} from "../rt/gs-model.ts";
 import {getOriginalUri} from "./utils.ts";
-import {commandRegistry} from "../../core/commandregistry.ts";
 import "../../components/k-action.ts";
-import {confirmDialog} from "../../core/dialog.ts";
 import {findLayerByUuid, findLayerIndexByUuid} from "./map-renderer.ts";
+import {
+    KPart,
+    activePartSignal,
+    SignalPort,
+    watching,
+    commandRegistry,
+    confirmDialog
+} from "../../api/index.ts";
 
 @customElement('gs-map-props')
 export class GsMapProps extends KPart {

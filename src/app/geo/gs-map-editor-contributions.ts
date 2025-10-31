@@ -1,9 +1,11 @@
-import {EditorInput, editorRegistry} from "../../core/editorregistry.ts";
-
-import {File} from "../../core/filesys.ts";
 import {rtUtils} from "../rt";
 import {toBlobUri} from "./utils.ts";
 import {html} from "lit";
+import {
+    EditorInput,
+    editorRegistry,
+    File
+} from "../../api/index.ts";
 
 rtUtils.resolveUrl = path => toBlobUri(path);
 

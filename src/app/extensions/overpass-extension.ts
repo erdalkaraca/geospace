@@ -1,7 +1,10 @@
-import type {CommandRegistry} from "../../core/commandregistry.ts";
-import type {WorkspaceService, File} from "../../core/filesys.ts";
 // @ts-ignore
 import {toGeojson} from "osmtogeojson";
+import {
+    type CommandRegistry,
+    type WorkspaceService,
+    type File
+} from "../../api/index.ts";
 
 export default ({commandRegistry, workspaceService}: {
     commandRegistry: CommandRegistry,
