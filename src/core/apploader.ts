@@ -50,6 +50,13 @@ export interface AppDefinition {
     description?: string;
     
     /**
+     * Custom application metadata (optional).
+     * Apps can define any custom metadata here for their own use.
+     * The framework may read certain metadata keys (e.g., `metadata.github` for release checking).
+     */
+    metadata?: Record<string, any>;
+    
+    /**
      * Core framework extensions required by the application.
      * The app loader will enable these extensions when loading the app
      * and disable them when unloading.

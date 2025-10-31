@@ -2,6 +2,8 @@
  * GitHub API service for fetching release information
  */
 
+import { appLoaderService } from './apploader.ts';
+
 export interface GitHubRelease {
     tag_name: string;
     name: string;
@@ -14,48 +16,32 @@ export interface GitHubRelease {
 
 const GITHUB_API_BASE = 'https://api.github.com';
 
-// Repository configuration (must be set via configureGitHub)
-let REPO_OWNER: string | undefined = undefined;
-let REPO_NAME: string | undefined = undefined;
-
 /**
- * Configure GitHub repository for release fetching
- * This should be called during framework bootstrap if custom config is provided
+ * Get current GitHub repository configuration from the app definition.
+ * The github-service reads from the current app definition via appLoaderService.
+ * Looks for github info in app.metadata.github.
+ * 
+ * @throws Error if GitHub repository is not configured in app metadata
  */
-export function configureGitHub(owner: string, repo: string): void {
-    REPO_OWNER = owner;
-    REPO_NAME = repo;
-}
-
-/**
- * Get current GitHub repository configuration
- */
-export function getGitHubConfig(): { owner: string; repo: string } | undefined {
-    if (REPO_OWNER && REPO_NAME) {
-        return { owner: REPO_OWNER, repo: REPO_NAME };
+export function getGitHubConfig(): { owner: string; repo: string } {
+    const currentApp = appLoaderService.getCurrentApp();
+    if (currentApp?.metadata?.github) {
+        const github = currentApp.metadata.github;
+        if (github.owner && github.repo) {
+            return { owner: github.owner, repo: github.repo };
+        }
     }
-    return undefined;
-}
-
-/**
- * Check if GitHub repository is configured
- */
-function isGitHubConfigured(): boolean {
-    return REPO_OWNER !== undefined && REPO_NAME !== undefined;
+    throw new Error('GitHub repository not configured. Specify metadata.github in AppDefinition.');
 }
 
 /**
  * Fetches all releases from GitHub (up to 100 most recent)
  */
 export async function fetchReleases(perPage: number = 100): Promise<GitHubRelease[]> {
-    if (!isGitHubConfigured()) {
-        console.warn('GitHub repository not configured. Call configureGitHub() first.');
-        return [];
-    }
-    
     try {
+        const config = getGitHubConfig();
         const response = await fetch(
-            `${GITHUB_API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/releases?per_page=${perPage}`
+            `${GITHUB_API_BASE}/repos/${config.owner}/${config.repo}/releases?per_page=${perPage}`
         );
         
         if (!response.ok) {
@@ -73,14 +59,10 @@ export async function fetchReleases(perPage: number = 100): Promise<GitHubReleas
  * Fetches the latest release from GitHub
  */
 export async function fetchLatestRelease(): Promise<GitHubRelease | null> {
-    if (!isGitHubConfigured()) {
-        console.warn('GitHub repository not configured. Call configureGitHub() first.');
-        return null;
-    }
-    
     try {
+        const config = getGitHubConfig();
         const response = await fetch(
-            `${GITHUB_API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/releases/latest`
+            `${GITHUB_API_BASE}/repos/${config.owner}/${config.repo}/releases/latest`
         );
         
         if (!response.ok) {
@@ -98,14 +80,10 @@ export async function fetchLatestRelease(): Promise<GitHubRelease | null> {
  * Fetches a specific release by tag name
  */
 export async function fetchReleaseByTag(tag: string): Promise<GitHubRelease | null> {
-    if (!isGitHubConfigured()) {
-        console.warn('GitHub repository not configured. Call configureGitHub() first.');
-        return null;
-    }
-    
     try {
+        const config = getGitHubConfig();
         const response = await fetch(
-            `${GITHUB_API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/releases/tags/${tag}`
+            `${GITHUB_API_BASE}/repos/${config.owner}/${config.repo}/releases/tags/${tag}`
         );
         
         if (!response.ok) {

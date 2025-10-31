@@ -8,8 +8,9 @@
 // The framework automatically bootstraps when this module is imported.
 // Apps can opt-in to bootstrap by importing this module.
 
-// Initialize core services
-import './init.ts';
+// Initialize core services (set up global event listeners and state)
+import './keybindings.ts';  // Sets up global keyboard event listener
+import './dialog.ts';       // Initializes dialog utilities
 
 // Register framework parts (k-* components)
 import '../parts/index.ts';
@@ -25,16 +26,3 @@ import '../extensions';
 
 // Register framework system prompts
 import '../sysprompts';
-
-// Apply framework configuration to services
-import { getFrameworkConfig } from './config.ts';
-import { configureGitHub } from './github-service.ts';
-
-// Apply framework configuration
-const config = getFrameworkConfig();
-
-// Apply GitHub configuration
-if (config.github !== undefined) {
-    configureGitHub(config.github.owner, config.github.repo);
-}
-

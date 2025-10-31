@@ -26,7 +26,6 @@ import {
     TOOLBAR_BOTTOM,
     TOOLBAR_BOTTOM_END,
     File,
-    configureFramework,
     type NavigableDialogAction,
     type SysPromptContribution,
     type Extension,
@@ -44,14 +43,6 @@ import "./app.ts" // Registers gs-app component
 
 import APP_SYS_PROMPT from "./geospace-sysprompt.txt?raw"
 import { GsSourceType, DEFAULT_GSMAP } from "./rt/gs-model.ts";
-
-// Configure framework for geospace app
-configureFramework({
-    github: {
-        owner: 'erdalkaraca',
-        repo: 'geospace'
-    }
-});
 
 const logger = createLogger('GeoSpaceApp');
 
@@ -85,7 +76,12 @@ export const geospaceApp: AppDefinition = {
     name: "geo!space",
     version: appVersion,
     description: "A geospatial IDE for working with spatial data",
-
+    metadata: {
+        github: {
+            owner: 'erdalkaraca',
+            repo: 'geospace'
+        }
+    },
     extensions: [
         "geospace.styleEditor",
         "system.mdeditor",

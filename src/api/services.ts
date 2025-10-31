@@ -42,7 +42,6 @@ export {
     fetchLatestRelease,
     fetchReleaseByTag,
     isNewerVersion,
-    configureGitHub,
     getGitHubConfig,
     type GitHubRelease
 } from '../core/github-service.ts';

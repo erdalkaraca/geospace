@@ -4,12 +4,6 @@
 // by applications built on the framework.
 
 export interface FrameworkConfig {
-    // GitHub repository configuration (optional, for release checking)
-    github?: {
-        owner: string;
-        repo: string;
-    };
-    
     // Logger configuration
     logger?: {
         level?: 'debug' | 'info' | 'warning' | 'error';
@@ -31,12 +25,5 @@ export function configureFramework(config: FrameworkConfig): void {
  */
 export function getFrameworkConfig(): Readonly<FrameworkConfig> {
     return { ...frameworkConfig };
-}
-
-/**
- * Get GitHub repository configuration
- */
-export function getGitHubConfig(): { owner: string; repo: string } | undefined {
-    return frameworkConfig.github;
 }
 
