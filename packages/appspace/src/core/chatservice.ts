@@ -1,4 +1,3 @@
-import "./globalcommands"
 import {appSettings, TOPIC_SETTINGS_CHANGED} from "./settingsservice";
 import {publish, subscribe} from "./events";
 import {DependencyContext, rootContext} from "./di";

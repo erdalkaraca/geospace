@@ -54,8 +54,8 @@ extensionRegistry.registerExtension({
 
 extensionRegistry.registerExtension({
     id: "system.notebook",
-    name: "Jupyter Notebook Editor",
-    description: "View and execute Jupyter notebooks (.ipynb) with Python code execution and markdown rendering",
+    name: "Jupyter-like Notebook Editor",
+    description: "View and execute Jupyter-like notebooks (.ipynb) with Python code execution and markdown rendering",
     loader: () => import("./notebook/notebook-extension"),
     icon: "k jupyter",
     dependencies: ["system.pythonpackagemanager"],

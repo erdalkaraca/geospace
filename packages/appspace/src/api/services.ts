@@ -48,4 +48,6 @@ export {
 export { configureFramework, getFrameworkConfig } from '../core/config';
 export { treeNodeComparator } from '../core/tree-utils';
 export type { TreeContribution, TreeNode } from '../core/tree-utils';
+export { packageInfoService } from '../core/packageinfoservice';
+export type { PackageInfo } from '../core/packageinfoservice';
 

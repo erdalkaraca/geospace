@@ -26,3 +26,17 @@ import '../extensions';
 
 // Register framework system prompts
 import '../sysprompts';
+
+// Register framework commands
+import '../commands';
+
+// Register framework package info
+import { packageInfoService } from './packageinfoservice';
+import appspacePackageJson from '../../package.json';
+
+packageInfoService.addPackage({
+    name: appspacePackageJson.name,
+    version: appspacePackageJson.version,
+    dependencies: appspacePackageJson.dependencies,
+    devDependencies: appspacePackageJson.devDependencies
+});

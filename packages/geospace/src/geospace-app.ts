@@ -1,15 +1,13 @@
 import { html } from "lit";
-import { version as appVersion } from "../package.json";
+import geospacePackageJson from "../package.json";
+const appVersion = geospacePackageJson.version;
 
 // Framework API imports
 import { 
     AppDefinition, 
     appLoaderService,
     createLogger,
-    infoDialog,
-    navigableInfoDialog,
-    fetchReleases,
-    isNewerVersion,
+    packageInfoService,
     CID_PROMPTS,
     contributionRegistry,
     extensionRegistry,
@@ -28,7 +26,6 @@ import {
     TOOLBAR_MAIN_RIGHT,
     File,
     StringFile,
-    type NavigableDialogAction,
     type SysPromptContribution,
     type Extension,
     type KPart
@@ -205,6 +202,13 @@ export const geospaceApp: AppDefinition = {
     },
 
     async initialize() {
+        packageInfoService.addPackage({
+            name: geospacePackageJson.name,
+            version: geospacePackageJson.version,
+            dependencies: geospacePackageJson.dependencies,
+            devDependencies: geospacePackageJson.devDependencies
+        });
+
         contributionRegistry.registerContribution(CID_PROMPTS, {
             label: "App Support",
             description: "General app support",
@@ -236,130 +240,6 @@ export const geospaceApp: AppDefinition = {
                 })
             }
         } as SysPromptContribution)
-
-        registerAll({
-            command: {
-                "id": "show_version_info",
-                "name": "Show Version Info",
-                "description": "Shows application version information",
-                "parameters": []
-            },
-            handler: {
-                execute: async _context => {
-                    const isDev = geospaceApp.version === '0.0.0';
-                    
-                    if (isDev) {
-                        await infoDialog(
-                            geospaceApp.name,
-                            `**Development Build**\n\n${geospaceApp.description}`,
-                            true
-                        );
-                        return;
-                    }
-
-                    const releases = await fetchReleases();
-                    if (releases.length === 0) {
-                        await infoDialog(
-                            geospaceApp.name,
-                            `**Version:** ${geospaceApp.version}\n\n${geospaceApp.description}`,
-                            true
-                        );
-                        return;
-                    }
-
-                    const currentIndex = releases.findIndex(r => r.tag_name === geospaceApp.version);
-                    const startIndex = currentIndex >= 0 ? currentIndex : 0;
-                    
-                    let currentReleaseIndex = startIndex;
-                    
-                    const buildReleaseContent = (index: number) => {
-                        const release = releases[index];
-                        const isCurrentVersion = release.tag_name === geospaceApp.version;
-                        
-                        let message = `**Version:** ${release.tag_name}`;
-                        if (isCurrentVersion) {
-                            message += ` (Current)`;
-                        }
-                        message += `\n\n`;
-                        
-                        const publishDate = new Date(release.published_at).toLocaleDateString();
-                        message += `**Released:** ${publishDate}\n\n`;
-                        
-                        if (!isCurrentVersion && isNewerVersion(geospaceApp.version, release.tag_name)) {
-                            message += `⚠️ **Update available**\n\n`;
-                        }
-                        
-                        if (release.body) {
-                            message += `---\n\n${release.body}`;
-                        }
-                        
-                        return message;
-                    };
-                    
-                    const buildActions = (index: number, actionsArray: NavigableDialogAction[]): NavigableDialogAction[] => {
-                        const actions: NavigableDialogAction[] = [];
-                        
-                        // Previous = older release (higher index in the array)
-                        actions.push({
-                            label: '← Previous',
-                            variant: 'default',
-                            disabled: index === releases.length - 1,
-                            callback: () => {
-                                if (index < releases.length - 1) {
-                                    currentReleaseIndex = index + 1;
-                                    const message = buildReleaseContent(currentReleaseIndex);
-                                    const newActions = buildActions(currentReleaseIndex, actionsArray);
-                                    const updateDialog = (actionsArray as any).updateDialog;
-                                    if (updateDialog) {
-                                        updateDialog(geospaceApp.name, message, newActions);
-                                    }
-                                }
-                            }
-                        });
-                        
-                        // Next = newer release (lower index in the array)
-                        actions.push({
-                            label: 'Next →',
-                            variant: 'default',
-                            disabled: index === 0,
-                            callback: () => {
-                                if (index > 0) {
-                                    currentReleaseIndex = index - 1;
-                                    const message = buildReleaseContent(currentReleaseIndex);
-                                    const newActions = buildActions(currentReleaseIndex, actionsArray);
-                                    const updateDialog = (actionsArray as any).updateDialog;
-                                    if (updateDialog) {
-                                        updateDialog(geospaceApp.name, message, newActions);
-                                    }
-                                }
-                            }
-                        });
-                        
-                        actions.push({
-                            label: 'Close',
-                            variant: 'primary',
-                            callback: () => {}
-                        });
-                        
-                        return actions;
-                    };
-                    
-                    const initialMessage = buildReleaseContent(startIndex);
-                    const initialActions: NavigableDialogAction[] = [];
-                    
-                    // Build actions with reference to the same array that will receive updateDialog
-                    const actionsWithCallbacks = buildActions(startIndex, initialActions);
-                    initialActions.push(...actionsWithCallbacks);
-                    
-                    await navigableInfoDialog(
-                        geospaceApp.name,
-                        initialMessage,
-                        initialActions,
-                        true
-                    );
-                }
-            }
-        })
 
         registerAll({
             command: {

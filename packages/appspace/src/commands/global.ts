@@ -1,13 +1,14 @@
-import {commandRegistry, registerAll} from "./commandregistry";
-import {workspaceService} from "./filesys";
-import {TOOLBAR_MAIN_RIGHT} from "./constants";
-import {PyEnv} from "./pyservice";
-import {EditorInput, editorRegistry} from "./editorregistry";
+import {commandRegistry, registerAll} from "../core/commandregistry";
+import {workspaceService} from "../core/filesys";
+import {TOOLBAR_MAIN_RIGHT} from "../core/constants";
+import {PyEnv} from "../core/pyservice";
+import {EditorInput, editorRegistry} from "../core/editorregistry";
 import {html} from "lit";
-import {toastError, toastInfo} from "./toast";
-import {activePartSignal} from "./appstate";
-import {appSettings} from "./settingsservice";
-import "../commands/files";
+import {toastError, toastInfo} from "../core/toast";
+import {activePartSignal} from "../core/appstate";
+import {appSettings} from "../core/settingsservice";
+import "./files";
+import "./version-info";
 
 registerAll({
     command: {
@@ -227,3 +228,4 @@ commandRegistry.registerAll({
         }
     }
 })
+
