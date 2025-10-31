@@ -150,14 +150,6 @@ class AppLoaderService {
             }
         }
         
-        // Enable new app's extensions
-        if (app.extensions) {
-            logger.info(`Enabling ${app.extensions.length} extensions...`);
-            app.extensions.forEach(extId => {
-                extensionRegistry.enable(extId);
-            });
-        }
-        
         // Register app contributions
         if (app.contributions) {
             logger.info('Registering app contributions...');
@@ -180,6 +172,14 @@ class AppLoaderService {
                 });
                 logger.info(`Registered ${app.contributions.extensions.length} app extensions`);
             }
+        }
+        
+        // Enable new app's extensions (after contributions are registered)
+        if (app.extensions) {
+            logger.info(`Enabling ${app.extensions.length} extensions...`);
+            app.extensions.forEach(extId => {
+                extensionRegistry.enable(extId);
+            });
         }
         
         // Initialize new app
