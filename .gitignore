@@ -26,3 +26,6 @@ dist-ssr
 /public/lib/gs-lib.css
 /public/lib/gs-lib.js
 /stats.html
+
+# Internal documentation
+/docs/internal/
