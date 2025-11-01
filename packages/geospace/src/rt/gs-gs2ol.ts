@@ -51,6 +51,7 @@ import {when} from "lit/directives/when.js";
 import * as ol from "./gs-olns"
 import {createRef, ref} from "lit/directives/ref.js";
 import {v4 as uuidv4} from 'uuid'
+import PubSub from 'pubsub-js'
 import {GsControlAdapter, GsOverlayAdapter} from "./gs-ol-adapters";
 import {rtUtils} from "./index";
 import Layer from "ol/layer/Layer";

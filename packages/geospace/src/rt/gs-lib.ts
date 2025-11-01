@@ -3,6 +3,7 @@ import {GsMap} from "./gs-model";
 import "ol/ol.css";
 import {defaults as defaultControls} from 'ol/control/defaults';
 import {defaults as defaultInteractions} from "ol/interaction/defaults";
+import "@kispace/appspace/externals/webawesome";
 
 export * from "./gs-model";
 export * from "./gs-gs2ol";
