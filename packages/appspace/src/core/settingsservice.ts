@@ -34,6 +34,7 @@ class SettingsService {
         await this.checkSettings()
         this.appSettings![key] = value
         await persistenceService.persistObject(SETTINGS_FILE_PATH, this.appSettings)
+        publish(TOPIC_SETTINGS_CHANGED, this.appSettings)
     }
 
     public async getAll() {
@@ -44,6 +45,7 @@ class SettingsService {
     public async setAll(settings: AppSettings) {
         this.appSettings = settings
         await persistenceService.persistObject(SETTINGS_FILE_PATH, this.appSettings)
+        publish(TOPIC_SETTINGS_CHANGED, this.appSettings)
     }
 }
 

@@ -56,6 +56,7 @@ export interface ExecuteParams {
 export interface Handler {
     canExecute?: (context: ExecutionContext) => boolean;
     execute: (context: ExecutionContext) => any;
+    ranking?: number;  // Higher ranking = higher priority (default: 0)
 }
 
 export interface Commands {
@@ -86,7 +87,10 @@ export class CommandRegistry {
         if (!this.handlers.has(commandId)) {
             this.handlers.set(commandId, []);
         }
-        (this.handlers.get(commandId) as any[]).push(handler);
+        const handlerList = this.handlers.get(commandId) as Handler[];
+        handlerList.push(handler);
+        // Sort by ranking (higher ranking first), default ranking is 0
+        handlerList.sort((a, b) => (b.ranking ?? 0) - (a.ranking ?? 0));
     }
 
     getHandler(commandId: string): Handler[] | undefined {
@@ -118,6 +122,7 @@ export class CommandRegistry {
             throw new Error(`No handlers registered for command: ${commandId}`);
         }
 
+        // Handlers are already sorted by ranking, so iterate in order
         for (const handler of handlers) {
             if (handler.canExecute === undefined || handler.canExecute(context)) {
                 return handler.execute(context);

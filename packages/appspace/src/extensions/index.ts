@@ -117,3 +117,11 @@ extensionRegistry.registerExtension({
     loader: () => import("./webdav/webdav-extension"),
     icon: "cloud",
 })
+
+extensionRegistry.registerExtension({
+    id: "system.settings-tree",
+    name: "Settings Tree Editor",
+    description: "Tree-based editor for settings with in-place editing",
+    loader: () => import("./settings-tree/settings-tree-extension"),
+    icon: "sitemap",
+})

@@ -89,7 +89,8 @@ export const geospaceApp: AppDefinition = {
         "system.download",
         "system.commandpalette",
         "system.memoryusage",
-        "system.pythonpackagemanager"
+        "system.pythonpackagemanager",
+        "system.settings-tree"
     ],
 
     contributions: {
