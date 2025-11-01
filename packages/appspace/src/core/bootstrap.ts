@@ -27,6 +27,9 @@ import '../extensions';
 // Register framework system prompts
 import '../sysprompts';
 
+// Register framework contributions
+import '../contributions';
+
 // Register framework commands
 import '../commands';
 

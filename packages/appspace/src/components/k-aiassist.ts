@@ -1,4 +1,4 @@
-import {css, html, PropertyValues} from 'lit'
+import {css, html, PropertyValues, TemplateResult} from 'lit'
 import {customElement, state, query} from 'lit/decorators.js'
 import {KPart} from "../parts/k-part";
 
@@ -11,7 +11,7 @@ import {
     chatService,
     TOPIC_AICONFIG_CHANGED
 } from "../core/chatservice";
-import {toastError} from "../core/toast";
+import {toastError, toastInfo} from "../core/toast";
 import {when} from "lit/directives/when.js";
 import {topic} from "../core/events";
 import {taskService} from "../core/taskservice";
@@ -22,6 +22,17 @@ import {
 } from "../core/commandregistry";
 import {uiContext} from "../core/di";
 import {watching} from "../core/signals";
+import {appSettings} from "../core/settingsservice";
+
+interface AIAssistSettings {
+    providerName?: string;
+    model?: string;
+}
+
+interface ModelInfo {
+    id: string;
+    name?: string;
+}
 
 @customElement('k-aiassist')
 export class KAIAssist extends KPart {
@@ -36,7 +47,7 @@ export class KAIAssist extends KPart {
     private providers?: ChatProvider[]
     
     @state()
-    private defaultProvider?: ChatProvider
+    private selectedProvider?: ChatProvider
     
     @state()
     private busy: boolean = false
@@ -44,11 +55,28 @@ export class KAIAssist extends KPart {
     @state()
     private inputValue: string = ''
 
+    @state()
+    private settingsDialogOpen: boolean = false
+
+    @state()
+    private settingsProviderName?: string
+
+    @state()
+    private settingsModel?: string
+
+    @state()
+    private availableModels: ModelInfo[] = []
+
+    @state()
+    private loadingModels: boolean = false
+
     @query('.chat-messages')
     private messagesContainer?: HTMLElement
 
     @query('wa-textarea')
     private textareaElement?: any
+
+    private readonly SETTINGS_KEY = 'aiAssistChat'
 
     @topic(TOPIC_AICONFIG_CHANGED)
     public onAIConfigChanged() {
@@ -64,13 +92,37 @@ export class KAIAssist extends KPart {
         }
     }
 
-    protected doBeforeUI() {
-        chatService.getProviders().then((providers: ChatProvider[]) => {
-            this.providers = providers || []
-        })
-        chatService.getDefaultProvider().then(defaultProvider => {
-            this.defaultProvider = defaultProvider
-        })
+    protected async doBeforeUI() {
+        this.providers = await chatService.getProviders() || []
+        await this.loadSettings()
+    }
+
+    private async loadSettings() {
+        const settings: AIAssistSettings = await appSettings.get(this.SETTINGS_KEY) || {}
+        
+        if (settings.providerName) {
+            const provider = this.providers?.find(p => p.name === settings.providerName)
+            if (provider) {
+                this.selectedProvider = {
+                    ...provider,
+                    model: settings.model || provider.model
+                }
+            }
+        }
+        
+        if (!this.selectedProvider && this.providers && this.providers.length > 0) {
+            const defaultProvider = await chatService.getDefaultProvider()
+            this.selectedProvider = defaultProvider
+            await this.saveSettings(defaultProvider.name, defaultProvider.model)
+        }
+    }
+
+    private async saveSettings(providerName: string, model: string) {
+        const settings: AIAssistSettings = {
+            providerName,
+            model
+        }
+        await appSettings.set(this.SETTINGS_KEY, settings)
     }
 
     protected updated(changedProperties: PropertyValues) {
@@ -150,6 +202,11 @@ export class KAIAssist extends KPart {
             return
         }
 
+        if (!this.selectedProvider) {
+            toastError('Please configure AI provider in settings')
+            return
+        }
+
         const message = chatService.createMessage(prompt)
         this.chatContext.history.push(message)
         this.requestUpdate()
@@ -164,6 +221,7 @@ export class KAIAssist extends KPart {
         taskService.runAsync("Calling AI assistant", _progress => 
             chatService.handleUserPrompt({
                 chatContext: this.chatContext,
+                chatConfig: this.selectedProvider,
                 callContext: callContext
             }).then(_message => {
                 this.requestUpdate()
@@ -176,9 +234,99 @@ export class KAIAssist extends KPart {
         })
     }
 
-    private async onChangeDefaultProvider(event: CustomEvent) {
-        // @ts-ignore
-        this.defaultProvider = await chatService.setDefaultProvider(event.currentTarget!.value)
+    private async openSettingsDialog() {
+        const currentSettings: AIAssistSettings = await appSettings.get(this.SETTINGS_KEY) || {}
+        this.settingsProviderName = currentSettings.providerName || this.selectedProvider?.name || this.providers?.[0]?.name
+        this.settingsModel = currentSettings.model || this.selectedProvider?.model
+        
+        this.settingsDialogOpen = true
+        
+        if (this.settingsProviderName) {
+            this.fetchModels(this.settingsProviderName).catch(error => {
+                toastError(`Failed to fetch models: ${error}`)
+            })
+        }
+    }
+
+    private async closeSettingsDialog() {
+        this.settingsDialogOpen = false
+        this.availableModels = []
+    }
+
+    private async onProviderChange(event: Event) {
+        const target = event.target as any
+        const providerName = target.value
+        this.settingsProviderName = providerName
+        this.settingsModel = undefined
+        this.availableModels = []
+        await this.fetchModels(providerName)
+    }
+
+    private async fetchModels(providerName: string) {
+        const provider = this.providers?.find(p => p.name === providerName)
+        if (!provider) return
+
+        this.loadingModels = true
+        
+        try {
+            const baseUrl = provider.chatApiEndpoint.replace('/v1/chat/completions', '')
+            const modelsUrl = `${baseUrl}/v1/models`
+            
+            const response = await fetch(modelsUrl, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${provider.apiKey}`,
+                    'Content-Type': 'application/json'
+                }
+            })
+
+            if (!response.ok) {
+                throw new Error(`Failed to fetch models: ${response.statusText}`)
+            }
+
+            const data = await response.json()
+            const models = data.data || []
+            
+            this.availableModels = models.map((m: any) => ({
+                id: m.id,
+                name: m.name || m.id
+            }))
+            
+            if (!this.settingsModel && this.availableModels.length > 0) {
+                this.settingsModel = this.availableModels[0].id
+            }
+        } catch (error) {
+            toastError(`Failed to fetch models: ${error}`)
+            this.availableModels = []
+        } finally {
+            this.loadingModels = false
+        }
+    }
+
+    private async onModelChange(event: Event) {
+        const target = event.target as any
+        this.settingsModel = target.value
+    }
+
+    private async saveSettingsAndClose() {
+        if (!this.settingsProviderName || !this.settingsModel) {
+            toastError('Please select both provider and model')
+            return
+        }
+
+        await this.saveSettings(this.settingsProviderName, this.settingsModel)
+        
+        const provider = this.providers?.find(p => p.name === this.settingsProviderName)
+        if (provider) {
+            this.selectedProvider = {
+                ...provider,
+                model: this.settingsModel
+            }
+            await chatService.setDefaultProvider(this.settingsProviderName)
+        }
+        
+        this.settingsDialogOpen = false
+        toastInfo('Settings saved')
     }
 
     private copyToClipboard(text: string) {
@@ -256,14 +404,77 @@ export class KAIAssist extends KPart {
         `
     }
 
+    private renderSettingsDialog(): TemplateResult {
+        if (!this.settingsDialogOpen) return html``
+
+        return html`
+            <wa-dialog label="AI Assistant Settings" open @wa-request-close="${this.closeSettingsDialog}">
+                <div class="settings-dialog-content">
+                    <div class="settings-field">
+                        <label>Provider:</label>
+                        <wa-select 
+                            value="${this.settingsProviderName || ''}"
+                            @change="${this.onProviderChange}">
+                            ${this.providers?.map(provider => html`
+                                <wa-option value="${provider.name}">
+                                    ${provider.name}
+                                </wa-option>
+                            `)}
+                        </wa-select>
+                    </div>
+
+                    <div class="settings-field">
+                        <label>Model:</label>
+                        ${when(this.loadingModels, () => html`
+                            <div>Loading models...</div>
+                        `, () => html`
+                            ${when(this.availableModels.length > 0, () => html`
+                                <wa-select 
+                                    value="${this.settingsModel || ''}"
+                                    @change="${this.onModelChange}">
+                                    ${this.availableModels.map(model => html`
+                                        <wa-option value="${model.id}">
+                                            ${model.name || model.id}
+                                        </wa-option>
+                                    `)}
+                                </wa-select>
+                            `, () => html`
+                                <wa-select 
+                                    value="${this.settingsModel || ''}"
+                                    @change="${this.onModelChange}">
+                                    ${this.providers?.find(p => p.name === this.settingsProviderName) && html`
+                                        <wa-option value="${this.providers!.find(p => p.name === this.settingsProviderName)!.model}">
+                                            ${this.providers!.find(p => p.name === this.settingsProviderName)!.model}
+                                        </wa-option>
+                                    `}
+                                </wa-select>
+                            `)}
+                        `)}
+                    </div>
+
+                    <div class="settings-actions">
+                        <wa-button variant="default" @click="${this.closeSettingsDialog}">
+                            Cancel
+                        </wa-button>
+                        <wa-button variant="primary" @click="${this.saveSettingsAndClose}">
+                            Save
+                        </wa-button>
+                    </div>
+                </div>
+            </wa-dialog>
+        `
+    }
+
     render() {
         return html`
             <div class="chat-container">
-                ${when(!this.defaultProvider, () => html`
+                ${this.renderSettingsDialog()}
+                
+                ${when(!this.selectedProvider, () => html`
                     <div class="empty-state">
                         <wa-icon name="robot" style="font-size: 3rem; opacity: 0.3;"></wa-icon>
                         <p>No AI provider configured</p>
-                        <p class="hint">Select a provider from the menu below</p>
+                        <p class="hint">Click the settings button to configure</p>
                     </div>
                 `)}
                 
@@ -281,7 +492,7 @@ export class KAIAssist extends KPart {
                             resize="auto"
                             rows="1"
                             .value="${this.inputValue}"
-                            ?disabled="${this.busy || !this.defaultProvider}"
+                            ?disabled="${this.busy || !this.selectedProvider}"
                             @input="${this.onInput}"
                             @keydown="${this.onKeyDown}">
                         </wa-textarea>
@@ -289,29 +500,17 @@ export class KAIAssist extends KPart {
                         <wa-button
                             appearance="plain"
                             size="medium"
-                            ?disabled="${!this.inputValue.trim() || this.busy || !this.defaultProvider}"
+                            ?disabled="${!this.inputValue.trim() || this.busy || !this.selectedProvider}"
                             @click="${this.sendMessage}">
                             <wa-icon name="paper-plane" label="Send"></wa-icon>
                         </wa-button>
 
-                        <wa-dropdown placement="top-end">
-                            <wa-button
-                                slot="trigger"
-                                appearance="plain"
-                                size="medium">
-                                <wa-icon name="gear" label="Settings"></wa-icon>
-                            </wa-button>
-                            <wa-dropdown-label>AI Provider</wa-dropdown-label>
-                            ${this.providers?.map(provider => html`
-                                <wa-dropdown-item 
-                                    type="checkbox"
-                                    value="${provider.name}"
-                                    ?checked="${provider.name === this.defaultProvider?.name}"
-                                    @click="${this.onChangeDefaultProvider}">
-                                    ${provider.name}
-                                </wa-dropdown-item>
-                            `)}
-                        </wa-dropdown>
+                        <wa-button
+                            appearance="plain"
+                            size="medium"
+                            @click="${this.openSettingsDialog}">
+                            <wa-icon name="gear" label="Settings"></wa-icon>
+                        </wa-button>
                     </div>
                 </div>
             </div>
@@ -540,6 +739,32 @@ export class KAIAssist extends KPart {
 
         wa-textarea::part(base) {
             max-height: 200px;
+        }
+
+        .settings-dialog-content {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            padding: 1rem;
+            min-width: 400px;
+        }
+
+        .settings-field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .settings-field label {
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .settings-actions {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: flex-end;
+            margin-top: 0.5rem;
         }
     `;
 }

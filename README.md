@@ -1,7 +1,7 @@
 # 🌐 geo!space
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/erdalkaraca/geospace)
 [![Browser Support](https://img.shields.io/badge/Chrome%20%7C%20Opera-Supported-brightgreen)](#-browser-compatibility)
-[![AI Providers](https://img.shields.io/badge/AI%20Providers-5-blue)](#-ai-configuration)
+[![AI Providers](https://img.shields.io/badge/AI%20Providers-6-blue)](#-ai-configuration)
 [![PWA Ready](https://img.shields.io/badge/PWA-Ready-purple)](#-key-features)
 [![No Installation](https://img.shields.io/badge/Installation-None%20Required-orange)](#-quick-start)
 
@@ -202,6 +202,13 @@ Configure AI providers in the app settings (accessible via the settings button i
         "parameters": {
           "context_window_size": 4096
         }
+      },
+      {
+        "name": "mistral",
+        "model": "mistral-large-latest",
+        "chatApiEndpoint": "https://api.mistral.ai/v1/chat/completions",
+        "apiKey": "<your api key>",
+        "ocrApiEndpoint": "https://api.mistral.ai/v1/ocr"
       }
     ]
   }

@@ -7,44 +7,11 @@ export const TOPIC_AICONFIG_CHANGED = "events/chatservice/aiConfigChanged"
 const KEY_AI_CONFIG = "aiConfig";
 const AI_CONFIG_TEMPLATE = {
     "defaultProvider": "ollama",
-    "providers": [
-        {
-            "name": "ollama",
-            "model": "gemma3:12b",
-            "chatApiEndpoint": "http://localhost:11434/v1/chat/completions",
-            "apiKey": ""
-        },
-        {
-            "name": "openai",
-            "model": "gpt-4.1-mini",
-            "chatApiEndpoint": "https://api.openai.com/v1/chat/completions",
-            "apiKey": "<your api key>"
-        },
-        {
-            "name": "groq",
-            "model": "llama-3.1-8b-instant",
-            "chatApiEndpoint": "https://api.groq.com/openai/v1/chat/completions",
-            "apiKey": "<your api key>"
-        },
-        {
-            "name": "cerebras",
-            "model": "llama3.1-8b",
-            "chatApiEndpoint": "https://api.cerebras.ai/v1/chat/completions",
-            "apiKey": "<your api key>"
-        },
-        {
-            "name": "webllm",
-            "model": "gemma-2-9b-it-q4f16_1-MLC",
-            "chatApiEndpoint": "",
-            "apiKey": "",
-            "parameters": {
-                "context_window_size": 4096
-            }
-        }
-    ]
+    "providers": []
 }
 
 export const CID_PROMPTS = "chatservice.prompts"
+export const CID_CHAT_PROVIDERS = "chatservice.chatProviders"
 
 export interface AIConfig {
     defaultProvider?: string;
@@ -72,6 +39,7 @@ export interface ChatProvider {
     model: string
     apiKey: string
     chatApiEndpoint: string,
+    ocrApiEndpoint?: string
     parameters?: ModelParams
 }
 
@@ -104,20 +72,20 @@ const onlineFetcher = {
     name: "openai-api",
     canHandle: (_chatProvider: ChatProvider) => true,
     completionApi: async (fetcherParams: FetcherParams) => {
-        const response = await fetch(fetcherParams.chatConfig.chatApiEndpoint, {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${fetcherParams.chatConfig.apiKey}`,
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            },
-            body: JSON.stringify({
-                model: fetcherParams.model,
-                stream: fetcherParams.stream,
-                messages: fetcherParams.messages,
-                ...fetcherParams.chatConfig.parameters
-            })
-        });
+            const response = await fetch(fetcherParams.chatConfig.chatApiEndpoint, {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${fetcherParams.chatConfig.apiKey}`,
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                },
+                body: JSON.stringify({
+                    model: fetcherParams.model,
+                    stream: fetcherParams.stream,
+                    messages: fetcherParams.messages,
+                    ...fetcherParams.chatConfig.parameters
+                })
+            });
         return response.json().then(json => {
             const content = json["choices"][0]["message"]["content"];
             return {
@@ -137,6 +105,10 @@ export interface SysPromptContribution extends Contribution {
     messageDecorator?: (context: any) => void;
 }
 
+export interface ChatProviderContribution extends Contribution {
+    provider: ChatProvider;
+}
+
 export class ChatService {
     private aiConfig?: AIConfig;
     private fetchers: Fetcher[] = [];
@@ -152,6 +124,33 @@ export class ChatService {
         this.promptContributions = contributionRegistry.getContributions(CID_PROMPTS) as SysPromptContribution[]
     }
 
+    private getContributedProviders(): ChatProvider[] {
+        const contributions = contributionRegistry.getContributions(CID_CHAT_PROVIDERS) as ChatProviderContribution[]
+        return contributions.map(c => c.provider)
+    }
+
+    private mergeProviders(contributed: ChatProvider[], saved: ChatProvider[]): ChatProvider[] {
+        const merged = new Map<string, ChatProvider>()
+        
+        contributed.forEach(provider => {
+            merged.set(provider.name, { ...provider })
+        })
+        
+        saved.forEach(savedProvider => {
+            const contributedProvider = merged.get(savedProvider.name)
+            if (contributedProvider) {
+                merged.set(savedProvider.name, {
+                    ...contributedProvider,
+                    ...savedProvider
+                })
+            } else {
+                merged.set(savedProvider.name, savedProvider)
+            }
+        })
+        
+        return Array.from(merged.values())
+    }
+
     public registerFetcher(fetcher: Fetcher) {
         this.fetchers.push(fetcher)
     }
@@ -160,8 +159,16 @@ export class ChatService {
         if (!this.aiConfig) {
             this.aiConfig = await appSettings.get(KEY_AI_CONFIG)
             if (!this.aiConfig) {
-                await appSettings.set(KEY_AI_CONFIG, AI_CONFIG_TEMPLATE)
+                const contributedProviders = this.getContributedProviders()
+                const initialConfig: AIConfig = {
+                    ...AI_CONFIG_TEMPLATE,
+                    providers: contributedProviders
+                }
+                await appSettings.set(KEY_AI_CONFIG, initialConfig)
                 this.aiConfig = await appSettings.get(KEY_AI_CONFIG)
+            } else {
+                const contributedProviders = this.getContributedProviders()
+                this.aiConfig.providers = this.mergeProviders(contributedProviders, this.aiConfig.providers || [])
             }
             publish(TOPIC_AICONFIG_CHANGED, this.aiConfig)
         }

@@ -59,7 +59,7 @@ export class KMDEditor extends KPart {
 
     protected render() {
         return html`
-            <div style="max-height: 90vh;">${unsafeHTML(this.mdContents)}</div>`
+            <div style="padding: 10px;">${unsafeHTML(this.mdContents)}</div>`
     }
 
     private updateContents(text: string) {

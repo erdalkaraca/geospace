@@ -4,7 +4,7 @@ export { commandRegistry, CommandStack, registerAll, CommandRegistry } from '../
 export { contributionRegistry } from '../core/contributionregistry';
 export { extensionRegistry } from '../core/extensionregistry';
 export { workspaceService, File, StringFile, Directory, FileContentType, WorkspaceService } from '../core/filesys';
-export { editorRegistry } from '../core/editorregistry';
+export { editorRegistry, type EditorInput } from '../core/editorregistry';
 export { 
     activePartSignal,
     activeEditorSignal,
@@ -36,7 +36,7 @@ export { taskService } from '../core/taskservice';
 export { PyEnv } from '../core/pyservice';
 export { publish, subscribe } from '../core/events';
 export { watching } from '../core/signals';
-export { CID_PROMPTS } from '../core/chatservice';
+export { CID_PROMPTS, CID_CHAT_PROVIDERS, type ChatProviderContribution, type ChatProvider, chatService } from '../core/chatservice';
 export { 
     fetchReleases,
     fetchLatestRelease,

@@ -1,0 +1,2 @@
+import "./chat-provider-contributions";
+

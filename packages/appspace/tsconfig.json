@@ -11,7 +11,12 @@
     "declarationMap": true,
     "sourceMap": true,
     "experimentalDecorators": true,
-    "useDefineForClassFields": false
+    "useDefineForClassFields": false,
+    "baseUrl": ".",
+    "paths": {
+      "@kispace/appspace": ["src"],
+      "@kispace/appspace/*": ["src/*"]
+    }
   },
   "include": ["src/**/*"]
 }
