@@ -21,6 +21,27 @@ import {contributionRegistry, Contribution} from "./contributionregistry";
 const logger = createLogger('AppLoader');
 
 /**
+ * Extracts error message from an error object.
+ */
+function getErrorMessage(error: unknown): string {
+    return error instanceof Error ? error.message : String(error);
+}
+
+/**
+ * Extracts the last path segment from a URL string.
+ */
+function extractLastPathSegment(urlString: string): string | undefined {
+    try {
+        const url = new URL(urlString);
+        const pathSegments = url.pathname.split('/').filter(Boolean);
+        return pathSegments.length > 0 ? pathSegments[pathSegments.length - 1] : undefined;
+    } catch {
+        const pathSegments = urlString.split('/').filter(Boolean);
+        return pathSegments.length > 0 ? pathSegments[pathSegments.length - 1] : undefined;
+    }
+}
+
+/**
  * Application contributions interface.
  * Declaratively defines all contributions for an application.
  */
@@ -90,6 +111,30 @@ export interface AppDefinition {
 }
 
 /**
+ * Options for registering an application with the apploader.
+ */
+export interface RegisterAppOptions {
+    /** 
+     * Default app ID to load if no app URL parameter is provided.
+     * If not specified, the first registered app will be loaded.
+     */
+    defaultAppId?: string;
+    
+    /** 
+     * Whether to automatically start the apploader after registration.
+     * If true, the apploader will start immediately after the app is registered.
+     * Defaults to false.
+     */
+    autoStart?: boolean;
+    
+    /** 
+     * DOM element to render the app into.
+     * Defaults to document.body.
+     */
+    container?: HTMLElement;
+}
+
+/**
  * App Loader Service
  * 
  * Manages application lifecycle:
@@ -101,21 +146,180 @@ export interface AppDefinition {
 class AppLoaderService {
     private apps: Map<string, AppDefinition> = new Map();
     private currentApp?: AppDefinition;
+    private started: boolean = false;
+    private defaultAppId?: string;
+    private container: HTMLElement = document.body;
     
     /**
      * Register an application with the framework.
+     * Optionally starts the apploader automatically after registration.
      * 
      * @param app - Application definition
+     * @param options - Optional configuration for registration and auto-starting
      */
-    registerApp(app: AppDefinition): void {
+    registerApp(app: AppDefinition, options?: RegisterAppOptions): void {
         if (this.apps.has(app.id)) {
             logger.warn(`App '${app.id}' is already registered. Overwriting.`);
         }
         
         this.apps.set(app.id, app);
         logger.info(`Registered app: ${app.name} (${app.id}) v${app.version}`);
+        
+        if (options?.defaultAppId) {
+            this.defaultAppId = options.defaultAppId;
+        }
+        
+        if (options?.container) {
+            this.container = options.container;
+        }
+        
+        if (options?.autoStart && !this.started) {
+            this.start();
+        }
     }
     
+    /**
+     * Load an extension from a URL and register it.
+     * The module at the URL must export a default function that receives uiContext.
+     * The extension will register its contributions when loaded.
+     * 
+     * @param url - URL to the extension module
+     * @returns Promise that resolves when the extension is loaded
+     */
+    async loadExtensionFromUrl(url: string): Promise<void> {
+        logger.info(`Loading extension from URL: ${url}...`);
+        
+        try {
+            const extensionId = `url:${url}`;
+            
+            if (extensionRegistry.isEnabled(extensionId)) {
+                logger.info(`Extension from URL ${url} is already enabled`);
+                return;
+            }
+            
+            const extension: Extension = {
+                id: extensionId,
+                name: `Extension from ${url}`,
+                description: `Extension loaded from URL: ${url}`,
+                url: url
+            };
+            
+            extensionRegistry.registerExtension(extension);
+            logger.info(`Registered extension from URL: ${extensionId}`);
+            
+            extensionRegistry.enable(extensionId, false);
+            
+            logger.info(`Successfully enabled extension from URL: ${url}`);
+        } catch (error) {
+            logger.error(`Failed to load extension from URL ${url}: ${getErrorMessage(error)}`);
+            throw error;
+        }
+    }
+
+    /**
+     * Load an application definition from a URL.
+     * The module at the URL must export an AppDefinition as the default export.
+     * 
+     * @param url - URL to the app definition module
+     * @returns Promise that resolves to the loaded AppDefinition
+     */
+    async loadAppFromUrl(url: string): Promise<AppDefinition> {
+        logger.info(`Loading app from URL: ${url}...`);
+        
+        try {
+            const module = await import(/* @vite-ignore */ url);
+            
+            if (!module.default) {
+                throw new Error(`Module at ${url} does not have a default export`);
+            }
+            
+            const app = module.default as AppDefinition;
+            
+            if (!app.id || !app.name || !app.version || !app.render) {
+                throw new Error(`Module at ${url} does not export a valid AppDefinition`);
+            }
+            
+            logger.info(`Successfully loaded app definition from URL: ${app.name} (${app.id})`);
+            return app;
+        } catch (error) {
+            logger.error(`Failed to load app from URL ${url}: ${getErrorMessage(error)}`);
+            throw error;
+        }
+    }
+
+    /**
+     * Start the application loader.
+     * Checks URL parameters for app=URL, loads that extension or app if found.
+     * URL parameter has higher precedence than defaultAppId.
+     * Then loads the default app or first registered app.
+     * This method is idempotent - calling it multiple times only starts once.
+     */
+    async start(): Promise<void> {
+        if (this.started) {
+            logger.debug('AppLoader already started');
+            return;
+        }
+        
+        if (document.readyState === 'loading') {
+            await new Promise<void>((resolve) => {
+                document.addEventListener('DOMContentLoaded', () => resolve(), { once: true });
+            });
+        }
+        
+        this.started = true;
+        logger.info('Starting AppLoader...');
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        const appUrl = urlParams.get('app');
+        const appIdFromUrl = urlParams.get('appId');
+        const appsBeforeExtension = this.apps.size;
+        
+        let appIdFromAppUrl: string | undefined;
+        if (appUrl) {
+            appIdFromAppUrl = extractLastPathSegment(appUrl);
+            if (appIdFromAppUrl) {
+                logger.info(`Extracted app ID from URL path: ${appIdFromAppUrl}`);
+            }
+        }
+        
+        if (appUrl) {
+            try {
+                logger.info(`URL parameter 'app' found: ${appUrl}, attempting to load extension or app`);
+                
+                try {
+                    await this.loadExtensionFromUrl(appUrl);
+                    logger.info(`Successfully loaded extension from URL: ${appUrl}`);
+                } catch (extensionError) {
+                    logger.info(`Failed to load as extension, trying as app definition: ${getErrorMessage(extensionError)}`);
+                    
+                    try {
+                        const app = await this.loadAppFromUrl(appUrl);
+                        await this.loadApp(app, this.container);
+                        logger.info(`Successfully loaded app from URL: ${appUrl}`);
+                        return;
+                    } catch (appError) {
+                        logger.error(`Failed to load from URL as both extension and app: ${getErrorMessage(appError)}`);
+                        throw appError;
+                    }
+                }
+            } catch (error) {
+                logger.error(`Failed to load from URL parameter, falling back to default app: ${getErrorMessage(error)}`);
+            }
+        }
+        
+        const appToLoad = this.selectAppToLoad({
+            appIdFromUrl,
+            appIdFromAppUrl,
+            appsBeforeExtension
+        });
+        
+        if (!appToLoad) {
+            throw new Error('No apps registered');
+        }
+        
+        await this.loadApp(appToLoad, this.container);
+    }
+
     /**
      * Load and initialize an application.
      * 
@@ -230,6 +434,65 @@ class AppLoaderService {
      */
     getRegisteredApps(): AppDefinition[] {
         return Array.from(this.apps.values());
+    }
+    
+    /**
+     * Select which app to load based on priority:
+     * 1. appId URL parameter
+     * 2. App ID extracted from app URL path
+     * 3. App registered by extension
+     * 4. Default app ID
+     * 5. First registered app
+     */
+    private selectAppToLoad(options: {
+        appIdFromUrl: string | null;
+        appIdFromAppUrl: string | undefined;
+        appsBeforeExtension: number;
+    }): AppDefinition | undefined {
+        const { appIdFromUrl, appIdFromAppUrl, appsBeforeExtension } = options;
+        
+        if (appIdFromUrl) {
+            const app = this.apps.get(appIdFromUrl);
+            if (app) {
+                logger.info(`Loading app specified by URL parameter 'appId': ${appIdFromUrl}`);
+                return app;
+            }
+            logger.warn(`App ID '${appIdFromUrl}' from URL parameter not found`);
+        }
+        
+        if (appIdFromAppUrl) {
+            const app = this.apps.get(appIdFromAppUrl);
+            if (app) {
+                logger.info(`Loading app using ID extracted from app URL path: ${appIdFromAppUrl}`);
+                return app;
+            }
+        }
+        
+        if (this.apps.size > appsBeforeExtension) {
+            const newlyRegisteredApps = Array.from(this.apps.values()).slice(appsBeforeExtension);
+            if (newlyRegisteredApps.length > 0) {
+                const app = newlyRegisteredApps[0];
+                logger.info(`Loading app registered by extension: ${app.name} (${app.id})`);
+                return app;
+            }
+        }
+        
+        if (this.defaultAppId) {
+            const app = this.apps.get(this.defaultAppId);
+            if (app) {
+                return app;
+            }
+            logger.warn(`Default app '${this.defaultAppId}' not found`);
+        }
+        
+        const registeredApps = this.getRegisteredApps();
+        if (registeredApps.length > 0) {
+            const app = registeredApps[0];
+            logger.info(`Loading first registered app: ${app.name} (${app.id})`);
+            return app;
+        }
+        
+        return undefined;
     }
 }
 

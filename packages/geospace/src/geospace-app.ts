@@ -332,5 +332,8 @@ export const geospaceApp: AppDefinition = {
     },
 };
 
-// Self-bootstrap: load and render the app
-appLoaderService.loadApp(geospaceApp, document.body);
+appLoaderService.registerApp(geospaceApp, {
+    defaultAppId: 'geospace',
+    autoStart: true,
+    container: document.body
+});
