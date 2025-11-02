@@ -2,6 +2,7 @@ import { css, html, PropertyValues, TemplateResult } from 'lit';
 import { customElement, state, query } from 'lit/decorators.js';
 import { KPart } from "../../parts/k-part";
 import { when } from "lit/directives/when.js";
+import { repeat } from "lit/directives/repeat.js";
 import './components';
 import {
     ChatHistory,
@@ -20,14 +21,12 @@ import {
 import { toastError, toastInfo } from "../../core/toast";
 import { topic } from "../../core/events";
 import { taskService } from "../../core/taskservice";
-import { activePartSignal } from "../../core/appstate";
 import {
     commandRegistry as globalCommandRegistry,
     CommandRegistry,
     type ExecutionContext
 } from "../../core/commandregistry";
 import { uiContext } from "../../core/di";
-import { watching } from "../../core/signals";
 import { appSettings } from "../../core/settingsservice";
 
 interface AIViewSettings {
@@ -48,6 +47,7 @@ interface StreamingMessage {
 
 interface AgentResponseGroup {
     id: string;
+    sessionId: string; // Session this group belongs to
     userMessageIndex: number; // Index of user message in history
     userMessage: ChatMessage;
     timestamp: Date;
@@ -70,8 +70,26 @@ export class KAView extends KPart {
         history: []
     }
 
+    private chatSessions: Map<string, ChatHistory> = new Map()
+
     @state()
-    private chatContext: ChatHistory = this.defaultChatContext
+    private activeSessionId: string = ''
+
+    @state()
+    private sessionIds: string[] = []
+
+    private get chatContext(): ChatHistory {
+        if (!this.activeSessionId || !this.chatSessions.has(this.activeSessionId)) {
+            return this.defaultChatContext
+        }
+        return this.chatSessions.get(this.activeSessionId)!
+    }
+
+    private set chatContext(value: ChatHistory) {
+        if (this.activeSessionId) {
+            this.chatSessions.set(this.activeSessionId, value)
+        }
+    }
 
     @state()
     private providers?: ChatProvider[]
@@ -124,8 +142,6 @@ export class KAView extends KPart {
     private updateAnimationFrame?: number
     private pendingUpdate = false
 
-    @query('.chat-messages')
-    private messagesContainer?: HTMLElement
 
 
     private readonly SETTINGS_KEY = 'aiViewChat'
@@ -135,10 +151,6 @@ export class KAView extends KPart {
         this.doBeforeUI()
     }
 
-    @watching(activePartSignal)
-    protected onPartChanged(part: KPart) {
-        this.chatContext = this.defaultChatContext
-    }
 
     private getAgentMetadata(role: string): { label: string; icon: string } {
         const contributions = aiService.getAgentContributions()
@@ -168,8 +180,35 @@ export class KAView extends KPart {
     }
 
     protected async doBeforeUI() {
+        if (this.chatSessions.size === 0) {
+            this.createNewSession()
+        }
         this.providers = await aiService.getProviders() || []
         await this.loadSettings()
+    }
+
+    private createNewSession(): string {
+        const sessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+        this.chatSessions.set(sessionId, { history: [] })
+        this.sessionIds = Array.from(this.chatSessions.keys())
+        this.activeSessionId = sessionId
+        this.requestUpdate()
+        return sessionId
+    }
+
+    private deleteSession(sessionId: string) {
+        if (this.chatSessions.size <= 1) {
+            toastError('Cannot delete the last session')
+            return
+        }
+        this.chatSessions.delete(sessionId)
+        this.sessionIds = Array.from(this.chatSessions.keys())
+        if (this.activeSessionId === sessionId) {
+            const firstSession = this.sessionIds[0]
+            this.activeSessionId = firstSession
+            this.inputValue = ''
+        }
+        this.requestUpdate()
     }
 
     private async loadSettings() {
@@ -203,17 +242,24 @@ export class KAView extends KPart {
     protected updated(changedProperties: PropertyValues) {
         super.updated(changedProperties)
         
-        if (changedProperties.has('chatContext') || changedProperties.has('busy') || changedProperties.has('streamingMessages')) {
+        if (changedProperties.has('chatSessions') || changedProperties.has('activeSessionId') || changedProperties.has('busy') || changedProperties.has('streamingMessages')) {
             this.scrollToBottom()
         }
     }
 
     private scrollToBottom() {
-        if (!this.messagesContainer) return
+        if (!this.activeSessionId) return
         
         requestAnimationFrame(() => {
-            if (this.messagesContainer) {
-                this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight
+            const tabPanel = this.shadowRoot?.querySelector(`wa-tab-panel[name="${this.activeSessionId}"]`)
+            const scroller = tabPanel?.querySelector('wa-scroller.chat-messages') as any
+            if (scroller) {
+                const scrollContainer = scroller.shadowRoot?.querySelector('.scroll-container') as HTMLElement
+                if (scrollContainer) {
+                    scrollContainer.scrollTop = scrollContainer.scrollHeight
+                } else if (scroller.scrollTo) {
+                    scroller.scrollTo({ top: scroller.scrollHeight, behavior: 'smooth' })
+                }
             }
         })
     }
@@ -223,11 +269,25 @@ export class KAView extends KPart {
         const prompt = this.inputValue.trim()
         if (!prompt || this.busy) return
 
+        await this.updateActiveSessionFromTabGroup()
+
+        if (!this.activeSessionId && this.sessionIds.length > 0) {
+            this.activeSessionId = this.sessionIds[0]
+        }
+
         this.inputValue = ''
         this.requestUpdate()
         
 
         await this.handlePrompt(prompt)
+    }
+
+    private async updateActiveSessionFromTabGroup() {
+        await this.updateComplete
+        const tabGroup = this.shadowRoot?.querySelector('wa-tab-group') as any
+        if (tabGroup?.active && this.chatSessions.has(tabGroup.active)) {
+            this.activeSessionId = tabGroup.active
+        }
     }
 
     async runCommand(prompt: string, commandRegistry?: CommandRegistry) {
@@ -269,8 +329,28 @@ export class KAView extends KPart {
             return
         }
 
+        await this.updateActiveSessionFromTabGroup()
+
+        if (!this.activeSessionId) {
+            if (this.sessionIds.length > 0) {
+                this.activeSessionId = this.sessionIds[0]
+            } else {
+                this.createNewSession()
+            }
+        }
+
         const message = aiService.createMessage(prompt)
-        this.chatContext.history.push(message)
+        const currentSessionId = this.activeSessionId
+        if (!currentSessionId) {
+            console.error('No active session ID when adding message')
+            return
+        }
+        const sessionContext = this.chatSessions.get(currentSessionId)
+        if (!sessionContext) {
+            this.chatSessions.set(currentSessionId, { history: [] })
+        }
+        const activeContext = this.chatSessions.get(currentSessionId)!
+        activeContext.history.push(message)
         this.requestUpdate()
         this.busy = true
 
@@ -297,9 +377,16 @@ export class KAView extends KPart {
                 return true
             }).sort((a, b) => (b.priority || 0) - (a.priority || 0))
             
+            const currentSessionId = this.activeSessionId || this.sessionIds[0] || ''
+            if (!currentSessionId || !this.chatSessions.has(currentSessionId)) {
+                console.error('No active session found when creating agent group')
+                return
+            }
+
             const groupId = `group-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
             this.currentGroupId = groupId
-            this.currentUserMessageIndex = this.chatContext.history.length - 1
+            const sessionContext = this.chatSessions.get(currentSessionId)!
+            this.currentUserMessageIndex = sessionContext.history.length - 1
 
             const roles = matchingAgents.length > 0 
                 ? matchingAgents.map(a => a.role)
@@ -307,6 +394,7 @@ export class KAView extends KPart {
 
             const group: AgentResponseGroup = {
                 id: groupId,
+                sessionId: currentSessionId,
                 userMessageIndex: this.currentUserMessageIndex,
                 userMessage: message,
                 timestamp: new Date(),
@@ -569,8 +657,8 @@ export class KAView extends KPart {
 
 
 
-    private renderMessage(message: ChatMessage, index?: number, isStreaming?: boolean, showHeader: boolean = true) {
-        const messageIndex = index ?? this.chatContext.history.indexOf(message);
+    private renderMessage(context: ChatHistory, message: ChatMessage, index?: number, isStreaming?: boolean, showHeader: boolean = true) {
+        const messageIndex = index ?? context.history.indexOf(message);
         return html`
             <ai-chat-message
                 .message="${message}"
@@ -781,64 +869,125 @@ export class KAView extends KPart {
                         hint="Click the settings button to configure">
                     </ai-empty-state>
                 `)}
-                
-                <div class="chat-messages">
-                    ${this.chatContext.history.map((message, index) => {
-                        if (message.role === "user") {
-                            const group = Array.from(this.agentResponseGroups.values()).find(g => 
-                                g.userMessageIndex === index
-                            )
-                            if (group) {
-                                return html`
-                                    <ai-chat-message
-                                        .message="${message}"
-                                        .isStreaming="${false}"
-                                        .showHeader="${true}"
-                                        .messageIndex="${index}"
-                                        @resend="${(e: CustomEvent) => {
-                                            this.handleResend(e.detail.message);
-                                        }}">
-                                    </ai-chat-message>
-                                    <ai-agent-response-group
-                                        .group="${group}"
-                                        .findStreamingMessage="${(role: string) => this.findStreamingMessage(role)}">
-                                    </ai-agent-response-group>
-                                `
-                            }
-                        }
-                        
-                        const group = Array.from(this.agentResponseGroups.values()).find(g => 
-                            g.messageIndices.get(message.role) === index
-                        )
-                        if (group) {
-                            return html``
-                        }
-                        return this.renderMessage(message, index)
-                    })}
-                    ${Array.from(this.streamingMessages.values()).map(msg => {
-                        const inGroup = Array.from(this.agentResponseGroups.values()).some(g => 
-                            g.agents.has(msg.message.role)
-                        )
-                        if (inGroup) {
-                            return html``
-                        }
-                        return this.renderMessage(msg.message, -1, msg.isStreaming)
-                    })}
-                    ${when(this.busy && this.streamingMessages.size === 0, () => html`
-                        <ai-loading-indicator></ai-loading-indicator>
-                    `)}
-                </div>
 
-                <ai-chat-input
-                    .value="${this.inputValue}"
-                    .disabled="${this.busy}"
-                    .busy="${this.busy}"
-                    .hasProvider="${!!this.selectedProvider}"
-                    @input-change="${(e: CustomEvent) => { this.inputValue = e.detail.value }}"
-                    @send="${() => this.sendMessage()}"
-                    @cancel="${() => this.cancelStream()}"
-                    @open-settings="${() => this.openSettingsDialog()}">
-                </ai-chat-input>
+                ${when(this.sessionIds.length > 0, () => html`
+                    <wa-tab-group 
+                        active="${this.activeSessionId || this.sessionIds[0] || ''}" 
+                        @wa-tab-show="${(e: CustomEvent) => {
+                            const panel = e.detail.panel as string
+                            if (panel && this.chatSessions.has(panel)) {
+                                this.activeSessionId = panel
+                                this.inputValue = ''
+                                this.requestUpdate()
+                            }
+                        }}"
+                        @wa-tab-hide="${(e: CustomEvent) => {
+                            const panel = e.detail.panel as string
+                            if (panel === this.activeSessionId) {
+                                const nextSession = this.sessionIds.find(id => id !== panel)
+                                if (nextSession) {
+                                    this.activeSessionId = nextSession
+                                    this.requestUpdate()
+                                }
+                            }
+                        }}">
+                        ${repeat(this.sessionIds, (sessionId) => sessionId, (sessionId, index) => html`
+                            <wa-tab panel="${sessionId}">
+                                <span>Chat ${index + 1}</span>
+                                ${when(this.sessionIds.length > 1, () => html`
+                                    <wa-icon 
+                                        name="xmark" 
+                                        label="Close"
+                                        @click="${(e: Event) => {
+                                            e.stopPropagation()
+                                            this.deleteSession(sessionId)
+                                        }}">
+                                    </wa-icon>
+                                `)}
+                            </wa-tab>
+                            <wa-tab-panel name="${sessionId}">
+                                <wa-scroller class="chat-messages" orientation="vertical">
+                                    ${(() => {
+                                        const sessionContext = this.chatSessions.get(sessionId) || { history: [] }
+                                        return html`
+                                            <div class="chat-content">
+                                                ${sessionContext.history.map((message, index) => {
+                                                    if (message.role === "user") {
+                                                        const group = Array.from(this.agentResponseGroups.values()).find(g => 
+                                                            g.sessionId === sessionId && g.userMessageIndex === index && g.userMessage === message
+                                                        )
+                                                        if (group) {
+                                                            return html`
+                                                                <ai-chat-message
+                                                                    .message="${message}"
+                                                                    .isStreaming="${false}"
+                                                                    .showHeader="${true}"
+                                                                    .messageIndex="${index}"
+                                                                    @resend="${(e: CustomEvent) => {
+                                                                        this.handleResend(e.detail.message);
+                                                                    }}">
+                                                                </ai-chat-message>
+                                                                <ai-agent-response-group
+                                                                    .group="${group}"
+                                                                    .findStreamingMessage="${(role: string) => this.findStreamingMessage(role)}">
+                                                                </ai-agent-response-group>
+                                                            `
+                                                        }
+                                                    }
+                                                    
+                                                    const group = Array.from(this.agentResponseGroups.values()).find(g => 
+                                                        g.sessionId === sessionId && g.messageIndices.get(message.role) === index
+                                                    )
+                                                    if (group) {
+                                                        return html``
+                                                    }
+                                                    return this.renderMessage(sessionContext, message, index)
+                                                })}
+                                                ${when(this.activeSessionId === sessionId, () => html`
+                                                    ${Array.from(this.streamingMessages.values()).map(msg => {
+                                                        const inGroup = Array.from(this.agentResponseGroups.values()).some(g => 
+                                                            g.sessionId === sessionId && g.agents.has(msg.message.role)
+                                                        )
+                                                        if (inGroup) {
+                                                            return html``
+                                                        }
+                                                        const sessionContext = this.chatSessions.get(sessionId) || { history: [] }
+                                                        return this.renderMessage(sessionContext, msg.message, -1, msg.isStreaming)
+                                                    })}
+                                                    ${when(this.busy && this.streamingMessages.size === 0, () => html`
+                                                        <ai-loading-indicator></ai-loading-indicator>
+                                                    `)}
+                                                `)}
+                                            </div>
+                                        `
+                                    })()}
+                                </wa-scroller>
+                            </wa-tab-panel>
+                        `)}
+                        <wa-button 
+                            slot="nav"
+                            variant="neutral"
+                            appearance="plain"
+                            size="small"
+                            title="New Chat"
+                            @click="${() => {
+                                this.createNewSession()
+                                this.requestUpdate()
+                            }}">
+                            <wa-icon name="plus" label="New Chat"></wa-icon>
+                        </wa-button>
+                    </wa-tab-group>
+                    <ai-chat-input
+                        .value="${this.inputValue}"
+                        .disabled="${this.busy}"
+                        .busy="${this.busy}"
+                        .hasProvider="${!!this.selectedProvider}"
+                        @input-change="${(e: CustomEvent) => { this.inputValue = e.detail.value }}"
+                        @send="${() => this.sendMessage()}"
+                        @cancel="${() => this.cancelStream()}"
+                        @open-settings="${() => this.openSettingsDialog()}">
+                    </ai-chat-input>
+                `)}
             </div>
         `
     }
@@ -860,16 +1009,55 @@ export class KAView extends KPart {
             overflow: hidden;
         }
 
-        .chat-messages {
-            flex: 1;
-            overflow-y: auto;
-            overflow-x: hidden;
-            min-height: 0;
+        wa-scroller.chat-messages {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: var(--wa-scrollbar-width, 15px);
+            bottom: 0;
+        }
+
+        .chat-content {
             padding: 1rem;
             display: flex;
             flex-direction: column;
             gap: 1rem;
-            scroll-behavior: smooth;
+        }
+
+        wa-tab-group {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        wa-tab-group::part(base) {
+            display: grid;
+            grid-template-rows: auto minmax(0, 1fr);
+            height: 100%;
+            width: 100%;
+        }
+
+        wa-tab-panel[active] {
+            display: grid;
+            grid-template-rows: minmax(0, 1fr);
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            position: relative;
+            --wa-scrollbar-width: 10px;
+        }
+
+        wa-tab::part(base) {
+            padding: 3px 0.5rem;
+        }
+
+        wa-tab-panel {
+            --padding: 0px;
+        }
+
+        ai-chat-input {
+            flex-shrink: 0;
         }
     `;
 }
