@@ -47,7 +47,7 @@ commandRegistry.registerAll({
         "parameters": [
             {
                 "name": "zoom",
-                "description": "the zoom level, an interger between 0 and 12",
+                "description": "the zoom level (typically 0-20, where 0=world view, 5-9=country/region, 10-12=city, 13-15=street, 16-20=building detail)",
                 "required": true
             }
         ]

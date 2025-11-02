@@ -251,7 +251,15 @@ export const geospaceApp: AppDefinition = {
                 const extensionsStr = `***Available Extensions:***\n${JSON.stringify(extensions, null, 2)}`
                 return `${APP_SYS_PROMPT}\n\n${extensionsStr}`
             },
-            promptEnhancers: [appSupportPromptEnhancer]
+            promptEnhancers: [appSupportPromptEnhancer],
+            tools: {
+                enabled: true,
+                // Expose commands as tools so App Support can execute commands directly
+                commandFilter: (_command: any, context: ExecutionContext) => {
+                    // Only expose commands when an editor is active (commands are contextual)
+                    return !!context.activeEditor
+                }
+            }
         } as AgentContribution)
 
         registerAll({

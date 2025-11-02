@@ -640,12 +640,12 @@ export class KAView extends KPart {
         this.availableModels = []
     }
 
-    private async onProviderChange(event: Event) {
-        const target = event.target as any
-        const providerName = target.value
+    private async onProviderChange(providerName: string) {
         this.settingsProviderName = providerName
         this.settingsModel = undefined
         this.availableModels = []
+        this.loadingModels = true
+        this.requestUpdate()
         await this.fetchModels(providerName)
     }
 

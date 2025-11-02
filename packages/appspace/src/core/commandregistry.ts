@@ -119,16 +119,31 @@ export class CommandRegistry {
         const handlers = this.getHandler(commandId);
 
         if (!handlers) {
+            logger.debug(`[CommandRegistry] No handlers registered for command: ${commandId}`);
             throw new Error(`No handlers registered for command: ${commandId}`);
         }
+
+        const command = this.getCommand(commandId);
+        const paramsStr = context.params ? ` params: ${JSON.stringify(context.params)}` : '';
+        const sourceStr = context.source ? ` source: ${context.source?.constructor?.name || typeof context.source}` : '';
+        logger.debug(`[CommandRegistry] Executing command: ${commandId}${command ? ` (${command.name})` : ''}${paramsStr}${sourceStr}`);
 
         // Handlers are already sorted by ranking, so iterate in order
         for (const handler of handlers) {
             if (handler.canExecute === undefined || handler.canExecute(context)) {
-                return handler.execute(context);
+                try {
+                    const result = handler.execute(context);
+                    const resultType = result !== undefined ? typeof result : 'void';
+                    logger.debug(`[CommandRegistry] Command executed successfully: ${commandId} (result: ${resultType})`);
+                    return result;
+                } catch (error) {
+                    const errorMsg = error instanceof Error ? error.message : String(error);
+                    logger.debug(`[CommandRegistry] Command execution failed: ${commandId} - ${errorMsg}`);
+                    throw error;
+                }
             }
         }
-        logger.error(`No handler found to execute command: ${commandId}`);
+        logger.error(`[CommandRegistry] No handler found to execute command: ${commandId}`);
     }
 
     createAndRegisterCommand(id: string, name: string, description: string, parameters: Parameter[], handler?: Handler) {
