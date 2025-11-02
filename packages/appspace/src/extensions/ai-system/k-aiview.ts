@@ -1,8 +1,8 @@
 import { css, html, PropertyValues, TemplateResult } from 'lit';
 import { customElement, state, query } from 'lit/decorators.js';
 import { KPart } from "../../parts/k-part";
-import { marked } from "marked";
-import { unsafeHTML } from 'lit/directives/unsafe-html.js';
+import { when } from "lit/directives/when.js";
+import './components';
 import {
     ChatHistory,
     ChatMessage,
@@ -18,7 +18,6 @@ import {
     AgentContribution
 } from "./aiservice";
 import { toastError, toastInfo } from "../../core/toast";
-import { when } from "lit/directives/when.js";
 import { topic } from "../../core/events";
 import { taskService } from "../../core/taskservice";
 import { activePartSignal } from "../../core/appstate";
@@ -113,11 +112,7 @@ export class KAView extends KPart {
     @state()
     private pausedWorkflows: Map<string, { token: string; options: AgentWorkflowOptions; results: AgentWorkflowResult }> = new Map()
 
-    @state()
-    private activeAttentionDialog?: { messageIndex: number; request: UserAttentionRequest; message: ChatMessage }
 
-    @state()
-    private attentionInputValue: string = ''
 
     @state()
     private agentResponseGroups: Map<string, AgentResponseGroup> = new Map()
@@ -132,8 +127,6 @@ export class KAView extends KPart {
     @query('.chat-messages')
     private messagesContainer?: HTMLElement
 
-    @query('wa-textarea')
-    private textareaElement?: any
 
     private readonly SETTINGS_KEY = 'aiViewChat'
 
@@ -160,16 +153,6 @@ export class KAView extends KPart {
         }
     }
 
-    private renderStatusIcon(status: 'streaming' | 'completed' | 'error'): TemplateResult {
-        switch (status) {
-            case 'streaming':
-                return html`<wa-icon name="spinner" class="spinning"></wa-icon>`
-            case 'completed':
-                return html`<wa-icon name="check-circle" class="status-success"></wa-icon>`
-            case 'error':
-                return html`<wa-icon name="exclamation-circle" class="status-error"></wa-icon>`
-        }
-    }
 
     private findStreamingMessage(role: string): ChatMessage | undefined {
         const streamingMsg = Array.from(this.streamingMessages.values()).find(m => m.message.role === role)
@@ -239,17 +222,6 @@ export class KAView extends KPart {
         })
     }
 
-    private onInput(event: Event) {
-        const textarea = event.target as any
-        this.inputValue = textarea.value
-    }
-
-    private onKeyDown(event: KeyboardEvent) {
-        if (event.key === 'Enter' && !event.shiftKey) {
-            event.preventDefault()
-            this.sendMessage()
-        }
-    }
 
     private async sendMessage() {
         const prompt = this.inputValue.trim()
@@ -258,11 +230,6 @@ export class KAView extends KPart {
         this.inputValue = ''
         this.requestUpdate()
         
-        await this.updateComplete
-        if (this.textareaElement) {
-            this.textareaElement.value = ''
-            this.textareaElement.focus()
-        }
 
         await this.handlePrompt(prompt)
     }
@@ -604,294 +571,32 @@ export class KAView extends KPart {
         toastInfo('Settings saved')
     }
 
-    private copyToClipboard(text: string) {
-        navigator.clipboard.writeText(text).then(() => {
-        }).catch((err) => {
-            toastError(`Failed to copy: ${err}`)
-        })
-    }
 
-    private formatTimestamp(date: Date = new Date()): string {
-        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    }
-
-    private renderAgentResponseGroup(group: AgentResponseGroup) {
-        const agents = Array.from(group.agents.values())
-        const completedCount = agents.filter(a => a.status === 'completed').length
-        const streamingCount = agents.filter(a => a.status === 'streaming').length
-        const errorCount = agents.filter(a => a.status === 'error').length
-        const allCompleted = agents.length > 0 && completedCount + errorCount === agents.length
-        const isSingleAgent = agents.length === 1
-
-        const quickActions = agents
-            .filter(a => a.message && a.message.actions && a.message.actions.length > 0)
-            .flatMap(a => a.message!.actions!.map(action => ({ ...action, agentRole: a.role, agentLabel: a.label })))
-            .sort((a, b) => {
-                const aPriority = a.requiresAttention ? 1 : 0
-                const bPriority = b.requiresAttention ? 1 : 0
-                return bPriority - aPriority
-            })
-
-        return html`
-            <div class="agent-response-group">
-                ${when(!isSingleAgent, () => html`
-                    <div class="agent-group-header">
-                        <div class="agent-group-title">
-                            <wa-icon name="robot" label="Multiple Agents"></wa-icon>
-                            <span>Multiple Agents Responded</span>
-                        ${when(!allCompleted, () => html`
-                            <span class="agent-status-badge">
-                                ${streamingCount > 0 ? html`<span class="status-streaming">${streamingCount} responding</span>` : ''}
-                                ${completedCount > 0 ? html`<span class="status-completed">${completedCount}/${agents.length} completed</span>` : ''}
-                            </span>
-                        `)}
-                            ${when(allCompleted, () => html`
-                                <span class="agent-status-badge status-all-completed">
-                                    All completed (${completedCount})
-                                </span>
-                            `)}
-                        </div>
-                    </div>
-                `)}
-                <div class="agent-group-content">
-                    ${agents.map(agentInfo => {
-                        const message = agentInfo.message || (agentInfo.status === 'streaming' ? this.findStreamingMessage(agentInfo.role) : undefined)
-                        
-                        if (!message) {
-                            return html`
-                                <div class="agent-response-card status-${agentInfo.status}">
-                                    <div class="agent-card-header">
-                                        <div class="agent-card-title">
-                                            <wa-icon name="${agentInfo.icon}" label="${agentInfo.label}"></wa-icon>
-                                            <span>${agentInfo.label}</span>
-                                            ${this.renderStatusIcon(agentInfo.status)}
-                                        </div>
-                                    </div>
-                                    <div class="agent-card-content">
-                                        <div class="agent-loading">Waiting for response...</div>
-                                    </div>
-                                </div>
-                            `
-                        }
-
-                        return this.renderAgentResponseCard(group.id, agentInfo, message, agentInfo.status === 'streaming')
-                    })}
-                </div>
-                ${when(quickActions.length > 0 && allCompleted, () => html`
-                    <div class="quick-actions-bar">
-                        <div class="quick-actions-label">
-                            <wa-icon name="bolt" label="Quick Actions"></wa-icon>
-                            <span>Quick Actions</span>
-                        </div>
-                        <div class="quick-actions-buttons">
-                            ${quickActions.map(action => html`
-                                <wa-button
-                                    variant="${action.requiresAttention ? 'brand' : 'neutral'}"
-                                    appearance="${action.requiresAttention ? 'filled' : 'plain'}"
-                                    size="small"
-                                    title="${action.label}"
-                                    @click="${() => action.action()}">
-                                    <wa-icon name="${action.icon}" label="${action.label}"></wa-icon>
-                                </wa-button>
-                            `)}
-                        </div>
-                    </div>
-                `)}
-            </div>
-        `
-    }
-
-    private renderAgentResponseCard(groupId: string, agentInfo: AgentResponseInfo, message: ChatMessage, isStreaming: boolean) {
-        const messageIndex = agentInfo.messageIndex ?? -1
-        const hasAttention = message.requiresAttention && (message.attentionRequests?.length || 0) > 0
-        
-        return html`
-            <div class="agent-response-card status-${agentInfo.status} ${hasAttention ? 'requires-attention' : ''}">
-                <div class="agent-card-header">
-                    <div class="agent-card-title">
-                        <wa-icon name="${agentInfo.icon}" label="${agentInfo.label}"></wa-icon>
-                        <span>${agentInfo.label}</span>
-                        ${this.renderStatusIcon(agentInfo.status)}
-                        ${when(hasAttention, () => html`
-                            <wa-icon name="bell" class="attention-indicator"></wa-icon>
-                        `)}
-                    </div>
-                </div>
-                <div class="agent-card-content">
-                    ${this.renderMessage(message, messageIndex, isStreaming, false)}
-                </div>
-            </div>
-        `
-    }
 
     private renderMessage(message: ChatMessage, index?: number, isStreaming?: boolean, showHeader: boolean = true) {
-        const isUser = message.role === "user"
-        const roleName = message.role
-        const hasAttention = message.requiresAttention && (message.attentionRequests?.length || 0) > 0
-        const messageIndex = index ?? this.chatContext.history.indexOf(message)
-        
+        const messageIndex = index ?? this.chatContext.history.indexOf(message);
         return html`
-            <div class="message-wrapper ${isUser ? 'user' : 'assistant'} ${isStreaming ? 'streaming' : ''} ${hasAttention ? 'requires-attention' : ''}">
-                ${when(showHeader, () => html`
-                    <div class="message-header">
-                        <div class="message-meta">
-                            <wa-icon 
-                                name="${isUser ? 'user' : 'robot'}" 
-                                label="${roleName}">
-                            </wa-icon>
-                            <span class="role-name">${roleName}</span>
-                            ${when(hasAttention, () => html`
-                                <wa-icon name="bell" label="Requires attention" class="attention-indicator"></wa-icon>
-                            `)}
-                            <span class="timestamp">${this.formatTimestamp()}</span>
-                        </div>
-                        <div class="message-actions">
-                            <wa-button
-                                variant="neutral"
-                                appearance="plain"
-                                size="small"
-                                title="Copy"
-                                @click="${() => this.copyToClipboard(message.content)}">
-                                <wa-icon slot="label" name="copy" label="Copy"></wa-icon>
-                            </wa-button>
-                            ${when(message.actions?.length, () => html`
-                                ${message.actions?.map(a => html`
-                                    <wa-button
-                                        variant="neutral"
-                                        appearance="plain"
-                                        size="small"
-                                        title="${a.label}"
-                                        @click="${() => a.action()}">
-                                        <wa-icon slot="label" name="${a.icon}" label="${a.label}"></wa-icon>
-                                    </wa-button>
-                                `)}
-                            `)}
-                        </div>
-                    </div>
-                `)}
-                <div class="message-content">
-                    ${unsafeHTML(marked.parse(message.content || '') as string)}
-                    ${when(isStreaming, () => html`
-                        <span class="streaming-cursor">▋</span>
-                    `)}
-                    ${when(hasAttention && message.attentionRequests, () => html`
-                        <div class="attention-requests">
-                            ${message.attentionRequests!.map((request, reqIndex) => html`
-                                <div class="attention-request attention-${request.type}">
-                                    <div class="attention-header">
-                                        <wa-icon name="${this.getAttentionIcon(request.type)}" label="${request.type}"></wa-icon>
-                                        <strong>${request.title}</strong>
-                                        ${when(request.priority === 'urgent' || request.priority === 'high', () => html`
-                                            <span class="priority-badge priority-${request.priority}">${request.priority}</span>
-                                        `)}
-                                    </div>
-                                    <div class="attention-message">${request.message}</div>
-                                    <div class="attention-actions">
-                                        ${when(request.type === 'confirmation', () => html`
-                                            <wa-button
-                                                variant="brand"
-                                                appearance="filled"
-                                                size="small"
-                                                @click="${() => this.handleAttentionResponse(messageIndex, reqIndex, request, true)}">
-                                                Confirm
-                                            </wa-button>
-                                            <wa-button
-                                                variant="neutral"
-                                                appearance="plain"
-                                                size="small"
-                                                @click="${() => this.handleAttentionResponse(messageIndex, reqIndex, request, false)}">
-                                                Cancel
-                                            </wa-button>
-                                        `)}
-                                        ${when(request.type === 'input', () => html`
-                                            <div class="input-group">
-                                                <wa-input
-                                                    value="${this.attentionInputValue}"
-                                                    @input="${(e: Event) => { this.attentionInputValue = (e.target as HTMLInputElement).value }}"
-                                                    placeholder="Enter your response...">
-                                                </wa-input>
-                                                <wa-button
-                                                    variant="brand"
-                                                    appearance="filled"
-                                                    size="small"
-                                                    ?disabled="${!this.attentionInputValue.trim()}"
-                                                    @click="${() => this.handleAttentionResponse(messageIndex, reqIndex, request, this.attentionInputValue)}">
-                                                    Submit
-                                                </wa-button>
-                                            </div>
-                                        `)}
-                                        ${when(request.type === 'approval', () => html`
-                                            <wa-button
-                                                variant="brand"
-                                                appearance="filled"
-                                                size="small"
-                                                @click="${() => this.handleAttentionResponse(messageIndex, reqIndex, request, true)}">
-                                                Approve
-                                            </wa-button>
-                                            <wa-button
-                                                variant="neutral"
-                                                appearance="plain"
-                                                size="small"
-                                                @click="${() => this.handleAttentionResponse(messageIndex, reqIndex, request, false)}">
-                                                Reject
-                                            </wa-button>
-                                        `)}
-                                        ${when(request.type === 'execution', () => html`
-                                            <wa-button
-                                                variant="brand"
-                                                appearance="filled"
-                                                size="small"
-                                                @click="${() => this.handleAttentionResponse(messageIndex, reqIndex, request, true)}">
-                                                Execute
-                                            </wa-button>
-                                            <wa-button
-                                                variant="neutral"
-                                                appearance="plain"
-                                                size="small"
-                                                @click="${() => this.handleAttentionResponse(messageIndex, reqIndex, request, false)}">
-                                                Skip
-                                            </wa-button>
-                                        `)}
-                                        ${when(request.type === 'info', () => html`
-                                            <wa-button
-                                                variant="neutral"
-                                                appearance="plain"
-                                                size="small"
-                                                @click="${() => this.handleAttentionResponse(messageIndex, reqIndex, request, true)}">
-                                                Acknowledge
-                                            </wa-button>
-                                        `)}
-                                    </div>
-                                </div>
-                            `)}
-                        </div>
-                    `)}
-                    ${when(message.canContinue && !hasAttention, () => html`
-                        <div class="continue-workflow">
-                            <wa-button
-                                variant="brand"
-                                appearance="filled"
-                                size="small"
-                                @click="${() => this.continuePausedWorkflow(message)}">
-                                Continue Workflow
-                            </wa-button>
-                        </div>
-                    `)}
-                </div>
-            </div>
-        `
+            <ai-chat-message
+                .message="${message}"
+                .isStreaming="${isStreaming || false}"
+                .showHeader="${showHeader}"
+                .messageIndex="${messageIndex}"
+                @attention-response="${(e: CustomEvent) => {
+                    this.handleAttentionResponse(e.detail.messageIndex, e.detail.requestIndex, e.detail.request, e.detail.response);
+                }}"
+                @resend="${(e: CustomEvent) => {
+                    this.handleResend(e.detail.message);
+                }}">
+            </ai-chat-message>
+        `;
     }
 
-    private getAttentionIcon(type: UserAttentionType): string {
-        switch (type) {
-            case 'confirmation': return 'check-circle'
-            case 'input': return 'keyboard'
-            case 'approval': return 'thumbs-up'
-            case 'execution': return 'play'
-            case 'info': return 'info-circle'
-            default: return 'bell'
-        }
+    private async handleResend(message: ChatMessage) {
+        if (!message || message.role !== 'user') return;
+        await this.handlePrompt(message.content);
     }
+
+
 
     private async handleAttentionResponse(
         messageIndex: number,
@@ -910,7 +615,6 @@ export class KAView extends KPart {
             }
         }
 
-        this.attentionInputValue = ''
 
         if (message.canContinue) {
             await this.continuePausedWorkflow(message, response)
@@ -1058,14 +762,28 @@ export class KAView extends KPart {
     render() {
         return html`
             <div class="chat-container">
-                ${this.renderSettingsDialog()}
+                <ai-settings-dialog
+                    .open="${this.settingsDialogOpen}"
+                    .providers="${this.providers || []}"
+                    .selectedProviderName="${this.settingsProviderName || ''}"
+                    .selectedModel="${this.settingsModel || ''}"
+                    .availableModels="${this.availableModels}"
+                    .loadingModels="${this.loadingModels}"
+                    @provider-change="${(e: CustomEvent) => this.onProviderChange(e.detail.providerName)}"
+                    @model-change="${(e: CustomEvent) => this.onModelChange(e.detail.model)}"
+                    @save="${(e: CustomEvent) => {
+                        this.settingsProviderName = e.detail.providerName;
+                        this.settingsModel = e.detail.model;
+                        this.saveSettingsAndClose();
+                    }}"
+                    @cancel="${() => this.closeSettingsDialog()}">
+                </ai-settings-dialog>
                 
                 ${when(!this.selectedProvider, () => html`
-                    <div class="empty-state">
-                        <wa-icon name="robot" style="font-size: 3rem; opacity: 0.3;"></wa-icon>
-                        <p>No AI provider configured</p>
-                        <p class="hint">Click the settings button to configure</p>
-                    </div>
+                    <ai-empty-state
+                        message="No AI provider configured"
+                        hint="Click the settings button to configure">
+                    </ai-empty-state>
                 `)}
                 
                 <div class="chat-messages">
@@ -1076,8 +794,19 @@ export class KAView extends KPart {
                             )
                             if (group) {
                                 return html`
-                                    ${this.renderMessage(message, index)}
-                                    ${this.renderAgentResponseGroup(group)}
+                                    <ai-chat-message
+                                        .message="${message}"
+                                        .isStreaming="${false}"
+                                        .showHeader="${true}"
+                                        .messageIndex="${index}"
+                                        @resend="${(e: CustomEvent) => {
+                                            this.handleResend(e.detail.message);
+                                        }}">
+                                    </ai-chat-message>
+                                    <ai-agent-response-group
+                                        .group="${group}"
+                                        .findStreamingMessage="${(role: string) => this.findStreamingMessage(role)}">
+                                    </ai-agent-response-group>
                                 `
                             }
                         }
@@ -1099,46 +828,21 @@ export class KAView extends KPart {
                         }
                         return this.renderMessage(msg.message, -1, msg.isStreaming)
                     })}
-                    ${when(this.busy && this.streamingMessages.size === 0, () => this.renderLoadingIndicator())}
+                    ${when(this.busy && this.streamingMessages.size === 0, () => html`
+                        <ai-loading-indicator></ai-loading-indicator>
+                    `)}
                 </div>
 
-                <div class="input-container">
-                    <div class="input-row">
-                        <wa-textarea
-                            placeholder="Type your message..."
-                            resize="auto"
-                            rows="1"
-                            .value="${this.inputValue}"
-                            ?disabled="${this.busy || !this.selectedProvider}"
-                            @input="${this.onInput}"
-                            @keydown="${this.onKeyDown}">
-                        </wa-textarea>
-                        
-                        ${when(this.busy, () => html`
-                            <wa-button
-                                appearance="plain"
-                                size="medium"
-                                @click="${this.cancelStream}">
-                                <wa-icon name="stop" label="Stop"></wa-icon>
-                            </wa-button>
-                        `, () => html`
-                            <wa-button
-                                appearance="plain"
-                                size="medium"
-                                ?disabled="${!this.inputValue.trim() || !this.selectedProvider}"
-                                @click="${this.sendMessage}">
-                                <wa-icon name="paper-plane" label="Send"></wa-icon>
-                            </wa-button>
-                        `)}
-
-                        <wa-button
-                            appearance="plain"
-                            size="medium"
-                            @click="${this.openSettingsDialog}">
-                            <wa-icon name="gear" label="Settings"></wa-icon>
-                        </wa-button>
-                    </div>
-                </div>
+                <ai-chat-input
+                    .value="${this.inputValue}"
+                    .disabled="${this.busy}"
+                    .busy="${this.busy}"
+                    .hasProvider="${!!this.selectedProvider}"
+                    @input-change="${(e: CustomEvent) => { this.inputValue = e.detail.value }}"
+                    @send="${() => this.sendMessage()}"
+                    @cancel="${() => this.cancelStream()}"
+                    @open-settings="${() => this.openSettingsDialog()}">
+                </ai-chat-input>
             </div>
         `
     }
@@ -1160,30 +864,6 @@ export class KAView extends KPart {
             overflow: hidden;
         }
 
-        .empty-state {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 2rem;
-            text-align: center;
-            color: var(--wa-color-text-quiet);
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 1;
-        }
-
-        .empty-state p {
-            margin: 0.5rem 0;
-        }
-
-        .empty-state .hint {
-            font-size: 0.875rem;
-            opacity: 0.7;
-        }
-
         .chat-messages {
             flex: 1;
             overflow-y: auto;
@@ -1194,526 +874,6 @@ export class KAView extends KPart {
             flex-direction: column;
             gap: 1rem;
             scroll-behavior: smooth;
-        }
-
-        .message-wrapper {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            max-width: 85%;
-            width: 100%;
-            box-sizing: border-box;
-            animation: slideIn 0.2s ease-out;
-        }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .message-wrapper.user {
-            align-self: flex-end;
-        }
-
-        .message-wrapper.assistant {
-            align-self: flex-start;
-        }
-
-        .message-wrapper.streaming .message-content {
-            position: relative;
-        }
-
-        .streaming-cursor {
-            display: inline-block;
-            animation: blink 1s infinite;
-            color: var(--wa-color-brand-50);
-        }
-
-        @keyframes blink {
-            0%, 50% { opacity: 1; }
-            51%, 100% { opacity: 0; }
-        }
-
-        .message-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0 0.5rem;
-        }
-
-        .message-meta {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.75rem;
-            color: var(--wa-color-text-quiet);
-        }
-
-        .role-name {
-            font-weight: 600;
-        }
-
-        .timestamp {
-            opacity: 0.7;
-        }
-
-        .message-actions {
-            display: flex;
-            gap: 0.25rem;
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
-
-        .message-wrapper:hover .message-actions {
-            opacity: 1;
-        }
-
-        .message-content {
-            padding: 0.75rem 1rem;
-            font-size: 0.9rem;
-            line-height: 1.5;
-            word-wrap: break-word;
-            word-break: break-word;
-            overflow-wrap: break-word;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-            border: 1px solid;
-            max-width: 100%;
-            box-sizing: border-box;
-        }
-
-        .agent-card-content .message-content {
-            border-radius: 0;
-            box-shadow: none;
-        }
-
-        .message-wrapper.user .message-content {
-            background-color: var(--wa-color-brand-fill-quiet);
-            color: var(--wa-color-text-normal);
-            border-color: var(--wa-color-brand-border-quiet);
-        }
-
-        .message-wrapper.assistant .message-content {
-            background-color: var(--wa-color-surface-default);
-            color: var(--wa-color-text-normal);
-            border-color: var(--wa-color-surface-border);
-        }
-
-        .message-content :first-child {
-            margin-top: 0;
-        }
-
-        .message-content :last-child {
-            margin-bottom: 0;
-        }
-
-        .message-content p {
-            margin: 0.5rem 0;
-        }
-
-        .message-content pre {
-            margin: 0.5rem 0;
-            padding: 0.75rem;
-            background-color: var(--wa-color-surface-lowered);
-            color: var(--wa-color-text-normal);
-            border-radius: 0.375rem;
-            overflow-x: auto;
-            overflow-y: visible;
-            word-wrap: break-word;
-            word-break: break-all;
-            white-space: pre-wrap;
-            max-width: 100%;
-            box-sizing: border-box;
-        }
-
-        .message-content code {
-            font-family: 'Courier New', monospace;
-            font-size: 0.875em;
-        }
-
-        .message-content pre code {
-            background: none;
-            padding: 0;
-        }
-
-        .message-content :not(pre) > code {
-            background-color: var(--wa-color-overlay-inline);
-            padding: 0.125rem 0.25rem;
-            border-radius: 0.25rem;
-        }
-
-        .message-wrapper.user .message-content :not(pre) > code {
-            background-color: var(--wa-color-overlay-inline);
-        }
-
-        .loading-dots {
-            display: flex;
-            align-items: center;
-            gap: 0.25rem;
-        }
-
-        .dot {
-            animation: blink 1.4s infinite;
-        }
-
-        .dot:nth-child(2) {
-            animation-delay: 0.2s;
-        }
-
-        .dot:nth-child(3) {
-            animation-delay: 0.4s;
-        }
-
-        .dot:nth-child(4) {
-            animation-delay: 0.6s;
-        }
-
-        @keyframes blink {
-            0%, 60%, 100% {
-                opacity: 0;
-            }
-            30% {
-                opacity: 1;
-            }
-        }
-
-        .input-container {
-            padding: 1rem;
-            border-top: 1px solid var(--wa-color-surface-border);
-        }
-
-        .input-row {
-            display: flex;
-            align-items: flex-end;
-            gap: 0.5rem;
-        }
-
-        wa-textarea {
-            flex: 1;
-        }
-
-        wa-textarea::part(base) {
-            max-height: 200px;
-        }
-
-        .settings-dialog-content {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            padding: 1rem;
-            min-width: 400px;
-        }
-
-        .settings-field {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        .settings-field label {
-            font-weight: 600;
-            font-size: 0.875rem;
-        }
-
-        .settings-actions {
-            display: flex;
-            gap: 0.5rem;
-            justify-content: flex-end;
-            margin-top: 0.5rem;
-        }
-
-        .message-wrapper.requires-attention {
-            border-left: 3px solid var(--wa-color-warning-border-normal);
-            padding-left: 0.5rem;
-        }
-
-        .attention-indicator {
-            color: var(--wa-color-warning-50);
-            margin-left: 0.5rem;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        .attention-requests {
-            margin-top: 1rem;
-            padding-top: 1rem;
-            border-top: 2px solid var(--wa-color-surface-border);
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-
-        .attention-request {
-            padding: 1rem;
-            border-radius: 0.5rem;
-            border: 1px solid;
-            background-color: var(--wa-color-surface-default);
-            border-color: var(--wa-color-surface-border);
-        }
-
-        .attention-request.attention-confirmation {
-            border-color: var(--wa-color-brand-border-quiet);
-            background-color: var(--wa-color-brand-fill-quiet);
-        }
-
-        .attention-request.attention-input {
-            border-color: var(--wa-color-brand-border-quiet);
-            background-color: var(--wa-color-brand-fill-quiet);
-        }
-
-        .attention-request.attention-approval {
-            border-color: var(--wa-color-success-border-quiet);
-            background-color: var(--wa-color-success-fill-quiet);
-        }
-
-        .attention-request.attention-execution {
-            border-color: var(--wa-color-warning-border-quiet);
-            background-color: var(--wa-color-warning-fill-quiet);
-        }
-
-        .attention-request.attention-info {
-            border-color: var(--wa-color-neutral-border-quiet);
-            background-color: var(--wa-color-neutral-fill-quiet);
-        }
-
-        .attention-header {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-bottom: 0.75rem;
-        }
-
-        .attention-header strong {
-            flex: 1;
-            font-size: 1rem;
-            color: var(--wa-color-text-normal);
-        }
-
-        .priority-badge {
-            padding: 0.25rem 0.5rem;
-            border-radius: 0.25rem;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .priority-badge.priority-high {
-            background-color: var(--wa-color-warning-fill-normal);
-            color: var(--wa-color-warning-on-normal);
-        }
-
-        .priority-badge.priority-urgent {
-            background-color: var(--wa-color-danger-fill-normal);
-            color: var(--wa-color-danger-on-normal);
-        }
-
-        .attention-message {
-            margin-bottom: 1rem;
-            color: var(--wa-color-text-quiet);
-            line-height: 1.5;
-        }
-
-        .attention-actions {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-        }
-
-        .attention-actions .input-group {
-            display: flex;
-            gap: 0.5rem;
-            flex: 1;
-            min-width: 100%;
-        }
-
-        .attention-actions .input-group wa-input {
-            flex: 1;
-        }
-
-        .continue-workflow {
-            margin-top: 1rem;
-            padding-top: 1rem;
-            border-top: 1px dashed var(--wa-color-surface-border);
-        }
-
-        .message-wrapper.user .attention-requests,
-        .message-wrapper.user .continue-workflow {
-            background-color: var(--wa-color-overlay-inline);
-        }
-
-        .agent-response-group {
-            margin: 1rem 0;
-            border: 1px solid var(--wa-color-surface-border);
-            background: var(--wa-color-surface-default);
-            overflow: visible;
-            max-width: 100%;
-        }
-
-        .agent-group-header {
-            padding: 0.75rem 1rem;
-            background: var(--wa-color-surface-raised);
-            border-bottom: 1px solid var(--wa-color-surface-border);
-        }
-
-        .agent-group-title {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-weight: 600;
-            color: var(--wa-color-text-normal);
-        }
-
-        .agent-status-badge {
-            display: flex;
-            gap: 0.5rem;
-            margin-left: auto;
-            font-size: 0.75rem;
-        }
-
-        .agent-status-badge .status-streaming {
-            color: var(--wa-color-brand-60);
-        }
-
-        .agent-status-badge .status-completed {
-            color: var(--wa-color-success-60);
-        }
-
-        .agent-status-badge .status-all-completed {
-            color: var(--wa-color-success-70);
-            font-weight: 600;
-        }
-
-        .agent-group-content {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .agent-response-card {
-            border-bottom: 1px solid var(--wa-color-surface-border);
-            transition: all 0.2s ease;
-        }
-
-        .agent-response-card:last-child {
-            border-bottom: none;
-        }
-
-        .agent-response-card.requires-attention {
-            border-left: 3px solid var(--wa-color-warning-border-normal);
-        }
-
-        .agent-response-card.status-streaming {
-            background: var(--wa-color-brand-fill-quiet);
-        }
-
-        .agent-response-card.status-completed {
-            background: var(--wa-color-surface-default);
-        }
-
-        .agent-response-card.status-error {
-            background: var(--wa-color-danger-fill-quiet);
-        }
-
-        .agent-card-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0.75rem 1rem;
-            user-select: none;
-        }
-
-        .agent-card-title {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-weight: 500;
-            color: var(--wa-color-text-normal);
-        }
-
-        .agent-card-title .spinning {
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        .agent-card-title .status-success {
-            color: var(--wa-color-success-60);
-        }
-
-        .agent-card-title .status-error {
-            color: var(--wa-color-danger-60);
-        }
-
-
-        .agent-card-content {
-            padding: 0;
-            max-width: 100%;
-            box-sizing: border-box;
-            overflow-x: hidden;
-            overflow-y: visible;
-        }
-
-        .agent-card-content .message-wrapper {
-            margin: 0;
-            border: none;
-            border-radius: 0;
-            max-width: 100%;
-            width: 100%;
-        }
-
-        .quick-actions-bar {
-            padding: 0.5rem 0.75rem;
-            background: var(--wa-color-surface-raised);
-            border-top: 2px solid var(--wa-color-surface-border);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .quick-actions-label {
-            display: flex;
-            align-items: center;
-            gap: 0.375rem;
-            font-weight: 600;
-            font-size: 0.875rem;
-            color: var(--wa-color-text-normal);
-            white-space: nowrap;
-        }
-
-        .quick-actions-buttons {
-            display: flex;
-            gap: 0.375rem;
-            flex: 1;
-            justify-content: flex-end;
-        }
-
-        .quick-actions-buttons wa-button {
-            min-width: 2rem;
-            width: 2rem;
-            height: 2rem;
-            padding: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .agent-loading {
-            padding: 1rem;
-            color: var(--wa-color-text-quiet);
-            text-align: center;
-            font-style: italic;
         }
     `;
 }

@@ -931,8 +931,12 @@ export class AIService {
                 return true;
             });
             
-            const context = this.createAgentContext(sharedState, options.callContext);
-            activeContributions = this.filterAndSortAgents(activeContributions, context);
+            if (options.roles && options.roles.length > 0) {
+                activeContributions = activeContributions.sort((a, b) => (b.priority || 0) - (a.priority || 0));
+            } else {
+                const context = this.createAgentContext(sharedState, options.callContext);
+                activeContributions = this.filterAndSortAgents(activeContributions, context);
+            }
 
             if (activeContributions.length === 0 && (!options.roles || !options.roles.includes('assistant'))) {
                 activeContributions.push({

@@ -1,0 +1,572 @@
+import { css, html, LitElement, PropertyValues, TemplateResult } from 'lit';
+import { customElement, property, state } from 'lit/decorators.js';
+import { unsafeHTML } from 'lit/directives/unsafe-html.js';
+import { when } from 'lit/directives/when.js';
+import { marked } from 'marked';
+import type { ChatMessage } from '../aiservice';
+
+@customElement('ai-chat-message')
+export class AIChatMessage extends LitElement {
+    @property({ type: Object, attribute: false })
+    public message?: ChatMessage;
+
+    @property({ type: Boolean })
+    public isStreaming: boolean = false;
+
+    @property({ type: Boolean })
+    public showHeader: boolean = true;
+
+    @property({ type: Number, attribute: false })
+    public messageIndex?: number;
+
+    @state()
+    private attentionInputValue: string = '';
+
+    private formatTimestamp(): string {
+        const now = new Date();
+        return now.toLocaleTimeString();
+    }
+
+    private copyToClipboard(text: string) {
+        navigator.clipboard.writeText(text).catch(err => {
+            console.error('Failed to copy:', err);
+        });
+    }
+
+    private handleResend(e?: Event) {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        if (!this.message) {
+            return;
+        }
+        this.dispatchEvent(new CustomEvent('resend', {
+            detail: { 
+                message: this.message,
+                messageIndex: this.messageIndex
+            },
+            bubbles: true,
+            composed: true
+        }));
+    }
+
+    private getAttentionIcon(type: string): string {
+        switch (type) {
+            case 'confirmation': return 'check-circle';
+            case 'input': return 'input';
+            case 'approval': return 'hand';
+            case 'execution': return 'play';
+            case 'info': return 'info-circle';
+            default: return 'bell';
+        }
+    }
+
+    protected updated(_changedProperties: PropertyValues) {
+        super.updated(_changedProperties);
+        if (_changedProperties.has('attentionInputValue')) {
+            this.dispatchEvent(new CustomEvent('attention-input-change', {
+                detail: { value: this.attentionInputValue },
+                bubbles: true,
+                composed: true
+            }));
+        }
+        if (_changedProperties.has('message') || !this.hasAttribute('data-is-user')) {
+            this.updateAlignment();
+        }
+    }
+
+    private updateAlignment() {
+        if (this.message) {
+            const isUser = this.message.role === 'user';
+            this.setAttribute('data-is-user', String(isUser));
+        }
+    }
+
+    private handleAttentionResponse(requestIndex: number, request: any, response: any) {
+        if (!this.message) return;
+        this.dispatchEvent(new CustomEvent('attention-response', {
+            detail: { 
+                messageIndex: this.messageIndex, 
+                requestIndex, 
+                request, 
+                response 
+            },
+            bubbles: true,
+            composed: true
+        }));
+    }
+
+    private handleAction(action: () => void | Promise<void>) {
+        const result = action();
+        if (result instanceof Promise) {
+            result.catch((err: any) => {
+                console.error('Action failed:', err);
+            });
+        }
+    }
+
+    render() {
+        if (!this.message) {
+            return html``;
+        }
+
+        const message = this.message;
+        const isUser = message.role === 'user';
+        const hasAttention = message.requiresAttention && (message.attentionRequests?.length || 0) > 0;
+
+        return html`
+            <div class="message-wrapper ${isUser ? 'user' : 'assistant'} ${this.isStreaming ? 'streaming' : ''} ${hasAttention ? 'requires-attention' : ''}">
+                ${when(this.showHeader && !isUser, () => html`
+                    <div class="message-header">
+                        <div class="message-meta">
+                            <wa-icon 
+                                name="robot" 
+                                label="${message.role}">
+                            </wa-icon>
+                            <span class="role-name">${message.role}</span>
+                            ${when(hasAttention, () => html`
+                                <wa-icon name="bell" label="Requires attention" class="attention-indicator"></wa-icon>
+                            `)}
+                            <span class="timestamp">${this.formatTimestamp()}</span>
+                        </div>
+                        <div class="message-actions">
+                            <wa-button
+                                variant="neutral"
+                                appearance="plain"
+                                size="small"
+                                title="Copy"
+                                @click="${() => this.copyToClipboard(message.content)}">
+                                <wa-icon slot="label" name="copy" label="Copy"></wa-icon>
+                            </wa-button>
+                            ${when(message.actions?.length, () => html`
+                                ${message.actions!.map(a => html`
+                                    <wa-button
+                                        variant="neutral"
+                                        appearance="plain"
+                                        size="small"
+                                        title="${a.label}"
+                                        @click="${() => this.handleAction(a.action)}">
+                                        <wa-icon slot="label" name="${a.icon}" label="${a.label}"></wa-icon>
+                                    </wa-button>
+                                `)}
+                            `)}
+                        </div>
+                    </div>
+                `)}
+                <div class="message-content-wrapper ${isUser ? 'user' : ''}">
+                    <div class="message-content">
+                        ${unsafeHTML(marked.parse(message.content || '') as string)}
+                        ${when(this.isStreaming, () => html`
+                            <span class="streaming-cursor">▋</span>
+                        `)}
+                        ${when(hasAttention && message.attentionRequests, () => html`
+                        <div class="attention-requests">
+                            ${message.attentionRequests!.map((request, reqIndex) => html`
+                                <div class="attention-request attention-${request.type}">
+                                    <div class="attention-header">
+                                        <wa-icon name="${this.getAttentionIcon(request.type)}" label="${request.type}"></wa-icon>
+                                        <strong>${request.title}</strong>
+                                        ${when(request.priority === 'urgent' || request.priority === 'high', () => html`
+                                            <span class="priority-badge priority-${request.priority}">${request.priority}</span>
+                                        `)}
+                                    </div>
+                                    <div class="attention-message">${request.message}</div>
+                                    <div class="attention-actions">
+                                        ${when(request.type === 'confirmation', () => html`
+                                            <wa-button
+                                                variant="brand"
+                                                appearance="filled"
+                                                size="small"
+                                @click="${() => this.handleAttentionResponse(reqIndex, request, true)}">
+                                Confirm
+                            </wa-button>
+                            <wa-button
+                                variant="neutral"
+                                appearance="plain"
+                                size="small"
+                                @click="${() => this.handleAttentionResponse(reqIndex, request, false)}">
+                                Cancel
+                            </wa-button>
+                                        `)}
+                                        ${when(request.type === 'input', () => html`
+                                            <div class="input-group">
+                                                <wa-input
+                                                    value="${this.attentionInputValue}"
+                                                    @input="${(e: Event) => { this.attentionInputValue = (e.target as HTMLInputElement).value }}"
+                                                    placeholder="Enter your response...">
+                                                </wa-input>
+                                                <wa-button
+                                                    variant="brand"
+                                                    appearance="filled"
+                                                    size="small"
+                                                    ?disabled="${!this.attentionInputValue.trim()}"
+                                                    @click="${() => this.handleAttentionResponse(reqIndex, request, this.attentionInputValue)}">
+                                                    Submit
+                                                </wa-button>
+                                            </div>
+                                        `)}
+                                        ${when(request.type === 'approval', () => html`
+                                            <wa-button
+                                                variant="brand"
+                                                appearance="filled"
+                                                size="small"
+                                                @click="${() => this.handleAttentionResponse(reqIndex, request, true)}">
+                                                Approve
+                                            </wa-button>
+                                            <wa-button
+                                                variant="neutral"
+                                                appearance="plain"
+                                                size="small"
+                                                @click="${() => this.handleAttentionResponse(reqIndex, request, false)}">
+                                                Reject
+                                            </wa-button>
+                                        `)}
+                                        ${when(request.type === 'execution', () => html`
+                                            <wa-button
+                                                variant="brand"
+                                                appearance="filled"
+                                                size="small"
+                                                @click="${() => this.handleAttentionResponse(reqIndex, request, true)}">
+                                                Execute
+                                            </wa-button>
+                                            <wa-button
+                                                variant="neutral"
+                                                appearance="plain"
+                                                size="small"
+                                                @click="${() => this.handleAttentionResponse(reqIndex, request, false)}">
+                                                Cancel
+                                            </wa-button>
+                                        `)}
+                                    </div>
+                                </div>
+                            `)}
+                        </div>
+                        `)}
+                        ${when(message.canContinue && !hasAttention, () => html`
+                            <div class="continue-workflow">
+                                <wa-button
+                                    variant="brand"
+                                    appearance="filled"
+                                    size="small"
+                                    @click="${() => this.dispatchEvent(new CustomEvent('continue-workflow', {
+                                        detail: { message },
+                                        bubbles: true,
+                                        composed: true
+                                    }))}">
+                                    Continue Workflow
+                                </wa-button>
+                            </div>
+                        `)}
+                    </div>
+                    ${when(isUser, () => html`
+                        <wa-button
+                            variant="neutral"
+                            appearance="plain"
+                            size="small"
+                            title="Copy"
+                            class="resend-button"
+                            @click="${() => this.copyToClipboard(message.content)}">
+                            <wa-icon name="copy" label="Copy"></wa-icon>
+                        </wa-button>
+                        <wa-button
+                            variant="neutral"
+                            appearance="plain"
+                            size="small"
+                            title="Resend"
+                            class="resend-button"
+                            @click="${(e: Event) => this.handleResend(e)}">
+                            <wa-icon name="rotate-right" label="Resend"></wa-icon>
+                        </wa-button>
+                    `)}
+                </div>
+            </div>
+        `;
+    }
+
+    static styles = css`
+        :host {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 85%;
+            box-sizing: border-box;
+            animation: slideIn 0.2s ease-out;
+        }
+
+        :host([data-is-user="true"]) {
+            align-self: flex-end;
+        }
+
+        :host([data-is-user="false"]) {
+            align-self: flex-start;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            width: 100%;
+            box-sizing: border-box;
+            margin: 0;
+        }
+
+        .message-wrapper.user {
+            align-self: flex-end;
+        }
+
+        .message-wrapper.assistant {
+            align-self: flex-start;
+        }
+
+        .message-wrapper.streaming .message-content {
+            position: relative;
+        }
+
+        .streaming-cursor {
+            display: inline-block;
+            animation: blink 1s infinite;
+            color: var(--wa-color-brand-50);
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0 0.5rem;
+        }
+
+        .message-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--wa-color-text-quiet);
+        }
+
+        .role-name {
+            text-transform: capitalize;
+        }
+
+        .timestamp {
+            font-size: 0.75rem;
+            opacity: 0.7;
+        }
+
+        .attention-indicator {
+            color: var(--wa-color-warning-50);
+        }
+
+        .message-actions {
+            display: flex;
+            gap: 0.25rem;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .message-wrapper:hover .message-actions,
+        :host:hover .message-actions {
+            opacity: 1;
+        }
+
+        .message-content-wrapper {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            width: 100%;
+        }
+
+        .message-content-wrapper.user {
+            flex-direction: row;
+            align-items: center;
+        }
+
+        .message-content {
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.25rem;
+            background-color: var(--wa-color-surface-default);
+            word-break: break-word;
+            overflow-wrap: break-word;
+            max-width: 100%;
+            box-sizing: border-box;
+            line-height: 1.3;
+            font-size: 0.9rem;
+        }
+
+        .message-content-wrapper.user .message-content {
+            padding: 0.0625rem 0.75rem;
+            background-color: var(--wa-color-brand-fill-quiet);
+            color: var(--wa-color-text-normal);
+            line-height: 1.4;
+            flex: 1;
+        }
+
+        .resend-button {
+            flex-shrink: 0;
+            opacity: 1;
+        }
+
+        .message-content-wrapper.user .resend-button + .resend-button {
+            margin-left: 0.25rem;
+        }
+
+        .message-content p {
+            margin: 0;
+            padding: 0;
+        }
+
+        .message-content ul,
+        .message-content ol {
+            margin: 0.25rem 0;
+            padding-left: 1.25rem;
+        }
+
+        .message-content li {
+            margin: 0.125rem 0;
+            padding: 0;
+            line-height: 1.3;
+        }
+
+        .message-content li p {
+            margin: 0;
+            padding: 0;
+        }
+
+        .message-content-wrapper.user .message-content p {
+            margin: 0.25rem 0;
+        }
+
+        .message-content :first-child {
+            margin-top: 0;
+            padding-top: 0;
+        }
+
+        .message-content :last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .message-content pre {
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-width: 100%;
+            box-sizing: border-box;
+            overflow-x: auto;
+        }
+
+        .message-content code {
+            font-family: 'Courier New', monospace;
+            background-color: var(--wa-color-surface-lowered);
+            padding: 0.125rem 0.25rem;
+            border-radius: 0.125rem;
+        }
+
+        .message-content pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+
+        .requires-attention {
+            border-color: var(--wa-color-warning-border-normal);
+        }
+
+        .attention-requests {
+            margin-top: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .attention-request {
+            padding: 0.75rem;
+            border-radius: 0.25rem;
+            border: solid var(--wa-border-width-s);
+            background-color: var(--wa-color-overlay-inline);
+        }
+
+        .attention-request.attention-confirmation {
+            border-color: var(--wa-color-warning-border-normal);
+            background-color: var(--wa-color-warning-50);
+        }
+
+        .attention-request.attention-input {
+            border-color: var(--wa-color-brand-border-quiet);
+            background-color: var(--wa-color-brand-fill-quiet);
+        }
+
+        .attention-request.attention-approval {
+            border-color: var(--wa-color-success-border-quiet);
+            background-color: var(--wa-color-success-fill-quiet);
+        }
+
+        .attention-request.attention-execution {
+            border-color: var(--wa-color-warning-border-quiet);
+            background-color: var(--wa-color-warning-fill-quiet);
+        }
+
+        .attention-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .attention-message {
+            margin-bottom: 0.5rem;
+            color: var(--wa-color-text-normal);
+        }
+
+        .priority-badge {
+            padding: 0.125rem 0.375rem;
+            border-radius: 0.125rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .priority-badge.priority-urgent {
+            background-color: var(--wa-color-danger-fill-normal);
+            color: var(--wa-color-danger-on-normal);
+        }
+
+        .priority-badge.priority-high {
+            background-color: var(--wa-color-warning-fill-normal);
+            color: var(--wa-color-warning-on-normal);
+        }
+
+        .attention-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            width: 100%;
+        }
+
+        .input-group wa-input {
+            flex: 1;
+        }
+    `;
+}
+
