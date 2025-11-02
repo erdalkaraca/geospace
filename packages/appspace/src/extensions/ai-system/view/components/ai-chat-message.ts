@@ -3,7 +3,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { when } from 'lit/directives/when.js';
 import { marked } from 'marked';
-import type { ChatMessage } from '../aiservice';
+import type { ChatMessage } from '../../core/types';
 
 @customElement('ai-chat-message')
 export class AIChatMessage extends LitElement {

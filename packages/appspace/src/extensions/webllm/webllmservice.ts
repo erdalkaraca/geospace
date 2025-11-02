@@ -1,40 +1,74 @@
 import {ChatCompletionMessageParam, MLCEngine} from "@mlc-ai/web-llm";
-import type {ChatMessage, ChatProvider, FetcherParams} from "../../extensions/ai-system/aiservice";
-import {aiService} from "../../extensions/ai-system/aiservice";
+import type {ChatMessage, ChatProvider, StreamChunk} from "../../extensions/ai-system";
+import type {IProvider, StreamingParams, CompletionParams} from "../../extensions/ai-system";
+import {aiService} from "../../extensions/ai-system";
 
-export default () => {
-    let engine: MLCEngine;
+class WebLLMProvider implements IProvider {
+    name = "webllm";
+    private engine?: MLCEngine;
 
-    const init = async (model: string = "Llama-3.1-8B-Instruct-q4f16_1-MLC", parameters?: any) => {
+    canHandle(chatProvider: ChatProvider): boolean {
+        return chatProvider.name === "webllm";
+    }
+
+    private async init(model: string, parameters?: any): Promise<void> {
+        if (this.engine) return;
+        
         const initProgressCallback = (progress: any) => {
             console.log("Model loading progress:", progress);
         };
 
-        engine = new MLCEngine({initProgressCallback});
-        await engine.reload(model, parameters);
+        this.engine = new MLCEngine({initProgressCallback});
+        await this.engine.reload(model, parameters);
     }
 
-    const complete = async (options: FetcherParams): Promise<ChatMessage> => {
-        if (!engine) {
-            await init(options.model, options.chatConfig.parameters)
+    async *stream(params: StreamingParams): AsyncIterable<StreamChunk> {
+        if (!this.engine) {
+            await this.init(params.model, params.chatConfig.parameters);
         }
-        const internalMessages = options.messages.map((message: ChatMessage) => {
-            return {...message} as ChatCompletionMessageParam
-        })
-        const result = await engine!.chat.completions.create({
+        
+        const internalMessages = params.messages.map((message) => {
+            return {...message} as ChatCompletionMessageParam;
+        });
+        
+        const result = await this.engine!.chat.completions.create({
             messages: internalMessages
         });
-        return result.choices[0].message as ChatMessage;
+        
+        const message = result.choices[0].message as ChatMessage;
+        
+        if (message.content) {
+            for (const char of message.content) {
+                yield {
+                    type: 'token',
+                    content: char
+                };
+            }
+        }
+        
+        yield {
+            type: 'done',
+            content: ''
+        };
     }
 
-    aiService.registerStreamingFetcher({
-        name: "webllm",
-        canHandle: (chatProvider: ChatProvider) => chatProvider.name === "webllm",
-        completionApi: complete,
-        streamingApi: async function* (fetcherParams: FetcherParams, signal?: AbortSignal): AsyncIterable<any> {
-            const message = await complete(fetcherParams);
-            yield { type: 'token', content: message.content };
-            yield { type: 'done', content: '' };
+    async complete(params: CompletionParams): Promise<ChatMessage> {
+        if (!this.engine) {
+            await this.init(params.model, params.chatConfig.parameters);
         }
-    })
+        
+        const internalMessages = params.messages.map((message) => {
+            return {...message} as ChatCompletionMessageParam;
+        });
+        
+        const result = await this.engine!.chat.completions.create({
+            messages: internalMessages
+        });
+        
+        return result.choices[0].message as ChatMessage;
+    }
+}
+
+export default () => {
+    aiService.registerStreamingFetcher(new WebLLMProvider());
 }

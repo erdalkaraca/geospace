@@ -46,7 +46,7 @@ export type {
     ChatMessage,
     ChatProvider,
     ChatProviderContribution
-} from '../extensions/ai-system/aiservice';
+} from '../extensions/ai-system';
 export type {
     NavigableDialogAction
 } from '../core/dialog';

@@ -3,7 +3,7 @@ import { customElement, state } from 'lit/decorators.js';
 import { KPart } from "../../../parts/k-part";
 import { when } from "lit/directives/when.js";
 import { repeat } from "lit/directives/repeat.js";
-import '../../ai-system/components';
+import './components';
 import {
     ChatMessage,
     ChatHistory,

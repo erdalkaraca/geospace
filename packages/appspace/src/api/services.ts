@@ -52,7 +52,7 @@ export {
     type ChatProvider,
     type ChatProviderContribution,
     aiService 
-} from '../extensions/ai-system/aiservice';
+} from '../extensions/ai-system';
 export { 
     fetchReleases,
     fetchLatestRelease,

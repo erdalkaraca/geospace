@@ -128,8 +128,8 @@ extensionRegistry.registerExtension({
 
 extensionRegistry.registerExtension({
     id: "system.ai-system",
-    name: "AI System v2",
+    name: "AI System",
     description: "Modern AI service with streaming support and agent workflows",
-    loader: () => import("./ai-system-v2/ai-system-v2-extension"),
+    loader: () => import("./ai-system/ai-system-extension"),
     icon: "robot",
 })

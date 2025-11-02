@@ -3,6 +3,10 @@ import type { Contribution } from "../../../core/contributionregistry";
 import type { DependencyContext } from "../../../core/di";
 import type { ChatMessage, ChatHistory, ChatProvider, ToolDefinition, StreamChunk, UserAttentionRequest, WorkflowExecution, ApiMessage } from "./types";
 
+export interface ChatProviderContribution extends Contribution {
+    provider: ChatProvider;
+}
+
 export interface StreamingParams {
     model: string;
     messages: ApiMessage[];

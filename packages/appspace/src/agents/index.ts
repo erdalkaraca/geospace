@@ -1,5 +1,5 @@
 import {type ExecutionContext} from "../core/commandregistry";
-import {CID_AGENTS, AgentContribution, PromptEnhancer} from "../extensions/ai-system/aiservice";
+import {CID_AGENTS, AgentContribution, PromptEnhancer} from "../extensions/ai-system";
 import {contributionRegistry} from "../core/contributionregistry";
 
 import PYODIDE_SYS_PROMPT from "./py-programming.txt?raw"

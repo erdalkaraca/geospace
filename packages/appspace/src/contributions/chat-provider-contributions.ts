@@ -1,5 +1,5 @@
 import { contributionRegistry } from "../core/contributionregistry";
-import { CID_CHAT_PROVIDERS, ChatProviderContribution } from "../extensions/ai-system/aiservice";
+import { CID_CHAT_PROVIDERS, ChatProviderContribution } from "../extensions/ai-system";
 
 contributionRegistry.registerContribution<ChatProviderContribution>(CID_CHAT_PROVIDERS, {
     target: CID_CHAT_PROVIDERS,
