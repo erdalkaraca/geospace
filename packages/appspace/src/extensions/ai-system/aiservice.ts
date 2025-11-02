@@ -1262,6 +1262,21 @@ export class AIService {
         }
     }
 
+    private createToolCallSignature(toolCall: ToolCall): string {
+        const argsStr = toolCall.function.arguments || "{}";
+        let args: any = {};
+        try {
+            args = JSON.parse(argsStr);
+        } catch (e) {
+            args = {};
+        }
+        const sortedArgs = Object.keys(args).sort().reduce((acc, key) => {
+            acc[key] = args[key];
+            return acc;
+        }, {} as any);
+        return `${toolCall.function.name}:${JSON.stringify(sortedArgs)}`;
+    }
+
     private async executeToolCall(toolCall: ToolCall, context: ExecutionContext): Promise<ToolResult> {
         try {
             const sanitizedFunctionName = toolCall.function.name;
@@ -1313,9 +1328,20 @@ export class AIService {
             
             await commandRegistry.execute(commandId, execContext);
             
+            const commandName = matchingCommand?.name || commandId;
+            const resultMessage: any = {
+                success: true,
+                message: `Command "${commandName}" executed successfully`,
+                command: commandId
+            };
+            
+            if (Object.keys(sanitizedArgs).length > 0) {
+                resultMessage.parameters = sanitizedArgs;
+            }
+            
             return {
                 id: toolCall.id,
-                result: { success: true }
+                result: resultMessage
             };
         } catch (error) {
             return {
@@ -1349,6 +1375,8 @@ export class AIService {
         
         let toolCallIteration = 0;
         const MAX_TOOL_ITERATIONS = 10;
+        const recentToolCalls: string[] = [];
+        const MAX_RECENT_CALLS = 5;
         
         while (rawMessage.toolCalls && rawMessage.toolCalls.length > 0) {
             toolCallIteration++;
@@ -1356,6 +1384,19 @@ export class AIService {
             if (toolCallIteration > MAX_TOOL_ITERATIONS) {
                 console.warn(`[AIService] Maximum tool call iterations (${MAX_TOOL_ITERATIONS}) reached, stopping to prevent infinite loop`);
                 break;
+            }
+            
+            const currentSignatures = rawMessage.toolCalls.map(tc => this.createToolCallSignature(tc));
+            const duplicateCount = currentSignatures.filter(sig => recentToolCalls.includes(sig)).length;
+            
+            if (duplicateCount === currentSignatures.length && recentToolCalls.length > 0) {
+                console.warn(`[AIService] Detected duplicate tool calls (${duplicateCount}/${currentSignatures.length}), stopping to prevent infinite loop`);
+                break;
+            }
+            
+            recentToolCalls.push(...currentSignatures);
+            if (recentToolCalls.length > MAX_RECENT_CALLS) {
+                recentToolCalls.splice(0, recentToolCalls.length - MAX_RECENT_CALLS);
             }
             
             const agentContext = this.createAgentContext(sharedState, options.callContext);
