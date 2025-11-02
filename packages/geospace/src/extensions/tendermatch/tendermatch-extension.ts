@@ -12,12 +12,61 @@ import {
     aiService
 } from "@kispace/appspace/api";
 import type { ChatProvider } from "@kispace/appspace/api";
+import { uiContext } from "@kispace/appspace/core/di";
+import { appSettings } from "@kispace/appspace/core/settingsservice";
 import "./requirements-table-editor";
 import REQUIREMENTS_PROMPT from "./requirements-prompt.txt?raw";
 import CONSOLIDATION_PROMPT from "./consolidation-prompt.txt?raw";
 import Papa from "papaparse";
 
 const MAX_CHUNK_SIZE = 8000;
+
+const KEY_TENDERMATCH = "tendermatch";
+
+interface TendermatchConfig {
+    ocrProvider?: string;
+    ocrModel?: string;
+    extractionProvider?: string;
+    extractionModel?: string;
+}
+
+interface TendermatchSettings {
+    config?: TendermatchConfig;
+}
+
+const DEFAULT_CONFIG: TendermatchConfig = {
+    ocrProvider: "mistral",
+    ocrModel: "mistral-ocr-latest",
+    extractionProvider: "openai",
+    extractionModel: "gpt-4.1"
+};
+
+async function initializeConfig(): Promise<void> {
+    const existing = await appSettings.get(KEY_TENDERMATCH);
+    const oldFlatConfig = await appSettings.get("tendermatch.config");
+    
+    if (oldFlatConfig && (!existing || !existing.config)) {
+        const settings: TendermatchSettings = {
+            config: { ...DEFAULT_CONFIG, ...oldFlatConfig }
+        };
+        await appSettings.set(KEY_TENDERMATCH, settings);
+        await appSettings.set("tendermatch.config", undefined);
+    } else if (!existing || !existing.config) {
+        const settings: TendermatchSettings = {
+            config: DEFAULT_CONFIG
+        };
+        await appSettings.set(KEY_TENDERMATCH, settings);
+    }
+}
+
+async function getConfig(): Promise<TendermatchConfig> {
+    const settings = await appSettings.get(KEY_TENDERMATCH) as TendermatchSettings | undefined;
+    if (!settings || !settings.config) {
+        await initializeConfig();
+        return DEFAULT_CONFIG;
+    }
+    return { ...DEFAULT_CONFIG, ...settings.config };
+}
 
 type Requirement = { id: number; source: string; description: string; importance: string; match: string };
 
@@ -146,45 +195,33 @@ export async function callOpenAI(
     systemPrompt: string,
     userContent: string
 ): Promise<string> {
-    const response = await fetch(provider.chatApiEndpoint, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${provider.apiKey}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-            model: 'gpt-4.1',
-            stream: false,
-            temperature: 0,
-            messages: systemPrompt 
-                ? [
-                    { role: 'system', content: systemPrompt },
-                    { role: 'user', content: userContent }
-                ]
-                : [{ role: 'user', content: userContent }],
-            ...provider.parameters
-        })
-    });
+    const callContext = uiContext.createChild({});
+    
+    try {
+        const messages = systemPrompt 
+            ? [
+                { role: 'system' as const, content: systemPrompt },
+                { role: 'user' as const, content: userContent }
+            ]
+            : [{ role: 'user' as const, content: userContent }];
 
-    if (response.status !== 200) {
-        const errorMessage = await extractErrorMessage(response);
-        throw new Error(`OpenAI API request failed: ${errorMessage}`);
+        const response = await aiService.handleStreamingPromptDirect({
+            chatContext: { history: messages },
+            chatConfig: provider,
+            callContext,
+            stream: false
+        });
+
+        const content = response.content?.trim() || '';
+
+        if (!content) {
+            throw new Error('No content found in AI response');
+        }
+
+        return content;
+    } finally {
+        callContext.destroy();
     }
-
-    const result = await response.json();
-
-    if (!result.choices || !Array.isArray(result.choices) || result.choices.length === 0) {
-        throw new Error('Invalid OpenAI response format: missing choices array');
-    }
-
-    const content = result.choices[0]?.message?.content;
-
-    if (!content || content.trim().length === 0) {
-        throw new Error('No content found in AI response');
-    }
-
-    return content;
 }
 
 function parseCSVToRequirements(csvText: string): Requirement[] {
@@ -333,13 +370,15 @@ async function processPdfWithOCR(
     scansDir: Directory,
     markdownFileName: string
 ): Promise<void> {
-    const mistralProvider = await getProvider('mistral');
+    const config = await getConfig();
+    const ocrProviderName = config.ocrProvider || DEFAULT_CONFIG.ocrProvider!;
+    const ocrProvider = await getProvider(ocrProviderName);
 
-    if (!mistralProvider.ocrApiEndpoint) {
-        throw new Error('Mistral provider with OCR endpoint not configured');
+    if (!ocrProvider.ocrApiEndpoint) {
+        throw new Error(`${ocrProviderName} provider with OCR endpoint not configured`);
     }
 
-    const ocrEndpoint = mistralProvider.ocrApiEndpoint;
+    const ocrEndpoint = ocrProvider.ocrApiEndpoint;
 
     await taskService.runAsync("Ausschreibungsdokument wird verarbeitet", async (progress) => {
         progress.message = "PDF-Datei wird gelesen...";
@@ -361,17 +400,19 @@ async function processPdfWithOCR(
             reader.readAsDataURL(pdfBlob);
         });
 
-        progress.message = "Wird an Mistral OCR gesendet...";
+        progress.message = `Wird an ${ocrProviderName} OCR gesendet...`;
         progress.progress = 40;
+
+        const ocrModel = config.ocrModel || ocrProvider.model || DEFAULT_CONFIG.ocrModel!;
 
         const response = await fetch(ocrEndpoint, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${mistralProvider.apiKey}`,
+                'Authorization': `Bearer ${ocrProvider.apiKey}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: 'mistral-ocr-latest',
+                model: ocrModel,
                 document: {
                     type: 'document_url',
                     document_url: `data:application/pdf;base64,${base64Pdf}`
@@ -429,10 +470,17 @@ async function extractRequirements(
             throw new Error('Markdown file is empty');
         }
 
-        progress.message = "OpenAI-Provider wird abgerufen...";
+        const config = await getConfig();
+        const extractionProviderName = config.extractionProvider || DEFAULT_CONFIG.extractionProvider!;
+        
+        progress.message = `${extractionProviderName}-Provider wird abgerufen...`;
         progress.progress = 15;
 
-        const openaiProvider = await getProvider('openai');
+        const extractionProvider = await getProvider(extractionProviderName);
+        
+        const providerWithModel = config.extractionModel 
+            ? { ...extractionProvider, model: config.extractionModel }
+            : extractionProvider;
 
         progress.message = "Markdown wird in Abschnitte aufgeteilt...";
         progress.progress = 20;
@@ -454,7 +502,7 @@ async function extractRequirements(
                     chunks[i],
                     i,
                     chunks.length,
-                    openaiProvider,
+                    providerWithModel,
                     progress
                 );
                 chunkResults.push(chunkRequirements);
@@ -477,7 +525,7 @@ async function extractRequirements(
 
         const consolidatedRequirements = await consolidateRequirements(
             requirements,
-            openaiProvider,
+            providerWithModel,
             progress
         );
 
@@ -508,6 +556,10 @@ async function extractRequirements(
 
     return requirementsFile!;
 }
+
+initializeConfig().catch(err => {
+    console.warn('Failed to initialize tendermatch config:', err);
+});
 
 registerAll({
     command: {
