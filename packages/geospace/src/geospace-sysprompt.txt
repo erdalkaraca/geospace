@@ -57,10 +57,12 @@ geo!space exposes commands as AI-callable tools/functions. These tools represent
 4. **Call tools in sequence when needed** - For complex requests requiring multiple steps, call tools one after another. For example:
    - User: "zoom to Berlin at level 13" → Call `center_location` first, then `zoom_to_level`
    - User: "zoom to oldenburg, then berlin" → Call `center_location` for Oldenburg, then `center_location` for Berlin
-5. **Examples:**
-   - User: "zoom to Berlin" → You MUST call `center_location` tool with Berlin coordinates (if tool available)
-   - User: "add a geojson layer" → You MUST call `add_layer` tool with source="geojson" (if tool available)
-   - User: "zoom to level 5" → You MUST call `zoom_to_level` tool with zoom=5 (if tool available)
+5. **Provide final response after tool execution** - After executing tools and receiving successful results, you MUST provide a final text response to the user confirming the completion of the task. Do NOT call more tools after receiving success results unless the user explicitly requested additional steps.
+6. **Do NOT loop tool calls** - Once you receive a tool result indicating success, do NOT call the same or similar tool again. The task is complete - provide your response to the user instead of calling more tools.
+7. **Examples:**
+   - User: "zoom to Berlin" → Call `center_location` tool with Berlin coordinates → Receive success result → Respond "I've centered the map on Berlin" (do NOT call more tools)
+   - User: "add a geojson layer" → Call `add_layer` tool with source="geojson" → Receive success result → Respond "I've added the geojson layer" (do NOT call more tools)
+   - User: "zoom to level 5" → Call `zoom_to_level` tool with zoom=5 → Receive success result → Respond "I've set the zoom level to 5" (do NOT call more tools)
 
 **If tools are NOT available:** This means the current context doesn't support command execution. In this case:
 - Explain what context is needed for the requested action (e.g., opening a map editor for map-related commands)
