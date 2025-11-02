@@ -71,6 +71,7 @@ export class KAView extends KPart {
     }
 
     private chatSessions: Map<string, ChatHistory> = new Map()
+    private sessionTitles: Map<string, string> = new Map()
 
     @state()
     private activeSessionId: string = ''
@@ -146,6 +147,54 @@ export class KAView extends KPart {
 
     private readonly SETTINGS_KEY = 'aiViewChat'
 
+    private generateSessionTitle(prompt: string): string {
+        const trimmed = prompt.trim()
+        if (!trimmed) return 'New Chat'
+        
+        const maxLength = 30
+        if (trimmed.length <= maxLength) {
+            return trimmed
+        }
+        
+        return trimmed.substring(0, maxLength).trim() + '...'
+    }
+
+    private async generateAITitle(sessionId: string, prompt: string) {
+        if (!this.selectedProvider) return
+        
+        try {
+            const execContext = globalCommandRegistry.createExecutionContext(this)
+            const callContext = uiContext.createChild({
+                ...execContext
+            })
+
+            const systemPrompt = "Generate a very short, concise title (maximum 25 characters) for this chat conversation based on the user's initial message. Return only the title, no explanations or additional text."
+            const titlePrompt = `User message: "${prompt}"\n\nGenerate a concise title:`
+
+            const response = await aiService.handleStreamingPromptDirect({
+                chatContext: {
+                    history: [
+                        { role: 'system', content: systemPrompt },
+                        { role: 'user', content: titlePrompt }
+                    ]
+                },
+                chatConfig: this.selectedProvider,
+                callContext,
+                stream: false
+            })
+
+            const aiTitle = response.content?.trim() || ''
+            if (aiTitle && aiTitle.length <= 30) {
+                this.sessionTitles.set(sessionId, aiTitle)
+                this.requestUpdate()
+            }
+            
+            callContext.destroy()
+        } catch (error) {
+            console.error('Error generating AI title:', error)
+        }
+    }
+
     @topic(TOPIC_AICONFIG_CHANGED)
     public onAIConfigChanged() {
         this.doBeforeUI()
@@ -202,6 +251,7 @@ export class KAView extends KPart {
             return
         }
         this.chatSessions.delete(sessionId)
+        this.sessionTitles.delete(sessionId)
         this.sessionIds = Array.from(this.chatSessions.keys())
         if (this.activeSessionId === sessionId) {
             const firstSession = this.sessionIds[0]
@@ -351,7 +401,18 @@ export class KAView extends KPart {
         }
         const activeContext = this.chatSessions.get(currentSessionId)!
         activeContext.history.push(message)
-        this.requestUpdate()
+        
+        if (activeContext.history.length === 1) {
+            const title = this.generateSessionTitle(prompt)
+            this.sessionTitles.set(currentSessionId, title)
+            this.requestUpdate()
+            
+            this.generateAITitle(currentSessionId, prompt).catch(err => {
+                console.error('Failed to generate AI title:', err)
+            })
+        } else {
+            this.requestUpdate()
+        }
         this.busy = true
 
         this.abortController = new AbortController()
@@ -893,7 +954,7 @@ export class KAView extends KPart {
                         }}">
                         ${repeat(this.sessionIds, (sessionId) => sessionId, (sessionId, index) => html`
                             <wa-tab panel="${sessionId}">
-                                <span>Chat ${index + 1}</span>
+                                <span>${this.sessionTitles.get(sessionId) || `Chat ${index + 1}`}</span>
                                 ${when(this.sessionIds.length > 1, () => html`
                                     <wa-icon 
                                         name="xmark" 
