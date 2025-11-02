@@ -36,7 +36,23 @@ export { taskService } from '../core/taskservice';
 export { PyEnv } from '../core/pyservice';
 export { publish, subscribe } from '../core/events';
 export { watching } from '../core/signals';
-export { CID_PROMPTS, CID_CHAT_PROVIDERS, type ChatProviderContribution, type ChatProvider, chatService } from '../core/chatservice';
+export { 
+    CID_AGENTS, 
+    CID_CHAT_PROVIDERS,
+    type AgentContribution, 
+    type AgentWorkflowOptions, 
+    type AgentWorkflowResult, 
+    type WorkflowExecution,
+    type PromptEnhancer,
+    type MessageProcessor,
+    type AgentHooks,
+    type UserAttentionRequest,
+    type UserAttentionType,
+    type UserAttentionHandler,
+    type ChatProvider,
+    type ChatProviderContribution,
+    aiService 
+} from '../extensions/ai-system/aiservice';
 export { 
     fetchReleases,
     fetchLatestRelease,

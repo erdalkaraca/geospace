@@ -8,7 +8,7 @@ import {
     appLoaderService,
     createLogger,
     packageInfoService,
-    CID_PROMPTS,
+    CID_AGENTS,
     contributionRegistry,
     extensionRegistry,
     workspaceService,
@@ -26,9 +26,10 @@ import {
     TOOLBAR_MAIN_RIGHT,
     File,
     StringFile,
-    type SysPromptContribution,
+    type AgentContribution,
+    type PromptEnhancer,
     type Extension,
-    type KPart
+    type ExecutionContext
 } from "@kispace/appspace/api";
 
 // App-specific imports
@@ -90,7 +91,8 @@ export const geospaceApp: AppDefinition = {
         "system.commandpalette",
         "system.memoryusage",
         "system.pythonpackagemanager",
-        "system.settings-tree"
+        "system.settings-tree",
+        "system.ai-system"
     ],
 
     contributions: {
@@ -124,10 +126,10 @@ export const geospaceApp: AppDefinition = {
             },
             {
                 target: SIDEBAR_AUXILIARY,
-                name: "assistant",
+                name: "aiview",
                 label: "AI",
                 icon: "robot",
-                component: (id: string) => html`<k-aiassist id="${id}"></k-aiassist>`
+                component: (id: string) => html`<k-aiview id="${id}"></k-aiview>`
             },
             {
                 target: PANEL_BOTTOM,
@@ -217,10 +219,25 @@ export const geospaceApp: AppDefinition = {
             devDependencies: geospacePackageJson.devDependencies
         });
 
-        contributionRegistry.registerContribution(CID_PROMPTS, {
+        const appSupportPromptEnhancer: PromptEnhancer = {
+            enhance: async (prompt: string, _context: ExecutionContext) => {
+                return workspaceService.getWorkspace().then(workspace => {
+                    const appState = {
+                        workspace: workspace?.getName(),
+                        activeEditor: editorRegistry.getEditorArea()?.getActiveEditor()
+                    }
+                    const appStateStr = `***App's state:***\n${JSON.stringify(appState, null, 2)}`
+                    return `${appStateStr}\n\n${prompt}`
+                })
+            }
+        }
+
+        contributionRegistry.registerContribution(CID_AGENTS, {
             label: "App Support",
             description: "General app support",
             role: "appsupport",
+            priority: 100,
+            icon: "question-circle",
             sysPrompt: () => {
                 const extensions = extensionRegistry.getExtensions().map((e: Extension) => {
                     return {
@@ -234,20 +251,8 @@ export const geospaceApp: AppDefinition = {
                 const extensionsStr = `***Available Extensions:***\n${JSON.stringify(extensions, null, 2)}`
                 return `${APP_SYS_PROMPT}\n\n${extensionsStr}`
             },
-            canHandle: ({ activeEditor }: { activeEditor: KPart }) => {
-                return activeEditor === undefined
-            },
-            promptDecorator: async ({ userPrompt }: any) => {
-                return workspaceService.getWorkspace().then(workspace => {
-                    const appState = {
-                        workspace: workspace?.getName(),
-                        activeEditor: editorRegistry.getEditorArea()?.getActiveEditor()
-                    }
-                    const appStateStr = `***App's state:***\n${JSON.stringify(appState, null, 2)}`
-                    return `${appStateStr}\n\n${userPrompt}`
-                })
-            }
-        } as SysPromptContribution)
+            promptEnhancers: [appSupportPromptEnhancer]
+        } as AgentContribution)
 
         registerAll({
             command: {

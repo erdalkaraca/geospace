@@ -32,10 +32,21 @@ export type {
     SignalPort
 } from '../core/signals';
 export type {
-    SysPromptContribution,
-    ChatContext,
-    ChatMessage
-} from '../core/chatservice';
+    AgentContribution,
+    AgentWorkflowOptions,
+    AgentWorkflowResult,
+    WorkflowExecution,
+    PromptEnhancer,
+    MessageProcessor,
+    AgentHooks,
+    UserAttentionRequest,
+    UserAttentionType,
+    UserAttentionHandler,
+    ChatHistory,
+    ChatMessage,
+    ChatProvider,
+    ChatProviderContribution
+} from '../extensions/ai-system/aiservice';
 export type {
     NavigableDialogAction
 } from '../core/dialog';

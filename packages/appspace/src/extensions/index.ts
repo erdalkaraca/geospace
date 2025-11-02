@@ -125,3 +125,11 @@ extensionRegistry.registerExtension({
     loader: () => import("./settings-tree/settings-tree-extension"),
     icon: "sitemap",
 })
+
+extensionRegistry.registerExtension({
+    id: "system.ai-system",
+    name: "AI System",
+    description: "Modern AI service with streaming support and agent workflows",
+    loader: () => import("./ai-system/ai-system-extension"),
+    icon: "robot",
+})

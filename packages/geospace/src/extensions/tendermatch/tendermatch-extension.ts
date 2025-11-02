@@ -9,7 +9,7 @@ import {
     workspaceService,
     taskService,
     editorRegistry,
-    chatService
+    aiService
 } from "@kispace/appspace/api";
 import type { ChatProvider } from "@kispace/appspace/api";
 import "./requirements-table-editor";
@@ -225,7 +225,7 @@ function reassignRequirementIds(requirements: Requirement[]): Requirement[] {
 }
 
 async function getProvider(providerName: string): Promise<ChatProvider> {
-    const providers = await chatService.getProviders();
+    const providers = await aiService.getProviders();
     const provider = providers.find((p: { name: string }) => p.name === providerName);
     if (!provider) {
         throw new Error(`${providerName} provider not configured`);

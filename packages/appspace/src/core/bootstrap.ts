@@ -24,8 +24,8 @@ import '../widgets/index';
 // Register framework extensions (system extensions)
 import '../extensions';
 
-// Register framework system prompts
-import '../sysprompts';
+// Register framework agents
+import '../agents';
 
 // Register framework contributions
 import '../contributions';

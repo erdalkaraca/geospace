@@ -13,7 +13,7 @@ import {EditorInput, editorRegistry} from "../../core/editorregistry";
 import {styleMap} from "lit/directives/style-map.js";
 import {PyEnv} from "../../core/pyservice";
 import {File, workspaceService} from "../../core/filesys";
-import {ChatContext} from "../../core/chatservice";
+import {ChatHistory} from "../../extensions/ai-system/aiservice";
 import logger from '../../core/logger';
 import {pythonPackageManagerService} from "../python-package-manager/package-manager-extension";
 
@@ -73,7 +73,7 @@ export class KMonacoEditor extends KPart {
     @state()
     private requiredPackages: string[] = [];
 
-    chatContext: ChatContext = {
+    chatContext: ChatHistory = {
         history: []
     }
 

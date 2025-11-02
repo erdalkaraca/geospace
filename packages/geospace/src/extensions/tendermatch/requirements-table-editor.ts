@@ -2,7 +2,7 @@ import { customElement, property, state } from "lit/decorators.js";
 import { KPart } from "@kispace/appspace/api";
 import { html, css, render } from "lit";
 import { EditorInput, editorRegistry } from "@kispace/appspace/api";
-import { File, FileContentType, toastInfo, toastError, taskService, workspaceService, activeSelectionSignal, chatService } from "@kispace/appspace/api";
+import { File, FileContentType, toastInfo, toastError, taskService, workspaceService, activeSelectionSignal, aiService } from "@kispace/appspace/api";
 import type { ChatProvider } from "@kispace/appspace/api";
 import MATCHING_PROMPT from "./matching-prompt.txt?raw";
 import Papa from "papaparse";
@@ -600,7 +600,7 @@ export class KRequirementsTableEditor extends KPart {
     }
 
     private async getOpenAIProvider(): Promise<ChatProvider> {
-        const providers = await chatService.getProviders();
+        const providers = await aiService.getProviders();
         const provider = providers.find((p: { name: string }) => p.name === 'openai');
         if (!provider) {
             throw new Error('OpenAI provider not configured');
