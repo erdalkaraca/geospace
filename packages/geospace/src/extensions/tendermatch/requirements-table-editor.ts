@@ -2,7 +2,7 @@ import { customElement, property, state } from "lit/decorators.js";
 import { KPart } from "@kispace/appspace/api";
 import { html, css, render } from "lit";
 import { EditorInput, editorRegistry } from "@kispace/appspace/api";
-import { File, FileContentType, toastInfo, toastError, taskService, workspaceService, activeSelectionSignal, aiService } from "@kispace/appspace/api";
+import { File, FileContentType, toastInfo, toastError, taskService, activeSelectionSignal, aiService } from "@kispace/appspace/api";
 import type { ChatProvider } from "@kispace/appspace/api";
 import MATCHING_PROMPT from "./matching-prompt.txt?raw";
 import Papa from "papaparse";
@@ -426,10 +426,6 @@ export class KRequirementsTableEditor extends KPart {
             this.markDirty(true);
             this.requestUpdate();
         }
-    }
-
-    private onMatchChange(index: number, value: string) {
-        this.updateRequirement(index, { match: value });
     }
 
     private onBadgeClick(index: number, category: string) {

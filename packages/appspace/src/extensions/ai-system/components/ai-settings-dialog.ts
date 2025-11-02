@@ -28,6 +28,9 @@ export class AISettingsDialog extends LitElement {
     @property({ type: Boolean })
     public loadingModels: boolean = false;
 
+    @property({ type: Boolean })
+    public requireToolApproval: boolean = true;
+
     private onProviderChange(event: Event) {
         const select = event.target as HTMLSelectElement;
         this.selectedProviderName = select.value;
@@ -43,6 +46,16 @@ export class AISettingsDialog extends LitElement {
         this.selectedModel = select.value;
         this.dispatchEvent(new CustomEvent('model-change', {
             detail: { model: select.value },
+            bubbles: true,
+            composed: true
+        }));
+    }
+
+    private onToolApprovalChange(event: Event) {
+        const checkbox = event.target as HTMLInputElement;
+        this.requireToolApproval = checkbox.checked;
+        this.dispatchEvent(new CustomEvent('tool-approval-change', {
+            detail: { value: checkbox.checked },
             bubbles: true,
             composed: true
         }));
@@ -118,6 +131,16 @@ export class AISettingsDialog extends LitElement {
                         `)}
                     </div>
 
+                    <div class="settings-field">
+                        <label>
+                            <wa-checkbox
+                                ?checked="${this.requireToolApproval}"
+                                @change="${this.onToolApprovalChange}">
+                            </wa-checkbox>
+                            <span>Require approval before executing tools</span>
+                        </label>
+                    </div>
+
                     <div class="settings-actions">
                         <wa-button variant="neutral" appearance="outlined" @click="${this.cancel}">
                             Cancel
@@ -152,6 +175,14 @@ export class AISettingsDialog extends LitElement {
         .settings-field label {
             font-weight: 500;
             color: var(--wa-color-text-normal);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+
+        .settings-field label span {
+            flex: 1;
         }
 
         .settings-actions {

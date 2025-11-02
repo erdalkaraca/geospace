@@ -17,7 +17,7 @@ contributionRegistry.registerContribution<ChatProviderContribution>(CID_CHAT_PRO
     label: "OpenAI",
     provider: {
         name: "openai",
-        model: "gpt-4.1-mini",
+        model: "gpt-4.1",
         chatApiEndpoint: "https://api.openai.com/v1/chat/completions",
         apiKey: "<your api key>"
     }

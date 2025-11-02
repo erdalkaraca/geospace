@@ -5,7 +5,7 @@ import {PyEnv} from "../core/pyservice";
 import {EditorInput, editorRegistry} from "../core/editorregistry";
 import {html} from "lit";
 import {toastError, toastInfo} from "../core/toast";
-import {activePartSignal} from "../core/appstate";
+import {activeEditorSignal, activePartSignal} from "../core/appstate";
 import {appSettings} from "../core/settingsservice";
 import "./files";
 import "./version-info";
@@ -63,7 +63,7 @@ registerAll({
     },
     handler: {
         execute: async _context => {
-            const part = activePartSignal.get()
+            const part = activeEditorSignal.get() || activePartSignal.get()
             if (part && part.isDirty()) {
                 part.save()
             }

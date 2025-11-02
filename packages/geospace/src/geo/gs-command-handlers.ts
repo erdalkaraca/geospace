@@ -110,12 +110,14 @@ commandRegistry.registerAll({
         "parameters": [
             {
                 "name": "lat",
-                "description": "the latitude of the map",
+                "description": "the latitude of the location (e.g., 52.52 for Berlin). Use your knowledge of city coordinates or approximate values.",
+                "type": "number",
                 "required": true
             },
             {
                 "name": "lon",
-                "description": "the longitude of the map",
+                "description": "the longitude of the location (e.g., 13.405 for Berlin). Use your knowledge of city coordinates or approximate values.",
+                "type": "number",
                 "required": true
             }
         ]

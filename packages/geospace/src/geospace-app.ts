@@ -254,11 +254,6 @@ export const geospaceApp: AppDefinition = {
             promptEnhancers: [appSupportPromptEnhancer],
             tools: {
                 enabled: true,
-                // Expose commands as tools so App Support can execute commands directly
-                commandFilter: (_command: any, context: ExecutionContext) => {
-                    // Only expose commands when an editor is active (commands are contextual)
-                    return !!context.activeEditor
-                }
             }
         } as AgentContribution)
 
