@@ -20,7 +20,6 @@ import {
     toastError,
     toastInfo,
     promptDialog,
-    ChatContext,
     activePartSignal,
     watching,
     createLogger
@@ -46,9 +45,6 @@ export class GsMapEditor extends KPart {
     @property({ type: String })
     private interactionMode: 'draw' | 'select' | 'none' = 'none';
 
-    chatContext: ChatContext = {
-        history: []
-    }
 
     constructor() {
         super();

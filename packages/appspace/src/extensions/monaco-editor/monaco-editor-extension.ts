@@ -73,9 +73,6 @@ export class KMonacoEditor extends KPart {
     @state()
     private requiredPackages: string[] = [];
 
-    chatContext: ChatHistory = {
-        history: []
-    }
 
     protected doBeforeUI() {
         // Initialize canExecute based on file type

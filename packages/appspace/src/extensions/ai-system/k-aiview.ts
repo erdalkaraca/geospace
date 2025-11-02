@@ -137,11 +137,7 @@ export class KAView extends KPart {
 
     @watching(activePartSignal)
     protected onPartChanged(part: KPart) {
-        if (!!part && "chatContext" in part) {
-            this.chatContext = part.chatContext as ChatHistory
-        } else {
-            this.chatContext = this.defaultChatContext
-        }
+        this.chatContext = this.defaultChatContext
     }
 
     private getAgentMetadata(role: string): { label: string; icon: string } {
