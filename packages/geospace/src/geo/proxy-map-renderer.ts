@@ -102,10 +102,9 @@ export class IFrameMapRenderer implements MapRenderer {
         return this.operations;
     }
 
-    getViewExtent(): number[] {
-        // This would need to be implemented as an async call to the iframe
-        // For now, return a placeholder
-        return [0, 0, 0, 0];
+    async getViewExtent(): Promise<number[]> {
+        const result = await this.sendMessage('getViewExtent', {});
+        return result?.extent || [0, 0, 0, 0];
     }
 
     setOnDirty(callback: () => void): void {
@@ -217,7 +216,14 @@ export class IFrameMapRenderer implements MapRenderer {
                 if (error) {
                     reject(new Error(error));
                 } else {
-                    resolve(result);
+                    // The iframe spreads result into the message, so if result is undefined,
+                    // construct it from all properties except id, type, event, and error
+                    const responseData = result ?? Object.fromEntries(
+                        Object.entries(event.data).filter(([key]) => 
+                            !['id', 'type', 'event', 'error'].includes(key)
+                        )
+                    );
+                    resolve(responseData);
                 }
             }
             

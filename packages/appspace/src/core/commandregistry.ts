@@ -1,7 +1,7 @@
 import logger from "./logger";
-import {CommandContribution, Contribution, contributionRegistry} from "./contributionregistry";
-import {rootContext} from "./di";
-import {activePartSignal, activeEditorSignal} from "./appstate";
+import { CommandContribution, Contribution, contributionRegistry } from "./contributionregistry";
+import { rootContext } from "./di";
+import { activePartSignal, activeEditorSignal } from "./appstate";
 
 export interface Parameter {
     name: string;
@@ -111,7 +111,7 @@ export class CommandRegistry {
             activePart: activePartSignal.get(),
             activeEditor: activeEditorSignal.get()
         };
-        
+
         return context;
     }
 
@@ -132,13 +132,12 @@ export class CommandRegistry {
         for (const handler of handlers) {
             if (handler.canExecute === undefined || handler.canExecute(context)) {
                 try {
-                    const result = handler.execute(context);
-                    const resultType = result !== undefined ? typeof result : 'void';
-                    logger.debug(`[CommandRegistry] Command executed successfully: ${commandId} (result: ${resultType})`);
+                    const result: any | Promise<any> = handler.execute(context);
+                    logger.debug(`[CommandRegistry] Command executed successfully: ${commandId} (result: ${result})`);
                     return result;
                 } catch (error) {
                     const errorMsg = error instanceof Error ? error.message : String(error);
-                    logger.debug(`[CommandRegistry] Command execution failed: ${commandId} - ${errorMsg}`);
+                    logger.error(`[CommandRegistry] Command execution failed: ${commandId} - ${errorMsg}`);
                     throw error;
                 }
             }

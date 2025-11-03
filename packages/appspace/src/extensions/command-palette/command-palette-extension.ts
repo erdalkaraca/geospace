@@ -12,7 +12,7 @@ import { createRef, ref, Ref } from "lit/directives/ref.js";
 import { KPart } from "../../parts/k-part";
 import { TOOLBAR_MAIN_CENTER } from "../../core/constants";
 import { subscribe } from "../../core/events";
-import { CommandRegistry, commandRegistry } from "@kispace/appspace";
+import { CommandRegistry, ExecutionContext, commandRegistry } from "@kispace/appspace";
 
 // Event topic for opening the command palette
 const TOPIC_OPEN_COMMAND_PALETTE = "commandpalette/open";
@@ -43,6 +43,7 @@ export class KCommandPalette extends KPart {
     private inputRef: Ref<any> = createRef();
     private dialogRef: Ref<any> = createRef();
     private boundDocumentClickHandler?: (e: MouseEvent) => void;
+    private executionContext: ExecutionContext | undefined;
 
     protected async doInitUI() {
         // Subscribe to open command palette event
@@ -55,58 +56,55 @@ export class KCommandPalette extends KPart {
         document.addEventListener('click', this.boundDocumentClickHandler);
     }
 
-    private handleDocumentClick(e: MouseEvent) {
+    private async handleDocumentClick(e: MouseEvent) {
         if (!this.isPaletteOpen && !this.showParameterPrompt) return;
-        
-        // Small delay to let other events process first
-        setTimeout(() => {
-            const target = e.target as Node;
-            
-            // Check if click is inside the component
-            if (this.contains(target)) return;
-            
-            // Check if click is inside the dialog element
-            if (this.dialogRef.value) {
-                const dialog = this.dialogRef.value as HTMLElement;
-                if (dialog.contains(target)) return;
-            }
-            
-            // Check if the target is inside any wa-dialog (in case of shadow DOM)
-            let element = target as HTMLElement;
-            while (element) {
-                if (element.tagName === 'WA-DIALOG') return;
-                element = element.parentElement as HTMLElement;
-            }
-            
-            // Click is outside, close everything
-            this.closePalette();
-            this.closeParameterPrompt();
-        }, 0);
+
+        await this.updateComplete;
+        const target = e.target as Node;
+
+        // Check if click is inside the component
+        if (this.contains(target)) return;
+
+        // Check if click is inside the dialog element
+        if (this.dialogRef.value) {
+            const dialog = this.dialogRef.value as HTMLElement;
+            if (dialog.contains(target)) return;
+        }
+
+        // Check if the target is inside any wa-dialog (in case of shadow DOM)
+        let element = target as HTMLElement;
+        while (element) {
+            if (element.tagName === 'WA-DIALOG') return;
+            element = element.parentElement as HTMLElement;
+        }
+
+        // Click is outside, close everything
+        this.closePalette();
+        this.closeParameterPrompt();
     }
-    
+
     private handleDialogClick(e: Event) {
         e.stopPropagation();
     }
-    
+
     private handleInputFocus() {
         // Use requestAnimationFrame to prevent interrupting the focus
         requestAnimationFrame(() => {
             this.isPaletteOpen = true;
         });
     }
-    
+
     private handleInputClick(e: Event) {
         e.stopPropagation();
-        this.isPaletteOpen = true;
+        this.openPalette();
     }
-    
+
     private handleInputMouseDown(e: Event) {
         e.stopPropagation();
     }
 
     private updateCommandList() {
-        const context = commandRegistry.createExecutionContext();
-        const commands = commandRegistry.listCommands(context);
+        const commands = commandRegistry.listCommands(this.executionContext || {});
         this.allCommands = Object.values(commands)
             .filter((cmd: any) => cmd.id !== 'commandpalette.open')
             .map((cmd: any) => ({
@@ -116,26 +114,19 @@ export class KCommandPalette extends KPart {
                 icon: cmd.icon,
                 keyBinding: cmd.keyBinding
             }));
-        
+
         this.filteredCommands = [...this.allCommands];
     }
 
-    public togglePalette() {
-        if (this.isPaletteOpen) {
-            this.closePalette();
-        } else {
-            this.openPalette();
-        }
-    }
-
     public async openPalette() {
+        this.executionContext = commandRegistry.createExecutionContext();
         this.inputValue = '';
         this.updateCommandList();
         this.showParameterPrompt = false;
         this.isPaletteOpen = true;
-        
+
         await this.updateComplete;
-        
+
         if (this.inputRef.value) {
             this.inputRef.value.focus();
         }
@@ -145,6 +136,7 @@ export class KCommandPalette extends KPart {
         this.isPaletteOpen = false;
         this.inputValue = '';
         this.showParameterPrompt = false;
+        this.executionContext = undefined;
     }
 
     private handleInputChange(e: Event) {
@@ -158,7 +150,7 @@ export class KCommandPalette extends KPart {
             this.filteredCommands = [...this.allCommands];
         } else {
             const searchLower = this.inputValue.toLowerCase();
-            this.filteredCommands = this.allCommands.filter(cmd => 
+            this.filteredCommands = this.allCommands.filter(cmd =>
                 cmd.name.toLowerCase().includes(searchLower) ||
                 cmd.id.toLowerCase().includes(searchLower) ||
                 (cmd.description && cmd.description.toLowerCase().includes(searchLower))
@@ -180,7 +172,7 @@ export class KCommandPalette extends KPart {
         this.filterCommands();
         this.runCommand(command);
     }
-    
+
     private handleContainerClick(e: Event) {
         e.stopPropagation();
     }
@@ -190,10 +182,10 @@ export class KCommandPalette extends KPart {
 
         // Get the full command details from registry
         const fullCommand = commandRegistry.getCommand(command.id);
-        
+
         // Check if command has any parameters (required or optional)
         const hasParameters = fullCommand?.parameters && fullCommand.parameters.length > 0;
-        
+
         if (hasParameters) {
             // Show parameter prompt for any command with parameters
             this.selectedCommand = fullCommand;
@@ -207,7 +199,7 @@ export class KCommandPalette extends KPart {
 
     private executeCommandWithParams(commandId: string, params: any) {
         try {
-            commandRegistry.execute(commandId, { params });
+            commandRegistry.execute(commandId, { ...(this.executionContext || {}), params });
             this.closePalette();
             this.closeParameterPrompt();
         } catch (error: any) {

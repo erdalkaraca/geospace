@@ -180,13 +180,16 @@ export class OpenLayersMapRenderer implements MapRenderer {
         return this.operations;
     }
 
-    getViewExtent(): number[] {
+    async getViewExtent(): Promise<number[]> {
+        console.debug("Getting view extent");
         if (!this.olMap) {
             throw new Error("OpenLayers map not available for extent calculation");
         }
 
         const view = this.olMap.getView();
-        return view.calculateExtent();
+        const extent = view.calculateExtent();
+        console.debug(`View extent: ${extent}`);
+        return extent;
     }
 
     setOnDirty(callback: () => void): void {

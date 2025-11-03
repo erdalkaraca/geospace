@@ -21,7 +21,7 @@ export interface MapRenderer {
     render(container: string | HTMLElement): Promise<void>;
     reattached?(): Promise<void>;
     modelToUI(updatedGsMap?: GsMap): Promise<void>;
-    getViewExtent(): number[];
+    getViewExtent(): Promise<number[]>;
     getOperations(): MapOperations;
     setOnDirty(callback: () => void): void;
     triggerDirty(): void;

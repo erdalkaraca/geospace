@@ -372,11 +372,11 @@ commandRegistry.registerAll({
     handler: {
         canExecute,
         execute: async context => {
+            const editor = context.activeEditor as GsMapEditor;
             const latlon = context.params!["latlon"]
-            const renderer = (context.source as any).renderer;
+            const renderer = editor.getRenderer()!;
 
-            const extent = renderer.getViewExtent();
-            logger.info(`View extent: ${extent}`);
+            const extent = await renderer.getViewExtent();
 
             if (!extent) {
                 throw new Error("Failed to get view extent");

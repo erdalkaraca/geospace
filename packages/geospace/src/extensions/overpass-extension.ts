@@ -3,8 +3,9 @@ import {toGeojson} from "osmtogeojson";
 import {
     type CommandRegistry,
     type WorkspaceService,
-    type File
+    type File,
 } from "@kispace/appspace/api";
+import logger from "@kispace/appspace/core/logger";
 
 export default ({commandRegistry, workspaceService}: {
     commandRegistry: CommandRegistry,
@@ -21,7 +22,7 @@ export default ({commandRegistry, workspaceService}: {
             "parameters": [
                 {
                     "name": "query",
-                    "description": "the overpass query to submit, use {{varX}} to reference a variable from a previously executed command, for example {{viewExtent}} to obtain the current view's extents as a bounding box",
+                    "description": "the overpass query to submit",
                     "required": true
                 },
                 {
@@ -36,6 +37,8 @@ export default ({commandRegistry, workspaceService}: {
                 if (!query || !outputFile) {
                     return
                 }
+
+                logger.debug(`Executing overpass query: ${query}`);
 
                 const geojson = await fetch('https://overpass-api.de/api/interpreter', {
                     method: 'POST',

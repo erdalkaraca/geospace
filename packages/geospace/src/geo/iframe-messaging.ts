@@ -86,7 +86,7 @@ async function handleOperation(method: string, params: any) {
 
         case 'getViewExtent':
             if (mapRenderer) {
-                return { extent: mapRenderer.getViewExtent() };
+                return { extent: await mapRenderer.getViewExtent() };
             } else {
                 return { extent: [0, 0, 0, 0] };
             }

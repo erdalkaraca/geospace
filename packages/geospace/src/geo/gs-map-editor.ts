@@ -51,6 +51,10 @@ export class GsMapEditor extends KPart {
         this.commandStack = new CommandStack()
     }
 
+    getRenderer(): MapRenderer {
+        return this.renderer!;
+    }
+
     getOperations(): MapOperations {
         return this.operations!;
     }
