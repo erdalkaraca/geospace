@@ -3,8 +3,8 @@ import geospacePackageJson from "../package.json";
 const appVersion = geospacePackageJson.version;
 
 // Framework API imports
-import { 
-    AppDefinition, 
+import {
+    AppDefinition,
     appLoaderService,
     createLogger,
     packageInfoService,
@@ -294,12 +294,18 @@ export const geospaceApp: AppDefinition = {
                 "id": "create_geospace_file",
                 "name": "Create GeoSpace Map File",
                 "description": "Creates a new .geospace map file",
-                "parameters": []
+                "parameters": [],
+                "output": [
+                    {
+                        "name": "path",
+                        "description": "the path of the created file"
+                    }
+                ]
             },
             handler: {
                 execute: async () => {
-                    const gsMap = { 
-                        ...DEFAULT_GSMAP, 
+                    const gsMap = {
+                        ...DEFAULT_GSMAP,
                         chatHistory: [],
                         view: {
                             center: [1105600, 6120800],
@@ -307,7 +313,7 @@ export const geospaceApp: AppDefinition = {
                             projection: 'EPSG:3857'
                         }
                     }
-                    await commandRegistry.execute("create_file", {
+                    return await commandRegistry.execute("create_file", {
                         params: {
                             path: "map.geospace",
                             contents: JSON.stringify(gsMap, null, 2),

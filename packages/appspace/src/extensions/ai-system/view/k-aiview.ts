@@ -558,9 +558,11 @@ export class KAView extends KPart {
                         </wa-button>
                     </wa-tab-group>
                     ${this.pendingToolApprovals.size > 0 ? html`
-                        <div class="tool-approval-banner">
+                        <div class="tool-approval-section">
                             ${Array.from(this.pendingToolApprovals.entries()).map(([approvalId, approval]) => {
-                                const toolList = approval.request.toolCalls.map(tc => {
+                                const toolCalls = approval.request.toolCalls;
+                                const toolCount = toolCalls.length;
+                                const toolList = toolCalls.map(tc => {
                                     const args = tc.function.arguments || "{}";
                                     let parsedArgs: any = {};
                                     try {
@@ -572,38 +574,60 @@ export class KAView extends KPart {
                                     return `${tc.function.name}${argsStr ? `(${argsStr})` : "()"}`;
                                 }).join(", ");
                                 
+                                const summaryText = `Tool execution pending: ${toolCount} tool${toolCount > 1 ? 's' : ''} (${toolCalls[0]?.function.name}${toolCount > 1 ? ', ...' : ''})`;
+                                
                                 return html`
-                                    <div class="approval-notification">
+                                    <wa-details class="approval-details">
+                                        <span slot="summary" class="approval-summary">
+                                            <span class="approval-summary-text">${summaryText}</span>
+                                            <div class="approval-actions-inline">
+                                                <wa-button
+                                                    appearance="plain"
+                                                    size="small"
+                                                    variant="brand"
+                                                    @click="${(e: Event) => {
+                                                        e.stopPropagation();
+                                                        approval.resolve(false);
+                                                        this.pendingToolApprovals.delete(approvalId);
+                                                        this.requestUpdate();
+                                                    }}">
+                                                    <wa-icon name="xmark" label="Cancel"></wa-icon>
+                                                </wa-button>
+                                                <wa-button
+                                                    appearance="plain"
+                                                    size="small"
+                                                    variant="success"
+                                                    @click="${(e: Event) => {
+                                                        e.stopPropagation();
+                                                        approval.resolve(true);
+                                                        this.pendingToolApprovals.delete(approvalId);
+                                                        this.requestUpdate();
+                                                    }}">
+                                                    <wa-icon name="check" label="Approve"></wa-icon>
+                                                </wa-button>
+                                            </div>
+                                        </span>
                                         <div class="approval-content">
-                                            <wa-icon name="question-circle" class="approval-icon"></wa-icon>
                                             <div class="approval-message">
-                                                <strong>Tool execution pending:</strong>
-                                                <span class="tool-list">${toolList}</span>
+                                                <strong>Agent "${approval.role}" wants to execute the following tools:</strong>
+                                                <ul class="tool-list">
+                                                    ${toolCalls.map(tc => {
+                                                        const args = tc.function.arguments || "{}";
+                                                        let parsedArgs: any = {};
+                                                        try {
+                                                            parsedArgs = JSON.parse(args);
+                                                        } catch (e) {
+                                                            parsedArgs = {};
+                                                        }
+                                                        const argsStr = Object.entries(parsedArgs).length > 0
+                                                            ? `(${Object.entries(parsedArgs).map(([k, v]) => `${k}=${JSON.stringify(v)}`).join(", ")})`
+                                                            : "()";
+                                                        return html`<li><code>${tc.function.name}${argsStr}</code></li>`;
+                                                    })}
+                                                </ul>
                                             </div>
                                         </div>
-                                        <div class="approval-actions">
-                                            <wa-button
-                                                variant="default"
-                                                size="small"
-                                                @click="${() => {
-                                                    approval.resolve(false);
-                                                    this.pendingToolApprovals.delete(approvalId);
-                                                    this.requestUpdate();
-                                                }}">
-                                                Cancel
-                                            </wa-button>
-                                            <wa-button
-                                                variant="brand"
-                                                size="small"
-                                                @click="${() => {
-                                                    approval.resolve(true);
-                                                    this.pendingToolApprovals.delete(approvalId);
-                                                    this.requestUpdate();
-                                                }}">
-                                                Approve
-                                            </wa-button>
-                                        </div>
-                                    </div>
+                                    </wa-details>
                                 `;
                             })}
                         </div>
@@ -644,56 +668,72 @@ export class KAView extends KPart {
             flex-shrink: 0;
         }
 
-        .tool-approval-banner {
+        .tool-approval-section {
             display: flex;
             flex-direction: column;
             gap: 0.5rem;
             padding: 0.75rem 1rem;
-            background-color: var(--wa-color-warning-fill-quiet);
             border-top: solid var(--wa-border-width-s) var(--wa-color-warning-border-normal);
+            background-color: var(--wa-color-warning-fill-quiet);
         }
 
-        .approval-notification {
+        .approval-details {
+            width: 100%;
+        }
+
+        .approval-summary {
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 1rem;
-            padding: 0.5rem;
-            background-color: var(--wa-color-surface-default);
-            border-radius: 0.25rem;
-            border: solid var(--wa-border-width-s) var(--wa-color-warning-border-normal);
+            width: 100%;
         }
 
-        .approval-content {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
+        .approval-summary-text {
             flex: 1;
             min-width: 0;
         }
 
-        .approval-icon {
-            color: var(--wa-color-warning-60);
+        .approval-actions-inline {
+            display: flex;
+            gap: 0.5rem;
             flex-shrink: 0;
+        }
+
+        .approval-content {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            padding: 0.75rem 0;
         }
 
         .approval-message {
             display: flex;
             flex-direction: column;
-            gap: 0.25rem;
+            gap: 0.5rem;
             font-size: 0.875rem;
-            min-width: 0;
         }
 
         .approval-message strong {
             color: var(--wa-color-text-normal);
         }
 
-        .approval-message .tool-list {
-            color: var(--wa-color-text-quiet);
-            font-family: monospace;
-            font-size: 0.8125rem;
-            word-break: break-all;
+        .tool-list {
+            margin: 0.5rem 0 0 1.5rem;
+            padding: 0;
+            list-style: disc;
+        }
+
+        .tool-list li {
+            margin: 0.25rem 0;
+        }
+
+        .tool-list code {
+            font-family: var(--wa-font-mono);
+            font-size: 0.875rem;
+            padding: 0.125rem 0.25rem;
+            background-color: var(--wa-color-neutral-fill-subtle);
+            border-radius: var(--wa-border-radius-s);
         }
 
         .approval-actions {

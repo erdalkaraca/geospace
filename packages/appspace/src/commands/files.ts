@@ -4,6 +4,7 @@ import {toastError, toastInfo} from "../core/toast";
 import {promptDialog, confirmDialog} from "../core/dialog";
 import {activeSelectionSignal} from "../core/appstate";
 import {editorRegistry} from "../core/editorregistry";
+import logger from "../core/logger";
 
 registerAll({
     command: {
@@ -31,6 +32,12 @@ registerAll({
                 "name": "extension",
                 "description": "required file extension (e.g., '.geospace'), will be appended if missing",
                 "required": false
+            }
+        ],
+        "output": [
+            {
+                "name": "path",
+                "description": "the path of the created file"
             }
         ]
     },
@@ -73,8 +80,10 @@ registerAll({
                 if (contents) {
                     await (createdResource as File).saveContents(contents)
                 }
-                toastInfo("File created: " + path)
+                logger.info("File created: " + path)
             }
+
+            return path
         }
     }
 })

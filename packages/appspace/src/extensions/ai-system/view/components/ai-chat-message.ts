@@ -33,6 +33,32 @@ export class AIChatMessage extends LitElement {
         });
     }
 
+    private processMarkdownContent(markdownHtml: string): string {
+        if (markdownHtml.includes('code-block-wrapper')) {
+            return markdownHtml;
+        }
+        
+        return markdownHtml.replace(/<pre><code([^>]*)>([\s\S]*?)<\/code><\/pre>/gi, (match, attrs, codeText) => {
+            return `<div class="code-block-wrapper">
+                <div class="code-block-header">
+                    <wa-copy-button value="${this.escapeHtmlAttribute(codeText.trim())}" size="small" label="Copy code"></wa-copy-button>
+                </div>
+                <div class="code-block-content">
+                    <pre><code${attrs}>${codeText}</code></pre>
+                </div>
+            </div>`;
+        });
+    }
+
+    private escapeHtmlAttribute(text: string): string {
+        return text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
     private handleResend(e?: Event) {
         if (e) {
             e.preventDefault();
@@ -156,7 +182,7 @@ export class AIChatMessage extends LitElement {
                 `)}
                 <div class="message-content-wrapper ${isUser ? 'user' : ''}">
                     <div class="message-content">
-                        ${unsafeHTML(marked.parse(message.content || '') as string)}
+                        ${unsafeHTML(this.processMarkdownContent(marked.parse(message.content || '') as string))}
                         ${when(this.isStreaming, () => html`
                             <span class="streaming-cursor">▋</span>
                         `)}
@@ -469,6 +495,7 @@ export class AIChatMessage extends LitElement {
             max-width: 100%;
             box-sizing: border-box;
             overflow-x: auto;
+            margin: 0;
         }
 
         .message-content code {
@@ -479,6 +506,39 @@ export class AIChatMessage extends LitElement {
         }
 
         .message-content pre code {
+            background-color: transparent;
+            padding: 0;
+            display: block;
+        }
+
+        .code-block-wrapper {
+            margin: 0.75rem 0;
+            border: solid var(--wa-border-width-s) var(--wa-color-neutral-border-loud);
+            border-radius: var(--wa-border-radius-m);
+            background-color: var(--wa-color-surface-lowered);
+            overflow: hidden;
+        }
+
+        .code-block-header {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            padding: 0.375rem 0.5rem;
+            border-bottom: solid var(--wa-border-width-s) var(--wa-color-neutral-border-loud);
+            background-color: var(--wa-color-surface-default);
+        }
+
+        .code-block-content {
+            padding: 0.75rem;
+            overflow-x: auto;
+        }
+
+        .code-block-content pre {
+            margin: 0;
+            background-color: transparent;
+        }
+
+        .code-block-content code {
             background-color: transparent;
             padding: 0;
         }

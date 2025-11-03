@@ -69,7 +69,7 @@ export class ToolExecutor {
             const source = context.source || context.activeEditor || context;
             const execContext = commandRegistry.createExecutionContext(source, sanitizedArgs);
             
-            await commandRegistry.execute(commandId, execContext);
+            const commandResult = await commandRegistry.execute(commandId, execContext);
             
             const commandName = command?.name || commandId;
             const resultMessage: any = {
@@ -80,6 +80,15 @@ export class ToolExecutor {
             
             if (sanitizedArgs && typeof sanitizedArgs === 'object' && Object.keys(sanitizedArgs).length > 0) {
                 resultMessage.parameters = sanitizedArgs;
+            }
+            
+            if (!!commandResult) {
+                resultMessage.result = commandResult;
+                
+                if (command?.output && command.output.length > 0) {
+                    const outputDescriptions = command.output.map(v => `${v.name}: ${v.description || v.type || 'value'}`).join(', ');
+                    resultMessage.output = outputDescriptions;
+                }
             }
             
             return {
