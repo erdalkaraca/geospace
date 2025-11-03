@@ -364,7 +364,7 @@ commandRegistry.registerAll({
         "output": [
             {
                 "name": "viewExtent",
-                "description": "the current view's extent as lat/lon coordinates",
+                "description": "the current view's extent as lat/lon coordinates in WGS84 (EPSG:4326) format",
                 "type": "number[]"
             }
         ]
@@ -376,6 +376,7 @@ commandRegistry.registerAll({
             const renderer = (context.source as any).renderer;
 
             const extent = renderer.getViewExtent();
+            logger.info(`View extent: ${extent}`);
 
             if (!extent) {
                 throw new Error("Failed to get view extent");
@@ -395,6 +396,7 @@ commandRegistry.registerAll({
 
             // Store the result in the context
             context["viewExtent"] = extent4326;
+            return extent4326;
         }
     }
 })

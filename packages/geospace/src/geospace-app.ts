@@ -291,10 +291,16 @@ export const geospaceApp: AppDefinition = {
 
         registerAll({
             command: {
-                "id": "create_geospace_file",
-                "name": "Create GeoSpace Map File",
-                "description": "Creates a new .geospace map file",
-                "parameters": [],
+                "id": "create_map_file",
+                "name": "Create Geospace map file",
+                "description": "Creates a new .geospace map file with default map structure. This is specifically for creating geospace map files, not general files.",
+                "parameters": [
+                    {
+                        "name": "path",
+                        "description": "the path including name of the map file to be created (e.g., 'my-map.geospace' or 'my map'). The .geospace extension will be added automatically if missing. Must be relative to the workspace.",
+                        "required": false
+                    }
+                ],
                 "output": [
                     {
                         "name": "path",
@@ -303,7 +309,7 @@ export const geospaceApp: AppDefinition = {
                 ]
             },
             handler: {
-                execute: async () => {
+                execute: async context => {
                     const gsMap = {
                         ...DEFAULT_GSMAP,
                         chatHistory: [],
@@ -313,12 +319,14 @@ export const geospaceApp: AppDefinition = {
                             projection: 'EPSG:3857'
                         }
                     }
+                    const path = context.params?.["path"] || "map.geospace";
+                    const finalPath = path.endsWith(".geospace") ? path : `${path}.geospace`;
                     return await commandRegistry.execute("create_file", {
                         params: {
-                            path: "map.geospace",
+                            path: finalPath,
                             contents: JSON.stringify(gsMap, null, 2),
                             extension: ".geospace",
-                            ask: true
+                            ask: !path || path === "map.geospace"
                         }
                     })
                 }

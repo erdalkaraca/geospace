@@ -44,12 +44,14 @@ export class KAView extends KPart {
 
     @state()
     private requireToolApproval: boolean = true;
+    private toolApprovalAllowlist: Set<string> = new Set();
 
     @state()
     private pendingToolApprovals = new Map<string, {
         role: string;
         request: import("../core/interfaces").ToolApprovalRequest;
         resolve: (approved: boolean) => void;
+        allowListSelections: Map<string, boolean>;
     }>();
 
     private abortController?: AbortController;
@@ -73,6 +75,8 @@ export class KAView extends KPart {
         const settings: import("./provider-manager").AIViewSettings = 
             await appSettings.get('aiViewChat') || {};
         this.requireToolApproval = settings.requireToolApproval !== undefined ? settings.requireToolApproval : true;
+        const allowlist = await this.providerManager.loadToolApprovalAllowlist();
+        this.toolApprovalAllowlist = new Set(allowlist);
     }
 
     private createNewSession(): void {
@@ -259,9 +263,27 @@ export class KAView extends KPart {
                 roles,
                 requireToolApproval: this.requireToolApproval,
                 onToolApprovalRequest: async (role: string, request: import("../core/interfaces").ToolApprovalRequest): Promise<boolean> => {
+                    const { ToolExecutor } = await import("../tools/tool-executor");
+                    const executor = new ToolExecutor();
+                    const execContext = globalCommandRegistry.createExecutionContext(this);
+                    
+                    const allAllowed = request.toolCalls.every(tc => {
+                        const command = executor.findCommand(tc, execContext);
+                        return command && this.toolApprovalAllowlist.has(command.id);
+                    });
+                    
+                    if (allAllowed) {
+                        return true;
+                    }
+                    
                     return new Promise<boolean>((resolve) => {
                         const approvalId = `approval-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-                        this.pendingToolApprovals.set(approvalId, { role, request, resolve });
+                        this.pendingToolApprovals.set(approvalId, { 
+                            role, 
+                            request, 
+                            resolve,
+                            allowListSelections: new Map()
+                        });
                         this.requestUpdate();
                     });
                 },
@@ -389,7 +411,7 @@ export class KAView extends KPart {
             return;
         }
 
-        await this.providerManager.saveSettings(providerName, model, this.requireToolApproval);
+        await this.providerManager.saveSettings(providerName, model, this.requireToolApproval, Array.from(this.toolApprovalAllowlist));
         this.settingsDialogOpen = false;
         toastInfo('Settings saved');
         this.requestUpdate();
@@ -446,10 +468,15 @@ export class KAView extends KPart {
                         .availableModels="${this.providerManager.getAvailableModels()}"
                         .loadingModels="${this.providerManager.isLoadingModels()}"
                         .requireToolApproval="${this.requireToolApproval}"
+                        .toolApprovalAllowlist="${Array.from(this.toolApprovalAllowlist)}"
                         @provider-change="${(e: CustomEvent) => this.onProviderChange(e.detail.providerName)}"
                         @model-change="${(e: CustomEvent) => this.onModelChange(e)}"
                         @tool-approval-change="${(e: CustomEvent) => {
                             this.requireToolApproval = e.detail.value;
+                            this.requestUpdate();
+                        }}"
+                        @allowlist-change="${(e: CustomEvent) => {
+                            this.toolApprovalAllowlist = new Set(e.detail.allowlist || []);
                             this.requestUpdate();
                         }}"
                         @save="${(e: CustomEvent) => {
@@ -597,8 +624,32 @@ export class KAView extends KPart {
                                                     appearance="plain"
                                                     size="small"
                                                     variant="success"
-                                                    @click="${(e: Event) => {
+                                                    @click="${async (e: Event) => {
                                                         e.stopPropagation();
+                                                        for (const [toolCallId, isAllowed] of approval.allowListSelections.entries()) {
+                                                            if (isAllowed) {
+                                                                const toolCall = approval.request.toolCalls.find(tc => tc.id === toolCallId);
+                                                                if (toolCall) {
+                                                                    const { ToolExecutor } = await import("../tools/tool-executor");
+                                                                    const executor = new ToolExecutor();
+                                                                    const execContext = globalCommandRegistry.createExecutionContext(this);
+                                                                    const command = executor.findCommand(toolCall, execContext);
+                                                                    if (command) {
+                                                                        this.toolApprovalAllowlist.add(command.id);
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                        
+                                                        if (approval.allowListSelections.size > 0) {
+                                                            await this.providerManager.saveSettings(
+                                                                this.providerManager.getSettingsProviderName() || '',
+                                                                this.providerManager.getSettingsModel() || '',
+                                                                this.requireToolApproval,
+                                                                Array.from(this.toolApprovalAllowlist)
+                                                            );
+                                                        }
+                                                        
                                                         approval.resolve(true);
                                                         this.pendingToolApprovals.delete(approvalId);
                                                         this.requestUpdate();
@@ -622,7 +673,25 @@ export class KAView extends KPart {
                                                         const argsStr = Object.entries(parsedArgs).length > 0
                                                             ? `(${Object.entries(parsedArgs).map(([k, v]) => `${k}=${JSON.stringify(v)}`).join(", ")})`
                                                             : "()";
-                                                        return html`<li><code>${tc.function.name}${argsStr}</code></li>`;
+                                                        
+                                                        const isSelected = approval.allowListSelections.get(tc.id) || false;
+                                                        
+                                                        return html`
+                                                            <li class="tool-list-item">
+                                                                <label class="tool-item-label">
+                                                                    <wa-checkbox
+                                                                        ?checked="${isSelected}"
+                                                                        @change="${(e: Event) => {
+                                                                            const checked = (e.target as HTMLInputElement).checked;
+                                                                            approval.allowListSelections.set(tc.id, checked);
+                                                                            this.requestUpdate();
+                                                                        }}">
+                                                                    </wa-checkbox>
+                                                                    <span>Always allow</span>
+                                                                </label>
+                                                                <code>${tc.function.name}${argsStr}</code>
+                                                            </li>
+                                                        `;
                                                     })}
                                                 </ul>
                                             </div>
@@ -723,6 +792,21 @@ export class KAView extends KPart {
 
         .tool-list li {
             margin: 0.25rem 0;
+        }
+
+        .tool-list-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+        }
+
+        .tool-item-label {
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+            font-size: 0.875rem;
+            cursor: pointer;
         }
 
         .tool-list code {

@@ -48,7 +48,7 @@ registerAll({
     command: {
         "id": "create_file",
         "name": "Create new file",
-        "description": "Creates a new file within the workspace",
+        "description": "Creates a new file within the workspace. For .geospace map files, use create_map_file instead.",
         "keyBinding": "CTRL+N",
         "parameters": [
             {

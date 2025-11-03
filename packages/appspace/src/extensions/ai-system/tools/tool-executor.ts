@@ -12,7 +12,7 @@ export class ToolExecutor {
             .replace(/^_|_$/g, '');
     }
 
-    private findCommand(toolCall: ToolCall, context: ExecutionContext): Command | null {
+    findCommand(toolCall: ToolCall, context: ExecutionContext): Command | null {
         const sanitizedFunctionName = toolCall.function.name;
         const availableCommands = commandRegistry.listCommands(context);
         const commandArray = Object.values(availableCommands) as Command[];

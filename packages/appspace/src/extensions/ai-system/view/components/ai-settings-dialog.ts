@@ -1,6 +1,7 @@
 import { css, html, LitElement } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { customElement, property, state } from 'lit/decorators.js';
 import { when } from 'lit/directives/when.js';
+import { repeat } from 'lit/directives/repeat.js';
 import type { ChatProvider } from '../../core/types';
 
 interface ModelInfo {
@@ -31,6 +32,12 @@ export class AISettingsDialog extends LitElement {
     @property({ type: Boolean })
     public requireToolApproval: boolean = true;
 
+    @property({ type: Array, attribute: false })
+    public toolApprovalAllowlist: string[] = [];
+
+    @state()
+    private availableCommands: Array<{id: string, name: string}> = [];
+
     private onProviderChange(event: Event) {
         const select = event.target as HTMLSelectElement;
         this.selectedProviderName = select.value;
@@ -59,6 +66,53 @@ export class AISettingsDialog extends LitElement {
             bubbles: true,
             composed: true
         }));
+    }
+
+    private onAllowlistChange(event: Event, commandId: string) {
+        const checkbox = event.target as HTMLInputElement;
+        if (checkbox.checked) {
+            if (!this.toolApprovalAllowlist.includes(commandId)) {
+                this.toolApprovalAllowlist = [...this.toolApprovalAllowlist, commandId];
+            }
+        } else {
+            this.toolApprovalAllowlist = this.toolApprovalAllowlist.filter(id => id !== commandId);
+        }
+        this.dispatchEvent(new CustomEvent('allowlist-change', {
+            detail: { allowlist: [...this.toolApprovalAllowlist] },
+            bubbles: true,
+            composed: true
+        }));
+        this.requestUpdate();
+    }
+
+    protected async firstUpdated(): Promise<void> {
+        await this.loadAllowedCommands();
+    }
+
+    private async loadAllowedCommands(): Promise<void> {
+        if (this.toolApprovalAllowlist.length === 0) {
+            this.availableCommands = [];
+            return;
+        }
+        
+        const { commandRegistry } = await import('../../../../core/commandregistry');
+        const execContext = commandRegistry.createExecutionContext();
+        const availableCommands = commandRegistry.listCommands(execContext);
+        const commandArray = Object.values(availableCommands);
+        
+        this.availableCommands = this.toolApprovalAllowlist.map(commandId => {
+            const command = commandArray.find((cmd: any) => cmd.id === commandId);
+            return {
+                id: commandId,
+                name: command?.name || commandId
+            };
+        }).sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    protected updated(changedProperties: Map<string | number | symbol, unknown>): void {
+        if (changedProperties.has('toolApprovalAllowlist')) {
+            this.loadAllowedCommands();
+        }
     }
 
     private save() {
@@ -141,6 +195,23 @@ export class AISettingsDialog extends LitElement {
                         </label>
                     </div>
 
+                    ${when(this.requireToolApproval, () => html`
+                        <div class="settings-field">
+                            <label>Commands allowed without approval:</label>
+                            <div class="allowlist-container">
+                                ${repeat(this.availableCommands, (cmd) => cmd.id, (cmd) => html`
+                                    <label class="allowlist-item">
+                                        <wa-checkbox
+                                            ?checked="${this.toolApprovalAllowlist.includes(cmd.id)}"
+                                            @change="${(e: Event) => this.onAllowlistChange(e, cmd.id)}">
+                                        </wa-checkbox>
+                                        <span>${cmd.name}</span>
+                                    </label>
+                                `)}
+                            </div>
+                        </div>
+                    `)}
+
                     <div class="settings-actions">
                         <wa-button variant="neutral" appearance="outlined" @click="${this.cancel}">
                             Cancel
@@ -183,6 +254,31 @@ export class AISettingsDialog extends LitElement {
 
         .settings-field label span {
             flex: 1;
+        }
+
+        .allowlist-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 0.5rem;
+            border: solid var(--wa-border-width-s) var(--wa-color-neutral-border-loud);
+            border-radius: var(--wa-border-radius-m);
+            background-color: var(--wa-color-surface-lowered);
+        }
+
+        .allowlist-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem;
+            cursor: pointer;
+        }
+
+        .allowlist-item span {
+            flex: 1;
+            font-size: 0.875rem;
         }
 
         .settings-actions {

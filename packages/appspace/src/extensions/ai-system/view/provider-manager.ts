@@ -6,6 +6,7 @@ export interface AIViewSettings {
     providerName?: string;
     model?: string;
     requireToolApproval?: boolean;
+    toolApprovalAllowlist?: string[];
 }
 
 export interface ModelInfo {
@@ -62,7 +63,7 @@ export class ProviderManager {
         return false; // Not stored here, but in the view
     }
 
-    async saveSettings(providerName: string, model: string, requireToolApproval?: boolean): Promise<void> {
+    async saveSettings(providerName: string, model: string, requireToolApproval?: boolean, toolApprovalAllowlist?: string[]): Promise<void> {
         const currentSettings: AIViewSettings = await appSettings.get(this.settingsKey) || {};
         const settings: AIViewSettings = {
             ...currentSettings,
@@ -71,6 +72,9 @@ export class ProviderManager {
         };
         if (requireToolApproval !== undefined) {
             settings.requireToolApproval = requireToolApproval;
+        }
+        if (toolApprovalAllowlist !== undefined) {
+            settings.toolApprovalAllowlist = toolApprovalAllowlist;
         }
         await appSettings.set(this.settingsKey, settings);
         
@@ -82,6 +86,11 @@ export class ProviderManager {
             };
             await this.aiService.setDefaultProvider(providerName);
         }
+    }
+
+    async loadToolApprovalAllowlist(): Promise<string[]> {
+        const settings: AIViewSettings = await appSettings.get(this.settingsKey) || {};
+        return settings.toolApprovalAllowlist || [];
     }
 
     async fetchModels(providerName: string): Promise<void> {

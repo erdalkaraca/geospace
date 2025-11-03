@@ -12,6 +12,7 @@ import { createRef, ref, Ref } from "lit/directives/ref.js";
 import { KPart } from "../../parts/k-part";
 import { TOOLBAR_MAIN_CENTER } from "../../core/constants";
 import { subscribe } from "../../core/events";
+import { CommandRegistry, commandRegistry } from "@kispace/appspace";
 
 // Event topic for opening the command palette
 const TOPIC_OPEN_COMMAND_PALETTE = "commandpalette/open";
@@ -39,18 +40,9 @@ export class KCommandPalette extends KPart {
     @state()
     private isPaletteOpen: boolean = false;
 
-    private commandRegistry: any;
     private inputRef: Ref<any> = createRef();
     private dialogRef: Ref<any> = createRef();
     private boundDocumentClickHandler?: (e: MouseEvent) => void;
-
-    protected doBeforeUI() {
-        // Get command registry from context
-        this.commandRegistry = (this as any).commandRegistry;
-        
-        // Load all commands
-        this.updateCommandList();
-    }
 
     protected async doInitUI() {
         // Subscribe to open command palette event
@@ -113,9 +105,8 @@ export class KCommandPalette extends KPart {
     }
 
     private updateCommandList() {
-        if (!this.commandRegistry) return;
-        
-        const commands = this.commandRegistry.listCommands({});
+        const context = commandRegistry.createExecutionContext();
+        const commands = commandRegistry.listCommands(context);
         this.allCommands = Object.values(commands)
             .filter((cmd: any) => cmd.id !== 'commandpalette.open')
             .map((cmd: any) => ({
@@ -195,10 +186,10 @@ export class KCommandPalette extends KPart {
     }
 
     private runCommand(command: any) {
-        if (!command || !this.commandRegistry) return;
+        if (!command || !commandRegistry) return;
 
         // Get the full command details from registry
-        const fullCommand = this.commandRegistry.getCommand(command.id);
+        const fullCommand = commandRegistry.getCommand(command.id);
         
         // Check if command has any parameters (required or optional)
         const hasParameters = fullCommand?.parameters && fullCommand.parameters.length > 0;
@@ -216,7 +207,7 @@ export class KCommandPalette extends KPart {
 
     private executeCommandWithParams(commandId: string, params: any) {
         try {
-            this.commandRegistry.execute(commandId, { params });
+            commandRegistry.execute(commandId, { params });
             this.closePalette();
             this.closeParameterPrompt();
         } catch (error: any) {
