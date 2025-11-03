@@ -1,10 +1,48 @@
 import {registerAll} from "../core/commandregistry";
-import {File, workspaceService} from "../core/filesys";
+import {File, workspaceService, Directory} from "../core/filesys";
 import {toastError, toastInfo} from "../core/toast";
 import {promptDialog, confirmDialog} from "../core/dialog";
 import {activeSelectionSignal} from "../core/appstate";
 import {editorRegistry} from "../core/editorregistry";
 import logger from "../core/logger";
+
+async function getWorkspaceAndPath(params: any, requirePath: boolean = true): Promise<{workspace: Directory, path: string} | null> {
+    const workspace = await workspaceService.getWorkspace()
+    if (!workspace) {
+        return null
+    }
+
+    const path = params?.path
+    if (requirePath && !path) {
+        return null
+    }
+
+    return { workspace, path: path || '' }
+}
+
+async function getWorkspaceAndFile(params: any, requirePath: boolean = true): Promise<{workspace: Directory, path: string, file: File} | null> {
+    const result = await getWorkspaceAndPath(params, requirePath)
+    if (!result) {
+        return null
+    }
+
+    const { workspace, path } = result
+
+    if (!path) {
+        return null
+    }
+
+    try {
+        const resource = await workspace.getResource(path)
+        if (!resource || !(resource instanceof File)) {
+            return null
+        }
+
+        return { workspace, path, file: resource }
+    } catch (err: any) {
+        return null
+    }
+}
 
 registerAll({
     command: {
@@ -43,12 +81,6 @@ registerAll({
     },
     handler: {
         execute: async ({params}: any) => {
-            const workspaceDir = await workspaceService.getWorkspace()
-            if (!workspaceDir) {
-                toastError("Please select a workspace!")
-                return
-            }
-
             let path = params?.path
             const contents = params?.contents
             const ask = params?.ask
@@ -60,6 +92,13 @@ registerAll({
                     return
                 }
             }
+
+            const result = await getWorkspaceAndPath({path}, true)
+            if (!result) {
+                return
+            }
+
+            const { workspace: workspaceDir } = result
 
             if (extension && !path.endsWith(extension)) {
                 path += extension
@@ -261,13 +300,270 @@ registerAll({
     },
     handler: {
         execute: async context => {
-            const workspace = await workspaceService.getWorkspace()
-            if (!workspace) {
-                toastError("No workspace selected.")
+            const result = await getWorkspaceAndFile({path: context.params?.["path"]})
+            if (!result) {
+                return
             }
-            const path = context.params!["path"]
-            const file = await workspace?.getResource(path)
+
+            const { file } = result
             await editorRegistry.loadEditor(file)
+        }
+    }
+})
+
+registerAll({
+    command: {
+        "id": "head_file",
+        "name": "Head - Show first lines",
+        "description": "Shows the first N lines of a file",
+        "parameters": [
+            {
+                "name": "path",
+                "description": "the path of the file to read",
+                "required": true
+            },
+            {
+                "name": "lines",
+                "description": "number of lines to show from the beginning (default: 10)",
+                "type": "number",
+                "required": false
+            }
+        ],
+        "output": [
+            {
+                "name": "content",
+                "description": "the first N lines of the file"
+            }
+        ]
+    },
+    handler: {
+        execute: async ({params}: any) => {
+            const result = await getWorkspaceAndFile(params)
+            if (!result) {
+                return
+            }
+
+            const { file } = result
+            const numLines = params?.lines ? parseInt(params.lines, 10) : 10
+            if (isNaN(numLines) || numLines < 1) {
+                toastError("Number of lines must be a positive integer")
+                return
+            }
+
+            try {
+                const contents = await file.getContents()
+                if (typeof contents !== 'string') {
+                    toastError("File is not a text file")
+                    return
+                }
+
+                const lines = contents.split('\n')
+                const headLines = lines.slice(0, numLines).join('\n')
+                return headLines
+            } catch (err: any) {
+                toastError(`Failed to read file: ${err.message}`)
+                return
+            }
+        }
+    }
+})
+
+registerAll({
+    command: {
+        "id": "tail_file",
+        "name": "Tail - Show last lines",
+        "description": "Shows the last N lines of a file",
+        "parameters": [
+            {
+                "name": "path",
+                "description": "the path of the file to read",
+                "required": true
+            },
+            {
+                "name": "lines",
+                "description": "number of lines to show from the end (default: 10)",
+                "type": "number",
+                "required": false
+            }
+        ],
+        "output": [
+            {
+                "name": "content",
+                "description": "the last N lines of the file"
+            }
+        ]
+    },
+    handler: {
+        execute: async ({params}: any) => {
+            const result = await getWorkspaceAndFile(params)
+            if (!result) {
+                return
+            }
+
+            const { file } = result
+            const numLines = params?.lines ? parseInt(params.lines, 10) : 10
+            if (isNaN(numLines) || numLines < 1) {
+                toastError("Number of lines must be a positive integer")
+                return
+            }
+
+            try {
+                const contents = await file.getContents()
+                if (typeof contents !== 'string') {
+                    toastError("File is not a text file")
+                    return
+                }
+
+                const lines = contents.split('\n')
+                const tailLines = lines.slice(-numLines).join('\n')
+                return tailLines
+            } catch (err: any) {
+                toastError(`Failed to read file: ${err.message}`)
+                return
+            }
+        }
+    }
+})
+
+registerAll({
+    command: {
+        "id": "cat_file",
+        "name": "Cat - Show file contents",
+        "description": "Shows the complete contents of a file",
+        "parameters": [
+            {
+                "name": "path",
+                "description": "the path of the file to read",
+                "required": true
+            }
+        ],
+        "output": [
+            {
+                "name": "content",
+                "description": "the complete contents of the file"
+            }
+        ]
+    },
+    handler: {
+        execute: async ({params}: any) => {
+            const result = await getWorkspaceAndFile(params)
+            if (!result) {
+                return
+            }
+
+            const { file } = result
+
+            try {
+                const contents = await file.getContents()
+                if (typeof contents !== 'string') {
+                    toastError("File is not a text file")
+                    return
+                }
+
+                return contents
+            } catch (err: any) {
+                toastError(`Failed to read file: ${err.message}`)
+                return
+            }
+        }
+    }
+})
+
+registerAll({
+    command: {
+        "id": "wc_file",
+        "name": "Word count",
+        "description": "Counts lines, words, and characters in a file",
+        "parameters": [
+            {
+                "name": "path",
+                "description": "the path of the file to analyze",
+                "required": true
+            }
+        ],
+        "output": [
+            {
+                "name": "lines",
+                "description": "number of lines in the file"
+            },
+            {
+                "name": "words",
+                "description": "number of words in the file"
+            },
+            {
+                "name": "characters",
+                "description": "number of characters in the file"
+            }
+        ]
+    },
+    handler: {
+        execute: async ({params}: any) => {
+            const result = await getWorkspaceAndFile(params)
+            if (!result) {
+                return
+            }
+
+            const { file } = result
+
+            try {
+                const contents = await file.getContents()
+                if (typeof contents !== 'string') {
+                    toastError("File is not a text file")
+                    return
+                }
+
+                const lines = contents.split('\n')
+                const lineCount = lines.length
+                const wordCount = contents.trim() === '' ? 0 : contents.trim().split(/\s+/).filter(w => w.length > 0).length
+                const charCount = contents.length
+
+                return {
+                    lines: lineCount,
+                    words: wordCount,
+                    characters: charCount
+                }
+            } catch (err: any) {
+                toastError(`Failed to read file: ${err.message}`)
+                return
+            }
+        }
+    }
+})
+
+registerAll({
+    command: {
+        "id": "file_exists",
+        "name": "Check if file exists",
+        "description": "Checks if a file exists at the given path",
+        "parameters": [
+            {
+                "name": "path",
+                "description": "the path of the file to check, relative to the workspace",
+                "required": true
+            }
+        ],
+        "output": [
+            {
+                "name": "exists",
+                "description": "true if the file exists, false otherwise"
+            }
+        ]
+    },
+    handler: {
+        execute: async ({params}: any) => {
+            const result = await getWorkspaceAndPath(params)
+            if (!result) {
+                return false
+            }
+
+            const { workspace, path } = result
+
+            try {
+                const resource = await workspace.getResource(path)
+                return resource instanceof File
+            } catch (err: any) {
+                return false
+            }
         }
     }
 })
