@@ -53,7 +53,9 @@ export class ToolRegistry {
         context: ExecutionContext,
         commandFilter?: (command: Command, context: ExecutionContext) => boolean
     ): ToolDefinition[] {
-        const availableCommands = commandRegistry.listCommands(context);
+        // list all commands without context as tools might modify the state of the application when executed
+        // this increases token usage but allows for more precise tool selection and execution
+        const availableCommands = commandRegistry.listCommands();
         let commandsArray = Object.values(availableCommands) as Command[];
         
         if (commandFilter) {

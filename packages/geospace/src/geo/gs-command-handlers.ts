@@ -26,15 +26,15 @@ const canExecute = (context: ExecutionContext) => {
 }
 
 /**
- * Helper method to extract MapOperations from GsMapEditor renderer in context.source
+ * Helper method to extract MapOperations from GsMapEditor in context.activeEditor
  * This ensures consistent access to map operations across all command handlers
  * and provides proper error handling if renderer is not available
  */
 const getMapOperations = (context: ExecutionContext): MapOperations => {
     const editor = context.activeEditor as GsMapEditor;
     if (!(editor instanceof GsMapEditor) || !(editor  as GsMapEditor).getOperations()) {
-        logger.error('GsMapEditor with renderer not available in context.source');
-        throw new Error('GsMapEditor with renderer not available in context.source');
+        logger.error('GsMapEditor with renderer not available in context.activeEditor');
+        throw new Error('GsMapEditor with renderer not available in context.activeEditor');
     }
     return (editor  as GsMapEditor).getOperations();
 }
@@ -56,8 +56,9 @@ commandRegistry.registerAll({
         canExecute,
         execute: async context => {
             const operations = getMapOperations(context);
-
-            await operations.setZoom(Number(context.params!["zoom"]).valueOf());
+            const zoom = Number(context.params!["zoom"]).valueOf();
+            await operations.setZoom(zoom);
+            return { zoom };
         }
     }
 })
@@ -67,7 +68,14 @@ commandRegistry.registerAll({
         "id": "zoom_in",
         "name": "Zoom In",
         "description": "Zooms the map in by one level",
-        "parameters": []
+        "parameters": [],
+        "output": [
+            {
+                "name": "zoom",
+                "description": "the new zoom level",
+                "type": "number"
+            }
+        ]
     },
     handler: {
         canExecute: _context => activePartSignal.get() instanceof GsMapEditor,
@@ -76,8 +84,11 @@ commandRegistry.registerAll({
             const gsMap = editor.getGsMap();
             if (gsMap?.view?.zoom !== undefined) {
                 const operations = editor.mapOperations;
-                await operations?.setZoom(gsMap.view.zoom + 1);
+                const newZoom = gsMap.view.zoom + 1;
+                await operations?.setZoom(newZoom);
+                return newZoom;
             }
+            return gsMap?.view?.zoom;
         }
     }
 })
@@ -87,7 +98,14 @@ commandRegistry.registerAll({
         "id": "zoom_out",
         "name": "Zoom Out",
         "description": "Zooms the map out by one level",
-        "parameters": []
+        "parameters": [],
+        "output": [
+            {
+                "name": "zoom",
+                "description": "the new zoom level",
+                "type": "number"
+            }
+        ]
     },
     handler: {
         canExecute: _context => activePartSignal.get() instanceof GsMapEditor,
@@ -96,8 +114,11 @@ commandRegistry.registerAll({
             const gsMap = editor.getGsMap();
             if (gsMap?.view?.zoom !== undefined) {
                 const operations = editor.mapOperations;
-                await operations?.setZoom(gsMap.view.zoom - 1);
+                const newZoom = gsMap.view.zoom - 1;
+                await operations?.setZoom(newZoom);
+                return newZoom;
             }
+            return gsMap?.view?.zoom;
         }
     }
 })
@@ -292,7 +313,7 @@ commandRegistry.registerAll({
     handler: {
         canExecute,
         execute: async context => {
-            const operations: MapOperations = context.source!;
+            const operations = getMapOperations(context);
             const mode = context.params?.["mode"];
 
             await operations.switchColorMode(mode);

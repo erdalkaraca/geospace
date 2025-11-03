@@ -8,11 +8,11 @@ import {getOriginalUri} from "./utils";
 import {findLayerByUuid, findLayerIndexByUuid} from "./map-renderer";
 import {
     KPart,
-    activePartSignal,
     SignalPort,
     watching,
     commandRegistry,
-    confirmDialog
+    confirmDialog,
+    activeEditorSignal
 } from "@kispace/appspace/api";
 
 @customElement('gs-map-props')
@@ -22,19 +22,24 @@ export class GsMapProps extends KPart {
     @state()
     private selectedLayerUuid?: string;
 
-    @watching(activePartSignal)
+    @watching(activeEditorSignal)
     protected onPartChanged(part: KPart) {
-        if (part == this || part == this.mapEditor || !(part instanceof GsMapEditor)) {
+        if (part == this || part == this.mapEditor) {
             return
         }
+        if (!(part instanceof GsMapEditor)) {
+            this.mapEditor = undefined;
+            this.requestUpdate()
+            return;
+        }
         this.mapEditor = part
-        this.updateLater()
+        this.requestUpdate()
     }
 
     @watching(mapChangedSignal)
     protected onMapChanged({part}: SignalPort) {
         if (part == this.mapEditor) {
-            this.updateLater()
+            this.requestUpdate()
         }
     }
 
@@ -73,10 +78,9 @@ export class GsMapProps extends KPart {
         if (!layer) return;
 
         const layerIndex = findLayerIndexByUuid(gsMap!, layerUuid);
-        const context = commandRegistry.createExecutionContext(this, {
+        const context = commandRegistry.createExecutionContext({
             index: layerIndex + 1
         });
-        context.activeEditor = this.mapEditor;
         commandRegistry.execute("rename_layer", context);
     }
 

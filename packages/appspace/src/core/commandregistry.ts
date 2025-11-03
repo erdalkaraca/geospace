@@ -44,9 +44,9 @@ export class Command {
 export interface ExecutionContext {
     [key: string]: any;
 
-    source?: any;
-
     params?: ExecuteParams;
+    activePart?: any;
+    activeEditor?: any;
 }
 
 export interface ExecuteParams {
@@ -100,13 +100,11 @@ export class CommandRegistry {
     /**
      * Creates an ExecutionContext with the current application state
      * 
-     * @param source The source component/widget executing the command
      * @param params Optional command parameters
      * @returns ExecutionContext with captured application state
      */
-    createExecutionContext(source?: any, params?: ExecuteParams): ExecutionContext {
+    createExecutionContext(params?: ExecuteParams): ExecutionContext {
         const context: ExecutionContext = {
-            source: source,
             params: params || {},
             activePart: activePartSignal.get(),
             activeEditor: activeEditorSignal.get()
@@ -125,8 +123,7 @@ export class CommandRegistry {
 
         const command = this.getCommand(commandId);
         const paramsStr = context.params ? ` params: ${JSON.stringify(context.params)}` : '';
-        const sourceStr = context.source ? ` source: ${context.source?.constructor?.name || typeof context.source}` : '';
-        logger.debug(`[CommandRegistry] Executing command: ${commandId}${command ? ` (${command.name})` : ''}${paramsStr}${sourceStr}`);
+        logger.debug(`[CommandRegistry] Executing command: ${commandId}${command ? ` (${command.name})` : ''}${paramsStr}`);
 
         // Handlers are already sorted by ranking, so iterate in order
         for (const handler of handlers) {

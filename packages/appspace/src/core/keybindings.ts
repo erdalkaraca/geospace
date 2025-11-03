@@ -307,7 +307,7 @@ export class KeyBindingManager {
                 event.preventDefault();
                 event.stopPropagation();
                 
-                const context = commandRegistry.createExecutionContext(this, {});
+                const context = commandRegistry.createExecutionContext({});
                 
                 commandRegistry.execute(binding.commandId, context);
                 logger.info(`Executed command via key binding: ${binding.commandId}`);

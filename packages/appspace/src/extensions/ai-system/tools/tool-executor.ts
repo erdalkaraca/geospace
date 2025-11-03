@@ -14,13 +14,7 @@ export class ToolExecutor {
 
     findCommand(toolCall: ToolCall, context: ExecutionContext): Command | null {
         const sanitizedFunctionName = toolCall.function.name;
-        const availableCommands = commandRegistry.listCommands(context);
-        const commandArray = Object.values(availableCommands) as Command[];
-        
-        return commandArray.find(cmd => {
-            const sanitized = this.sanitizeFunctionName(cmd.id);
-            return sanitized === sanitizedFunctionName;
-        }) || null;
+        return commandRegistry.getCommand(sanitizedFunctionName);
     }
 
     private parseArguments(argsStr: string): Record<string, any> {
@@ -66,10 +60,14 @@ export class ToolExecutor {
             const args = this.parseArguments(argsStr);
             const sanitizedArgs = this.sanitizeArguments(args, command);
             
-            const source = context.source || context.activeEditor || context;
-            const execContext = commandRegistry.createExecutionContext(source, sanitizedArgs);
+            const freshContext = commandRegistry.createExecutionContext(sanitizedArgs);
+            const execContext: ExecutionContext = {
+                ...context,
+                ...freshContext,
+                params: sanitizedArgs
+            };
             
-            const commandResult = await commandRegistry.execute(commandId, execContext);
+            let commandResult = await commandRegistry.execute(commandId, execContext);
             
             const commandName = command?.name || commandId;
             const resultMessage: any = {
@@ -83,7 +81,11 @@ export class ToolExecutor {
             }
             
             if (!!commandResult) {
-                resultMessage.result = commandResult;
+                let resolvedResult = commandResult;
+                if (resolvedResult instanceof Promise) {
+                    resolvedResult = await resolvedResult;
+                }
+                resultMessage.result = resolvedResult;
                 
                 if (command?.output && command.output.length > 0) {
                     const outputDescriptions = command.output.map(v => `${v.name}: ${v.description || v.type || 'value'}`).join(', ');
@@ -96,10 +98,27 @@ export class ToolExecutor {
                 result: resultMessage
             };
         } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            let command: Command | null = null;
+            try {
+                command = this.findCommand(toolCall, context);
+            } catch {
+                command = null;
+            }
+            const commandName = command?.name || toolCall.function.name;
+            
+            let detailedError = errorMessage;
+            
+            if (errorMessage.includes('No handler found') || errorMessage.includes('No handlers registered')) {
+                detailedError = `Command "${commandName}" cannot be executed. ${errorMessage}. This usually means the command is not available in the current context (e.g., a map editor may not be open or active).`;
+            } else if (errorMessage.includes('not available') || errorMessage.includes('GsMapEditor')) {
+                detailedError = `Command "${commandName}" cannot be executed: ${errorMessage}. Please ensure the required editor or component is open and active.`;
+            }
+            
             return {
                 id: toolCall.id,
                 result: null,
-                error: error instanceof Error ? error.message : String(error)
+                error: detailedError
             };
         }
     }

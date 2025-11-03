@@ -166,7 +166,7 @@ export class KAView extends KPart {
             });
         }
         
-        const context = currentCommandRegistry.createExecutionContext(this, params);
+        const context = currentCommandRegistry.createExecutionContext(params);
         await currentCommandRegistry.execute(commandId, context);
         this.requestUpdate();
     }
@@ -221,7 +221,7 @@ export class KAView extends KPart {
         const chatContext: ChatHistory = { history: [...session.history] };
 
         taskService.runAsync("Calling AI assistant", async () => {
-            const execContext = globalCommandRegistry.createExecutionContext(this);
+            const execContext = globalCommandRegistry.createExecutionContext();
             const callContext = uiContext.createChild({ ...execContext });
 
             const contributions = aiService.getAgentContributions();
@@ -265,7 +265,7 @@ export class KAView extends KPart {
                 onToolApprovalRequest: async (role: string, request: import("../core/interfaces").ToolApprovalRequest): Promise<boolean> => {
                     const { ToolExecutor } = await import("../tools/tool-executor");
                     const executor = new ToolExecutor();
-                    const execContext = globalCommandRegistry.createExecutionContext(this);
+                    const execContext = globalCommandRegistry.createExecutionContext();
                     
                     const allAllowed = request.toolCalls.every(tc => {
                         const command = executor.findCommand(tc, execContext);
@@ -632,7 +632,7 @@ export class KAView extends KPart {
                                                                 if (toolCall) {
                                                                     const { ToolExecutor } = await import("../tools/tool-executor");
                                                                     const executor = new ToolExecutor();
-                                                                    const execContext = globalCommandRegistry.createExecutionContext(this);
+                                                                    const execContext = globalCommandRegistry.createExecutionContext();
                                                                     const command = executor.findCommand(toolCall, execContext);
                                                                     if (command) {
                                                                         this.toolApprovalAllowlist.add(command.id);

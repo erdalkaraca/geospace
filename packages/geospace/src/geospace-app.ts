@@ -278,7 +278,7 @@ export const geospaceApp: AppDefinition = {
                     }
 
                     const filePath = selection.getWorkspacePath();
-                    const commandContext = commandRegistry.createExecutionContext(context.source, {
+                    const commandContext = commandRegistry.createExecutionContext({
                         source: sourceType,
                         url: filePath
                     })

@@ -142,12 +142,10 @@ export class AISettingsDialog extends LitElement {
         }
         
         const { commandRegistry } = await import('../../../../core/commandregistry');
-        const execContext = commandRegistry.createExecutionContext();
-        const availableCommands = commandRegistry.listCommands(execContext);
-        const commandArray = Object.values(availableCommands);
+        const allCommands = commandRegistry.listCommands();
         
         this.availableCommands = this.toolApprovalAllowlist.map(commandId => {
-            const command = commandArray.find((cmd: any) => cmd.id === commandId);
+            const command = allCommands[commandId];
             return {
                 id: commandId,
                 name: command?.name || commandId

@@ -12,8 +12,7 @@ import {
     TOPIC_AICONFIG_CHANGED,
     KEY_AI_CONFIG,
     AI_CONFIG_TEMPLATE,
-    MAX_TOOL_ITERATIONS,
-    MAX_RECENT_TOOL_CALLS
+    MAX_TOOL_ITERATIONS
 } from "../core/constants";
 
 import type {
@@ -42,6 +41,7 @@ import { PromptBuilder } from "../agents/prompt-builder";
 import { MessageProcessorService } from "../agents/message-processor";
 import { ToolExecutor } from "../tools/tool-executor";
 import { WorkflowEngine } from "../workflows/workflow-engine";
+import { ToolRegistry } from "../tools/tool-registry";
 
 export class AIService {
     private aiConfig?: AIConfig;
@@ -51,6 +51,7 @@ export class AIService {
     private messageProcessor: MessageProcessorService;
     private toolExecutor: ToolExecutor;
     private workflowEngine: WorkflowEngine;
+    private toolRegistry: ToolRegistry;
     private activeRequests: Map<string, AbortController> = new Map();
 
     constructor() {
@@ -60,6 +61,7 @@ export class AIService {
         this.messageProcessor = new MessageProcessorService();
         this.toolExecutor = new ToolExecutor();
         this.workflowEngine = new WorkflowEngine();
+        this.toolRegistry = new ToolRegistry();
 
         subscribe(TOPIC_SETTINGS_CHANGED, () => {
             this.aiConfig = undefined;
@@ -524,8 +526,7 @@ export class AIService {
         });
 
         let toolCallIteration = 0;
-        const recentToolCalls: string[] = [];
-        let consecutiveDuplicateIterations = 0;
+        const conversationHistory: import("../core/types").ApiMessage[] = [...preparedMessages];
 
         while (rawMessage.toolCalls && rawMessage.toolCalls.length > 0) {
             toolCallIteration++;
@@ -533,25 +534,6 @@ export class AIService {
             if (toolCallIteration > MAX_TOOL_ITERATIONS) {
                 console.warn(`[AIService] Maximum tool call iterations (${MAX_TOOL_ITERATIONS}) reached`);
                 break;
-            }
-            
-            const currentSignatures = rawMessage.toolCalls.map(tc => this.toolExecutor.createToolCallSignature(tc));
-            const duplicateCount = currentSignatures.filter(sig => recentToolCalls.includes(sig)).length;
-            const hasNewToolCalls = duplicateCount < currentSignatures.length;
-            
-            if (duplicateCount === currentSignatures.length && currentSignatures.length > 0 && recentToolCalls.length > 0) {
-                consecutiveDuplicateIterations++;
-                if (consecutiveDuplicateIterations >= 2) {
-                    console.warn(`[AIService] Detected ${consecutiveDuplicateIterations} consecutive iterations with only duplicate tool calls, stopping`);
-                    break;
-                }
-            } else {
-                consecutiveDuplicateIterations = 0;
-            }
-            
-            recentToolCalls.push(...currentSignatures);
-            if (recentToolCalls.length > MAX_RECENT_TOOL_CALLS) {
-                recentToolCalls.splice(0, recentToolCalls.length - MAX_RECENT_TOOL_CALLS);
             }
             
             let toolResults: ToolResult[] = [];
@@ -590,10 +572,10 @@ export class AIService {
                 toolResults = await this.toolExecutor.executeToolCalls(rawMessage.toolCalls, agentContext);
             }
             
-            const toolMessages: import("../core/types").ApiMessage[] = toolResults.map((tr, index) => ({
+            const toolMessages: import("../core/types").ApiMessage[] = toolResults.map((tr) => ({
                 role: "tool",
                 content: tr.error ? JSON.stringify({ error: tr.error }) : JSON.stringify(tr.result),
-                tool_call_id: rawMessage.toolCalls?.[index]?.id
+                tool_call_id: tr.id
             }));
             
             const assistantMessage: any = {
@@ -614,11 +596,9 @@ export class AIService {
                     }));
             }
             
-            const updatedMessages = [
-                ...preparedMessages,
-                assistantMessage,
-                ...toolMessages
-            ];
+            conversationHistory.push(assistantMessage, ...toolMessages);
+            
+            const updatedMessages = conversationHistory;
             
             rawMessage = await this.handleStreamingPromptDirect({
                 chatContext: { history: updatedMessages.map(m => ({

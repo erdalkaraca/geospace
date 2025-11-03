@@ -63,7 +63,7 @@ export abstract class KWidget extends LitElement {
     }
 
     protected executeCommand(command: string, params: ExecuteParams) {
-        const execContext = commandRegistry.createExecutionContext(this, params);
+        const execContext = commandRegistry.createExecutionContext(params);
         commandRegistry.execute(command, execContext);
     }
 
