@@ -133,11 +133,6 @@ export class AIChatInput extends LitElement {
             flex: 1;
             min-width: 0;
         }
-
-        wa-textarea::part(base) {
-            padding: 0.0625rem 0.5rem;
-            line-height: 1.4;
-        }
     `;
 }
 

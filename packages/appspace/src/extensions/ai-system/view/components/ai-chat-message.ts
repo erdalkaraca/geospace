@@ -152,7 +152,7 @@ export class AIChatMessage extends LitElement {
                             </wa-icon>
                             <span class="role-name">${message.role}</span>
                             ${when(hasAttention, () => html`
-                                <wa-icon name="bell" label="Requires attention" class="attention-indicator"></wa-icon>
+                                <wa-icon name="bell" label="Requires attention"></wa-icon>
                             `)}
                             <span class="timestamp">${this.formatTimestamp()}</span>
                         </div>
@@ -291,7 +291,6 @@ export class AIChatMessage extends LitElement {
                             appearance="plain"
                             size="small"
                             title="Copy"
-                            class="resend-button"
                             @click="${() => this.copyToClipboard(message.content)}">
                             <wa-icon name="copy" label="Copy"></wa-icon>
                         </wa-button>
@@ -300,7 +299,6 @@ export class AIChatMessage extends LitElement {
                             appearance="plain"
                             size="small"
                             title="Resend"
-                            class="resend-button"
                             @click="${(e: Event) => this.handleResend(e)}">
                             <wa-icon name="rotate-right" label="Resend"></wa-icon>
                         </wa-button>
@@ -396,9 +394,6 @@ export class AIChatMessage extends LitElement {
             opacity: 0.7;
         }
 
-        .attention-indicator {
-            color: var(--wa-color-warning-50);
-        }
 
         .message-actions {
             display: flex;
@@ -442,15 +437,6 @@ export class AIChatMessage extends LitElement {
             color: var(--wa-color-text-normal);
             line-height: 1.4;
             flex: 1;
-        }
-
-        .resend-button {
-            flex-shrink: 0;
-            opacity: 1;
-        }
-
-        .message-content-wrapper.user .resend-button + .resend-button {
-            margin-left: 0.25rem;
         }
 
         .message-content p {
@@ -622,10 +608,6 @@ export class AIChatMessage extends LitElement {
             gap: 0.5rem;
             align-items: center;
             width: 100%;
-        }
-
-        .input-group wa-input {
-            flex: 1;
         }
     `;
 }

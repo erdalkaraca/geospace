@@ -664,9 +664,6 @@ export class KAView extends KPart {
             background-color: var(--wa-color-surface-default);
         }
 
-        .toolbar wa-button {
-            flex-shrink: 0;
-        }
 
         .tool-approval-section {
             display: flex;
@@ -751,13 +748,6 @@ export class KAView extends KPart {
             overflow: hidden;
         }
 
-        wa-scroller.chat-messages {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: var(--wa-scrollbar-width, 15px);
-            bottom: 0;
-        }
 
         .chat-content {
             padding: 1rem;
