@@ -168,7 +168,7 @@ export const geospaceApp: AppDefinition = {
                 target: "filebrowser.create",
                 label: "geo!space map",
                 icon: "earth",
-                command: "create_geospace_file"
+                command: "create_map_file"
             }
         ] as any[],
 
