@@ -63,7 +63,7 @@ export class ProviderManager {
         return false; // Not stored here, but in the view
     }
 
-    async saveSettings(providerName: string, model: string, requireToolApproval?: boolean, toolApprovalAllowlist?: string[]): Promise<void> {
+    async saveSettings(providerName: string, model: string, apiKey?: string, requireToolApproval?: boolean, toolApprovalAllowlist?: string[]): Promise<void> {
         const currentSettings: AIViewSettings = await appSettings.get(this.settingsKey) || {};
         const settings: AIViewSettings = {
             ...currentSettings,
@@ -80,11 +80,34 @@ export class ProviderManager {
         
         const provider = this.providers?.find(p => p.name === providerName);
         if (provider) {
-            this.selectedProvider = {
+            const updatedProvider = {
                 ...provider,
-                model
+                model,
+                ...(apiKey !== undefined && { apiKey })
             };
+            this.selectedProvider = updatedProvider;
+            
+            if (apiKey !== undefined) {
+                await this.updateProviderApiKey(providerName, apiKey);
+            }
+            
             await this.aiService.setDefaultProvider(providerName);
+        }
+    }
+
+    private async updateProviderApiKey(providerName: string, apiKey: string): Promise<void> {
+        const { KEY_AI_CONFIG } = await import('../core/constants');
+        const aiConfig = await appSettings.get(KEY_AI_CONFIG) || {};
+        
+        if (aiConfig.providers && Array.isArray(aiConfig.providers)) {
+            const providerIndex = aiConfig.providers.findIndex((p: any) => p.name === providerName);
+            if (providerIndex >= 0) {
+                aiConfig.providers[providerIndex] = {
+                    ...aiConfig.providers[providerIndex],
+                    apiKey
+                };
+                await appSettings.set(KEY_AI_CONFIG, aiConfig);
+            }
         }
     }
 

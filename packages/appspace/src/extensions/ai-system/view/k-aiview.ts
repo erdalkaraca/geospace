@@ -402,7 +402,7 @@ export class KAView extends KPart {
         this.providerManager.setSettingsModel(target.value);
     }
 
-    private async saveSettingsAndClose(): Promise<void> {
+    private async saveSettingsAndClose(apiKey?: string): Promise<void> {
         const providerName = this.providerManager.getSettingsProviderName();
         const model = this.providerManager.getSettingsModel();
         
@@ -411,7 +411,7 @@ export class KAView extends KPart {
             return;
         }
 
-        await this.providerManager.saveSettings(providerName, model, this.requireToolApproval, Array.from(this.toolApprovalAllowlist));
+        await this.providerManager.saveSettings(providerName, model, apiKey, this.requireToolApproval, Array.from(this.toolApprovalAllowlist));
         this.settingsDialogOpen = false;
         toastInfo('Settings saved');
         this.requestUpdate();
@@ -482,7 +482,7 @@ export class KAView extends KPart {
                         @save="${(e: CustomEvent) => {
                             this.providerManager.setSettingsProviderName(e.detail.providerName);
                             this.providerManager.setSettingsModel(e.detail.model);
-                            this.saveSettingsAndClose();
+                            this.saveSettingsAndClose(e.detail.apiKey);
                         }}"
                         @cancel="${() => this.closeSettingsDialog()}">
                     </ai-settings-dialog>
@@ -645,6 +645,7 @@ export class KAView extends KPart {
                                                             await this.providerManager.saveSettings(
                                                                 this.providerManager.getSettingsProviderName() || '',
                                                                 this.providerManager.getSettingsModel() || '',
+                                                                undefined,
                                                                 this.requireToolApproval,
                                                                 Array.from(this.toolApprovalAllowlist)
                                                             );

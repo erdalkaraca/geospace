@@ -38,14 +38,60 @@ export class AISettingsDialog extends LitElement {
     @state()
     private availableCommands: Array<{id: string, name: string}> = [];
 
+    @state()
+    private apiKey: string = '';
+
     private onProviderChange(event: Event) {
         const select = event.target as HTMLSelectElement;
         this.selectedProviderName = select.value;
+        
+        const currentProvider = this.providers.find(p => p.name === select.value);
+        this.apiKey = currentProvider?.apiKey || '';
+        
         this.dispatchEvent(new CustomEvent('provider-change', {
             detail: { providerName: select.value },
             bubbles: true,
             composed: true
         }));
+        this.requestUpdate();
+    }
+
+    private onApiKeyChange(event: Event) {
+        const input = event.target as HTMLInputElement;
+        this.apiKey = input.value;
+    }
+
+    private async onPasteApiKey(): Promise<void> {
+        try {
+            const text = await navigator.clipboard.readText();
+            this.apiKey = text;
+            this.requestUpdate();
+        } catch (error) {
+            console.error('Failed to read from clipboard:', error);
+        }
+    }
+
+    private async onCopyApiKey(): Promise<void> {
+        if (!this.apiKey) {
+            return;
+        }
+        try {
+            await navigator.clipboard.writeText(this.apiKey);
+        } catch (error) {
+            console.error('Failed to copy to clipboard:', error);
+        }
+    }
+
+    protected updated(changedProperties: Map<string | number | symbol, unknown>): void {
+        if (changedProperties.has('selectedProviderName') || changedProperties.has('providers')) {
+            const currentProvider = this.providers.find(p => p.name === this.selectedProviderName);
+            if (currentProvider) {
+                this.apiKey = currentProvider.apiKey || '';
+            }
+        }
+        if (changedProperties.has('toolApprovalAllowlist')) {
+            this.loadAllowedCommands();
+        }
     }
 
     private onModelChange(event: Event) {
@@ -109,17 +155,13 @@ export class AISettingsDialog extends LitElement {
         }).sort((a, b) => a.name.localeCompare(b.name));
     }
 
-    protected updated(changedProperties: Map<string | number | symbol, unknown>): void {
-        if (changedProperties.has('toolApprovalAllowlist')) {
-            this.loadAllowedCommands();
-        }
-    }
 
     private save() {
         this.dispatchEvent(new CustomEvent('save', {
             detail: { 
                 providerName: this.selectedProviderName,
-                model: this.selectedModel
+                model: this.selectedModel,
+                apiKey: this.apiKey
             },
             bubbles: true,
             composed: true
@@ -183,6 +225,35 @@ export class AISettingsDialog extends LitElement {
                                 </wa-select>
                             `)}
                         `)}
+                    </div>
+
+                    <div class="settings-field">
+                        <label>API Key:</label>
+                        <wa-input
+                            type="password"
+                            value="${this.apiKey || ''}"
+                            placeholder="Enter API key for ${this.selectedProviderName || 'provider'}"
+                            @input="${this.onApiKeyChange}">
+                            <wa-button
+                                slot="end"
+                                variant="neutral"
+                                appearance="plain"
+                                size="small"
+                                @click="${this.onCopyApiKey}"
+                                title="Copy API key to clipboard"
+                                ?disabled="${!this.apiKey}">
+                                <wa-icon name="copy" label="Copy"></wa-icon>
+                            </wa-button>
+                            <wa-button
+                                slot="end"
+                                variant="neutral"
+                                appearance="plain"
+                                size="small"
+                                @click="${this.onPasteApiKey}"
+                                title="Paste from clipboard">
+                                <wa-icon name="paste" label="Paste"></wa-icon>
+                            </wa-button>
+                        </wa-input>
                     </div>
 
                     <div class="settings-field">
