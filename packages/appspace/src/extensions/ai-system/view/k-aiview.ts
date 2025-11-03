@@ -62,6 +62,8 @@ export class KAView extends KPart {
     }
 
     protected async doBeforeUI() {
+        this.sessionManager.setSaveCallback(() => this.sessionManager.persistSessions());
+        await this.sessionManager.loadSessions();
         if (this.sessionManager.getSessionCount() === 0) {
             this.sessionManager.createSession();
         }
@@ -85,8 +87,8 @@ export class KAView extends KPart {
         this.requestUpdate();
     }
 
-    private deleteSession(sessionId: string): void {
-        if (!this.sessionManager.deleteSession(sessionId)) {
+    private async deleteSession(sessionId: string): Promise<void> {
+        if (!(await this.sessionManager.deleteSession(sessionId))) {
             toastError('Cannot delete the last session');
             return;
         }
@@ -212,6 +214,7 @@ export class KAView extends KPart {
             this.sessionManager.setSessionTitle(sessionId, title);
         }
 
+        await this.sessionManager.persistSessions();
         this.requestUpdate();
         this.busy = true;
 
@@ -301,7 +304,7 @@ export class KAView extends KPart {
                     }
                     this.requestUpdate();
                 },
-                onAgentComplete: (role: string, message: ChatMessage) => {
+                onAgentComplete: async (role: string, message: ChatMessage) => {
                     const targetSession = this.sessionManager.getSession(sessionId);
                     if (!targetSession) return;
                     
@@ -314,6 +317,7 @@ export class KAView extends KPart {
                         this.streamManager.removeStreamingMessage(streamIndex);
                         
                         this.agentGroupManager.updateAgentStatus(groupId, role, 'completed', message, messageIndex);
+                        await this.sessionManager.persistSessions();
                         this.requestUpdate();
                     }
                 },
@@ -342,11 +346,12 @@ export class KAView extends KPart {
             if (error?.name !== 'AbortError') {
                 toastError(`${error}`);
             }
-        }).finally(() => {
+        }).finally(async () => {
             this.busy = false;
             this.abortController = undefined;
             this.streamManager.clearForSession(sessionId);
             this.agentGroupManager.clearCurrentGroup();
+            await this.sessionManager.persistSessions();
             this.requestUpdate();
         });
     }
@@ -571,6 +576,54 @@ export class KAView extends KPart {
                                 </wa-tab-panel>
                             `;
                         })}
+                        ${when(this.sessionManager.getArchivedSessionCount() > 0, () => html`
+                            <wa-dropdown 
+                                slot="nav"
+                                placement="bottom-end">
+                                <wa-button 
+                                    slot="trigger"
+                                    variant="neutral"
+                                    appearance="plain"
+                                    size="small"
+                                    title="Archived Sessions"
+                                    with-caret>
+                                    <wa-icon name="clock-rotate-left" label="Archived Sessions"></wa-icon>
+                                    <span style="margin-left: 0.25rem;">${this.sessionManager.getArchivedSessionCount()}</span>
+                                </wa-button>
+                                <h6 style="padding: var(--wa-spacing-2) var(--wa-spacing-3); margin: 0; color: var(--wa-color-neutral-50); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">
+                                    Archived Sessions
+                                </h6>
+                                ${this.sessionManager.getArchivedSessions().map(archived => html`
+                                    <wa-dropdown-item 
+                                        @click="${async () => {
+                                            await this.sessionManager.restoreSession(archived.id);
+                                            this.requestUpdate();
+                                        }}">
+                                        <wa-icon name="history" label="Restore" slot="icon"></wa-icon>
+                                        <span style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;">
+                                            ${archived.title}
+                                        </span>
+                                        <span style="font-size: 0.75rem; color: var(--wa-color-neutral-50); margin-left: 0.5rem;">
+                                            ${new Date(archived.updatedAt).toLocaleDateString()}
+                                        </span>
+                                    </wa-dropdown-item>
+                                `)}
+                                <wa-divider></wa-divider>
+                                <wa-dropdown-item 
+                                    @click="${async () => {
+                                        const count = this.sessionManager.getArchivedSessionCount();
+                                        if (await confirmDialog(`Are you sure you want to permanently delete all ${count} archived session${count > 1 ? 's' : ''}?`)) {
+                                            for (const archived of this.sessionManager.getArchivedSessions()) {
+                                                await this.sessionManager.permanentlyDeleteSession(archived.id);
+                                            }
+                                            this.requestUpdate();
+                                        }
+                                    }}">
+                                    <wa-icon name="trash" label="Delete All" slot="icon"></wa-icon>
+                                    <span>Delete All Archived</span>
+                                </wa-dropdown-item>
+                            </wa-dropdown>
+                        `)}
                         <wa-button 
                             slot="nav"
                             variant="neutral"
