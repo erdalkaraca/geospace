@@ -95,7 +95,7 @@ function getWebDAVDialog(): HTMLElement {
                 <wa-input
                     id="webdav-url"
                     label="URL"
-                    placeholder="https://cloud.kispace.de/s/6FE3XXKarwYxTPK"
+                    placeholder="https://my-nextcloud.de/s/<share-token>"
                     required
                     help-text="Nextcloud share link or WebDAV endpoint URL">
                 </wa-input>
