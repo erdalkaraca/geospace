@@ -15,6 +15,7 @@ geo!space is a powerful web application that combines professional mapping capab
 - [🌐 Browser Compatibility](#-browser-compatibility)
 - [🌟 Use Cases](#-use-cases)
 - [🚀 Getting Started](#-getting-started)
+- [👨‍💻 Development](#-development)
 - [💬 Commands & Natural Language](#-commands--natural-language)
 - [💡 Examples](#-examples)
 - [⚙️ AI Configuration](#️-ai-configuration)
@@ -108,6 +109,52 @@ For more details, see [File System API](https://developer.mozilla.org/en-US/docs
 - Select items from catalog categories (datasets, maps, overlays, controls, icons)
 - Use the "Checkout" button to download items directly to your workspace
 - Access pre-built basemaps (OpenStreetMap, basemap.de) and sample datasets
+
+## 👨‍💻 Development
+
+geo!space provides a powerful development environment for creating custom map controls and overlays using JavaScript modules.
+
+### **Custom Modules**
+
+Create interactive UI components for your maps using JavaScript modules. geo!space uses **Lit** for templating and **Web Awesome** for UI components - both are provided by default and based on browser standards only, so no build tools are required.
+
+**Key Features:**
+- **No Build Tools**: Write plain JavaScript modules that run directly in the browser
+- **Lit Templating**: Use Lit's HTML template literals for reactive UI
+- **Web Awesome Components**: Access to a full library of web-standard UI components
+- **OpenLayers API**: Full access to OpenLayers through the `ol` namespace object
+- **Module System**: Import and share modules within your workspace using relative paths or bare specifiers
+
+**Getting Started:**
+1. Create a JavaScript file in your workspace (e.g., `my-control.js`)
+2. Export a default function that receives APIs via destructuring
+3. Return a Lit template from your function
+4. Add your module to a map's `controls` or `overlays` array in the `.geospace` file
+
+**Example:**
+```javascript
+export default function ({html, style, events, map}) {
+    style({
+        position: "absolute",
+        bottom: "0",
+        left: "0",
+        right: "0"
+    });
+
+    return () => html`
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr;">
+            <wa-button @click=${() => events("drawer/openMenu")}>
+                Menu
+            </wa-button>
+        </div>
+    `;
+}
+```
+
+**Learn More:**
+- 📖 See the [User Modules Guide](packages/geospace/public/docs/user-modules.md) for complete documentation
+- 🎨 Browse Web Awesome components: https://webawesome.com
+- 🗺️ Explore OpenLayers API: https://openlayers.org/
 
 ## 💬 Commands & Natural Language
 
