@@ -26,6 +26,8 @@ export class KLogTerminal extends KPart {
 
     connectedCallback() {
         super.connectedCallback();
+        // Load persisted settings
+        this.loadSettings();
         // Register this terminal as the log handler
         registerLogHandler(this.log.bind(this));
     }
@@ -110,6 +112,7 @@ export class KLogTerminal extends KPart {
                 variant="${this.filter === 'all' ? 'brand' : 'neutral'}"
                 .action=${() => {
                     this.filter = 'all';
+                    this.saveSettings();
                     this.updateToolbar();
                 }}>
                 All (${this.messages.length})
@@ -122,6 +125,7 @@ export class KLogTerminal extends KPart {
                 variant="${this.filter === 'info' ? 'brand' : 'neutral'}"
                 .action=${() => {
                     this.filter = 'info';
+                    this.saveSettings();
                     this.updateToolbar();
                 }}>
                 Info${infoCount > 0 ? ` (${infoCount})` : ''}
@@ -134,6 +138,7 @@ export class KLogTerminal extends KPart {
                 variant="${this.filter === 'warning' ? 'brand' : 'neutral'}"
                 .action=${() => {
                     this.filter = 'warning';
+                    this.saveSettings();
                     this.updateToolbar();
                 }}>
                 Warnings${warningCount > 0 ? ` (${warningCount})` : ''}
@@ -146,6 +151,7 @@ export class KLogTerminal extends KPart {
                 variant="${this.filter === 'error' ? 'brand' : 'neutral'}"
                 .action=${() => {
                     this.filter = 'error';
+                    this.saveSettings();
                     this.updateToolbar();
                 }}>
                 Errors${errorCount > 0 ? ` (${errorCount})` : ''}
@@ -158,6 +164,7 @@ export class KLogTerminal extends KPart {
                 variant="${this.filter === 'debug' ? 'brand' : 'neutral'}"
                 .action=${() => {
                     this.filter = 'debug';
+                    this.saveSettings();
                     this.updateToolbar();
                 }}>
                 Debug${debugCount > 0 ? ` (${debugCount})` : ''}
@@ -172,6 +179,7 @@ export class KLogTerminal extends KPart {
                 variant="${this.autoScroll ? 'brand' : 'neutral'}"
                 .action=${() => {
                     this.autoScroll = !this.autoScroll;
+                    this.saveSettings();
                     this.updateToolbar();
                 }}>
                 ${this.autoScroll ? 'Auto-scroll' : 'Manual'}
@@ -290,6 +298,28 @@ export class KLogTerminal extends KPart {
             flex-shrink: 0;
         }
     `;
+
+    private async loadSettings() {
+        const persisted = await this.getDialogSetting();
+        
+        if (persisted) {
+            if (typeof persisted.filter === 'string' && 
+                (persisted.filter === 'all' || ['info', 'warning', 'error', 'debug'].includes(persisted.filter))) {
+                this.filter = persisted.filter;
+            }
+            if (typeof persisted.autoScroll === 'boolean') {
+                this.autoScroll = persisted.autoScroll;
+            }
+            this.updateToolbar();
+        }
+    }
+
+    private async saveSettings() {
+        await this.setDialogSetting({
+            filter: this.filter,
+            autoScroll: this.autoScroll
+        });
+    }
 }
 
 declare global {

@@ -1,12 +1,12 @@
-import {commandRegistry, registerAll} from "../core/commandregistry";
-import {workspaceService} from "../core/filesys";
-import {TOOLBAR_MAIN_RIGHT} from "../core/constants";
-import {PyEnv} from "../core/pyservice";
-import {EditorInput, editorRegistry} from "../core/editorregistry";
-import {html} from "lit";
-import {toastError, toastInfo} from "../core/toast";
-import {activeEditorSignal, activePartSignal} from "../core/appstate";
-import {appSettings} from "../core/settingsservice";
+import { commandRegistry, registerAll } from "../core/commandregistry";
+import { workspaceService } from "../core/filesys";
+import { TOOLBAR_MAIN_RIGHT } from "../core/constants";
+import { PyEnv } from "../core/pyservice";
+import { EditorInput, editorRegistry } from "../core/editorregistry";
+import { html } from "lit";
+import { toastError, toastInfo } from "../core/toast";
+import { activeEditorSignal, activePartSignal } from "../core/appstate";
+import { appSettings } from "../core/settingsservice";
 import "./files";
 import "./version-info";
 
@@ -91,6 +91,23 @@ registerAll({
     }
 })
 
+const THEME_SETTINGS_KEY = "theme"
+
+async function applyTheme(themeClass: 'wa-dark' | 'wa-light'): Promise<void> {
+    const root = document.documentElement
+    root.classList.remove('wa-dark', 'wa-light')
+    root.classList.add(themeClass)
+}
+
+async function loadTheme(): Promise<void> {
+    const theme = await appSettings.get(THEME_SETTINGS_KEY)
+    await applyTheme(theme || 'wa-dark')
+}
+
+async function saveTheme(themeClass: 'wa-dark' | 'wa-light'): Promise<void> {
+    await appSettings.set(THEME_SETTINGS_KEY, themeClass)
+}
+
 registerAll({
     command: {
         "id": "switch_theme",
@@ -100,10 +117,10 @@ registerAll({
     },
     handler: {
         execute: async _context => {
-            const dark = document.documentElement.classList.toggle("wa-dark")
-            if (!dark) {
-                document.documentElement.classList.toggle("wa-light")
-            }
+            const isDark = document.documentElement.classList.contains("wa-dark")
+            const newTheme = isDark ? 'wa-light' : 'wa-dark'
+            await applyTheme(newTheme)
+            await saveTheme(newTheme)
         }
     },
     contribution: {
@@ -111,6 +128,11 @@ registerAll({
         icon: "circle-half-stroke",
         label: "Theme Switcher",
     }
+})
+
+// Load theme on module initialization
+loadTheme().catch(err => {
+    console.error('Failed to load theme preference:', err)
 })
 
 registerAll({
@@ -226,7 +248,7 @@ commandRegistry.registerAll({
         ]
     },
     handler: {
-        execute: ({params: {message, type}}: any) => {
+        execute: ({ params: { message, type } }: any) => {
             if (!message) {
                 return
             }

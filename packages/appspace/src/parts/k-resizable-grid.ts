@@ -20,7 +20,6 @@
 import {customElement, property, state} from "lit/decorators.js";
 import {html, nothing} from "lit";
 import {KElement} from "./k-element";
-import {appSettings} from "../core/settingsservice";
 
 @customElement('k-resizable-grid')
 export class KResizableGrid extends KElement {
@@ -47,7 +46,6 @@ export class KResizableGrid extends KElement {
     private childrenLoaded = false;
     private childStylesApplied = false;
     private mutationObserver?: MutationObserver;
-    private settingsKey: string | null = null;
     private settingsLoaded = false;
 
     createRenderRoot() {
@@ -58,11 +56,6 @@ export class KResizableGrid extends KElement {
     // ============= Lifecycle Methods =============
 
     protected doBeforeUI() {
-        // Generate settings key once
-        if (!this.settingsKey) {
-            this.settingsKey = this.getSettingsKey();
-        }
-        
         // Only set up observer if children not yet loaded
         if (!this.childrenLoaded) {
             // Use MutationObserver to detect when children are added
@@ -101,9 +94,9 @@ export class KResizableGrid extends KElement {
         this.gridChildren = potentialChildren;
 
         // Load persisted sizes once if available
-        if (!this.settingsLoaded && this.settingsKey) {
+        if (!this.settingsLoaded) {
             this.settingsLoaded = true;
-            const persisted = await appSettings.getDialogSetting(this.settingsKey);
+            const persisted = await this.getDialogSetting();
             if (persisted && Array.isArray(persisted.sizes) && persisted.sizes.length === this.gridChildren.length) {
                 this.gridSizes = persisted.sizes;
                 this.requestUpdate();
@@ -122,62 +115,12 @@ export class KResizableGrid extends KElement {
         this.requestUpdate();
     }
 
-    private getSettingsKey(): string | null {
-        const id = this.getAttribute("id");
-        if (id) {
-            return `resizable-grid:${id}`;
-        }
-        
-        // Fallback: generate key based on DOM tree path
-        const path = this.buildDOMTreePath();
-        if (path) {
-            return `resizable-grid:${path}`;
-        }
-        
-        return null;
-    }
-
-    private buildDOMTreePath(): string | null {
-        const pathParts: string[] = [];
-        let current: HTMLElement | null = this;
-        
-        while (current && current !== document.body && current !== document.documentElement) {
-            const id = current.getAttribute("id");
-            if (id) {
-                pathParts.unshift(`#${id}`);
-                break;
-            }
-            
-            const tagName = current.tagName.toLowerCase();
-            const parent: HTMLElement | null = current.parentElement;
-            
-            if (!parent) {
-                break;
-            }
-            
-            const siblings = Array.from(parent.children).filter(
-                (child: Element) => child.tagName.toLowerCase() === tagName
-            ) as HTMLElement[];
-            const index = siblings.indexOf(current);
-            
-            if (index >= 0) {
-                pathParts.unshift(`${tagName}:${index}`);
-            } else {
-                pathParts.unshift(tagName);
-            }
-            
-            current = parent;
-        }
-        
-        return pathParts.length > 0 ? pathParts.join(" > ") : null;
-    }
-
     private async saveSizes() {
-        if (!this.settingsKey || this.gridSizes.length === 0) {
+        if (this.gridSizes.length === 0) {
             return;
         }
 
-        await appSettings.setDialogSetting(this.settingsKey, {
+        await this.setDialogSetting({
             sizes: this.gridSizes,
             orientation: this.orientation
         });
