@@ -6,13 +6,32 @@ if [ -f .env ]; then
     export $(grep -v '^#' .env | xargs)
 fi
 
-# Check for dry-run flag
+# Parse command-line arguments
 DRY_RUN=false
-if [ "$1" = "--dry-run" ] || [ "$1" = "-n" ]; then
-    DRY_RUN=true
+VERSION_PART="patch"
+
+for arg in "$@"; do
+    case $arg in
+        --dry-run|-n)
+            DRY_RUN=true
+            ;;
+        major|minor|patch)
+            VERSION_PART="$arg"
+            ;;
+        *)
+            echo "Unknown option: $arg"
+            echo "Usage: $0 [--dry-run|-n] [major|minor|patch]"
+            exit 1
+            ;;
+    esac
+done
+
+if [ "$DRY_RUN" = true ]; then
     echo "🔍 DRY RUN MODE - No changes will be pushed"
     echo ""
 fi
+
+echo "Incrementing $VERSION_PART version"
 
 # Fetch latest tags from remote
 echo "Fetching latest tags..."
@@ -33,8 +52,21 @@ else
         MINOR="${BASH_REMATCH[2]}"
         PATCH="${BASH_REMATCH[3]}"
         
-        # Increment patch version
-        PATCH=$((PATCH + 1))
+        # Increment the specified version part and reset lower parts
+        case $VERSION_PART in
+            major)
+                MAJOR=$((MAJOR + 1))
+                MINOR=0
+                PATCH=0
+                ;;
+            minor)
+                MINOR=$((MINOR + 1))
+                PATCH=0
+                ;;
+            patch)
+                PATCH=$((PATCH + 1))
+                ;;
+        esac
         NEXT_VERSION="$MAJOR.$MINOR.$PATCH"
     else
         echo "Error: Could not parse version from tag: $LATEST_TAG"

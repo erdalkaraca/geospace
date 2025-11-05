@@ -1,0 +1,105 @@
+{
+  "version": "2.0.0",
+  "inputs": [
+    {
+      "id": "versionPart",
+      "type": "pickString",
+      "description": "Which version part to increment?",
+      "options": [
+        {
+          "label": "Major (e.g., 1.2.3 → 2.0.0)",
+          "value": "major"
+        },
+        {
+          "label": "Minor (e.g., 1.2.3 → 1.3.0)",
+          "value": "minor"
+        },
+        {
+          "label": "Patch (e.g., 1.2.3 → 1.2.4)",
+          "value": "patch"
+        }
+      ],
+      "default": "patch"
+    }
+  ],
+  "tasks": [
+    {
+      "label": "dev",
+      "type": "npm",
+      "script": "dev",
+      "problemMatcher": [],
+      "detail": "Run Vite development server",
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "build",
+      "type": "npm",
+      "script": "build",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": ["$tsc"],
+      "detail": "Build the project for production"
+    },
+    {
+      "label": "preview",
+      "type": "npm",
+      "script": "preview",
+      "problemMatcher": [],
+      "detail": "Preview production build",
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "build-gslib",
+      "type": "npm",
+      "script": "build-gslib",
+      "problemMatcher": [],
+      "detail": "Build gs-lib with esbuild"
+    },
+    {
+      "label": "trigger-release",
+      "type": "shell",
+      "command": "./scripts/trigger-release.sh",
+      "args": ["${input:versionPart}"],
+      "problemMatcher": [],
+      "detail": "Trigger a new release by pushing an empty commit with auto-incremented version",
+      "options": {
+        "env": {
+          "OPENAI_API_KEY": "${env:OPENAI_API_KEY}"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "trigger-release (dry-run)",
+      "type": "shell",
+      "command": "./scripts/trigger-release.sh",
+      "args": ["--dry-run", "${input:versionPart}"],
+      "problemMatcher": [],
+      "detail": "Simulate a release without pushing (preview what would happen)",
+      "options": {
+        "env": {
+          "OPENAI_API_KEY": "${env:OPENAI_API_KEY}"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    }
+  ]
+}
+
+
