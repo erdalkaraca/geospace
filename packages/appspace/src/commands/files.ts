@@ -568,3 +568,87 @@ registerAll({
     }
 })
 
+async function collectFilesRecursive(directory: Directory): Promise<string[]> {
+    const files: string[] = []
+    const children = await directory.listChildren(true)
+    
+    for (const child of children) {
+        if (child instanceof File) {
+            files.push(child.getWorkspacePath())
+        } else if (child instanceof Directory) {
+            const subFiles = await collectFilesRecursive(child)
+            files.push(...subFiles)
+        }
+    }
+    
+    return files
+}
+
+registerAll({
+    command: {
+        "id": "ls",
+        "name": "List files",
+        "description": "Lists files from a directory. If recursive is provided, it traverses from the provided directory down to all leaves. If no directory is provided, it will traverse from the workspace root.",
+        "parameters": [
+            {
+                "name": "path",
+                "description": "the path of the directory to list, relative to the workspace. If not provided, uses workspace root",
+                "required": false
+            },
+            {
+                "name": "recursive",
+                "description": "whether to recursively traverse all subdirectories",
+                "type": "boolean",
+                "required": false
+            }
+        ],
+        "output": [
+            {
+                "name": "files",
+                "description": "array of file paths relative to the workspace"
+            }
+        ]
+    },
+    handler: {
+        execute: async ({params}: any) => {
+            const result = await getWorkspaceAndPath(params, false)
+            if (!result) {
+                toastError("No workspace available")
+                return []
+            }
+
+            const { workspace, path } = result
+            const recursive = params?.recursive === true || params?.recursive === "true"
+
+            try {
+                let targetDir: Directory = workspace
+                
+                if (path) {
+                    const resource = await workspace.getResource(path)
+                    if (!resource) {
+                        toastError(`Path not found: ${path}`)
+                        return []
+                    }
+                    if (!(resource instanceof Directory)) {
+                        toastError(`Path is not a directory: ${path}`)
+                        return []
+                    }
+                    targetDir = resource
+                }
+
+                if (recursive) {
+                    return await collectFilesRecursive(targetDir)
+                } else {
+                    const children = await targetDir.listChildren(true)
+                    return children
+                        .filter(child => child instanceof File)
+                        .map(file => file.getWorkspacePath())
+                }
+            } catch (err: any) {
+                toastError(`Failed to list files: ${err.message}`)
+                return []
+            }
+        }
+    }
+})
+
