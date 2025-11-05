@@ -10,6 +10,7 @@ import {
     contributionRegistry,
     TreeContribution
 } from "@kispace/appspace/api";
+import { WorkspaceModuleResolver } from "./workspace-module-resolver";
 
 export const findOlLayer = (name: string, olMap: Map, notFound?: Function) => {
     const layers = olMap.getLayers()
@@ -41,16 +42,28 @@ export const isAbsoluteResource = (url: string) => {
     return url.startsWith("blob:") || url.startsWith("http:") || url.startsWith("https:");
 }
 
-const _blobsLookup: any = {}
+export const _blobsLookup: any = {}
 
-export const replaceUris = async (obj: any, propName: string) => {
+export const replaceUris = async (obj: any, propName: string, resolver?: WorkspaceModuleResolver) => {
     const urlObjects = await jsonata(`[**[${propName}!='']]`).evaluate(obj)
     for (const obj of urlObjects) {
         const url = obj[propName] as string
         if (isAbsoluteResource(url)) {
             continue
         }
-        const blobUri = await toBlobUri(url)
+        
+        let blobUri: string;
+        if (propName === "src" && resolver) {
+            try {
+                const resolved = await resolver.resolveWorkspaceModule(url);
+                blobUri = resolved.blobUrl;
+            } catch (error) {
+                blobUri = await toBlobUri(url);
+            }
+        } else {
+            blobUri = await toBlobUri(url);
+        }
+        
         _blobsLookup[blobUri] = obj[propName]
         obj[propName] = blobUri
     }

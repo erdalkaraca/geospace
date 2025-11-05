@@ -8,6 +8,7 @@ import { findLayerByUuid } from "./map-renderer";
 import { mapChangedSignal, MapEvents, FeatureSelection } from "./gs-signals";
 import olCSS from "ol/ol.css?raw";
 import { loadEnvs, replaceUris, revertBlobUris } from "./utils";
+import { WorkspaceModuleResolver } from "./workspace-module-resolver";
 import { MapRenderer, MapOperations, createProxy, MapSyncEvent } from "./map-renderer";
 import { IFrameMapRenderer } from "./proxy-map-renderer";
 import { DomainMapOperations } from "./domain-map-operations";
@@ -38,6 +39,7 @@ export class GsMapEditor extends KPart {
     private gsMap?: GsMap;
     private isFirstConnection = true;
     private initialView?: { center: [number, number], zoom: number };
+    private moduleResolver = new WorkspaceModuleResolver();
 
     @property({ type: String })
     private activeDrawingLayerUuid?: string;
@@ -200,7 +202,7 @@ export class GsMapEditor extends KPart {
 
         // Replace all workspace relative URLs with blob URLs
         await replaceUris(gsMap, "url");
-        await replaceUris(gsMap, "src");
+        await replaceUris(gsMap, "src", this.moduleResolver);
 
         this.gsMap = gsMap;
 
@@ -404,12 +406,24 @@ export class GsMapEditor extends KPart {
     }
 
     async refresh() {
-        if (!this.renderer) {
+        if (!this.renderer || !this.gsMap) {
             logger.error('Map not initialized');
             return;
         }
 
-        await this.renderer.modelToUI();
+        // Revert blob URLs back to workspace paths
+        await revertBlobUris(this.gsMap, "url");
+        await revertBlobUris(this.gsMap, "src");
+
+        // Clear module resolver completely to ensure fresh modules
+        this.moduleResolver.clear();
+
+        // Re-resolve all modules with fresh content
+        await replaceUris(this.gsMap, "url");
+        await replaceUris(this.gsMap, "src", this.moduleResolver);
+
+        // Reload the map with updated modules
+        await this.renderer.modelToUI(this.gsMap);
     }
 
     async resetView() {
@@ -501,6 +515,9 @@ export class GsMapEditor extends KPart {
         this.renderer?.destroy();
         this.renderer = undefined;
         this.input = undefined;
+        
+        // Clear module resolver completely
+        this.moduleResolver.clear();
     }
 
     render() {

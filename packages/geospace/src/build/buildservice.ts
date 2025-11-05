@@ -88,25 +88,33 @@ const indexHtml = (vars: any) => `
 `
 
 const appJs = (vars: any) => {
-    const mods: any = {}
-    return `
-import {gsLib} from "${vars.libPath}"
-${[...vars.gsMap.controls, ...vars.gsMap.overlays].map((script: GsScript, index: number) => {
+    const imports: string[] = []
+    const moduleEntries: string[] = []
+    
+    const allScripts = [...(vars.gsMap.controls || []), ...(vars.gsMap.overlays || [])]
+    allScripts.forEach((script: GsScript, index: number) => {
         const src = script.src
         const modName = `map_mod${index}`
-        mods[src] = modName
-        return `import ${modName} from '${src}'`
-    }).join("\n")}
+        imports.push(`import ${modName} from '${src}'`)
+        moduleEntries.push(`"${src}": ${modName}`)
+    })
     
-export const renderMap = (mapContainerSelector) => gsLib({
-    containerSelector: mapContainerSelector,
-    gsMap: ${JSON.stringify(vars.gsMap)},
-    mapOptions: {
-        controls: {zoom: false, attribution: false}
-    },
-    env: ${JSON.stringify(vars.env || {})},
-    modules: {${Object.entries(mods).map(([k, v]) => `"${k}":${v}`).join(",")}}
-})
+    return `
+import {gsLib} from "${vars.libPath}"
+${imports.join("\n")}
+    
+export const renderMap = (mapContainerSelector) => {
+    const modules = {${moduleEntries.join(",")}}
+    return gsLib({
+        containerSelector: mapContainerSelector,
+        gsMap: ${JSON.stringify(vars.gsMap)},
+        mapOptions: {
+            controls: {zoom: false, attribution: false}
+        },
+        env: ${JSON.stringify(vars.env || {})},
+        modules: modules
+    })
+}
 `
 }
 
@@ -117,12 +125,74 @@ export interface BuildOptions {
     version: string
 }
 
+function resolveWorkspacePath(relativePath: string, basePath: string): string {
+    if (relativePath.startsWith('/')) {
+        return relativePath.slice(1);
+    }
+
+    const baseParts = basePath.split('/').filter(p => p);
+    const pathParts = relativePath.split('/').filter(p => p);
+
+    const isRelative = relativePath.startsWith('./') || relativePath.startsWith('../');
+    
+    if (isRelative || !relativePath.startsWith('/')) {
+        const baseDirParts = baseParts.slice(0, -1);
+        baseParts.length = 0;
+        baseParts.push(...baseDirParts);
+    }
+
+    for (const part of pathParts) {
+        if (part === '.') {
+            continue;
+        } else if (part === '..') {
+            if (baseParts.length > 0) {
+                baseParts.pop();
+            }
+        } else {
+            baseParts.push(part);
+        }
+    }
+
+    return baseParts.join('/');
+}
+
 let workspacePlugin = {
     name: 'workspace',
     setup(build: any) {
         build.onResolve({filter: /.*/}, (args: OnResolveArgs) => {
             if (!/^(?!https?:\/\/).+/.test(args.path)) return;
-            return {path: args.path, namespace: "virtual-workspace"};
+            
+            let resolvedPath = args.path;
+            
+            // If path starts with '/', remove it to make it workspace-relative
+            if (resolvedPath.startsWith('/')) {
+                resolvedPath = resolvedPath.slice(1);
+            }
+            
+            if (args.importer && args.importer !== '') {
+                let importerPath = args.importer;
+                if (importerPath.startsWith('virtual-workspace:')) {
+                    importerPath = importerPath.slice('virtual-workspace:'.length);
+                }
+                
+                const isRelative = args.path.startsWith('./') || args.path.startsWith('../');
+                const hasPathSeparator = resolvedPath.includes('/');
+                const isGeneratedBuildFile = importerPath.startsWith('build/');
+                
+                // Only resolve relative to importer if:
+                // 1. It's explicitly relative (./ or ../), OR
+                // 2. It's a bare specifier (no '/') in user modules (not generated build files)
+                if (isRelative) {
+                    // Always resolve relative imports
+                    resolvedPath = resolveWorkspacePath(args.path, importerPath);
+                } else if (!hasPathSeparator && !isGeneratedBuildFile) {
+                    // Bare specifiers (no '/') in user modules: resolve relative to importer
+                    resolvedPath = resolveWorkspacePath(resolvedPath, importerPath);
+                }
+                // Otherwise (paths with '/' or in generated build files): treat as workspace-absolute
+            }
+            
+            return {path: resolvedPath, namespace: "virtual-workspace"};
         })
         build.onLoad({filter: /.*/}, async (args: OnLoadArgs) => {
             if (!/^(?!https?:\/\/).+/.test(args.path)) return;
@@ -132,6 +202,9 @@ let workspacePlugin = {
             if (!resource) {
                 await workspace.listChildren(true)
                 resource = (await workspace.getResource(workspacePath))! as File
+            }
+            if (!resource) {
+                throw new Error(`Module not found: ${workspacePath}`);
             }
             const contents = await resource.getContents() as string
             return {contents: contents};
