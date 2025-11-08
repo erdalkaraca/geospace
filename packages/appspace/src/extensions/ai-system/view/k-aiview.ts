@@ -493,13 +493,6 @@ export class KAView extends KPart {
                     </ai-settings-dialog>
                 `)}
                 
-                ${when(!selectedProvider, () => html`
-                    <ai-empty-state
-                        message="No AI provider configured"
-                        hint="Click the settings button to configure">
-                    </ai-empty-state>
-                `)}
-
                 ${when(sessionIds.length > 0, () => html`
                     <wa-tab-group 
                         active="${activeSessionId || sessionIds[0] || ''}" 
@@ -637,6 +630,16 @@ export class KAView extends KPart {
                             <wa-icon name="plus" label="New Chat"></wa-icon>
                         </wa-button>
                     </wa-tab-group>
+                `)}
+                
+                ${when(!selectedProvider, () => html`
+                    <ai-empty-state
+                        message="No AI provider configured"
+                        hint="Click the settings button to configure">
+                    </ai-empty-state>
+                `)}
+
+                ${when(sessionIds.length > 0, () => html`
                     ${this.pendingToolApprovals.size > 0 ? html`
                         <div class="tool-approval-section">
                             ${Array.from(this.pendingToolApprovals.entries()).map(([approvalId, approval]) => {
@@ -755,6 +758,9 @@ export class KAView extends KPart {
                             })}
                         </div>
                     ` : ''}
+                `)}
+                
+                ${when(sessionIds.length > 0, () => html`
                     <ai-chat-input
                         .value="${this.inputValue}"
                         .disabled="${this.busy}"
