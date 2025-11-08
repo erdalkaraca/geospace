@@ -466,8 +466,11 @@ const importSrc = async (adapter: GsControlAdapter | GsOverlayAdapter, src: stri
             }
             const objectType = adapter instanceof GsControlAdapter ? "control" : "overlay"
             vars[objectType] = adapter
-            const component = (mod instanceof Function ? mod : mod.default)(vars)
-            adapter.render(component)
+            const templateFunction = mod instanceof Function ? mod : mod.default
+            if (templateFunction) {
+                const component = templateFunction(vars)
+                adapter.render(component)
+            }
             if (adapter instanceof GsControlAdapter) {
                 adapter.rendered()
             }

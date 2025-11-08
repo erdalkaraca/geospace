@@ -46,11 +46,22 @@ function resolveWorkspacePath(relativePath: string, basePath: string): string {
 function findImportStatements(code: string): ImportMatch[] {
     const matches: ImportMatch[] = [];
 
-    const staticImportRegex = /import\s+(?:[\w*{}\s,]+\s+from\s+)?["']([^"']+)["']/g;
+    const staticImportRegex = /import\s+(?:type\s+)?(?:[\w*{}\s,]+?\s+from\s+)?["']([^"']+)["']/g;
+    const exportFromRegex = /export\s+(?:type\s+)?(?:[\w*{}\s,]+?\s+from\s+)?["']([^"']+)["']/g;
     const dynamicImportRegex = /import\s*\(\s*["']([^"']+)["']\s*\)/g;
 
     let match;
     while ((match = staticImportRegex.exec(code)) !== null) {
+        matches.push({
+            fullMatch: match[0],
+            importPath: match[1],
+            isDynamic: false,
+            startIndex: match.index,
+            endIndex: match.index + match[0].length
+        });
+    }
+
+    while ((match = exportFromRegex.exec(code)) !== null) {
         matches.push({
             fullMatch: match[0],
             importPath: match[1],
@@ -83,6 +94,7 @@ export class WorkspaceModuleResolver {
     private blobUrlCache = new Map<string, string>();
     private moduleCache = new Map<string, ResolvedModule>();
     private resolvingModules = new Set<string>();
+    private resolvingPromises = new Map<string, Promise<string>>();
 
     private async resolveModuleRecursive(resolvedPath: string): Promise<string> {
         const workspace = await workspaceService.getWorkspace();
@@ -94,14 +106,38 @@ export class WorkspaceModuleResolver {
             return this.blobUrlCache.get(resolvedPath)!;
         }
 
+        if (this.resolvingPromises.has(resolvedPath)) {
+            return await this.resolvingPromises.get(resolvedPath)!;
+        }
+
         if (this.resolvingModules.has(resolvedPath)) {
             throw new Error(`Circular dependency detected: ${resolvedPath}`);
         }
 
         this.resolvingModules.add(resolvedPath);
+        
+        const resolutionPromise = this.doResolveModule(resolvedPath);
+        this.resolvingPromises.set(resolvedPath, resolutionPromise);
+        
+        try {
+            return await resolutionPromise;
+        } finally {
+            this.resolvingPromises.delete(resolvedPath);
+        }
+    }
+
+    private async doResolveModule(resolvedPath: string): Promise<string> {
+        const workspace = await workspaceService.getWorkspace();
+        if (!workspace) {
+            throw new Error('Workspace not available');
+        }
 
         try {
-            const resource = await workspace.getResource(resolvedPath) as File;
+            let resource = await workspace.getResource(resolvedPath) as File;
+            if (!resource) {
+                await workspace.listChildren(true);
+                resource = await workspace.getResource(resolvedPath) as File;
+            }
             if (!resource) {
                 throw new Error(`Module not found: ${resolvedPath}`);
             }
@@ -116,14 +152,34 @@ export class WorkspaceModuleResolver {
                     continue;
                 }
 
-                const resolvedImportPath = resolveWorkspacePath(importPath, resolvedPath);
-                const importBlobUrl = await this.resolveModuleRecursive(resolvedImportPath);
+                try {
+                    const resolvedImportPath = resolveWorkspacePath(importPath, resolvedPath);
+                    const importBlobUrl = await this.resolveModuleRecursive(resolvedImportPath);
 
-                const newImport = match.isDynamic
-                    ? `import("${importBlobUrl}")`
-                    : match.fullMatch.replace(importPath, importBlobUrl);
+                    let newImport: string;
+                    if (match.isDynamic) {
+                        newImport = `import("${importBlobUrl}")`;
+                    } else {
+                        const firstQuoteIndex = match.fullMatch.search(/["']/);
+                        if (firstQuoteIndex === -1) {
+                            newImport = match.fullMatch;
+                        } else {
+                            const quoteChar = match.fullMatch[firstQuoteIndex];
+                            const lastQuoteIndex = match.fullMatch.lastIndexOf(quoteChar);
+                            
+                            if (lastQuoteIndex !== -1 && lastQuoteIndex > firstQuoteIndex) {
+                                newImport = match.fullMatch.slice(0, firstQuoteIndex + 1) + 
+                                           importBlobUrl + 
+                                           match.fullMatch.slice(lastQuoteIndex);
+                            } else {
+                                newImport = match.fullMatch;
+                            }
+                        }
+                    }
 
-                code = code.slice(0, match.startIndex) + newImport + code.slice(match.endIndex);
+                    code = code.slice(0, match.startIndex) + newImport + code.slice(match.endIndex);
+                } catch (error) {
+                }
             }
 
             const blob = new Blob([code], { type: 'application/javascript' });
@@ -137,6 +193,8 @@ export class WorkspaceModuleResolver {
             });
 
             return blobUrl;
+        } catch (error) {
+            throw error;
         } finally {
             this.resolvingModules.delete(resolvedPath);
         }
