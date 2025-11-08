@@ -1,7 +1,7 @@
 import {MapOperations, MapRenderer, MapSyncEvent} from "./map-renderer";
 import {gsLib, GsMap, GsSourceType, KEY_NAME, toOlLayer, KEY_STATE, KEY_UUID} from "../rt/gs-lib";
 import {toGsFeature} from "../rt/gs-ol2gs";
-import {toOlStyle} from "../rt/gs-gs2ol";
+import {cleanupEventSubscriptions, toOlStyle} from "../rt/gs-gs2ol";
 import {ensureUuid, getStyleForFeature, GsFeature, GsGeometry} from "../rt/gs-model";
 import {v4 as uuidv4} from 'uuid';
 import {Map as OlMap} from "ol";
@@ -295,6 +295,10 @@ export class OpenLayersMapRenderer implements MapRenderer {
             if (ops.cleanup) {
                 ops.cleanup();
             }
+        }
+        // Cleanup event subscriptions before disposing map
+        if (this.olMap) {
+            cleanupEventSubscriptions(this.olMap);
         }
         this.olMap?.dispose();
         this.olMap = undefined;

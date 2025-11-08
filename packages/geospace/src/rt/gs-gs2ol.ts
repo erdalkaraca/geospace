@@ -17,11 +17,11 @@ import {
     GsStyle,
     GsTextStyle,
     KEY_ENV,
+    KEY_EVENT_SUBSCRIPTIONS,
     KEY_FORMAT,
     KEY_GS_MANAGED,
     KEY_LABEL,
     KEY_NAME,
-    KEY_SETTINGS,
     KEY_SOURCETYPE,
     KEY_SRC,
     KEY_STATE,
@@ -443,33 +443,131 @@ const importSrc = async (adapter: GsControlAdapter | GsOverlayAdapter, src: stri
                 },
                 events: (topic: string, callback: Function | any) => {
                     if (callback instanceof Function) {
-                        return PubSub.subscribe(topic, (_message: string, data: any) => callback(data));
+                        const token = PubSub.subscribe(topic, (_message: string, data: any) => callback(data));
+                        let subscriptions = olMap.get(KEY_EVENT_SUBSCRIPTIONS) as string[] | undefined;
+                        if (!subscriptions) {
+                            subscriptions = [];
+                            olMap.set(KEY_EVENT_SUBSCRIPTIONS, subscriptions);
+                        }
+                        subscriptions.push(token);
+                        return token;
                     } else {
                         return PubSub.publish(topic, callback);
                     }
                 },
                 settings: (key: string, callback?: Function | any) => {
-                    const settings: any = olMap.get(KEY_SETTINGS)
+                    const mapUuid = olMap.get(KEY_UUID) as string | undefined;
+                    const storageKey = mapUuid ? `gs-settings-${mapUuid}` : 'gs-settings';
+                    
+                    const loadSettings = (): any => {
+                        try {
+                            const stored = localStorage.getItem(storageKey);
+                            return stored ? JSON.parse(stored) : {};
+                        } catch {
+                            return {};
+                        }
+                    };
+                    
+                    const saveSettings = (settings: any): void => {
+                        try {
+                            localStorage.setItem(storageKey, JSON.stringify(settings));
+                        } catch (error) {
+                            console.error('Failed to save settings to localStorage:', error);
+                        }
+                    };
+                    
+                    const settings = loadSettings();
+                    
                     // if no callback, assume caller wants the key value
                     if (callback === undefined) {
-                        return settings[key]
+                        return settings[key];
                     }
-                    // if a function, register as event topic and return value
+                    // if a function, register as event topic, call it with current value, and return value
                     if (callback instanceof Function) {
-                        vars.events(key, callback)
-                        return settings[key]
+                        vars.events(key, callback);
+                        callback(settings[key]);
+                        return settings[key];
                     }
-                    settings[key] = callback
+                    settings[key] = callback;
+                    saveSettings(settings);
                     // publish as event to inform settings listeners
                     return PubSub.publish(key, callback);
                 }
             }
             const objectType = adapter instanceof GsControlAdapter ? "control" : "overlay"
             vars[objectType] = adapter
+            
             const templateFunction = mod instanceof Function ? mod : mod.default
             if (templateFunction) {
+                vars.state = <T>(initialValue: T) => {
+                    const createReactiveProperty = (target: any, key: string, getValue: () => any, setValue: (v: any) => void) => {
+                        Object.defineProperty(target, key, {
+                            get() {
+                                return getValue();
+                            },
+                            set(newValue: any) {
+                                const oldValue = getValue();
+                                if (oldValue !== newValue) {
+                                    setValue(newValue);
+                                    adapter.render();
+                                }
+                            },
+                            enumerable: true,
+                            configurable: true
+                        });
+                    };
+                    
+                    if (typeof initialValue === 'object' && initialValue !== null && !Array.isArray(initialValue)) {
+                        const values: any = { ...initialValue };
+                        
+                        return new Proxy({} as any, {
+                            get(_target, prop: string) {
+                                return values[prop];
+                            },
+                            set(_target, prop: string, newValue: any) {
+                                if (values[prop] !== newValue) {
+                                    values[prop] = newValue;
+                                    adapter.render();
+                                }
+                                return true;
+                            },
+                            has(_target, prop: string) {
+                                return prop in values;
+                            },
+                            ownKeys(_target) {
+                                return Object.keys(values);
+                            },
+                            getOwnPropertyDescriptor(_target, prop: string) {
+                                if (prop in values) {
+                                    return {
+                                        enumerable: true,
+                                        configurable: true,
+                                        value: values[prop]
+                                    };
+                                }
+                                return undefined;
+                            }
+                        });
+                    } else {
+                        const stateObj: any = {};
+                        let value = initialValue;
+                        createReactiveProperty(
+                            stateObj,
+                            'value',
+                            () => value,
+                            (v) => { value = v; }
+                        );
+                        return stateObj;
+                    }
+                };
+                
                 const component = templateFunction(vars)
-                adapter.render(component)
+                
+                if (component instanceof Function) {
+                    adapter.render(component);
+                } else {
+                    adapter.render(component)
+                }
             }
             if (adapter instanceof GsControlAdapter) {
                 adapter.rendered()
@@ -493,10 +591,17 @@ export const importControlSource = async (olControl: GsOlControl, src: string, i
 export type Importer = (src: string) => Promise<any>
 export const DefaultImporter: Importer = (src: string) => import(src)
 
+export const cleanupEventSubscriptions = (olMap: Map): void => {
+    const subscriptions = olMap.get(KEY_EVENT_SUBSCRIPTIONS) as string[] | undefined;
+    if (subscriptions) {
+        subscriptions.forEach(token => PubSub.unsubscribe(token));
+        olMap.set(KEY_EVENT_SUBSCRIPTIONS, []);
+    }
+}
+
 export const toOlMap = async (gsMap: GsMap, options?: MapOptions, env?: any, importer?: Importer) => {
     const olMap = withState(gsMap, new Map(options));
     olMap.set(KEY_ENV, env)
-    olMap.set(KEY_SETTINGS, {})
     olMap.setView(new View({
         center: gsMap.view.center && gsMap.view.center.length == 2 ? gsMap.view.center : DEFAULT_GSMAP.view.center,
         zoom: gsMap.view.zoom || DEFAULT_GSMAP.view.zoom,
