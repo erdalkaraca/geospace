@@ -188,7 +188,7 @@ export class GsMapEditor extends KPart {
     protected async doInitUI() {
         const file = this.input?.data as File
 
-        const env = await loadEnvs(".env", "envs/.env", "env", "envs/env", "default.env", "envs/default.env", "dev.env", "envs/dev.env")
+        const env = await loadEnvs(".env")
         env["BUILD_TIME"] = new Date()
 
         const textContents = await file.getContents();

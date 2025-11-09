@@ -3,13 +3,11 @@ import {OnLoadArgs, OnResolveArgs} from 'esbuild-wasm'
 import wasmUrl from 'esbuild-wasm/esbuild.wasm?url'
 import manifestJson from "../../public/pwa/manifest.json"
 import {GsMap, GsScript} from "../rt";
-import {GsMapEditor} from "../geo/gs-map-editor";
 import {loadEnvs} from "../geo/utils";
 import {
     Directory,
     File,
     workspaceService,
-    activePartSignal,
     toastError,
     toastInfo,
     taskService
@@ -321,19 +319,12 @@ export class BuildService {
         await entryFile.saveContents(contentCreator(vars))
     }
 
-    public async buildActiveMap() {
-        const gsMapEditor = activePartSignal.get() as GsMapEditor
-        if (gsMapEditor.isDirty()) {
-            await gsMapEditor.save()
-            toastInfo("Map saved automatically to run build.")
-        }
-        const file = gsMapEditor.input!.data as File
-        const gsMap = JSON.parse(await file.getContents())
-        const env = await loadEnvs(".env", "envs/.env", "env", "envs/env",
-            "default.env", "envs/default.env", "prod.env", "envs/prod.env")
+    public async buildMapFile(mapFile: File, envPath?: string) {
+        const gsMap = JSON.parse(await mapFile.getContents())
+        const env = await loadEnvs(envPath || ".env")
         env["BUILD_TIME"] = new Date()
         taskService.runAsync("Building map", () => buildService.build({
-            title: file.getName(),
+            title: mapFile.getName(),
             gsMap: gsMap,
             env: env,
             version: env["VERSION"] || "0.0.0"
