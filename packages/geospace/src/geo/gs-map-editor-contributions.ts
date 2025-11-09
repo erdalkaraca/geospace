@@ -5,7 +5,7 @@ import {
     EditorInput,
     editorRegistry,
     File
-} from "@kispace/appspace/api";
+} from "@kispace-io/appspace/api";
 
 rtUtils.resolveUrl = path => toBlobUri(path);
 

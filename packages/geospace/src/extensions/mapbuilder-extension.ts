@@ -11,7 +11,7 @@ import {
     toastError,
     type CommandRegistry,
     contributionRegistry
-} from "@kispace/appspace/api";
+} from "@kispace-io/appspace/api";
 
 const GEOSPACE_EXTENSION = ".geospace";
 const ENV_EXTENSION = ".env";

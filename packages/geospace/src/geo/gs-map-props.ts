@@ -13,7 +13,7 @@ import {
     commandRegistry,
     confirmDialog,
     activeEditorSignal
-} from "@kispace/appspace/api";
+} from "@kispace-io/appspace/api";
 
 @customElement('gs-map-props')
 export class GsMapProps extends KPart {

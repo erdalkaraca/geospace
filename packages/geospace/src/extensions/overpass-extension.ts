@@ -4,8 +4,8 @@ import {
     type CommandRegistry,
     type WorkspaceService,
     type File,
-} from "@kispace/appspace/api";
-import logger from "@kispace/appspace/core/logger";
+} from "@kispace-io/appspace/api";
+import logger from "@kispace-io/appspace/core/logger";
 
 export default ({commandRegistry, workspaceService}: {
     commandRegistry: CommandRegistry,

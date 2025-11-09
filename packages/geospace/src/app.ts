@@ -14,7 +14,7 @@ import {
     TOOLBAR_BOTTOM_CENTER,
     TOOLBAR_BOTTOM_END,
     KContainer
-} from "@kispace/appspace/api";
+} from "@kispace-io/appspace/api";
 
 @customElement('gs-app')
 export class GSApp extends KContainer {

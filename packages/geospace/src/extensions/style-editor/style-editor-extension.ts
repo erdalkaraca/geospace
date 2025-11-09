@@ -5,7 +5,7 @@ import {
     toastError,
     toastInfo,
     type CommandRegistry
-} from "@kispace/appspace/api";
+} from "@kispace-io/appspace/api";
 
 export default ({ commandRegistry }: { commandRegistry: CommandRegistry }) => {
     commandRegistry.registerAll({

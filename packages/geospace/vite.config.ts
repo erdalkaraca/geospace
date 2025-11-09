@@ -51,11 +51,11 @@ export default defineConfig({
     root: __dirname,
     resolve: {
         alias: {
-            '@kispace/appspace': path.resolve(__dirname, '../appspace/src')
+            '@kispace-io/appspace': path.resolve(__dirname, '../appspace/src')
         }
     },
     optimizeDeps: {
-        exclude: ['pyodide', '@kispace/appspace']
+        exclude: ['pyodide', '@kispace-io/appspace']
     },
     plugins: [
         mkcert(),

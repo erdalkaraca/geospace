@@ -8,7 +8,7 @@ import {
     activeSelectionSignal,
     toastError,
     toastInfo
-} from "@kispace/appspace/api";
+} from "@kispace-io/appspace/api";
 
 import gsCatalog from "../assets/geospace-catalog.json";
 import {registerCatalog} from "./utils";

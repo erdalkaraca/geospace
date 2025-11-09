@@ -12,7 +12,7 @@ import { createRef, ref, Ref } from "lit/directives/ref.js";
 import { KPart } from "../../parts/k-part";
 import { TOOLBAR_MAIN_CENTER } from "../../core/constants";
 import { subscribe } from "../../core/events";
-import { CommandRegistry, ExecutionContext, commandRegistry } from "@kispace/appspace";
+import { CommandRegistry, ExecutionContext, commandRegistry } from "@kispace-io/appspace";
 
 // Event topic for opening the command palette
 const TOPIC_OPEN_COMMAND_PALETTE = "commandpalette/open";

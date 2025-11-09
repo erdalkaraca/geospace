@@ -10,10 +10,10 @@ import {
     taskService,
     editorRegistry,
     aiService
-} from "@kispace/appspace/api";
-import type { ChatProvider } from "@kispace/appspace/api";
-import { uiContext } from "@kispace/appspace/core/di";
-import { appSettings } from "@kispace/appspace/core/settingsservice";
+} from "@kispace-io/appspace/api";
+import type { ChatProvider } from "@kispace-io/appspace/api";
+import { uiContext } from "@kispace-io/appspace/core/di";
+import { appSettings } from "@kispace-io/appspace/core/settingsservice";
 import "./requirements-table-editor";
 import REQUIREMENTS_PROMPT from "./requirements-prompt.txt?raw";
 import CONSOLIDATION_PROMPT from "./consolidation-prompt.txt?raw";

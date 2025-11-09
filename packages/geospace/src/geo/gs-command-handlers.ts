@@ -17,7 +17,7 @@ import {
     promptDialog,
     createLogger,
     type ExecutionContext
-} from "@kispace/appspace/api";
+} from "@kispace-io/appspace/api";
 
 const logger = createLogger('GsCommandHandlers');
 

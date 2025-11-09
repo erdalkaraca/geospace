@@ -1,9 +1,9 @@
 import { customElement, property, state } from "lit/decorators.js";
-import { KPart } from "@kispace/appspace/api";
+import { KPart } from "@kispace-io/appspace/api";
 import { html, css, render } from "lit";
-import { EditorInput, editorRegistry } from "@kispace/appspace/api";
-import { File, FileContentType, toastInfo, toastError, taskService, activeSelectionSignal, aiService } from "@kispace/appspace/api";
-import type { ChatProvider } from "@kispace/appspace/api";
+import { EditorInput, editorRegistry } from "@kispace-io/appspace/api";
+import { File, FileContentType, toastInfo, toastError, taskService, activeSelectionSignal, aiService } from "@kispace-io/appspace/api";
+import type { ChatProvider } from "@kispace-io/appspace/api";
 import MATCHING_PROMPT from "./matching-prompt.txt?raw";
 import Papa from "papaparse";
 import { callOpenAI } from "./tendermatch-extension";

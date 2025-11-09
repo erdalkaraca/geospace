@@ -8,7 +8,7 @@ import {
     contributionRegistry,
     activePartSignal,
     activeSelectionSignal
-} from "@kispace/appspace/api";
+} from "@kispace-io/appspace/api";
 
 export const CID_CATALOG_ROOT = "catalog.root"
 

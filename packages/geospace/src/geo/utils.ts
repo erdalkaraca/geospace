@@ -9,7 +9,7 @@ import {
     toastError,
     contributionRegistry,
     TreeContribution
-} from "@kispace/appspace/api";
+} from "@kispace-io/appspace/api";
 import { WorkspaceModuleResolver } from "./workspace-module-resolver";
 
 export const findOlLayer = (name: string, olMap: Map, notFound?: Function) => {

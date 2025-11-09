@@ -1,5 +1,5 @@
 {
-  "name": "@kispace/geospace",
+  "name": "@kispace-io/geospace",
   "version": "0.0.0",
   "type": "module",
   "scripts": {
@@ -10,7 +10,7 @@
     "build-gslib": "esbuild src/rt/gs-lib.ts --outfile=public/lib/gs-lib.js --bundle --minify --format=esm"
   },
   "dependencies": {
-    "@kispace/appspace": "file:../appspace",
+    "@kispace-io/appspace": "file:../appspace",
     "esbuild-wasm": "^0.25.11",
     "ol": "^10.6.1",
     "ol-mapbox-style": "^13.1.0",

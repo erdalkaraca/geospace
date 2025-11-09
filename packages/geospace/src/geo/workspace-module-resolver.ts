@@ -1,4 +1,4 @@
-import { File, workspaceService } from "@kispace/appspace/api";
+import { File, workspaceService } from "@kispace-io/appspace/api";
 
 function isAbsoluteResource(url: string): boolean {
     return url.startsWith("blob:") || url.startsWith("http:") || url.startsWith("https:");

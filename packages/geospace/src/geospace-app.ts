@@ -30,7 +30,7 @@ import {
     type PromptEnhancer,
     type Extension,
     type ExecutionContext
-} from "@kispace/appspace/api";
+} from "@kispace-io/appspace/api";
 
 // App-specific imports
 import "./geo/gs-map-editor-contributions"

@@ -11,8 +11,8 @@ import {
     toastError,
     toastInfo,
     taskService
-} from "@kispace/appspace/api";
-import {rootContext} from "@kispace/appspace/core/di";
+} from "@kispace-io/appspace/api";
+import {rootContext} from "@kispace-io/appspace/core/di";
 
 const indexHtml = (vars: any) => `
 <!doctype html>

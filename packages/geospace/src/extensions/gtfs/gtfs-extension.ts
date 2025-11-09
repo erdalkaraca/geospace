@@ -8,7 +8,7 @@ import {
     toastInfo,
     taskService,
     PyEnv
-} from "@kispace/appspace/api";
+} from "@kispace-io/appspace/api";
 
 registerAll({
     command: {

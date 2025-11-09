@@ -24,7 +24,7 @@ import {
     activePartSignal,
     watching,
     createLogger
-} from "@kispace/appspace/api";
+} from "@kispace-io/appspace/api";
 
 const logger = createLogger('GsMapEditor');
 

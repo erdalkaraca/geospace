@@ -14,8 +14,8 @@
     "useDefineForClassFields": false,
     "baseUrl": ".",
     "paths": {
-      "@kispace/appspace": ["src"],
-      "@kispace/appspace/*": ["src/*"]
+      "@kispace-io/appspace": ["src"],
+      "@kispace-io/appspace/*": ["src/*"]
     }
   },
   "include": ["src/**/*"]
