@@ -75,7 +75,7 @@ export const geospaceApp: AppDefinition = {
     id: "geospace",
     name: "🌐geo!space",
     version: appVersion,
-    description: "A geospatial IDE for working with spatial data",
+    description: "An IDE for working with geospatial data.",
     metadata: {
         github: {
             owner: 'erdalkaraca',
