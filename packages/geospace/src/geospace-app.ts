@@ -19,7 +19,6 @@ import {
     SIDEBAR_MAIN,
     SIDEBAR_MAIN_BOTTOM,
     SIDEBAR_AUXILIARY,
-    PANEL_BOTTOM,
     TOOLBAR_MAIN,
     TOOLBAR_BOTTOM,
     TOOLBAR_BOTTOM_END,
@@ -111,7 +110,7 @@ export const geospaceApp: AppDefinition = {
                 component: (id: string) => html`<k-filebrowser id="${id}"></k-filebrowser>`
             },
             {
-                target: SIDEBAR_MAIN,
+                target: "system.fastviews-bottomend",
                 name: "catalog",
                 label: "Catalog",
                 icon: "book",
@@ -132,9 +131,9 @@ export const geospaceApp: AppDefinition = {
                 component: (id: string) => html`<k-aiview id="${id}"></k-aiview>`
             },
             {
-                target: PANEL_BOTTOM,
+                target: "system.fastviews-bottomend",
                 name: "log-terminal",
-                label: "Log",
+                label: "Log Messages",
                 icon: "list",
                 component: (id: string) => html`<k-log-terminal id="${id}"></k-log-terminal>`
             },
@@ -150,6 +149,11 @@ export const geospaceApp: AppDefinition = {
                 icon: "circle-info",
                 command: "show_version_info",
                 showLabel: true,
+            },
+            {
+                target: TOOLBAR_BOTTOM_END,
+                label: `Fast Views`,
+                html: `<k-fastviews target="system.fastviews-bottomend" icon="bolt" title="Fast Views"></k-fastviews>`
             },
             {
                 target: "contextmenu:filebrowser",
@@ -265,7 +269,7 @@ export const geospaceApp: AppDefinition = {
                 "parameters": []
             },
             handler: {
-                execute: async context => {
+                execute: async _context => {
                     const selection = activeSelectionSignal.get();
                     if (!(selection instanceof File)) {
                         return;

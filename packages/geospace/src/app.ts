@@ -87,18 +87,8 @@ export class GSApp extends KContainer {
                     <k-tabs id="${SIDEBAR_MAIN_BOTTOM}"></k-tabs>
                 </k-resizable-grid>
                 
-                <!-- CENTER: Editor + Bottom Panel -->
-                <k-resizable-grid 
-                    id="center-layout" 
-                    orientation="vertical" 
-                    sizes="80%, 20%">
-                    
-                    <!-- Editor Area (fixed, never moves) -->
-                    <k-tabs id="${EDITOR_AREA_MAIN}"></k-tabs>
-                    
-                    <!-- Bottom Panel (terminal, output, etc.) -->
-                    <k-tabs id="${PANEL_BOTTOM}"></k-tabs>
-                </k-resizable-grid>
+                <!-- Editor Area (fixed, never moves) -->
+                <k-tabs id="${EDITOR_AREA_MAIN}"></k-tabs>
                 
                 <!-- RIGHT SIDEBAR (auxiliary) -->
                 <k-tabs id="${SIDEBAR_AUXILIARY}"></k-tabs>
