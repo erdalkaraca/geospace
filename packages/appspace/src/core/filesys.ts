@@ -259,13 +259,21 @@ export class FileSysDirHandleResource extends Directory {
                 try {
                     const files: ResourceMap = {};
 
-                    // @ts-ignore
-                    for await (const entry of this.dirHandle.values()) {
-                        const isFile = (<FileSystemHandle>entry).kind === "file"
-                        const child = isFile ?
-                            new FileSysFileHandleResource(entry, this)
-                            : new FileSysDirHandleResource(entry, this);
-                        files[child.getName()] = child;
+                    try {
+                        // @ts-ignore
+                        for await (const entry of this.dirHandle.values()) {
+                            const isFile = (<FileSystemHandle>entry).kind === "file"
+                            const child = isFile ?
+                                new FileSysFileHandleResource(entry, this)
+                                : new FileSysDirHandleResource(entry, this);
+                            files[child.getName()] = child;
+                        }
+                    } catch (error: any) {
+                        if (error.name === 'NotFoundError') {
+                            this.files = {};
+                            return [];
+                        }
+                        throw error;
                     }
                     
                     this.files = files;
@@ -306,15 +314,33 @@ export class FileSysDirHandleResource extends Directory {
                         if (options?.create) {
                             workspaceChanged = true;
                             if (i < segments.length - 1) {
-                                const newDirHandle = await currentResource.dirHandle.getDirectoryHandle(segment, {create: true})
-                                const nextResource = new FileSysDirHandleResource(newDirHandle)
-                                currentResource.files[segment] = nextResource
-                                currentResource = nextResource
+                                try {
+                                    const newDirHandle = await currentResource.dirHandle.getDirectoryHandle(segment, {create: true})
+                                    const nextResource = new FileSysDirHandleResource(newDirHandle, currentResource)
+                                    currentResource.files[segment] = nextResource
+                                    currentResource = nextResource
+                                    if (currentResource instanceof FileSysDirHandleResource) {
+                                        await currentResource.listChildren()
+                                    }
+                                    continue
+                                } catch (error: any) {
+                                    if (error.name === 'NotFoundError') {
+                                        throw new Error(`Directory not found or not accessible: ${segments.slice(0, i + 1).join('/')}`)
+                                    }
+                                    throw error
+                                }
                             } else {
-                                const newFileHandle = await currentResource.dirHandle.getFileHandle(segment, {create: true})
-                                const nextResource = new FileSysFileHandleResource(newFileHandle, currentResource)
-                                currentResource.files[segment] = nextResource
-                                return nextResource
+                                try {
+                                    const newFileHandle = await currentResource.dirHandle.getFileHandle(segment, {create: true})
+                                    const nextResource = new FileSysFileHandleResource(newFileHandle, currentResource)
+                                    currentResource.files[segment] = nextResource
+                                    return nextResource
+                                } catch (error: any) {
+                                    if (error.name === 'NotFoundError') {
+                                        throw new Error(`File not found or not accessible: ${segments.join('/')}`)
+                                    }
+                                    throw error
+                                }
                             }
                         } else {
                             return null
@@ -338,11 +364,23 @@ export class FileSysDirHandleResource extends Directory {
 
     async delete(name?: string, recursive: boolean = true) {
         if (!name) {
-            return this.getParent()?.delete(this.getName())
+            const parent = this.getParent()
+            if (parent instanceof FileSysDirHandleResource) {
+                await parent.listChildren()
+                if (parent.files) {
+                    delete parent.files[this.getName()]
+                }
+            }
+            this.files = undefined
+            this.loadingPromise = undefined
+            return parent?.delete(this.getName())
         }
         return this.dirHandle.removeEntry(name, {
             recursive: recursive
-        }).then(() => {
+        }).then(async () => {
+            if (this.files) {
+                delete this.files[name]
+            }
             publish(TOPIC_WORKSPACE_CHANGED, this.getWorkspace());
         })
     }
