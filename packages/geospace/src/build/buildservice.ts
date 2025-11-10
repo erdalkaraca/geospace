@@ -40,7 +40,7 @@ const indexHtml = (vars: any) => `
             overflow: hidden;
         }
         
-        * {
+        .no-touch {
             touch-action: none;
         }
     </style>
