@@ -73,7 +73,7 @@ const isSupportedSpatialFile = (file: File): boolean => {
 
 export const geospaceApp: AppDefinition = {
     id: "geospace",
-    name: "geo!space",
+    name: "🌐geo!space",
     version: appVersion,
     description: "A geospatial IDE for working with spatial data",
     metadata: {

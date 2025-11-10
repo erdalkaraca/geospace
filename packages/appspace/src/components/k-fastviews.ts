@@ -40,8 +40,20 @@ export class KFastViews extends KWidget {
     @state()
     private drawerOpen: boolean = false
 
+    @state()
+    private drawerSize: string = '50vw'
+
     private drawerRef: Ref<HTMLElement> = createRef()
     private tabsRef: Ref<KTabs> = createRef()
+    private resizeHandleRef: Ref<HTMLElement> = createRef()
+
+    private resizing: {
+        startX: number
+        startSize: number
+        handleMouseMove: (e: MouseEvent) => void
+        handleMouseUp: () => void
+        rafId: number | null
+    } | null = null
 
     private getDrawerTabsId(): string {
         return `fastviews-drawer-tabs-${this.target}`
@@ -71,6 +83,103 @@ export class KFastViews extends KWidget {
 
     private handleDrawerHide() {
         this.drawerOpen = false
+    }
+
+    private startResize(e: MouseEvent) {
+        e.preventDefault()
+        e.stopPropagation()
+        
+        const drawer = this.drawerRef.value as any
+        if (!drawer) return
+
+        const getDrawerSize = (): number => {
+            const drawerPanel = drawer.shadowRoot?.querySelector('[part="panel"]') as HTMLElement
+            if (drawerPanel && drawerPanel.offsetWidth > 0) {
+                return drawerPanel.offsetWidth
+            }
+            const computedStyle = window.getComputedStyle(drawer)
+            const sizeValue = computedStyle.getPropertyValue('--size') || this.drawerSize
+            const match = sizeValue.match(/^(\d+(?:\.\d+)?)(px|vw|vh|%)$/)
+            if (match) {
+                const value = parseFloat(match[1])
+                const unit = match[2]
+                if (unit === 'px') return value
+                if (unit === 'vw') return (value / 100) * window.innerWidth
+                if (unit === 'vh') return (value / 100) * window.innerHeight
+                if (unit === '%') return (value / 100) * window.innerWidth
+            }
+            return 0
+        }
+        
+        let currentSize = getDrawerSize()
+        if (currentSize === 0) {
+            currentSize = window.innerWidth * 0.5
+        }
+        
+        const handleMouseMove = (moveEvent: MouseEvent) => {
+            if (!this.resizing) return
+            
+            moveEvent.preventDefault()
+            moveEvent.stopPropagation()
+
+            if (this.resizing.rafId !== null) {
+                cancelAnimationFrame(this.resizing.rafId)
+            }
+
+            this.resizing.rafId = requestAnimationFrame(() => {
+                if (!this.resizing) return
+                
+                const delta = this.resizing.startX - moveEvent.clientX
+                const newSize = Math.round(this.resizing.startSize + delta)
+                const minSize = 200
+                const maxSize = Math.round(window.innerWidth * 0.9)
+
+                if (newSize >= minSize && newSize <= maxSize) {
+                    this.drawerSize = `${newSize}px`
+                    
+                    const drawer = this.drawerRef.value as any
+                    if (drawer) {
+                        drawer.style.setProperty('--size', this.drawerSize)
+                        drawer.style.setProperty('transition', 'none')
+                    }
+                }
+                this.resizing.rafId = null
+            })
+        }
+
+        const handleMouseUp = () => {
+            if (this.resizing) {
+                if (this.resizing.rafId !== null) {
+                    cancelAnimationFrame(this.resizing.rafId)
+                    this.resizing.rafId = null
+                }
+                
+                document.removeEventListener('mousemove', this.resizing.handleMouseMove)
+                document.removeEventListener('mouseup', this.resizing.handleMouseUp)
+                document.body.style.cursor = ''
+                document.body.style.userSelect = ''
+                
+                const drawer = this.drawerRef.value as any
+                if (drawer) {
+                    drawer.style.removeProperty('transition')
+                }
+                
+                this.resizing = null
+            }
+        }
+
+        this.resizing = {
+            startX: e.clientX,
+            startSize: currentSize,
+            handleMouseMove,
+            handleMouseUp,
+            rafId: null
+        }
+
+        document.addEventListener('mousemove', handleMouseMove, { passive: false })
+        document.addEventListener('mouseup', handleMouseUp, { passive: false })
+        document.body.style.cursor = 'col-resize'
+        document.body.style.userSelect = 'none'
     }
 
     protected doBeforeUI() {
@@ -143,7 +252,12 @@ export class KFastViews extends KWidget {
                     placement="end"
                     ?open=${this.drawerOpen}
                     @wa-hide=${this.handleDrawerHide}
-                    style="--size: 50vw;">
+                    style="--size: ${this.drawerSize};">
+                    <div 
+                        ${ref(this.resizeHandleRef)}
+                        class="resize-handle"
+                        @mousedown=${this.startResize}>
+                    </div>
                     <k-tabs 
                         ${ref(this.tabsRef)}
                         id="${this.getDrawerTabsId()}"
@@ -157,6 +271,36 @@ export class KFastViews extends KWidget {
     static styles = css`
         :host {
             display: inline-block;
+        }
+
+        wa-drawer {
+            position: relative;
+        }
+
+        wa-drawer::part(panel) {
+            position: relative;
+        }
+
+        .resize-handle {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            cursor: col-resize;
+            z-index: 1000;
+            background: transparent;
+            transition: background-color 0.2s;
+            user-select: none;
+            touch-action: none;
+        }
+
+        .resize-handle:hover {
+            background: var(--wa-color-brand-fill-loud);
+        }
+
+        .resize-handle:active {
+            background: var(--wa-color-brand-fill-loud);
         }
     `
 }

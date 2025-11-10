@@ -13,6 +13,7 @@ import {KContextMenu} from "./k-contextmenu";
 import {MouseButton, EDITOR_AREA_MAIN} from "../core/constants";
 import {activePartSignal} from "../core/appstate";
 import {confirmDialog} from "../core/dialog";
+import {appLoaderService} from "../core/apploader";
 
 /**
  * KTabs - A dynamic tab container component
@@ -205,15 +206,18 @@ export class KTabs extends KContainer {
     // ============= Public API Methods =============
     
     has(key: string): boolean {
+        if (!this.tabGroup.value) return false;
         return !!this.getTabPanel(key);
     }
 
     activate(key: string): void {
-        this.tabGroup.value!.setAttribute("active", key);
+        if (!this.tabGroup.value) return;
+        this.tabGroup.value.setAttribute("active", key);
     }
 
     public getActiveEditor(): string | null {
-        return this.tabGroup.value!.getAttribute("active");
+        if (!this.tabGroup.value) return null;
+        return this.tabGroup.value.getAttribute("active");
     }
 
     open(contribution: TabContribution): void {
@@ -349,11 +353,13 @@ export class KTabs extends KContainer {
     }
 
     private getTabPanel(name: string): HTMLElement | null {
-        return this.tabGroup.value!.querySelector(`wa-tab-panel[name='${name}']`) as HTMLElement | null;
+        if (!this.tabGroup.value) return null;
+        return this.tabGroup.value.querySelector(`wa-tab-panel[name='${name}']`) as HTMLElement | null;
     }
 
     private getTab(name: string): HTMLElement | null {
-        return this.tabGroup.value!.querySelector(`wa-tab[panel='${name}']`) as HTMLElement | null;
+        if (!this.tabGroup.value) return null;
+        return this.tabGroup.value.querySelector(`wa-tab[panel='${name}']`) as HTMLElement | null;
     }
 
     /**
@@ -434,31 +440,55 @@ export class KTabs extends KContainer {
     // ============= Render Method =============
 
     render() {
+        const currentApp = appLoaderService.getCurrentApp();
+        
         return html`
             <wa-tab-group ${ref(this.tabGroup)}>
-                ${repeat(
-                    this.contributions,
-                    (c) => c.name,
-                    (c) => html`
-                        <wa-tab panel="${c.name}"
-                                @auxclick="${(e: MouseEvent) => this.handleTabAuxClick(e, c)}">
-                            <k-icon name="${c.icon!}"></k-icon>
-                            ${c.label}
-                            ${when(c.closable, () => html`
-                                <wa-icon name="xmark" label="Close"  @click="${(e: Event) => this.closeTab(e, c.name)}"></wa-icon>
-                            `)}
-                        </wa-tab>
-                        <wa-tab-panel name="${c.name}">
-                            <k-toolbar id="toolbar:${c.editorId ?? c.name}" 
-                                       class="tab-toolbar"
-                                       ?is-editor="${this.containerId === EDITOR_AREA_MAIN}"></k-toolbar>
-                            <wa-scroller class="tab-content" orientation="vertical">
-                                ${c.component ? c.component(c.name) : nothing}
-                            </wa-scroller>
-                            <k-contextmenu id="contextmenu:${c.name}"
-                                           ?is-editor="${this.containerId === EDITOR_AREA_MAIN}"></k-contextmenu>
-                        </wa-tab-panel>
-                    `
+                ${when(
+                    this.contributions.length === 0,
+                    () => html`
+                        <div class="empty-state">
+                            ${when(
+                                currentApp,
+                                () => html`
+                                    <div class="empty-content">
+                                        <h2 class="empty-title">${currentApp!.name}</h2>
+                                        ${when(
+                                            currentApp!.description,
+                                            () => html`<p class="empty-description">${currentApp!.description}</p>`
+                                        )}
+                                    </div>
+                                `,
+                                () => html`
+                                    <wa-icon name="folder-open" class="empty-icon"></wa-icon>
+                                `
+                            )}
+                        </div>
+                    `,
+                    () => repeat(
+                        this.contributions,
+                        (c) => c.name,
+                        (c) => html`
+                            <wa-tab panel="${c.name}"
+                                    @auxclick="${(e: MouseEvent) => this.handleTabAuxClick(e, c)}">
+                                <k-icon name="${c.icon!}"></k-icon>
+                                ${c.label}
+                                ${when(c.closable, () => html`
+                                    <wa-icon name="xmark" label="Close"  @click="${(e: Event) => this.closeTab(e, c.name)}"></wa-icon>
+                                `)}
+                            </wa-tab>
+                            <wa-tab-panel name="${c.name}">
+                                <k-toolbar id="toolbar:${c.editorId ?? c.name}" 
+                                           class="tab-toolbar"
+                                           ?is-editor="${this.containerId === EDITOR_AREA_MAIN}"></k-toolbar>
+                                <wa-scroller class="tab-content" orientation="vertical">
+                                    ${c.component ? c.component(c.name) : nothing}
+                                </wa-scroller>
+                                <k-contextmenu id="contextmenu:${c.name}"
+                                               ?is-editor="${this.containerId === EDITOR_AREA_MAIN}"></k-contextmenu>
+                            </wa-tab-panel>
+                        `
+                    )
                 )}
             </wa-tab-group>
         `;
@@ -510,6 +540,46 @@ export class KTabs extends KContainer {
         .part-dirty::part(base) {
             font-style: italic;
             color: var(--wa-color-danger-fill-loud)
+        }
+
+        .empty-state {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            grid-row: 2;
+        }
+
+        .empty-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+            gap: 0.75rem;
+            opacity: 0.3;
+        }
+
+        .empty-title {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 500;
+            color: var(--wa-color-text-quiet);
+        }
+
+        .empty-description {
+            margin: 0;
+            font-size: 1rem;
+            color: var(--wa-color-text-quiet);
+            max-width: 500px;
+        }
+
+        .empty-icon {
+            font-size: 6rem;
+            opacity: 0.2;
+            color: var(--wa-color-text-quiet);
         }
     `
 }
