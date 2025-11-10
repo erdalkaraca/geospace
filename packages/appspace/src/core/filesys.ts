@@ -229,6 +229,7 @@ export class FileSysDirHandleResource extends Directory {
     private dirHandle: FileSystemDirectoryHandle;
     private files?: ResourceMap;
     private parent?: Directory;
+    private loadingPromise?: Promise<Resource[]>;
 
     constructor(dirHandle: FileSystemDirectoryHandle, parent?: Directory) {
         super();
@@ -250,16 +251,31 @@ export class FileSysDirHandleResource extends Directory {
 
     async listChildren(forceRefresh: boolean = false): Promise<Resource[]> {
         if (forceRefresh || !this.files) {
-            this.files = {};
-
-            // @ts-ignore
-            for await (const entry of this.dirHandle.values()) {
-                const isFile = (<FileSystemHandle>entry).kind === "file"
-                const child = isFile ?
-                    new FileSysFileHandleResource(entry, this)
-                    : new FileSysDirHandleResource(entry, this);
-                this.files[child.getName()] = child;
+            if (this.loadingPromise) {
+                return this.loadingPromise;
             }
+
+            this.loadingPromise = (async () => {
+                try {
+                    const files: ResourceMap = {};
+
+                    // @ts-ignore
+                    for await (const entry of this.dirHandle.values()) {
+                        const isFile = (<FileSystemHandle>entry).kind === "file"
+                        const child = isFile ?
+                            new FileSysFileHandleResource(entry, this)
+                            : new FileSysDirHandleResource(entry, this);
+                        files[child.getName()] = child;
+                    }
+                    
+                    this.files = files;
+                    return Object.values(this.files);
+                } finally {
+                    this.loadingPromise = undefined;
+                }
+            })();
+
+            return this.loadingPromise;
         }
         return Object.values(this.files);
     }
@@ -281,29 +297,28 @@ export class FileSysDirHandleResource extends Directory {
                     break
                 }
                 if (currentResource instanceof FileSysDirHandleResource) {
-                    if (!currentResource.files) {
-                        await currentResource.listChildren()
-                    }
+                    await currentResource.listChildren()
                     if (!currentResource.files) {
                         return null
                     }
                     const next = currentResource.files[segment]
-                    if (!next && options?.create) {
-                        workspaceChanged = true;
-                        // not last segment in path, must be directory, create a new directory and continue
-                        if (i < segments.length - 1) {
-                            const newDirHandle = await currentResource.dirHandle.getDirectoryHandle(segment, {create: true})
-                            const nextResource = new FileSysDirHandleResource(newDirHandle)
-                            currentResource.files[segment] = nextResource
-                            currentResource = nextResource
+                    if (!next) {
+                        if (options?.create) {
+                            workspaceChanged = true;
+                            if (i < segments.length - 1) {
+                                const newDirHandle = await currentResource.dirHandle.getDirectoryHandle(segment, {create: true})
+                                const nextResource = new FileSysDirHandleResource(newDirHandle)
+                                currentResource.files[segment] = nextResource
+                                currentResource = nextResource
+                            } else {
+                                const newFileHandle = await currentResource.dirHandle.getFileHandle(segment, {create: true})
+                                const nextResource = new FileSysFileHandleResource(newFileHandle, currentResource)
+                                currentResource.files[segment] = nextResource
+                                return nextResource
+                            }
                         } else {
-                            // last segment must be a file, create it and return
-                            const newFileHandle = await currentResource.dirHandle.getFileHandle(segment, {create: true})
-                            const nextResource = new FileSysFileHandleResource(newFileHandle, currentResource)
-                            currentResource.files[segment] = nextResource
-                            return nextResource
+                            return null
                         }
-
                     } else {
                         currentResource = next
                     }

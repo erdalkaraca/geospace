@@ -6,7 +6,6 @@ import {KEY_NAME} from "../rt";
 import {
     File,
     workspaceService,
-    toastError,
     contributionRegistry,
     TreeContribution
 } from "@kispace-io/appspace/api";
@@ -31,9 +30,12 @@ export const findOlLayer = (name: string, olMap: Map, notFound?: Function) => {
 
 export const toBlobUri = async (uri: string) => {
     const workspace = await workspaceService.getWorkspace()
-    const resource = await workspace!.getResource(uri) as File
+    if (!workspace) {
+        throw new Error("No workspace available")
+    }
+    const resource = await workspace.getResource(uri) as File
     if (!resource) {
-        toastError("Invalid URL: " + uri)
+        throw new Error("Invalid URL: " + uri)
     }
     return await resource.getContents({uri: true}) as string
 }
