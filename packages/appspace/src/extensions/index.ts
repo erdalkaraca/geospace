@@ -94,11 +94,11 @@ extensionRegistry.registerExtension({
 })
 
 extensionRegistry.registerExtension({
-    id: "system.pdfviewer",
-    name: "PDF Viewer",
-    description: "View PDF files",
-    loader: () => import("./pdf-viewer/pdf-viewer-extension"),
-    icon: "file-pdf",
+    id: "system.mediaviewer",
+    name: "Media Viewer",
+    description: "View PDF, image, and HTML files in the browser",
+    loader: () => import("./media-viewer/media-viewer-extension"),
+    icon: "image",
 })
 
 extensionRegistry.registerExtension({
