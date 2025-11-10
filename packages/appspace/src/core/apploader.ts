@@ -42,6 +42,27 @@ function extractLastPathSegment(urlString: string): string | undefined {
 }
 
 /**
+ * Extracts the first path segment from the current page URL.
+ * This allows loading apps by path, e.g., /geospace loads the geospace app.
+ */
+function extractAppIdFromPath(): string | undefined {
+    const pathname = window.location.pathname;
+    const pathSegments = pathname.split('/').filter(Boolean);
+    
+    if (pathSegments.length === 0) {
+        return undefined;
+    }
+    
+    const firstSegment = pathSegments[0];
+    
+    if (!firstSegment || firstSegment === 'index.html' || firstSegment.endsWith('.html')) {
+        return undefined;
+    }
+    
+    return firstSegment;
+}
+
+/**
  * Application contributions interface.
  * Declaratively defines all contributions for an application.
  */
@@ -272,6 +293,7 @@ class AppLoaderService {
         const urlParams = new URLSearchParams(window.location.search);
         const appUrl = urlParams.get('app');
         const appIdFromUrl = urlParams.get('appId');
+        const appIdFromPath = extractAppIdFromPath();
         const appsBeforeExtension = this.apps.size;
         
         let appIdFromAppUrl: string | undefined;
@@ -280,6 +302,10 @@ class AppLoaderService {
             if (appIdFromAppUrl) {
                 logger.info(`Extracted app ID from URL path: ${appIdFromAppUrl}`);
             }
+        }
+        
+        if (appIdFromPath) {
+            logger.info(`Extracted app ID from current page path: ${appIdFromPath}`);
         }
         
         if (appUrl) {
@@ -294,7 +320,8 @@ class AppLoaderService {
                     
                     try {
                         const app = await this.loadAppFromUrl(appUrl);
-                        await this.loadApp(app, this.container);
+                        this.registerApp(app);
+                        await this.loadApp(app.id, this.container);
                         logger.info(`Successfully loaded app from URL: ${appUrl}`);
                         return;
                     } catch (appError) {
@@ -309,6 +336,7 @@ class AppLoaderService {
         
         const appToLoad = this.selectAppToLoad({
             appIdFromUrl,
+            appIdFromPath,
             appIdFromAppUrl,
             appsBeforeExtension
         });
@@ -323,22 +351,14 @@ class AppLoaderService {
     /**
      * Load and initialize an application.
      * 
-     * @param appOrId - Application definition or identifier
+     * @param appId - Application identifier (must be already registered)
      * @param container - Optional DOM element to render into (if provided, auto-renders after loading)
      * @returns Promise that resolves when app is initialized and rendered
      */
-    async loadApp(appOrId: string | AppDefinition, container?: HTMLElement): Promise<void> {
-        let app: AppDefinition;
-        
-        if (typeof appOrId === 'string') {
-            const foundApp = this.apps.get(appOrId);
-            if (!foundApp) {
-                throw new Error(`App '${appOrId}' not found. Make sure it's registered.`);
-            }
-            app = foundApp;
-        } else {
-            app = appOrId;
-            this.registerApp(app);
+    async loadApp(appId: string, container?: HTMLElement): Promise<void> {
+        const app = this.apps.get(appId);
+        if (!app) {
+            throw new Error(`App '${appId}' not found. Make sure it's registered.`);
         }
         
         logger.info(`Loading app: ${app.name}...`);
@@ -438,33 +458,41 @@ class AppLoaderService {
     
     /**
      * Select which app to load based on priority:
-     * 1. appId URL parameter
-     * 2. App ID extracted from app URL path
-     * 3. App registered by extension
-     * 4. Default app ID
-     * 5. First registered app
+     * 1. appId URL parameter (?appId=...)
+     * 2. App ID from current page URL path (/geospace)
+     * 3. App ID extracted from app URL parameter (?app=...)
+     * 4. App registered by extension
+     * 5. Default app ID
+     * 6. First registered app
      */
     private selectAppToLoad(options: {
         appIdFromUrl: string | null;
+        appIdFromPath: string | undefined;
         appIdFromAppUrl: string | undefined;
         appsBeforeExtension: number;
-    }): AppDefinition | undefined {
-        const { appIdFromUrl, appIdFromAppUrl, appsBeforeExtension } = options;
+    }): string | undefined {
+        const { appIdFromUrl, appIdFromPath, appIdFromAppUrl, appsBeforeExtension } = options;
         
         if (appIdFromUrl) {
-            const app = this.apps.get(appIdFromUrl);
-            if (app) {
+            if (this.apps.has(appIdFromUrl)) {
                 logger.info(`Loading app specified by URL parameter 'appId': ${appIdFromUrl}`);
-                return app;
+                return appIdFromUrl;
             }
             logger.warn(`App ID '${appIdFromUrl}' from URL parameter not found`);
         }
         
+        if (appIdFromPath) {
+            if (this.apps.has(appIdFromPath)) {
+                logger.info(`Loading app from URL path: ${appIdFromPath}`);
+                return appIdFromPath;
+            }
+            logger.debug(`App ID '${appIdFromPath}' from URL path not found, continuing search`);
+        }
+        
         if (appIdFromAppUrl) {
-            const app = this.apps.get(appIdFromAppUrl);
-            if (app) {
+            if (this.apps.has(appIdFromAppUrl)) {
                 logger.info(`Loading app using ID extracted from app URL path: ${appIdFromAppUrl}`);
-                return app;
+                return appIdFromAppUrl;
             }
         }
         
@@ -473,14 +501,13 @@ class AppLoaderService {
             if (newlyRegisteredApps.length > 0) {
                 const app = newlyRegisteredApps[0];
                 logger.info(`Loading app registered by extension: ${app.name} (${app.id})`);
-                return app;
+                return app.id;
             }
         }
         
         if (this.defaultAppId) {
-            const app = this.apps.get(this.defaultAppId);
-            if (app) {
-                return app;
+            if (this.apps.has(this.defaultAppId)) {
+                return this.defaultAppId;
             }
             logger.warn(`Default app '${this.defaultAppId}' not found`);
         }
@@ -489,7 +516,7 @@ class AppLoaderService {
         if (registeredApps.length > 0) {
             const app = registeredApps[0];
             logger.info(`Loading first registered app: ${app.name} (${app.id})`);
-            return app;
+            return app.id;
         }
         
         return undefined;
