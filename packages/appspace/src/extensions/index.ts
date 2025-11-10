@@ -94,6 +94,14 @@ extensionRegistry.registerExtension({
 })
 
 extensionRegistry.registerExtension({
+    id: "system.pdfviewer",
+    name: "PDF Viewer",
+    description: "View PDF files",
+    loader: () => import("./pdf-viewer/pdf-viewer-extension"),
+    icon: "file-pdf",
+})
+
+extensionRegistry.registerExtension({
     id: "system.monaco",
     name: "Monaco Code Editor",
     description: "Code editor with syntax highlighting, code completion, and Python execution support",
