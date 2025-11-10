@@ -28,6 +28,7 @@ export class KFileBrowser extends KPart {
     private root?: TreeNode;
     private workspaceDir?: Directory
     private treeRef = createRef<HTMLElement>();
+    private loadingNodes = new Set<TreeNode>();
 
     protected doBeforeUI() {
         this.initializeWorkspace();
@@ -94,7 +95,7 @@ export class KFileBrowser extends KPart {
         if (!workspaceDir) {
             this.root = undefined
         } else {
-            this.root = await this.resourceToTreeNode(workspaceDir)
+            this.root = await this.resourceToTreeNode(workspaceDir, true)
         }
     }
 
@@ -109,7 +110,7 @@ export class KFileBrowser extends KPart {
         }
     }
 
-    async resourceToTreeNode(resource: Resource): Promise<TreeNode> {
+    async resourceToTreeNode(resource: Resource, loadChildren: boolean = false): Promise<TreeNode> {
         const isFile = resource instanceof File;
         const node: TreeNode = {
             data: resource,
@@ -119,13 +120,12 @@ export class KFileBrowser extends KPart {
             children: []
         };
 
-        if (resource instanceof Directory) {
-            for (const childResource of await resource.listChildren(true)) {
-                // do not show hidden files/folders
+        if (resource instanceof Directory && loadChildren) {
+            for (const childResource of await resource.listChildren(false)) {
                 if (HIDE_DOT_RESOURCE && childResource.getName().startsWith(".")) {
                     continue
                 }
-                const child = await this.resourceToTreeNode(childResource);
+                const child = await this.resourceToTreeNode(childResource, false);
                 node.children.push(child);
             }
             node.children.sort(treeNodeComparator)
@@ -139,11 +139,47 @@ export class KFileBrowser extends KPart {
             return html``
         }
 
+        const isLazy = !node.leaf && node.children.length === 0;
         return html`
-            <wa-tree-item @dblclick=${this.nobubble(this.onFileDoubleClicked)} .model=${node} ?expanded=${expanded}>
+            <wa-tree-item 
+                @dblclick=${this.nobubble(this.onFileDoubleClicked)}
+                @wa-lazy-load=${this.nobubble((e: Event) => this.onLazyLoad(e, node))}
+                .model=${node} 
+                ?expanded=${expanded}
+                ?lazy=${isLazy}>
                 <span><wa-icon name=${node.icon} label="${node.leaf ? 'File' : 'Folder'}"></wa-icon> ${node.label}</span>
-                ${node.children.map(child => this.createTreeItems(child))}
+                ${node.children.map(child => this.createTreeItems(child, false))}
             </wa-tree-item>`
+    }
+
+    private async onLazyLoad(event: Event, node: TreeNode) {
+        const resource = node.data as Resource;
+        if (resource instanceof Directory && node.children.length === 0) {
+            await this.loadNodeChildren(node, resource);
+        }
+    }
+
+    private async loadNodeChildren(node: TreeNode, resource: Directory) {
+        if (this.loadingNodes.has(node)) {
+            return;
+        }
+        
+        this.loadingNodes.add(node);
+        try {
+            for (const childResource of await resource.listChildren(false)) {
+                if (HIDE_DOT_RESOURCE && childResource.getName().startsWith(".")) {
+                    continue
+                }
+                const child = await this.resourceToTreeNode(childResource, false);
+                node.children.push(child);
+            }
+            node.children.sort(treeNodeComparator);
+            this.requestUpdate();
+        } catch (error) {
+            console.error('Failed to load directory children:', error);
+        } finally {
+            this.loadingNodes.delete(node);
+        }
     }
 
     async onFileDoubleClicked(event: Event) {
