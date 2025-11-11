@@ -20,6 +20,9 @@ export class KCommand extends KWidget {
     title: string = ''
 
     @property()
+    label?: boolean = false
+
+    @property()
     icon?: string
 
     @property({ type: Boolean })
@@ -161,6 +164,7 @@ export class KCommand extends KWidget {
                         title=${keybinding ? `${this.title} (${keybinding})` : this.title}>
                         <k-icon slot="start" name="${this.icon}" label="${this.title}"></k-icon>
                         <slot></slot>
+                        ${this.label ? this.title : nothing}
                     </wa-button>
                     
                     ${this.title ? html`
@@ -179,6 +183,7 @@ export class KCommand extends KWidget {
                             .params=${this.params}
                             ?disabled=${this.disabled}>
                             <slot></slot>
+                            ${this.title}
                         </k-command>
                     ` : nothing}
                 </wa-dropdown>
