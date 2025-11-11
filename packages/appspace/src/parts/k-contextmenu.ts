@@ -96,7 +96,59 @@ export class KContextMenu extends SignalWatcher(KElement) {
         this.contributions = [...wildcard, ...categoryMatches, ...specific];
     }
 
-    public show(position: { x: number, y: number }) {
+    /**
+     * Gets the element at the given point, traversing shadow DOM boundaries recursively.
+     * This is necessary because elementFromPoint() doesn't penetrate shadow roots.
+     */
+    private getElementFromPoint(x: number, y: number): Element | null {
+        let element: Element | null = document.elementFromPoint(x, y);
+        if (!element) return null;
+
+        // Recursively traverse shadow DOM boundaries
+        while (element) {
+            const shadowRoot = (element as any).shadowRoot as ShadowRoot | undefined;
+            if (shadowRoot) {
+                const shadowElement: Element | null = shadowRoot.elementFromPoint(x, y);
+                if (shadowElement && shadowElement !== element) {
+                    element = shadowElement;
+                    continue;
+                }
+            }
+            break;
+        }
+
+        return element;
+    }
+
+    /**
+     * Triggers a click on the element under the cursor to update selection before showing context menu.
+     */
+    private triggerClickUnderCursor(mouseEvent: MouseEvent): void {
+        const elementUnderCursor = this.getElementFromPoint(mouseEvent.clientX, mouseEvent.clientY);
+        if (elementUnderCursor) {
+            const clickEvent = new MouseEvent('click', {
+                bubbles: true,
+                cancelable: true,
+                view: window,
+                clientX: mouseEvent.clientX,
+                clientY: mouseEvent.clientY,
+                screenX: mouseEvent.screenX,
+                screenY: mouseEvent.screenY,
+                button: 0,
+                buttons: 0,
+                detail: 1,
+                which: 1
+            });
+            elementUnderCursor.dispatchEvent(clickEvent);
+        }
+    }
+
+    public show(position: { x: number, y: number }, mouseEvent?: MouseEvent) {
+        // Trigger click before showing context menu to update selection
+        if (mouseEvent) {
+            this.triggerClickUnderCursor(mouseEvent);
+        }
+        
         this.position = position;
         this.isOpen = true;
     }

@@ -145,24 +145,13 @@ export class KTabs extends KContainer {
                 const tabPanel = scroller.closest('wa-tab-panel') as HTMLElement;
                 if (!tabPanel) return;
                 
-                // Trigger a left click to update selection before showing context menu
-                const clickEvent = new MouseEvent('click', {
-                    bubbles: true,
-                    cancelable: true,
-                    view: window,
-                    clientX: mouseEvent.clientX,
-                    clientY: mouseEvent.clientY,
-                    button: 0
-                });
-                mouseEvent.target!.dispatchEvent(clickEvent);
-                
                 // Wait for selection to update before showing context menu
                 requestAnimationFrame(() => {
                     this.updateContextMenuFromComponent(tabPanel);
                     
                     const contextMenu = tabPanel.querySelector('k-contextmenu') as KContextMenu;
                     if (contextMenu) {
-                        contextMenu.show({ x: mouseEvent.clientX, y: mouseEvent.clientY });
+                        contextMenu.show({ x: mouseEvent.clientX, y: mouseEvent.clientY }, mouseEvent);
                     }
                 });
             });

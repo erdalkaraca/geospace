@@ -42,7 +42,21 @@ export class KCommand extends KWidget {
 
     private handleClick() {
         if (!this.disabled && this.cmd) {
-            this.executeCommand(this.cmd, this.params)
+            // Close dropdown synchronously before executing command
+            const dropdown = this.closest('wa-dropdown') as any;
+            if (dropdown && dropdown.open !== undefined) {
+                dropdown.open = false;
+            }
+            this.executeCommand(this.cmd, this.params);
+        }
+    }
+
+    private handleSelect(event: CustomEvent) {
+        // Close dropdown immediately when any item is selected
+        // This ensures the dropdown is hidden before the command executes
+        const dropdown = event.target as any;
+        if (dropdown && dropdown.open !== undefined) {
+            dropdown.open = false;
         }
     }
 
@@ -118,7 +132,9 @@ export class KCommand extends KWidget {
 
         if (this.dropdown) {
             return html`
-                <wa-dropdown placement=${this.placement}>
+                <wa-dropdown 
+                    placement=${this.placement}
+                    @wa-select=${(e: CustomEvent) => this.handleSelect(e)}>
                     <wa-button 
                         slot="trigger"
                         appearance=${this.appearance}
