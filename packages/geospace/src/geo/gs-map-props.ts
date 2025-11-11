@@ -136,16 +136,16 @@ export class GsMapProps extends KPart {
         const hasSelection = this.selectedLayerUuid !== undefined;
         
         return html`
-            <k-action ?disabled=${!hasSelection} 
+            <k-command ?disabled=${!hasSelection} 
                       title="Rename selected layer" 
                       icon="pen"
                       .action=${() => this.renameLayer()}>
-            </k-action>
-            <k-action ?disabled=${!hasSelection} 
+            </k-command>
+            <k-command ?disabled=${!hasSelection} 
                       title="Delete selected layer" 
                       icon="trash"
                       .action=${() => this.deleteLayer()}>
-            </k-action>
+            </k-command>
         `;
     }
 
@@ -153,16 +153,16 @@ export class GsMapProps extends KPart {
         const hasSelection = this.selectedLayerUuid !== undefined;
         
         return html`
-            <k-action ?disabled=${!hasSelection} 
+            <k-command ?disabled=${!hasSelection} 
                       icon="pen"
                       .action=${() => this.renameLayer()}>
                 Rename
-            </k-action>
-            <k-action ?disabled=${!hasSelection} 
+            </k-command>
+            <k-command ?disabled=${!hasSelection} 
                       icon="trash"
                       .action=${() => this.deleteLayer()}>
                 Delete
-            </k-action>
+            </k-command>
         `;
     }
 
@@ -182,23 +182,23 @@ export class GsMapProps extends KPart {
                                             <small>(basemap)</small>` : ""}</span>
                                     </div>
                                     <div class="layer-actions">
-                                        <k-action size="small"
+                                        <k-command size="small"
                                                   icon="${layer.visible !== false ? "eye" : "eye-slash"}"
                                                   title="${layer.visible !== false ? 'Hide layer' : 'Show layer'}"
                                                   .action=${() => layer.uuid && this.toggleVisible(layer.uuid)}>
-                                        </k-action>
-                                        <k-action size="small"
+                                        </k-command>
+                                        <k-command size="small"
                                                   icon="arrow-up"
                                                   title="Move layer up"
                                                   ?disabled="${i === 0}"
                                                   .action=${() => layer.uuid && this.moveLayerUp(layer.uuid)}>
-                                        </k-action>
-                                        <k-action size="small"
+                                        </k-command>
+                                        <k-command size="small"
                                                   icon="arrow-down"
                                                   title="Move layer down"
                                                   ?disabled="${i === this.mapEditor!.getGsMap()!.layers.length - 1}"
                                                   .action=${() => layer.uuid && this.moveLayerDown(layer.uuid)}>
-                                        </k-action>
+                                        </k-command>
                                     </div>
                                 </div>
                             </wa-tree-item>
@@ -209,7 +209,7 @@ export class GsMapProps extends KPart {
                         ${this.mapEditor?.getGsMap()?.controls.map((control: GsControl) => html`
                             <wa-tree-item>
                                 <span>${getOriginalUri(control.src)}</span>
-                                <k-action size="small"
+                                <k-command size="small"
                                           icon="trash"
                                           title="Delete control"
                                           .action=${() => {
@@ -217,7 +217,7 @@ export class GsMapProps extends KPart {
                                                   this.confirmAction(`Delete control "${getOriginalUri(control.src)}"?`, () => this.withRefresh(() => this.mapEditor?.mapOperations?.removeControl(control.uuid!)))
                                               }
                                           }}>
-                                </k-action>
+                                </k-command>
                             </wa-tree-item>
                         `)}
                     </wa-tree-item>
@@ -226,7 +226,7 @@ export class GsMapProps extends KPart {
                         ${this.mapEditor?.getGsMap()?.overlays.map((overlay: GsOverlay) => html`
                             <wa-tree-item>
                                 <span>${getOriginalUri(overlay.src)}</span>
-                                <k-action size="small"
+                                <k-command size="small"
                                           icon="trash"
                                           title="Delete overlay"
                                           .action=${() => {
@@ -234,7 +234,7 @@ export class GsMapProps extends KPart {
                                                   this.confirmAction(`Delete overlay "${getOriginalUri(overlay.src)}"?`, () => this.withRefresh(() => this.mapEditor?.mapOperations?.removeOverlay(overlay.uuid!)))
                                               }
                                           }}>
-                                </k-action>
+                                </k-command>
                             </wa-tree-item>
                         `)}
                     </wa-tree-item>

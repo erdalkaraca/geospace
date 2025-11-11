@@ -13,6 +13,9 @@ export class KCommand extends KWidget {
     @property()
     cmd: string = ''
 
+    @property({ type: Object, attribute: false })
+    action?: (event?: Event) => void
+
     @property()
     title: string = ''
 
@@ -23,7 +26,10 @@ export class KCommand extends KWidget {
     disabled: boolean = false
 
     @property()
-    appearance: 'default' | 'plain' | 'outline' = 'plain'
+    appearance: 'default' | 'plain' | 'outline' | 'accent' | 'filled-outlined' | 'filled' | 'outlined' = 'plain'
+
+    @property()
+    variant: 'neutral' | 'brand' | 'success' | 'warning' | 'danger' = 'neutral'
 
     @property()
     size: 'small' | 'medium' | 'large' = 'small'
@@ -40,9 +46,19 @@ export class KCommand extends KWidget {
     @state()
     private dropdownContributions: Contribution[] = []
 
-    private handleClick() {
-        if (!this.disabled && this.cmd) {
-            // Close dropdown synchronously before executing command
+    private handleClick(event?: Event) {
+        if (this.disabled) return
+
+        if (event) {
+            event.stopPropagation()
+        }
+
+        if (this.action) {
+            this.action(event)
+            return
+        }
+
+        if (this.cmd) {
             const dropdown = this.closest('wa-dropdown') as any;
             if (dropdown && dropdown.open !== undefined) {
                 dropdown.open = false;
@@ -65,7 +81,7 @@ export class KCommand extends KWidget {
     }
 
     private getKeybinding(): string | null {
-        if (!this.cmd) return null
+        if (!this.cmd || this.action) return null
         const keybindings = keyBindingManager.getKeyBindingsForCommand(this.cmd)
         return keybindings.length > 0 ? keybindings[0] : null
     }
@@ -122,7 +138,7 @@ export class KCommand extends KWidget {
             return html`
                 <wa-dropdown-item 
                     ?disabled=${this.disabled}
-                    @click=${() => this.handleClick()}>
+                    @click=${(e: Event) => this.handleClick(e)}>
                     <k-icon name="${this.icon}" label="${this.title}" slot="icon"></k-icon>
                     <slot></slot>
                     ${keybinding ? html`<span class="keybinding">${keybinding}</span>` : ''}
@@ -138,6 +154,7 @@ export class KCommand extends KWidget {
                     <wa-button 
                         slot="trigger"
                         appearance=${this.appearance}
+                        variant=${this.variant}
                         size=${this.size}
                         ?disabled=${this.disabled}
                         with-caret
@@ -171,10 +188,11 @@ export class KCommand extends KWidget {
         return html`
             <wa-button
                 appearance=${this.appearance}
+                variant=${this.variant}
                 size=${this.size}
                 ?disabled=${this.disabled}
                 title=${keybinding ? `${this.title} (${keybinding})` : this.title}
-                @click=${() => this.handleClick()}>
+                @click=${(e: Event) => this.handleClick(e)}>
                 <k-icon slot="start" name="${this.icon}" label="${this.title}"></k-icon>
                 <slot></slot>
             </wa-button>

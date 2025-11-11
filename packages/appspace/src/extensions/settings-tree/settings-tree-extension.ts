@@ -562,31 +562,31 @@ export class KSettingsTree extends KPart {
                     
                     <div class="node-actions">
                         ${node.type === 'primitive' ? html`
-                            <k-action
+                            <k-command
                                 size="small"
                                 variant="neutral"
                                 appearance="plain"
                                 icon="pencil"
                                 title="Edit value"
                                 .action=${(e: Event) => this.startEditValue(node, e)}>
-                            </k-action>
+                            </k-command>
                         ` : ''}
-                        <k-action
+                        <k-command
                             size="small"
                             variant="neutral"
                             appearance="plain"
                             icon="plus"
                             title="Add key"
                             .action=${(e: Event) => this.addKey(node, e)}>
-                        </k-action>
-                        <k-action
+                        </k-command>
+                        <k-command
                             size="small"
                             variant="neutral"
                             appearance="plain"
                             icon="trash"
                             title="Delete key"
                             .action=${(e: Event) => this.deleteKey(node, e)}>
-                        </k-action>
+                        </k-command>
                     </div>
                 </div>
                 
@@ -597,27 +597,27 @@ export class KSettingsTree extends KPart {
 
     protected renderToolbar() {
         return html`
-            <k-action 
+            <k-command 
                 size="small" 
                 icon="plus"
                 title="Add Key"
                 .action=${() => this.addKey(null, new Event('click'))}>
                 Add Key
-            </k-action>
-            <k-action 
+            </k-command>
+            <k-command 
                 size="small" 
                 icon="chevron-down"
                 title="Expand All"
                 .action=${() => this.expandAll()}>
                 Expand All
-            </k-action>
-            <k-action 
+            </k-command>
+            <k-command 
                 size="small" 
                 icon="chevron-right"
                 title="Collapse All"
                 .action=${() => this.collapseAll()}>
                 Collapse All
-            </k-action>
+            </k-command>
         `;
     }
 

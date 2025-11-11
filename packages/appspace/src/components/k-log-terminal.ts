@@ -105,7 +105,7 @@ export class KLogTerminal extends KPart {
         const debugCount = this.messages.filter(m => m.level === 'debug').length;
 
         return html`
-            <k-action 
+            <k-command 
                 icon="list"
                 title="All logs"
                 appearance="${this.filter === 'all' ? 'filled' : 'plain'}"
@@ -116,9 +116,9 @@ export class KLogTerminal extends KPart {
                     this.updateToolbar();
                 }}>
                 All (${this.messages.length})
-            </k-action>
+            </k-command>
 
-            <k-action 
+            <k-command 
                 icon="circle-info"
                 title="Info logs"
                 appearance="${this.filter === 'info' ? 'filled' : 'plain'}"
@@ -129,9 +129,9 @@ export class KLogTerminal extends KPart {
                     this.updateToolbar();
                 }}>
                 Info${infoCount > 0 ? ` (${infoCount})` : ''}
-            </k-action>
+            </k-command>
 
-            <k-action 
+            <k-command 
                 icon="triangle-exclamation"
                 title="Warning logs"
                 appearance="${this.filter === 'warning' ? 'filled' : 'plain'}"
@@ -142,9 +142,9 @@ export class KLogTerminal extends KPart {
                     this.updateToolbar();
                 }}>
                 Warnings${warningCount > 0 ? ` (${warningCount})` : ''}
-            </k-action>
+            </k-command>
 
-            <k-action 
+            <k-command 
                 icon="circle-xmark"
                 title="Error logs"
                 appearance="${this.filter === 'error' ? 'filled' : 'plain'}"
@@ -155,9 +155,9 @@ export class KLogTerminal extends KPart {
                     this.updateToolbar();
                 }}>
                 Errors${errorCount > 0 ? ` (${errorCount})` : ''}
-            </k-action>
+            </k-command>
 
-            <k-action 
+            <k-command 
                 icon="bug"
                 title="Debug logs"
                 appearance="${this.filter === 'debug' ? 'filled' : 'plain'}"
@@ -168,11 +168,11 @@ export class KLogTerminal extends KPart {
                     this.updateToolbar();
                 }}>
                 Debug${debugCount > 0 ? ` (${debugCount})` : ''}
-            </k-action>
+            </k-command>
 
             <wa-divider orientation="vertical"></wa-divider>
 
-            <k-action 
+            <k-command 
                 icon="arrow-down" 
                 title="${this.autoScroll ? 'Auto-scroll enabled' : 'Auto-scroll disabled'}"
                 appearance="${this.autoScroll ? 'filled' : 'plain'}"
@@ -183,14 +183,14 @@ export class KLogTerminal extends KPart {
                     this.updateToolbar();
                 }}>
                 ${this.autoScroll ? 'Auto-scroll' : 'Manual'}
-            </k-action>
+            </k-command>
 
-            <k-action 
+            <k-command 
                 icon="trash" 
                 title="Clear logs"
                 .action=${() => this.clear()}>
                 Clear
-            </k-action>
+            </k-command>
         `;
     }
 

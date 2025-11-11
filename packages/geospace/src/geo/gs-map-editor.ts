@@ -99,10 +99,10 @@ export class GsMapEditor extends KPart {
             
             <wa-divider orientation="vertical"></wa-divider>
             
-            <k-action icon="plus" 
+            <k-command icon="plus" 
                       title="Create Drawing Layer"
                       .action=${() => this.handleCreateDrawingLayer()}>
-            </k-action>
+            </k-command>
             
             ${when(drawableLayers.length > 0, () => {
             // Create a key based on layer names and UUIDs to force wa-select to re-render when names change
@@ -129,36 +129,36 @@ export class GsMapEditor extends KPart {
                     </wa-select>
                 `)}
                 
-                <k-action icon="location-dot" 
+                <k-command icon="location-dot" 
                           title="Draw Point"
                           ?disabled=${!hasActiveLayer}
                           .action=${() => this.handleDrawPoint()}>
-                </k-action>
-                <k-action icon="minus" 
+                </k-command>
+                <k-command icon="minus" 
                           title="Draw LineString"
                           ?disabled=${!hasActiveLayer}
                           .action=${() => this.handleDrawLine()}>
-                </k-action>
-                <k-action icon="draw-polygon" 
+                </k-command>
+                <k-command icon="draw-polygon" 
                           title="Draw Polygon"
                           ?disabled=${!hasActiveLayer}
                           .action=${() => this.handleDrawPolygon()}>
-                </k-action>
+                </k-command>
                 
-                <k-action icon="trash" 
+                <k-command icon="trash" 
                           title="Delete Selected Features"
                           ?disabled=${this.interactionMode !== 'select'}
                           .action=${() => this.handleDeleteSelected()}>
-                </k-action>
+                </k-command>
 
                 <wa-divider orientation="vertical"></wa-divider>
             `
         })}
             
-            <k-action icon="hand-pointer" 
+            <k-command icon="hand-pointer" 
                       title="Select Features"
                       .action=${() => this.handleSelectFeatures()}>
-            </k-action>
+            </k-command>
 
             <wa-divider orientation="vertical"></wa-divider>
         `;

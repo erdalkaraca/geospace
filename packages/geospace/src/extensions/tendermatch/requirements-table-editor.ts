@@ -714,7 +714,7 @@ export class KRequirementsTableEditor extends KPart {
                         </div>
                         <div class="overall-match-right">
                             <div class="overall-match-actions">
-                                <k-action
+                                <k-command
                                     variant="warning"
                                     appearance="outlined"
                                     size="large"
@@ -722,7 +722,7 @@ export class KRequirementsTableEditor extends KPart {
                                     title="Unternehmensprofil aus aktiver Auswahl wählen"
                                     ?disabled="${!this.txtFileSelected || this.matching}"
                                     .action="${() => this.selectCompanyProfile()}">
-                                </k-action>
+                                </k-command>
                                 ${this.matching ? html`
                                     <span class="company-profile-name">Abgleich läuft...</span>
                                 ` : ''}

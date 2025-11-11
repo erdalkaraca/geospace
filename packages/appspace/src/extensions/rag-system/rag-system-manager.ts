@@ -423,23 +423,23 @@ export class KRAGSystemManager extends KPart {
                 </wa-select>
             ` : nothing}
             
-            <k-action 
+            <k-command 
                 size="small" 
                 icon="arrow-rotate-right"
                 title="Refresh document list"
                 .action=${() => this.loadDocuments()}
                 ?disabled=${this.reindexing}>
                 Refresh
-            </k-action>
+            </k-command>
             
-            <k-action 
+            <k-command 
                 size="small" 
                 icon="database"
                 title="Re-index all documents"
                 .action=${() => this.reindexAllDocuments()}
                 ?disabled=${this.reindexing || this.loading}>
                 ${this.reindexing ? 'Reindexing...' : 'Re-index All'}
-            </k-action>
+            </k-command>
         `;
     }
 
