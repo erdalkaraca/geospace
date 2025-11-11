@@ -7,6 +7,7 @@ import logger from "./logger";
 
 export const TOPIC_EXTENSIONS_CHANGED = "events/extensionsregistry/extensionsConfigChanged"
 const KEY_EXTENSIONS_CONFIG = "extensions"
+const KEY_EXTERNAL_EXTENSIONS = "extensions.external"
 
 /**
  * Extension definition for the extension registry.
@@ -45,6 +46,15 @@ export interface Extension {
     /** Whether this extension is marked as experimental */
     experimental?: boolean;
     
+    /** Optional extension version */
+    version?: string;
+    
+    /** Optional extension author */
+    author?: string;
+    
+    /** Whether this extension is from an external source (marketplace) */
+    external?: boolean;
+    
     /**
      * Optional list of extension IDs that must be loaded before this extension.
      * Dependencies are loaded recursively and automatically when this extension is loaded.
@@ -77,17 +87,43 @@ class ExtensionRegistry {
             this.checkExtensionsConfig().then()
         })
 
-        this.checkExtensionsConfig().then(async () => {
-            const loadPromises = this.extensionsSettings
-                ?.filter(setting => this.isEnabled(setting.id))
-                .map(setting => 
-                    this.load(setting.id).catch(e => {
-                        toastError("Extension could not be loaded: " + e.message)
-                    })
-                ) || []
-            
-            await Promise.all(loadPromises)
+        // Load persisted external extensions first, then load enabled extensions
+        this.loadPersistedExternalExtensions().then(() => {
+            this.checkExtensionsConfig().then(async () => {
+                const loadPromises = this.extensionsSettings
+                    ?.filter(setting => this.isEnabled(setting.id))
+                    .map(setting => 
+                        this.load(setting.id).catch(e => {
+                            toastError("Extension could not be loaded: " + e.message)
+                        })
+                    ) || []
+                
+                await Promise.all(loadPromises)
+            })
         })
+    }
+
+    private async loadPersistedExternalExtensions(): Promise<void> {
+        try {
+            const persisted = await appSettings.get(KEY_EXTERNAL_EXTENSIONS)
+            if (persisted && Array.isArray(persisted)) {
+                persisted.forEach((ext: Extension) => {
+                    this.extensions[ext.id] = ext
+                })
+                logger.debug(`Loaded ${persisted.length} persisted external extensions`)
+            }
+        } catch (error) {
+            logger.error(`Failed to load persisted external extensions: ${error}`)
+        }
+    }
+
+    private async savePersistedExternalExtensions(): Promise<void> {
+        try {
+            const externalExtensions = Object.values(this.extensions).filter(ext => ext.external)
+            await appSettings.set(KEY_EXTERNAL_EXTENSIONS, externalExtensions)
+        } catch (error) {
+            logger.error(`Failed to save persisted external extensions: ${error}`)
+        }
     }
 
     private async checkExtensionsConfig() {
@@ -101,8 +137,18 @@ class ExtensionRegistry {
         }
     }
 
+
     registerExtension(extension: Extension): void {
         this.extensions[extension.id] = extension;
+        
+        // Persist external extensions
+        if (extension.external) {
+            this.savePersistedExternalExtensions().catch(err => {
+                logger.error(`Failed to persist external extension: ${err}`)
+            })
+        }
+        
+        publish(TOPIC_EXTENSIONS_CHANGED, this.extensionsSettings);
     }
 
     getExtensions(): Extension[] {
@@ -201,7 +247,16 @@ class ExtensionRegistry {
                 this.loadedExtensions.add(extensionId)
 
                 if (module?.default instanceof Function) {
-                    module?.default(uiContext.getProxy())
+                    logger.debug(`Executing extension function for: ${extensionId}`)
+                    try {
+                        module?.default(uiContext.getProxy())
+                        logger.debug(`Extension function executed successfully: ${extensionId}`)
+                    } catch (error) {
+                        logger.error(`Error executing extension function for ${extensionId}: ${error}`)
+                        throw error
+                    }
+                } else {
+                    logger.warn(`Extension ${extensionId} does not export a default function`)
                 }
                 
                 logger.debug(`Extension loaded: ${extensionId}`)

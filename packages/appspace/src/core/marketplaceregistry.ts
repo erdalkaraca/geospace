@@ -12,40 +12,26 @@ export const TOPIC_MARKETPLACE_CHANGED = "events/marketplaceregistry/changed";
 export interface MarketplaceCatalog {
     name?: string;
     description?: string;
-    extensions: MarketplaceExtension[];
-}
-
-export interface MarketplaceExtension extends Extension {
-    /** URL to load the extension module from (required for marketplace extensions) */
-    url: string;
-    /** Extension version */
-    version?: string;
-    /** Extension author */
-    author?: string;
-    /** URL of the catalog this extension came from */
-    catalogUrl: string;
-}
-
-interface CachedCatalog {
-    url: string;
-    data: MarketplaceCatalog;
-    timestamp: number;
+    extensions: Extension[];
 }
 
 const KEY_CATALOG_URLS = "marketplace.catalogUrls";
-const KEY_CACHED_CATALOGS = "marketplace.cachedCatalogs";
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 class MarketplaceRegistry {
     private catalogUrls: string[] = [];
-    private cachedCatalogs: Map<string, CachedCatalog> = new Map();
     private loadingPromises: Map<string, Promise<MarketplaceCatalog>> = new Map();
 
     constructor() {
+        // Load catalog URLs and refresh catalogs
         this.loadCatalogUrls().then(() => {
             this.refreshCatalogs().catch(err => {
                 logger.error(`Failed to refresh catalogs on init: ${err.message}`);
             });
+        });
+        
+        // Register marketplace extensions when they become available
+        subscribe(TOPIC_MARKETPLACE_CHANGED, () => {
+            this.registerMarketplaceExtensions();
         });
     }
 
@@ -81,6 +67,8 @@ class MarketplaceRegistry {
 
         try {
             await this.fetchCatalog(url);
+            // Register extensions from the newly fetched catalog
+            this.registerMarketplaceExtensions();
         } catch (error) {
             logger.warn(`Failed to fetch catalog immediately after adding: ${error}`);
         }
@@ -93,7 +81,6 @@ class MarketplaceRegistry {
         }
 
         this.catalogUrls.splice(index, 1);
-        this.cachedCatalogs.delete(url);
         await this.saveCatalogUrls();
         logger.info(`Removed catalog URL: ${url}`);
     }
@@ -109,11 +96,6 @@ class MarketplaceRegistry {
         } catch {
             return false;
         }
-    }
-
-    private isCacheValid(cached: CachedCatalog): boolean {
-        const age = Date.now() - cached.timestamp;
-        return age < CACHE_TTL_MS;
     }
 
     private async fetchCatalog(url: string): Promise<MarketplaceCatalog> {
@@ -145,17 +127,8 @@ class MarketplaceRegistry {
                 const catalog: MarketplaceCatalog = {
                     name: data.name,
                     description: data.description,
-                    extensions: data.extensions.map(ext => ({
-                        ...ext,
-                        catalogUrl: url,
-                    })),
+                    extensions: data.extensions,
                 };
-
-                this.cachedCatalogs.set(url, {
-                    url,
-                    data: catalog,
-                    timestamp: Date.now(),
-                });
 
                 logger.debug(`Successfully fetched catalog from ${url}: ${catalog.extensions.length} extensions`);
                 return catalog;
@@ -174,88 +147,88 @@ class MarketplaceRegistry {
     async refreshCatalogs(): Promise<void> {
         logger.info(`Refreshing ${this.catalogUrls.length} catalogs...`);
         
-        const promises = this.catalogUrls.map(url => {
-            const cached = this.cachedCatalogs.get(url);
-            if (cached && this.isCacheValid(cached)) {
-                logger.debug(`Using cached catalog for: ${url}`);
-                return Promise.resolve(cached.data);
-            }
-            return this.fetchCatalog(url).catch(error => {
+        const promises = this.catalogUrls.map(url =>
+            this.fetchCatalog(url).catch(error => {
                 logger.warn(`Failed to refresh catalog ${url}: ${error.message}`);
-                return cached?.data || null;
-            });
-        });
+                return null;
+            })
+        );
 
-        await Promise.allSettled(promises);
+        const catalogs = await Promise.allSettled(promises);
+        
+        // Register all marketplace extensions from successfully fetched catalogs
+        catalogs.forEach((result, index) => {
+            if (result.status === 'fulfilled' && result.value) {
+                const catalog = result.value;
+                catalog.extensions.forEach(marketplaceExt => {
+                    // Only register if not already registered
+                    if (!extensionRegistry.getExtensions().find(e => e.id === marketplaceExt.id)) {
+                        // Mark as external extension
+                        const extension: Extension = {
+                            ...marketplaceExt,
+                            external: true
+                        };
+                        extensionRegistry.registerExtension(extension);
+                        logger.debug(`Registered marketplace extension: ${marketplaceExt.id}`);
+                    }
+                });
+            }
+        });
+        
+        // Publish event after registration
         publish(TOPIC_MARKETPLACE_CHANGED, {type: 'refreshed'});
         logger.info('Catalog refresh completed');
     }
 
-    getMarketplaceExtensions(): MarketplaceExtension[] {
-        const extensions: MarketplaceExtension[] = [];
-        
-        for (const cached of this.cachedCatalogs.values()) {
-            if (this.isCacheValid(cached)) {
-                extensions.push(...cached.data.extensions);
-            }
-        }
-
-        return extensions;
+    private registerMarketplaceExtensions(): void {
+        // This method is called when TOPIC_MARKETPLACE_CHANGED is published
+        // Since we register extensions directly in refreshCatalogs, this is a no-op
+        // Kept for compatibility with the event subscription
     }
 
-    getMarketplaceExtension(extensionId: string): MarketplaceExtension | undefined {
-        return this.getMarketplaceExtensions().find(ext => ext.id === extensionId);
+    getMarketplaceExtensions(): Extension[] {
+        // Extensions are registered directly into extensionRegistry when catalogs are fetched
+        // This method is kept for compatibility but returns empty since we don't cache anymore
+        return [];
+    }
+
+    getMarketplaceExtension(extensionId: string): Extension | undefined {
+        // Check if extension is registered in extensionRegistry and is external
+        const extension = extensionRegistry.getExtensions().find(e => e.id === extensionId);
+        if (extension && extension.external) {
+            return extension;
+        }
+        return undefined;
     }
 
     getCatalogsWithExtensions(): Array<{ catalog: MarketplaceCatalog; url: string }> {
-        const catalogs: Array<{ catalog: MarketplaceCatalog; url: string }> = [];
-        
-        for (const cached of this.cachedCatalogs.values()) {
-            if (this.isCacheValid(cached)) {
-                catalogs.push({
-                    catalog: cached.data,
-                    url: cached.url,
-                });
-            }
-        }
-
-        return catalogs;
+        // Since we don't cache catalogs anymore, this returns empty
+        // Extensions are registered directly into extensionRegistry
+        return [];
     }
 
-    async installExtension(marketplaceExtension: MarketplaceExtension): Promise<void> {
-        const extensionId = `marketplace:${marketplaceExtension.id}`;
-
-        if (extensionRegistry.isEnabled(extensionId)) {
-            logger.info(`Extension ${extensionId} is already installed`);
+    async installExtension(extension: Extension): Promise<void> {
+        if (extensionRegistry.isEnabled(extension.id)) {
+            logger.info(`Extension ${extension.id} is already installed`);
             return;
         }
 
-        logger.info(`Installing marketplace extension: ${marketplaceExtension.name} from ${marketplaceExtension.url}`);
+        logger.info(`Installing marketplace extension: ${extension.name} from ${extension.url}`);
 
-        const extension: Extension = {
-            id: extensionId,
-            name: marketplaceExtension.name,
-            description: marketplaceExtension.description,
-            url: marketplaceExtension.url,
-            icon: marketplaceExtension.icon,
-            experimental: marketplaceExtension.experimental,
-            dependencies: marketplaceExtension.dependencies,
+        // Mark as external and register
+        const externalExtension: Extension = {
+            ...extension,
+            external: true
         };
-
-        extensionRegistry.registerExtension(extension);
-        await appLoaderService.loadExtensionFromUrl(marketplaceExtension.url);
+        extensionRegistry.registerExtension(externalExtension);
+        await appLoaderService.loadExtensionFromUrl(extension.url!);
         
-        logger.info(`Successfully installed marketplace extension: ${extensionId}`);
+        logger.info(`Successfully installed marketplace extension: ${extension.id}`);
     }
 
     isMarketplaceExtension(extensionId: string): boolean {
-        return extensionId.startsWith('marketplace:');
-    }
-
-    getCatalogForExtension(extensionId: string): string | undefined {
-        const marketplaceId = extensionId.replace('marketplace:', '');
-        const extension = this.getMarketplaceExtension(marketplaceId);
-        return extension?.catalogUrl;
+        const extension = extensionRegistry.getExtensions().find(e => e.id === extensionId);
+        return extension !== undefined && extension.external === true;
     }
 }
 
