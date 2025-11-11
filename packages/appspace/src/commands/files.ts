@@ -605,7 +605,7 @@ registerAll({
         "output": [
             {
                 "name": "files",
-                "description": "array of file paths relative to the workspace"
+                "description": "array of file objects with path and size information"
             }
         ]
     },
@@ -637,12 +637,32 @@ registerAll({
                 }
 
                 if (recursive) {
-                    return await collectFilesRecursive(targetDir)
+                    const files = await collectFilesRecursive(targetDir)
+                    const result = []
+                    for (const filePath of files) {
+                        const file = await workspace.getResource(filePath)
+                        if (file instanceof File) {
+                            const size = await file.size()
+                            result.push({
+                                path: filePath,
+                                size: size
+                            })
+                        }
+                    }
+                    return result
                 } else {
                     const children = await targetDir.listChildren(true)
-                    return children
-                        .filter(child => child instanceof File)
-                        .map(file => file.getWorkspacePath())
+                    const result = []
+                    for (const child of children) {
+                        if (child instanceof File) {
+                            const size = await child.size()
+                            result.push({
+                                path: child.getWorkspacePath(),
+                                size: size
+                            })
+                        }
+                    }
+                    return result
                 }
             } catch (err: any) {
                 toastError(`Failed to list files: ${err.message}`)

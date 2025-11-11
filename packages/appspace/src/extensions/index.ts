@@ -141,3 +141,13 @@ extensionRegistry.registerExtension({
     loader: () => import("./ai-system/ai-system-extension"),
     icon: "robot",
 })
+
+extensionRegistry.registerExtension({
+    id: "system.rag-system",
+    name: "RAG System",
+    description: "Retrieval-Augmented Generation system for document indexing, search and retrieval",
+    loader: () => import("./rag-system/rag-system-extension"),
+    icon: "database",
+    experimental: true,
+    dependencies: ["system.ai-system"],
+})

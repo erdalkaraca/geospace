@@ -19,6 +19,7 @@ import {commandRegistry} from "../core/commandregistry";
 import {TreeNode, treeNodeComparator} from "../core/tree-utils";
 import {activeSelectionSignal} from "../core/appstate";
 import {confirmDialog} from "../core/dialog";
+import {editorRegistry} from "../core/editorregistry";
 
 
 @customElement('k-filebrowser')
@@ -115,7 +116,7 @@ export class KFileBrowser extends KPart {
         const node: TreeNode = {
             data: resource,
             label: resource.getName(),
-            icon: isFile ? "file" : "folder-open",
+            icon: isFile ? editorRegistry.getFileIcon(resource.getName()) : "folder-open",
             leaf: isFile,
             children: []
         };

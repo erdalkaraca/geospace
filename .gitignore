@@ -24,11 +24,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-/lib/
-/public/lib/gs-lib.css
-/public/lib/gs-lib.js
-/stats.html
+/packages/geospace/public/lib
+/packages/geospace/stats.html
 
 # Internal documentation
 /docs/internal/
-stats.html
+/stats.html

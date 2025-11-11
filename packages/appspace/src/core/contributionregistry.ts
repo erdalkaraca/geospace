@@ -45,6 +45,11 @@ export interface PaneContribution extends Contribution {
     component: () => TemplateResult;
 }
 
+export interface IconContribution extends Contribution {
+    mappings: Record<string, string>;
+    priority?: number;
+}
+
 class ContributionRegistry {
     private contributions: Map<string, Contribution[]> = new Map();
 

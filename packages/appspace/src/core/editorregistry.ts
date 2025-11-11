@@ -5,7 +5,7 @@ import {watchSignal} from "./signals";
 import {subscribe} from "./events";
 import {TOPIC_WORKSPACE_CONNECTED} from "./filesys";
 import {KTabs} from "../parts/k-tabs";
-import {TabContribution} from "./contributionregistry";
+import {TabContribution, IconContribution, contributionRegistry, TOPIC_CONTRIBUTEIONS_CHANGED} from "./contributionregistry";
 import {rootContext} from "./di";
 
 export const EVENT_SHOW_EDITOR = "editors/showEditor";
@@ -30,11 +30,37 @@ export interface EditorInputHandler {
 class EditorRegistry {
     private editorInputHandlers: EditorInputHandler[] = [];
     private listenersAttached = false;
+    private cachedIconContributions: IconContribution[] | null = null;
 
     constructor() {
         subscribe(TOPIC_WORKSPACE_CONNECTED, () => {
             // TODO close all editors
-        })
+        });
+        
+        subscribe(TOPIC_CONTRIBUTEIONS_CHANGED, (event: any) => {
+            if (event.target === 'system.icons') {
+                this.cachedIconContributions = null;
+            }
+        });
+    }
+    
+    private getSortedIconContributions(): IconContribution[] {
+        if (this.cachedIconContributions !== null) {
+            return this.cachedIconContributions;
+        }
+        
+        const contributions = contributionRegistry.getContributions('system.icons') as IconContribution[];
+        
+        this.cachedIconContributions = [...contributions].sort((a, b) => {
+            const priorityA = a.priority ?? 0;
+            const priorityB = b.priority ?? 0;
+            if (priorityB !== priorityA) {
+                return priorityB - priorityA;
+            }
+            return a.label.localeCompare(b.label);
+        });
+        
+        return this.cachedIconContributions;
     }
 
     private setupEventListeners(editorArea: KTabs) {
@@ -140,7 +166,63 @@ class EditorRegistry {
             component: editorInput.widgetFactory
         } as TabContribution)
     }
+
+    getFileIcon(fileNameOrType: string): string {
+        const extension = fileNameOrType.includes('.') 
+            ? fileNameOrType.split('.').pop()?.toLowerCase() || ''
+            : fileNameOrType.toLowerCase();
+        
+        const sortedContributions = this.getSortedIconContributions();
+        
+        if (sortedContributions.length === 0) {
+            return 'file';
+        }
+        
+        for (const contribution of sortedContributions) {
+            if (contribution.mappings && contribution.mappings[extension]) {
+                return contribution.mappings[extension];
+            }
+        }
+        
+        return 'file';
+    }
 }
 
 export const editorRegistry = new EditorRegistry();
 rootContext.put("editorRegistry", editorRegistry);
+
+contributionRegistry.registerContribution<IconContribution>('system.icons', {
+    label: 'Default File Icons',
+    mappings: {
+        'pdf': 'file-pdf',
+        'md': 'book',
+        'txt': 'file-lines',
+        'ts': 'code',
+        'tsx': 'code',
+        'js': 'code',
+        'jsx': 'code',
+        'json': 'file-code',
+        'geojson': 'file-code',
+        'py': 'python',
+        'html': 'code',
+        'htm': 'code',
+        'css': 'code',
+        'scss': 'code',
+        'sass': 'code',
+        'xml': 'file-code',
+        'yaml': 'file-code',
+        'yml': 'file-code',
+        'sql': 'database',
+        'kml': 'file-code',
+        'gpx': 'file-code',
+        'jpg': 'image',
+        'jpeg': 'image',
+        'png': 'image',
+        'gif': 'image',
+        'svg': 'image',
+        'webp': 'image',
+        'bmp': 'image',
+        'ico': 'image',
+    },
+    priority: 0
+});

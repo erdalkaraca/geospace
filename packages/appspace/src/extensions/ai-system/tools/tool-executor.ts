@@ -14,7 +14,23 @@ export class ToolExecutor {
 
     findCommand(toolCall: ToolCall, context: ExecutionContext): Command | null {
         const sanitizedFunctionName = toolCall.function.name;
-        return commandRegistry.getCommand(sanitizedFunctionName);
+        
+        // First try direct lookup (in case command ID matches sanitized name)
+        const directCommand = commandRegistry.getCommand(sanitizedFunctionName);
+        if (directCommand) {
+            return directCommand;
+        }
+        
+        // If not found, search through all commands to find one whose sanitized ID matches
+        const allCommands = commandRegistry.listCommands();
+        for (const [commandId, command] of Object.entries(allCommands)) {
+            const sanitizedId = this.sanitizeFunctionName(commandId);
+            if (sanitizedId === sanitizedFunctionName) {
+                return command;
+            }
+        }
+        
+        return null;
     }
 
     private parseArguments(argsStr: string): Record<string, any> {

@@ -79,6 +79,8 @@ export abstract class File extends Resource {
     public abstract getContents(options?: FileContentsOptions): Promise<any>;
 
     public abstract saveContents(contents: any, options?: FileContentsOptions): Promise<void>;
+
+    public abstract size(): Promise<number | null>;
 }
 
 export abstract class Directory extends Resource {
@@ -105,6 +107,10 @@ export class StringFile extends File {
 
     async saveContents(contents: any, _options?: FileContentsOptions): Promise<void> {
         this.contents = contents
+    }
+
+    async size(): Promise<number | null> {
+        return this.contents.length || null;
     }
 
     async copyTo(_targetPath: string): Promise<void> {
@@ -166,6 +172,15 @@ export class FileSysFileHandleResource extends File {
         }
 
         return file.stream()
+    }
+
+    async size(): Promise<number | null> {
+        try {
+            const file = await this.fileHandle.getFile();
+            return file.size;
+        } catch {
+            return null;
+        }
     }
 
     async saveContents(contents: any, _options?: FileContentsOptions) {

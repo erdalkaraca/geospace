@@ -583,7 +583,7 @@ export class KAView extends KPart {
                                     <wa-icon name="clock-rotate-left" label="Archived Sessions"></wa-icon>
                                     <span style="margin-left: 0.25rem;">${this.sessionManager.getArchivedSessionCount()}</span>
                                 </wa-button>
-                                <h6 style="padding: var(--wa-spacing-2) var(--wa-spacing-3); margin: 0; color: var(--wa-color-neutral-50); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">
+                                <h6 style="padding: var(--wa-space-xs) var(--wa-space-s); margin: 0; color: var(--wa-color-neutral-50); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">
                                     Archived Sessions
                                 </h6>
                                 ${this.sessionManager.getArchivedSessions().map(archived => html`
