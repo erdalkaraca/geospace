@@ -30,6 +30,7 @@ import {
     type Extension,
     type ExecutionContext
 } from "@kispace-io/appspace/api";
+import type { IconContribution } from "@kispace-io/appspace/src/core/contributionregistry";
 
 // App-specific imports
 import "./geo/gs-map-editor-contributions"
@@ -253,6 +254,14 @@ export const geospaceApp: AppDefinition = {
                 enabled: true,
             }
         } as AgentContribution)
+
+        contributionRegistry.registerContribution<IconContribution>('system.icons', {
+            label: 'geo!space File Icons',
+            mappings: {
+                'geospace': 'earth'
+            },
+            priority: 1
+        })
 
         registerAll({
             command: {
