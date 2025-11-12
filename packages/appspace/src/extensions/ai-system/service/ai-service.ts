@@ -1,4 +1,4 @@
-import { DependencyContext } from "../../../core/di";
+import { DependencyContext, rootContext } from "../../../core/di";
 import { publish, subscribe } from "../../../core/events";
 import { appSettings, TOPIC_SETTINGS_CHANGED } from "../../../core/settingsservice";
 import type { ExecutionContext } from "../../../core/commandregistry";
@@ -398,10 +398,10 @@ export class AIService {
     }
 
     async handleStreamingPrompt(options: AIServiceOptions): Promise<ChatMessage | ChatMessage[]> {
-        const contributions = this.getAgentContributions();
+        const callContext = options.callContext || rootContext.createChild({});
         const agentContext = this.createAgentContext(
             {},
-            options.callContext,
+            callContext,
             { userPrompt: options.chatContext.history[options.chatContext.history.length - 1]?.content || "" }
         );
 
@@ -413,7 +413,7 @@ export class AIService {
         const workflowResult = await this.executeAgentWorkflow({
             chatContext: options.chatContext,
             chatConfig: options.chatConfig,
-            callContext: options.callContext,
+            callContext: callContext,
             execution: 'parallel',
             stream: options.stream,
             signal: options.signal,

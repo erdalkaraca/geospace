@@ -106,7 +106,7 @@ export interface AgentWorkflowResult {
 export interface AIServiceOptions {
     chatContext: ChatHistory;
     chatConfig?: ChatProvider;
-    callContext: DependencyContext;
+    callContext?: DependencyContext;
     stream?: boolean;
     onToken?: (token: string) => void;
     onStatus?: (status: 'starting' | 'streaming' | 'complete' | 'error') => void;

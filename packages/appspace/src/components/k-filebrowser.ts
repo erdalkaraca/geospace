@@ -155,6 +155,8 @@ export class KFileBrowser extends KPart {
         
         return html`
             <wa-tree-item 
+                draggable=${isFile}
+                @dragstart=${isFile ? this.nobubble((e: Event) => this.onDragStart(e as DragEvent, resource as File)) : undefined}
                 @dblclick=${this.nobubble(this.onFileDoubleClicked)}
                 @wa-lazy-load=${this.nobubble((e: Event) => this.onLazyLoad(e, node))}
                 .model=${node} 
@@ -163,6 +165,32 @@ export class KFileBrowser extends KPart {
                 <span><wa-icon name=${icon} label="${node.leaf ? 'File' : 'Folder'}"></wa-icon> ${node.label}</span>
                 ${node.children.map(child => this.createTreeItems(child, false))}
             </wa-tree-item>`
+    }
+
+    private onDragStart(e: DragEvent, file: File) {
+        if (!e.dataTransfer) return;
+
+        const filePath = file.getWorkspacePath();
+        const fileName = file.getName();
+        
+        e.dataTransfer.effectAllowed = 'copy';
+        e.dataTransfer.setData('text/plain', filePath);
+        e.dataTransfer.setData('application/x-workspace-file', filePath);
+        e.dataTransfer.setData('text/uri-list', filePath);
+        
+        if (e.dataTransfer.setDragImage) {
+            const dragImage = document.createElement('div');
+            dragImage.textContent = fileName;
+            dragImage.style.position = 'absolute';
+            dragImage.style.top = '-1000px';
+            dragImage.style.padding = '4px 8px';
+            dragImage.style.background = 'var(--wa-color-neutral-10)';
+            dragImage.style.border = '1px solid var(--wa-color-neutral-30)';
+            dragImage.style.borderRadius = '4px';
+            document.body.appendChild(dragImage);
+            e.dataTransfer.setDragImage(dragImage, 0, 0);
+            setTimeout(() => document.body.removeChild(dragImage), 0);
+        }
     }
 
     private async onLazyLoad(event: Event, node: TreeNode) {

@@ -1,8 +1,8 @@
-import { RAGContextScope } from '../rag-service';
+import { DocumentSearchScope } from '../document-index-service';
 import { IndexedDocument } from '../document-index-service';
 
 export interface ContextScopeProvider {
-    getScope(): RAGContextScope | null;
+    getScope(): DocumentSearchScope | null;
     getName(): string;
 }
 
@@ -13,7 +13,7 @@ export class PathBasedScope implements ContextScopeProvider {
         private name: string = 'Path-based scope'
     ) {}
 
-    getScope(): RAGContextScope {
+    getScope(): DocumentSearchScope {
         return {
             includePaths: this.includePaths,
             excludePaths: this.excludePaths
@@ -31,7 +31,7 @@ export class PatternBasedScope implements ContextScopeProvider {
         private name: string = 'Pattern-based scope'
     ) {}
 
-    getScope(): RAGContextScope {
+    getScope(): DocumentSearchScope {
         return {
             pathPattern: this.pattern
         };
@@ -48,7 +48,7 @@ export class TagBasedScope implements ContextScopeProvider {
         private name: string = 'Tag-based scope'
     ) {}
 
-    getScope(): RAGContextScope {
+    getScope(): DocumentSearchScope {
         return {
             tags: this.tags
         };
@@ -61,11 +61,11 @@ export class TagBasedScope implements ContextScopeProvider {
 
 export class CustomScope implements ContextScopeProvider {
     constructor(
-        private scope: RAGContextScope,
+        private scope: DocumentSearchScope,
         private name: string = 'Custom scope'
     ) {}
 
-    getScope(): RAGContextScope {
+    getScope(): DocumentSearchScope {
         return this.scope;
     }
 
@@ -74,13 +74,13 @@ export class CustomScope implements ContextScopeProvider {
     }
 }
 
-export function createEditorScope(openFiles: string[]): RAGContextScope {
+export function createEditorScope(openFiles: string[]): DocumentSearchScope {
     return {
         includePaths: openFiles
     };
 }
 
-export function createDirectoryScope(directoryPath: string, recursive: boolean = true): RAGContextScope {
+export function createDirectoryScope(directoryPath: string, recursive: boolean = true): DocumentSearchScope {
     const pattern = recursive 
         ? `^${directoryPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/.*`
         : `^${directoryPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/[^/]+$`;
@@ -89,15 +89,15 @@ export function createDirectoryScope(directoryPath: string, recursive: boolean =
     };
 }
 
-export function createFileTypeScope(fileTypes: string[]): RAGContextScope {
+export function createFileTypeScope(fileTypes: string[]): DocumentSearchScope {
     const pattern = `\\.(${fileTypes.join('|')})$`;
     return {
         pathPattern: new RegExp(pattern)
     };
 }
 
-export function combineScopes(...scopes: (RAGContextScope | null)[]): RAGContextScope | null {
-    const validScopes = scopes.filter((s): s is RAGContextScope => s !== null);
+export function combineScopes(...scopes: (DocumentSearchScope | null)[]): DocumentSearchScope | null {
+    const validScopes = scopes.filter((s): s is DocumentSearchScope => s !== null);
     if (validScopes.length === 0) {
         return null;
     }
@@ -105,7 +105,7 @@ export function combineScopes(...scopes: (RAGContextScope | null)[]): RAGContext
         return validScopes[0];
     }
 
-    const combined: RAGContextScope = {};
+    const combined: DocumentSearchScope = {};
     
     const allIncludePaths: string[] = [];
     const allExcludePaths: string[] = [];

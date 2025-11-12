@@ -1,4 +1,5 @@
 import { ragService, searchWorkspaceDocuments } from './rag-service';
+import { DocumentSearchScope } from './document-index-service';
 import { documentIndexService } from './document-index-service';
 import { getWorkspacePath } from './utils/workspace-utils';
 import { rootContext } from '../../core/di';
@@ -100,7 +101,7 @@ export function createRAGToolExecutor() {
             const filePath = params.filePath;
             const fileName = params.fileName;
 
-            const contextScope: RAGContextScope | undefined = 
+            const documentSearchScope: DocumentSearchScope | undefined = 
                 (params.includePaths || params.excludePaths || params.pathPattern)
                     ? {
                         includePaths: params.includePaths,
@@ -114,7 +115,7 @@ export function createRAGToolExecutor() {
                 fileType,
                 filePath,
                 fileName,
-                contextScope
+                documentSearchScope
             });
 
             return {

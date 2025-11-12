@@ -1,4 +1,4 @@
-import { documentIndexService, IndexedDocument } from './document-index-service';
+import { documentIndexService, IndexedDocument, DocumentSearchScope } from './document-index-service';
 import { createLogger } from '../../core/logger';
 import { getWorkspacePath } from './utils/workspace-utils';
 import { extractQueryTerms, normalizeQuery } from './utils/query-utils';
@@ -11,14 +11,6 @@ const logger = createLogger('RAGService');
 const snippetExtractor = new SnippetExtractor();
 const resultFormatter = new RAGResultFormatter(snippetExtractor);
 
-export interface RAGContextScope {
-    includePaths?: string[];
-    excludePaths?: string[];
-    pathPattern?: string | RegExp;
-    tags?: string[];
-    metadataFilter?: (doc: IndexedDocument) => boolean;
-}
-
 export interface RAGSearchOptions {
     limit?: number;
     fileType?: string;
@@ -26,7 +18,7 @@ export interface RAGSearchOptions {
     minRelevance?: number;
     filePath?: string;
     fileName?: string;
-    contextScope?: RAGContextScope;
+    documentSearchScope?: DocumentSearchScope;
 }
 
 export interface RAGSearchResult {
@@ -109,7 +101,7 @@ class RAGService {
             const results: RAGSearchResult[] = [];
 
             for (const { document, similarity, chunkStartOffset, chunkEndOffset } of vectorResults) {
-                if (!this.matchesContextScope(document, options.contextScope)) {
+                if (!this.matchesContextScope(document, options.documentSearchScope)) {
                     continue;
                 }
 
@@ -126,10 +118,15 @@ class RAGService {
                 
                 if (chunkStartOffset !== undefined && chunkEndOffset !== undefined) {
                     const chunkText = document.content.substring(
-                        Math.max(0, chunkStartOffset - 100),
-                        Math.min(document.content.length, chunkEndOffset + 100)
+                        Math.max(0, chunkStartOffset),
+                        Math.min(document.content.length, chunkEndOffset)
                     );
-                    matchedSnippets = snippetExtractor.extractSnippets(chunkText, queryTerms, 15);
+                    
+                    if (chunkText.trim().length > 0) {
+                        matchedSnippets = [chunkText.trim()];
+                    } else {
+                        matchedSnippets = snippetExtractor.extractSnippets(document.content, queryTerms, 15);
+                    }
                 } else {
                     matchedSnippets = snippetExtractor.extractSnippets(document.content, queryTerms, 15);
                 }
@@ -137,10 +134,14 @@ class RAGService {
                 if (matchedSnippets.length === 0 && queryLower.length > 0) {
                     if (chunkStartOffset !== undefined && chunkEndOffset !== undefined) {
                         const chunkText = document.content.substring(
-                            Math.max(0, chunkStartOffset - 100),
-                            Math.min(document.content.length, chunkEndOffset + 100)
+                            Math.max(0, chunkStartOffset),
+                            Math.min(document.content.length, chunkEndOffset)
                         );
-                        matchedSnippets = snippetExtractor.extractSnippets(chunkText, [queryLower], 10);
+                        if (chunkText.trim().length > 0) {
+                            matchedSnippets = [chunkText.trim()];
+                        } else {
+                            matchedSnippets = snippetExtractor.extractSnippets(document.content, [queryLower], 10);
+                        }
                     } else {
                         matchedSnippets = snippetExtractor.extractSnippets(document.content, [queryLower], 10);
                     }
@@ -193,7 +194,7 @@ class RAGService {
                 continue;
             }
 
-            if (!this.matchesContextScope(doc, options.contextScope)) {
+            if (!this.matchesContextScope(doc, options.documentSearchScope)) {
                 continue;
             }
 
@@ -220,7 +221,7 @@ class RAGService {
         return resultFormatter.formatRAGContext(results);
     }
 
-    private matchesContextScope(doc: IndexedDocument, scope?: RAGContextScope): boolean {
+    private matchesContextScope(doc: IndexedDocument, scope?: DocumentSearchScope): boolean {
         if (!scope) {
             return true;
         }

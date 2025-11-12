@@ -205,6 +205,14 @@ export const geospaceApp: AppDefinition = {
                 description: "Convert GTFS zip archives to GeoJSON files",
                 loader: () => import("./extensions/gtfs/gtfs-extension"),
                 icon: "map-location-dot"
+            },
+            {
+                id: "tendermatch",
+                name: "Tendermatch",
+                description: "Editor for .tender files",
+                loader: () => import("../../tendermatch/src/extension"),
+                icon: "file-code",
+                dependencies: ["system.rag-system", "system.ai-system"]
             }
         ]
     },

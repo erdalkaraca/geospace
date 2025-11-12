@@ -2,6 +2,7 @@ import { createRxDatabase, RxDatabase, RxCollection, addRxPlugin } from 'rxdb';
 import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie';
 import { RxDBQueryBuilderPlugin } from 'rxdb/plugins/query-builder';
 import { RxDBMigrationSchemaPlugin } from 'rxdb/plugins/migration-schema';
+import { RxDBUpdatePlugin } from 'rxdb/plugins/update';
 import { rootContext } from '../../core/di';
 import { workspaceService, File, Directory, FileContentType, TOPIC_WORKSPACE_CONNECTED, TOPIC_WORKSPACE_CHANGED } from '../../core/filesys';
 import { subscribe } from '../../core/events';
@@ -9,13 +10,22 @@ import { createLogger } from '../../core/logger';
 import { embeddingService } from './embedding-service';
 import { VectorEmbedding, generateSampleVectors, calculateIndexValues, euclideanDistance, cosineSimilarity, SampleVector, IndexValues } from './vector-utils';
 import { VECTOR_SEARCH_CONFIG, INDEX_FIELD_NAMES } from './utils/constants';
-import { DocumentChunker, DocumentChunk } from './utils/document-chunker';
-
+import { DocumentChunker, DocumentChunk } from './chunkers/document-chunker';
+import { DocumentExtractor } from './extractors/document-extractor';
 // Add required RxDB plugins
 addRxPlugin(RxDBQueryBuilderPlugin);
 addRxPlugin(RxDBMigrationSchemaPlugin);
+addRxPlugin(RxDBUpdatePlugin);
 
 const logger = createLogger('DocumentIndexService');
+
+export interface DocumentSearchScope {
+    includePaths?: string[];
+    excludePaths?: string[];
+    pathPattern?: string | RegExp;
+    tags?: string[];
+    metadataFilter?: (doc: IndexedDocument) => boolean;
+}
 
 export interface IndexedDocument {
     id: string;
@@ -54,6 +64,7 @@ class DocumentIndexService {
     private isInitialized = false;
     private readonly DEFAULT_MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
     private readonly chunker = new DocumentChunker();
+    private readonly documentExtractor = new DocumentExtractor();
     private readonly DEFAULT_INDEXABLE_TYPES = [
         'md', 'txt', 'ts', 'tsx', 'js', 'jsx', 'json', 'geojson',
         'kml', 'gpx', 'py', 'html', 'css', 'sql', 'xml', 'yaml', 'yml', 'pdf'
@@ -262,53 +273,6 @@ class DocumentIndexService {
         return langMap[ext || ''] || 'text';
     }
 
-    private async extractTextFromPDF(file: File): Promise<string> {
-        try {
-            const pdfjsLib = await import('pdfjs-dist');
-            
-            // Configure PDF.js worker
-            if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
-                // Use unpkg CDN - more reliable than cdnjs and matches the installed version
-                pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
-            }
-            
-            const pdfBlob = await file.getContents({ blob: true }) as Blob;
-            const arrayBuffer = await pdfBlob.arrayBuffer();
-            
-            const loadingTask = pdfjsLib.getDocument({ 
-                data: arrayBuffer,
-                useSystemFonts: true
-            });
-            const pdf = await loadingTask.promise;
-            
-            const numPages = pdf.numPages;
-            const textParts: string[] = [];
-            
-            for (let pageNum = 1; pageNum <= numPages; pageNum++) {
-                const page = await pdf.getPage(pageNum);
-                const textContent = await page.getTextContent();
-                
-                const pageText = textContent.items
-                    .map((item: any) => item.str)
-                    .join(' ');
-                
-                if (pageText.trim()) {
-                    textParts.push(`[Page ${pageNum}]\n${pageText}`);
-                }
-            }
-            
-            const extractedText = textParts.join('\n\n');
-            
-            if (!extractedText || extractedText.trim().length === 0) {
-                throw new Error('PDF appears to contain no extractable text (may be image-based or scanned)');
-            }
-            
-            return extractedText;
-        } catch (error) {
-            logger.warn(`Failed to extract text from PDF ${file.getName()}: ${error}`);
-            throw new Error(`PDF text extraction failed: ${error}`);
-        }
-    }
 
     async indexDocument(
         file: File,
@@ -333,8 +297,8 @@ class DocumentIndexService {
             let content: string;
             const fileType = fileName.split('.').pop()?.toLowerCase() || 'txt';
             
-            if (fileType === 'pdf') {
-                content = await this.extractTextFromPDF(file);
+            if (this.documentExtractor.canExtract(fileType)) {
+                content = await this.documentExtractor.extractText(file, { fileType });
             } else {
                 const fileContent = await file.getContents({ contentType: FileContentType.TEXT });
                 if (typeof fileContent !== 'string') {
@@ -356,9 +320,17 @@ class DocumentIndexService {
             const now = Date.now();
 
             const existing = await this.documentsCollection!.findOne(id).exec();
-            if (existing && existing.contentHash === contentHash) {
+            const existingDoc = existing ? (existing.toJSON() as IndexedDocument) : null;
+            
+            const existingTags = existingDoc?.metadata.tags || [];
+            const newTags = options.tags || [];
+            const mergedTags = [...new Set([...existingTags, ...newTags])];
+            const tagsChanged = mergedTags.length !== existingTags.length || 
+                                newTags.some(tag => !existingTags.includes(tag));
+
+            if (existingDoc && existingDoc.contentHash === contentHash && !tagsChanged) {
                 logger.debug(`Document already indexed and unchanged: ${id}`);
-                return existing.toJSON() as IndexedDocument;
+                return existingDoc;
             }
 
             const language = this.detectLanguage(fileName);
@@ -374,10 +346,8 @@ class DocumentIndexService {
                 logger.debug(`Could not get file modification time: ${err}`);
             }
 
-            const existingTags = existing ? (existing.toJSON() as IndexedDocument).metadata.tags || [] : [];
-            const newTags = options.tags || [];
-            const mergedTags = [...new Set([...existingTags, ...newTags])];
-
+            const contentChanged = !existingDoc || existingDoc.contentHash !== contentHash;
+            
             const document: IndexedDocument = {
                 id,
                 workspacePath,
@@ -392,13 +362,17 @@ class DocumentIndexService {
                     language,
                     tags: mergedTags,
                 },
-                indexedAt: existing ? (existing.toJSON() as IndexedDocument).indexedAt : now,
+                indexedAt: existingDoc?.indexedAt || now,
                 updatedAt: now,
             };
 
             await this.documentsCollection!.upsert(document);
 
-            await this.generateAndStoreEmbedding(document);
+            if (contentChanged) {
+                await this.generateAndStoreEmbedding(document);
+            } else {
+                logger.debug(`Document content unchanged, skipping embedding regeneration: ${id}`);
+            }
 
             logger.debug(`Indexed document: ${id}`);
             return document;
@@ -659,8 +633,8 @@ class DocumentIndexService {
 
         for (const doc of allDocs) {
             try {
-                const workspace = workspaceService.getWorkspace(doc.workspacePath);
-                if (!workspace) {
+                const workspace = await workspaceService.getWorkspace();
+                if (!workspace || workspace.getName() !== doc.workspacePath) {
                     logger.warn(`Workspace not found: ${doc.workspacePath}`);
                     failed++;
                     continue;
@@ -734,7 +708,7 @@ class DocumentIndexService {
                 return;
             }
 
-            const chunks = this.chunker.chunkDocument(document.id, document.content, document.fileName);
+            const chunks = await this.chunker.chunkDocument(document.id, document.content, document.fileName);
             logger.debug(`Document ${document.id} split into ${chunks.length} chunks`);
 
             for (const chunk of chunks) {
@@ -921,6 +895,124 @@ class DocumentIndexService {
         }
 
         return documentResults;
+    }
+
+    async indexFileInContext(
+        file: File,
+        context: DocumentSearchScope,
+        options: DocumentIndexOptions = {}
+    ): Promise<IndexedDocument> {
+        const contextTags = context.tags || [];
+        return this.indexDocument(file, {
+            ...options,
+            tags: [...(options.tags || []), ...contextTags]
+        });
+    }
+
+    async indexFilesInContext(
+        files: File[],
+        context: DocumentSearchScope,
+        options: DocumentIndexOptions = {}
+    ): Promise<{ succeeded: number; failed: number }> {
+        let succeeded = 0;
+        let failed = 0;
+        const contextTags = context.tags || [];
+
+        for (const file of files) {
+            try {
+                await this.indexDocument(file, {
+                    ...options,
+                    tags: [...(options.tags || []), ...contextTags]
+                });
+                succeeded++;
+                logger.debug(`Indexed file with context tags: ${file.getWorkspacePath()}`);
+            } catch (error) {
+                logger.error(`Failed to index file ${file.getWorkspacePath()}: ${error}`);
+                failed++;
+            }
+        }
+
+        return { succeeded, failed };
+    }
+
+    async reindexFileInContext(
+        file: File,
+        context: DocumentSearchScope,
+        options: DocumentIndexOptions = {}
+    ): Promise<IndexedDocument> {
+        const contextTags = context.tags || [];
+        return this.reindexDocument(file, {
+            ...options,
+            tags: [...(options.tags || []), ...contextTags]
+        });
+    }
+
+    async removeFileFromContext(file: File, context: DocumentSearchScope): Promise<void> {
+        if (!this.isInitialized) {
+            await this.initialize();
+        }
+        this.ensureInitialized();
+
+        const document = await this.getDocumentByPath(
+            file.getWorkspace().getName(),
+            file.getWorkspacePath()
+        );
+
+        if (document && context.tags && context.tags.length > 0) {
+            const contextTags = new Set(context.tags);
+            const updatedTags = (document.metadata.tags || []).filter(tag => !contextTags.has(tag));
+            
+            if (updatedTags.length !== document.metadata.tags?.length) {
+                await this.updateDocumentMetadata(document.id, {
+                    metadata: {
+                        ...document.metadata,
+                        tags: updatedTags
+                    }
+                });
+            }
+        }
+    }
+
+    async clearContext(context: DocumentSearchScope): Promise<void> {
+        if (!context.tags || context.tags.length === 0) {
+            return;
+        }
+
+        const contextTags = new Set(context.tags);
+        const allDocs = await this.listDocuments();
+
+        for (const doc of allDocs) {
+            const hasContextTag = doc.metadata.tags?.some(tag => contextTags.has(tag));
+            if (hasContextTag) {
+                const updatedTags = doc.metadata.tags!.filter(tag => !contextTags.has(tag));
+                try {
+                    const workspace = await workspaceService.getWorkspace();
+                    if (workspace && workspace.getName() === doc.workspacePath) {
+                        const resource = await workspace.getResource(doc.filePath);
+                        if (resource instanceof File) {
+                            await this.indexDocument(resource, {
+                                tags: updatedTags
+                            });
+                        }
+                    }
+                } catch (error) {
+                    logger.warn(`Failed to clear context tags from ${doc.filePath}: ${error}`);
+                }
+            }
+        }
+    }
+
+    async getFilePathsInContext(context: DocumentSearchScope): Promise<string[]> {
+        if (!context.tags || context.tags.length === 0) {
+            return [];
+        }
+
+        const contextTags = new Set(context.tags);
+        const allDocs = await this.listDocuments();
+        
+        return allDocs
+            .filter(doc => doc.metadata.tags?.some(tag => contextTags.has(tag)))
+            .map(doc => doc.filePath);
     }
 }
 

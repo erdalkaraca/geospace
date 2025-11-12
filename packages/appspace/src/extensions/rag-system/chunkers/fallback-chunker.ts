@@ -1,25 +1,11 @@
-import { SNIPPET_LENGTHS } from './constants';
-
-export interface DocumentChunk {
-    id: string;
-    documentId: string;
-    chunkIndex: number;
-    text: string;
-    startOffset: number;
-    endOffset: number;
-}
-
-export interface ChunkingOptions {
-    chunkSize?: number;
-    chunkOverlap?: number;
-    minChunkSize?: number;
-}
+import { SNIPPET_LENGTHS } from '../utils/constants';
+import type { DocumentChunk, ChunkingOptions, IDocumentChunker } from './chunker-interface';
 
 const DEFAULT_CHUNK_SIZE = 500;
 const DEFAULT_CHUNK_OVERLAP = 50;
 const DEFAULT_MIN_CHUNK_SIZE = 100;
 
-export class DocumentChunker {
+export class FallbackChunker implements IDocumentChunker {
     private readonly chunkSize: number;
     private readonly chunkOverlap: number;
     private readonly minChunkSize: number;
@@ -100,6 +86,4 @@ export class DocumentChunker {
         return context;
     }
 }
-
-export const defaultChunker = new DocumentChunker();
 

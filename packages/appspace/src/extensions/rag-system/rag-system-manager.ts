@@ -141,11 +141,39 @@ export class KRAGSystemManager extends KPart {
                 });
 
                 this.searchResults.clear();
+                const uniqueDocs = new Map<string, IndexedDocument>();
+                const aggregatedResults = new Map<string, RAGSearchResult>();
+                
                 for (const result of searchResults) {
-                    this.searchResults.set(result.document.id, result);
+                    const docId = result.document.id;
+                    uniqueDocs.set(docId, result.document);
+                    
+                    const existing = aggregatedResults.get(docId);
+                    if (!existing) {
+                        aggregatedResults.set(docId, {
+                            document: result.document,
+                            relevance: result.relevance,
+                            matchedSnippets: [...result.matchedSnippets]
+                        });
+                    } else {
+                        if (result.relevance > existing.relevance) {
+                            existing.relevance = result.relevance;
+                        }
+                        const seenSnippets = new Set(existing.matchedSnippets);
+                        for (const snippet of result.matchedSnippets) {
+                            if (!seenSnippets.has(snippet)) {
+                                existing.matchedSnippets.push(snippet);
+                                seenSnippets.add(snippet);
+                            }
+                        }
+                    }
+                }
+                
+                for (const [docId, result] of aggregatedResults) {
+                    this.searchResults.set(docId, result);
                 }
 
-                const resultDocs = searchResults.map(r => r.document);
+                const resultDocs = Array.from(uniqueDocs.values());
                 
                 if (this.filterWorkspace) {
                     return resultDocs.filter(doc => doc.workspacePath === this.filterWorkspace);
@@ -602,8 +630,10 @@ export class KRAGSystemManager extends KPart {
                                                 label="Copy updated date">
                                             </wa-copy-button>
                                         </wa-input>
-                                        
-                                        ${this.selectedDocument.metadata.tags && this.selectedDocument.metadata.tags.length > 0 ? html`
+                                    </div>
+                                    
+                                    ${this.selectedDocument.metadata.tags && this.selectedDocument.metadata.tags.length > 0 ? html`
+                                        <div class="tags-section">
                                             <wa-input
                                                 label="Tags"
                                                 .value=${this.selectedDocument.metadata.tags.join(', ')}
@@ -616,8 +646,8 @@ export class KRAGSystemManager extends KPart {
                                                     label="Copy tags">
                                                 </wa-copy-button>
                                             </wa-input>
-                                        ` : nothing}
-                                    </div>
+                                        </div>
+                                    ` : nothing}
                                 
                                     <div class="detail-section">
                                         <label>Content Preview${this.searchQuery ? html` <span class="search-hint">(showing matches for "${this.searchQuery}")</span>` : nothing}</label>
@@ -669,12 +699,6 @@ export class KRAGSystemManager extends KPart {
             overflow-y: auto;
         }
 
-        .tree-item-content {
-            display: flex;
-            align-items: center;
-            width: 100%;
-        }
-
         .tree-item-info {
             flex: 1;
             min-width: 0;
@@ -684,6 +708,14 @@ export class KRAGSystemManager extends KPart {
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+        }
+
+        .tree-item-meta {
+            display: flex;
+            align-items: center;
+            gap: var(--wa-space-xs);
+            flex-wrap: wrap;
+            margin-top: var(--wa-space-xs);
         }
 
         .tree-item-actions {
@@ -716,6 +748,12 @@ export class KRAGSystemManager extends KPart {
             grid-template-columns: 1fr 1fr;
             gap: var(--wa-space-s);
             flex-shrink: 0;
+        }
+
+        .tags-section {
+            margin-top: var(--wa-space-s);
+            flex-shrink: 0;
+            margin-bottom: var(--wa-space-s);
         }
 
         .detail-section {
@@ -794,7 +832,8 @@ export class KRAGSystemManager extends KPart {
 
         .snippet-content {
             white-space: pre-wrap;
-            word-break: break-word;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
             font-family: monospace;
             font-size: 0.875rem;
             line-height: 1.5;
@@ -803,7 +842,8 @@ export class KRAGSystemManager extends KPart {
 
         .snippet-preview {
             white-space: pre-wrap;
-            word-break: break-word;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
             font-family: monospace;
             font-size: 0.875rem;
             line-height: 1.5;
