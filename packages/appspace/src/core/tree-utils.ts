@@ -3,7 +3,7 @@ import {Contribution} from "./contributionregistry";
 export interface TreeNode {
     data: any;
     label: string;
-    icon: string;
+    icon?: string;
     leaf: boolean;
     children: TreeNode[];
 }

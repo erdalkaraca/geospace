@@ -51,10 +51,12 @@ class EditorRegistry {
         
         const contributions = contributionRegistry.getContributions('system.icons') as IconContribution[];
         
+        // Sort by priority (higher priority first), then by label for tie-breaking
         this.cachedIconContributions = [...contributions].sort((a, b) => {
             const priorityA = a.priority ?? 0;
             const priorityB = b.priority ?? 0;
             if (priorityB !== priorityA) {
+                // Higher priority comes first (descending order)
                 return priorityB - priorityA;
             }
             return a.label.localeCompare(b.label);

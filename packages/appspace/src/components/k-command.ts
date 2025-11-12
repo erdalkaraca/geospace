@@ -116,6 +116,7 @@ export class KCommand extends KWidget {
                 <k-command 
                     cmd="${commandContribution.command}"
                     icon="${commandContribution.icon || ''}"
+                    .params=${commandContribution.params || {}}
                     ?disabled="${disabled}">
                     ${commandContribution.label}
                 </k-command>

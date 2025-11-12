@@ -93,16 +93,15 @@ registerAll({
                 }
             }
 
+            if (extension && !path.endsWith(extension)) {
+                path += extension
+            }
+
             const result = await getWorkspaceAndPath({path}, true)
             if (!result) {
                 return
             }
-
             const { workspace: workspaceDir } = result
-
-            if (extension && !path.endsWith(extension)) {
-                path += extension
-            }
 
             const existingResource = await workspaceDir.getResource(path)
             if (existingResource) {

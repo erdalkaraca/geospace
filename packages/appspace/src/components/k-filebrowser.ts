@@ -11,7 +11,7 @@ import {
     workspaceService
 } from "../core/filesys";
 import {when} from "lit/directives/when.js";
-import {topic} from "../core/events";
+import {subscribe, topic} from "../core/events";
 import {createRef, ref} from "lit/directives/ref.js";
 import {HIDE_DOT_RESOURCE} from "../core/constants";
 
@@ -20,6 +20,7 @@ import {TreeNode, treeNodeComparator} from "../core/tree-utils";
 import {activeSelectionSignal} from "../core/appstate";
 import {confirmDialog} from "../core/dialog";
 import {editorRegistry} from "../core/editorregistry";
+import { TOPIC_CONTRIBUTEIONS_CHANGED, type ContributionChangeEvent } from '../core/contributionregistry';
 
 
 @customElement('k-filebrowser')
@@ -33,6 +34,12 @@ export class KFileBrowser extends KPart {
 
     protected doBeforeUI() {
         this.initializeWorkspace();
+        
+        subscribe(TOPIC_CONTRIBUTEIONS_CHANGED, (event: ContributionChangeEvent) => {
+            if (event.target === 'system.icons') {
+                this.requestUpdate();
+            }
+        });
     }
 
     protected firstUpdated(changedProperties: Map<string, any>) {
@@ -116,7 +123,6 @@ export class KFileBrowser extends KPart {
         const node: TreeNode = {
             data: resource,
             label: resource.getName(),
-            icon: isFile ? editorRegistry.getFileIcon(resource.getName()) : "folder-open",
             leaf: isFile,
             children: []
         };
@@ -141,6 +147,12 @@ export class KFileBrowser extends KPart {
         }
 
         const isLazy = !node.leaf && node.children.length === 0;
+        const resource = node.data as Resource;
+        const isFile = resource instanceof File;
+        const icon = isFile 
+            ? editorRegistry.getFileIcon(resource.getName())
+            : (node.icon || "folder-open");
+        
         return html`
             <wa-tree-item 
                 @dblclick=${this.nobubble(this.onFileDoubleClicked)}
@@ -148,7 +160,7 @@ export class KFileBrowser extends KPart {
                 .model=${node} 
                 ?expanded=${expanded}
                 ?lazy=${isLazy}>
-                <span><wa-icon name=${node.icon} label="${node.leaf ? 'File' : 'Folder'}"></wa-icon> ${node.label}</span>
+                <span><wa-icon name=${icon} label="${node.leaf ? 'File' : 'Folder'}"></wa-icon> ${node.label}</span>
                 ${node.children.map(child => this.createTreeItems(child, false))}
             </wa-tree-item>`
     }
