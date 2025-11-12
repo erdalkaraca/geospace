@@ -1,0 +1,29 @@
+{
+  "name": "@kispace-io/tendermatch-extension",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./dist/extension.js",
+  "types": "./dist/extension.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/extension.js",
+      "types": "./dist/extension.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "type-check": "tsc --noEmit",
+    "dev": "vite build --watch"
+  },
+  "dependencies": {
+    "@kispace-io/appspace": "file:../appspace"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vite": "^7.1.12"
+  }
+}
+
