@@ -2,6 +2,7 @@
   "name": "@kispace-io/geospace",
   "version": "0.0.0",
   "type": "module",
+  "license": "EPL-2.0",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
