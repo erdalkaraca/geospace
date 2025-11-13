@@ -22,6 +22,7 @@ jobs:
     needs: [build]
     permissions:
       contents: write
+      id-token: write
 
     steps:
       - name: Checkout code
@@ -33,7 +34,6 @@ jobs:
           node-version: 20
           cache: 'npm'
           registry-url: 'https://registry.npmjs.org'
-          scope: '@kispace-io'
 
       - name: Install dependencies
         run: npm ci
@@ -53,10 +53,11 @@ jobs:
           #export VITE_BASE_PATH="/$REPO/"
           npm run build
 
+      - name: Update npm
+        run: npm install -g npm@latest
+
       - name: Publish appspace package to npm
         run: npm publish --workspace=@kispace-io/appspace --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Add CNAME file
         run: echo "geo.kispace.de" > ./dist/CNAME
