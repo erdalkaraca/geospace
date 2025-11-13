@@ -1,8 +1,7 @@
 import {signal} from '@lit-labs/signals';
-import {SignalPort} from "./signals";
 import {KPart} from "../parts/k-part";
 
-export const EMPTY_SIGNALPORT = {} as SignalPort
+export const EMPTY_SIGNALPORT = {} as any
 
 export const activePartSignal = signal<KPart>(null as unknown as KPart)
 export const activeEditorSignal = signal<KPart>(null as unknown as KPart)

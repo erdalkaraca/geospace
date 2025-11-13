@@ -1,6 +1,5 @@
 import {signal} from "@lit-labs/signals";
 import {
-    SignalPort,
     EMPTY_SIGNALPORT
 } from "@kispace-io/appspace/api";
 
@@ -17,4 +16,4 @@ export interface FeatureSelection {
     };
 }
 
-export const mapChangedSignal = signal<SignalPort>(EMPTY_SIGNALPORT)
+export const mapChangedSignal = signal<any>(EMPTY_SIGNALPORT)

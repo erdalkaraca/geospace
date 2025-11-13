@@ -31,6 +31,7 @@ class EditorRegistry {
     private editorInputHandlers: EditorInputHandler[] = [];
     private listenersAttached = false;
     private cachedIconContributions: IconContribution[] | null = null;
+    private signalCleanup?: () => void;
 
     constructor() {
         subscribe(TOPIC_WORKSPACE_CONNECTED, () => {
@@ -108,7 +109,7 @@ class EditorRegistry {
             const name = tabPanel.getAttribute("name") as string
             editorArea.markDirty(name, targetPart.isDirty())
         }
-        watchSignal(partDirtySignal, dirtyHandler)
+        this.signalCleanup = watchSignal(partDirtySignal, dirtyHandler)
     }
 
     registerEditorInputHandler(editorInputHandler: EditorInputHandler) {

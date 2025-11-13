@@ -1,29 +1,18 @@
 import {Signal} from "@lit-labs/signals";
 
-export interface SignalPort {
-    [key: string]: any;
-}
-
-export const watchSignal = (signal: Signal.State<any>, callback: (value: any) => void): (() => void) => {
+export const watchSignal = (signal: Signal.State<any> | Signal.Computed<any>, callback: (value: any) => void): (() => void) => {
+    const signalToWatch = signal as Signal.State<any>;
     const watcher = new Signal.subtle.Watcher(async () => {
         try {
             await 0;
-            callback(signal.get());
+            callback(signalToWatch.get());
         } finally {
-            watcher.watch(signal);
+            watcher.watch(signalToWatch);
         }
     });
-    watcher.watch(signal);
+    watcher.watch(signalToWatch);
     
     return () => {
-        watcher.unwatch(signal);
+        watcher.unwatch(signalToWatch);
     };
-}
-
-export const watching = (signal: Signal.State<any>) => {
-    return function (_target: any, _propertyKey: string, descriptor: any) {
-        const originalMethod = descriptor.value;
-        originalMethod.signal = signal;
-        return descriptor
-    }
 }

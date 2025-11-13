@@ -22,7 +22,6 @@ import {
     toastInfo,
     promptDialog,
     activePartSignal,
-    watching,
     createLogger
 } from "@kispace-io/appspace/api";
 
@@ -61,7 +60,12 @@ export class GsMapEditor extends KPart {
         return this.operations!;
     }
 
-    @watching(mapChangedSignal)
+    protected doBeforeUI() {
+        this.watch(mapChangedSignal, ({ part, event }: { part: KPart, event: MapEvents }) => {
+            this.onMapChanged({ part, event });
+        });
+    }
+
     protected onMapChanged({ part, event }: { part: KPart, event: MapEvents }) {
         // Only respond to layer changes on this map editor
         if (part !== this) return;

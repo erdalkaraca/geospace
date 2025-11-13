@@ -37,7 +37,6 @@ export {
 export { taskService } from '../core/taskservice';
 export { PyEnv } from '../core/pyservice';
 export { publish, subscribe } from '../core/events';
-export { watching } from '../core/signals';
 export { 
     fetchReleases,
     fetchLatestRelease,

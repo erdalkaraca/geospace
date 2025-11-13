@@ -8,8 +8,6 @@ import {getOriginalUri} from "./utils";
 import {findLayerByUuid, findLayerIndexByUuid} from "./map-renderer";
 import {
     KPart,
-    SignalPort,
-    watching,
     commandRegistry,
     confirmDialog,
     activeEditorSignal
@@ -22,7 +20,15 @@ export class GsMapProps extends KPart {
     @state()
     private selectedLayerUuid?: string;
 
-    @watching(activeEditorSignal)
+    protected doBeforeUI() {
+        this.watch(activeEditorSignal, (part: KPart) => {
+            this.onPartChanged(part);
+        });
+        this.watch(mapChangedSignal, ({part}: any) => {
+            this.onMapChanged({part});
+        });
+    }
+
     protected onPartChanged(part: KPart) {
         if (part == this || part == this.mapEditor) {
             return
@@ -36,8 +42,7 @@ export class GsMapProps extends KPart {
         this.requestUpdate()
     }
 
-    @watching(mapChangedSignal)
-    protected onMapChanged({part}: SignalPort) {
+    protected onMapChanged({part}: any) {
         if (part == this.mapEditor) {
             this.requestUpdate()
         }

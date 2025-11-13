@@ -4,6 +4,7 @@ import {toastError, toastInfo} from "../core/toast";
 import {commandRegistry, ExecuteParams} from "../core/commandregistry";
 import {Signal} from "@lit-labs/signals";
 import {watchSignal} from "../core/signals";
+import {Contribution, CommandContribution} from "../core/contributionregistry";
 
 Object.defineProperty(LitElement.prototype, "model", {
     enumerable: true,
@@ -23,15 +24,6 @@ export abstract class KWidget extends LitElement {
                 const func = propValue
                 if (func.name.startsWith("on") && "topic" in func) {
                     this.subscribe(func.topic, func);
-                }
-            }
-        })
-        Object.getOwnPropertyNames(proto).forEach((prop) => {
-            const propValue = proto[prop];
-            if (propValue instanceof Function) {
-                const func = propValue
-                if (func.name.startsWith("on") && "signal" in func) {
-                    this.watch(func.signal, func)
                 }
             }
         })
@@ -75,9 +67,32 @@ export abstract class KWidget extends LitElement {
         commandRegistry.execute(command, execContext);
     }
 
-    protected watch(signal: Signal.State<any>, callback: (value: any) => void): void {
-        const cleanup = watchSignal(signal, callback.bind(this));
+    protected watch(signal: Signal.State<any> | Signal.Computed<any>, callback: (value: any) => void): void {
+        const cleanup = watchSignal(signal as Signal.State<any>, callback.bind(this));
         this.signalCleanups.add(cleanup);
+    }
+
+    protected watchContributionSignals(contributions: Contribution[]): () => void {
+        const cleanups: (() => void)[] = [];
+        for (const contribution of contributions) {
+            if ("command" in contribution) {
+                const commandContribution = contribution as CommandContribution;
+                const disabledSignal = commandContribution.disabled as Signal.Computed<boolean> | undefined;
+                if (disabledSignal) {
+                    const cleanup = watchSignal(disabledSignal, () => {
+                        this.requestUpdate();
+                    });
+                    cleanups.push(cleanup);
+                    this.signalCleanups.add(cleanup);
+                }
+            }
+        }
+        return () => {
+            cleanups.forEach(cleanup => {
+                cleanup();
+                this.signalCleanups.delete(cleanup);
+            });
+        };
     }
 
     protected firstUpdated(_changedProperties: PropertyValues) {

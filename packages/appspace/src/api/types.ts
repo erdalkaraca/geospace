@@ -35,9 +35,6 @@ export type {
     LogLevel
 } from '../core/logger';
 export type {
-    SignalPort
-} from '../core/signals';
-export type {
     NavigableDialogAction
 } from '../core/dialog';
 export type {

@@ -33,6 +33,7 @@ export class KContextMenu extends KElement {
 
     private anchorRef = createRef<HTMLElement>();
     private dropdownRef = createRef<HTMLElement>();
+    private contributionSignalCleanup?: () => void;
 
     protected doBeforeUI() {
         const id = this.getAttribute("id");
@@ -50,6 +51,7 @@ export class KContextMenu extends KElement {
             }
         });
     }
+
 
     private matchesTarget(id: string, target: string): boolean {
         if (target === id) return true;
@@ -71,10 +73,16 @@ export class KContextMenu extends KElement {
     }
 
     private loadContributions(id: string) {
+        if (this.contributionSignalCleanup) {
+            this.contributionSignalCleanup();
+            this.contributionSignalCleanup = undefined;
+        }
+
         const specific = contributionRegistry.getContributions(id);
         
         if (!id.includes(':')) {
             this.contributions = specific;
+            this.contributionSignalCleanup = this.watchContributionSignals(specific);
             return;
         }
         
@@ -94,6 +102,7 @@ export class KContextMenu extends KElement {
         }
         
         this.contributions = [...wildcard, ...categoryMatches, ...specific];
+        this.contributionSignalCleanup = this.watchContributionSignals(this.contributions);
     }
 
     /**
