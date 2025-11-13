@@ -59,6 +59,10 @@
     "build": "vite build",
     "type-check": "tsc --noEmit"
   },
+  "peerDependencies": {
+    "lit": "^3.2.1",
+    "marked": "^12.0.0 || ^16.4.1"
+  },
   "dependencies": {
     "@awesome.me/webawesome": "^3.0.0",
     "@fortawesome/fontawesome-free": "^7.1.0",
@@ -77,8 +81,6 @@
     "jsonata": "^2.1.0",
     "jszip": "^3.10.1",
     "langchain": "^1.0.4",
-    "lit": "^3.2.1",
-    "marked": "^16.4.1",
     "monaco-editor": "^0.54.0",
     "pace-js": "^1.2.4",
     "papaparse": "^5.5.3",
