@@ -1,10 +1,5 @@
 import * as monaco from 'monaco-editor';
 import styles from "monaco-editor/min/vs/editor/editor.main.css?raw";
-import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
-import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
-import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker';
-import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker';
-import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
 import {customElement, property, state} from "lit/decorators.js";
 import {KPart} from "../../parts/k-part";
 import {css, html} from "lit";
@@ -16,21 +11,41 @@ import {File, workspaceService} from "../../core/filesys";
 import logger from '../../core/logger';
 import {pythonPackageManagerService} from "../python-package-manager/package-manager-extension";
 
+function getWorkerUrl(label: string): string {
+    let workerModulePath: string;
+    switch (label) {
+        case 'json':
+            workerModulePath = 'monaco-editor/esm/vs/language/json/json.worker';
+            break;
+        case 'css':
+        case 'scss':
+        case 'less':
+            workerModulePath = 'monaco-editor/esm/vs/language/css/css.worker';
+            break;
+        case 'html':
+        case 'handlebars':
+        case 'razor':
+            workerModulePath = 'monaco-editor/esm/vs/language/html/html.worker';
+            break;
+        case 'typescript':
+        case 'javascript':
+            workerModulePath = 'monaco-editor/esm/vs/language/typescript/ts.worker';
+            break;
+        default:
+            workerModulePath = 'monaco-editor/esm/vs/editor/editor.worker';
+            break;
+    }
+
+    if (typeof import.meta.resolve === 'function') {
+        return import.meta.resolve(workerModulePath);
+    }
+    
+    throw new Error('import.meta.resolve is required for Monaco Editor worker loading. This should be available in Vite and other modern bundlers.');
+}
+
 self.MonacoEnvironment = {
-    getWorker(_: any, label: string) {
-        if (label === 'json') {
-            return new jsonWorker();
-        }
-        if (label === 'css' || label === 'scss' || label === 'less') {
-            return new cssWorker();
-        }
-        if (label === 'html' || label === 'handlebars' || label === 'razor') {
-            return new htmlWorker();
-        }
-        if (label === 'typescript' || label === 'javascript') {
-            return new tsWorker();
-        }
-        return new editorWorker();
+    getWorkerUrl(_: any, label: string) {
+        return getWorkerUrl(label);
     }
 };
 

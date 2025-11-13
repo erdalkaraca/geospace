@@ -1374,7 +1374,7 @@ except ImportError:
 }
 
 // Extension export
-export default ({ editorRegistry, commandRegistry }: any) => {
+export default ({ editorRegistry, commandRegistry, contributionRegistry }: any) => {
     editorRegistry.registerEditorInputHandler({
         canHandle: (input: any) => input instanceof File && input.getName().toLowerCase().endsWith(".ipynb"),
         handle: async (input: File) => {
@@ -1414,6 +1414,38 @@ export default ({ editorRegistry, commandRegistry }: any) => {
                     await activeEditor.executeCell(cellIndex);
                 }
             }
+        }
+    });
+
+    const initialNotebookContent = JSON.stringify({
+        cells: [
+            {
+                cell_type: 'markdown',
+                source: ['Press the **Run** button in the code cell below to execute it.'],
+                metadata: {}
+            },
+            {
+                cell_type: 'code',
+                source: ['print("Hello, World!")'],
+                execution_count: null,
+                outputs: [],
+                metadata: {}
+            }
+        ],
+        metadata: {},
+        nbformat: 4,
+        nbformat_minor: 4
+    }, null, 2);
+
+    contributionRegistry.registerContribution('filebrowser.create', {
+        label: 'Jupyter Notebook',
+        icon: 'k jupyter',
+        command: 'create_file',
+        params: {
+            path: "notebook.ipynb",
+            extension: '.ipynb',
+            ask: true,
+            contents: initialNotebookContent
         }
     });
 }
