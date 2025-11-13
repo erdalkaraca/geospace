@@ -1,11 +1,12 @@
 import {html} from "lit";
-import {customElement} from "lit/decorators.js";
+import {customElement, property} from "lit/decorators.js";
 
 import {
     EDITOR_AREA_MAIN,
     SIDEBAR_MAIN,
     SIDEBAR_MAIN_BOTTOM,
     SIDEBAR_AUXILIARY,
+    PANEL_BOTTOM,
     TOOLBAR_MAIN,
     TOOLBAR_MAIN_CENTER,
     TOOLBAR_MAIN_RIGHT,
@@ -13,10 +14,16 @@ import {
     TOOLBAR_BOTTOM_CENTER,
     TOOLBAR_BOTTOM_END
 } from "../core/constants";
-import {KContainer} from "./k-container";
+import {KContainer} from "../parts/k-container";
 
 @customElement('k-standard-app')
 export class KStandardApp extends KContainer {
+    @property({type: Boolean, attribute: 'show-bottom-sidebar'})
+    showBottomSidebar: boolean = true;
+
+    @property({type: Boolean, attribute: 'show-bottom-panel'})
+    showBottomPanel: boolean = false;
+
     createRenderRoot() {
         return this;
     }
@@ -95,15 +102,31 @@ export class KStandardApp extends KContainer {
                 orientation="horizontal" 
                 sizes="15%, 65%, 20%">
                 
-                <k-resizable-grid 
-                    id="left-sidebar-split" 
-                    orientation="vertical" 
-                    sizes="50%, 50%">
-                    <k-tabs id="${SIDEBAR_MAIN}"></k-tabs>
-                    <k-tabs id="${SIDEBAR_MAIN_BOTTOM}"></k-tabs>
-                </k-resizable-grid>
+                ${this.showBottomSidebar
+                    ? html`
+                        <k-resizable-grid 
+                            id="left-sidebar-split" 
+                            orientation="vertical" 
+                            sizes="50%, 50%">
+                            <k-tabs id="${SIDEBAR_MAIN}"></k-tabs>
+                            <k-tabs id="${SIDEBAR_MAIN_BOTTOM}"></k-tabs>
+                        </k-resizable-grid>
+                    `
+                    : html`<k-tabs id="${SIDEBAR_MAIN}"></k-tabs>`
+                }
                 
-                <k-tabs id="${EDITOR_AREA_MAIN}"></k-tabs>
+                ${this.showBottomPanel
+                    ? html`
+                        <k-resizable-grid 
+                            id="editor-area-split" 
+                            orientation="vertical" 
+                            sizes="70%, 30%">
+                            <k-tabs id="${EDITOR_AREA_MAIN}"></k-tabs>
+                            <k-tabs id="${PANEL_BOTTOM}"></k-tabs>
+                        </k-resizable-grid>
+                    `
+                    : html`<k-tabs id="${EDITOR_AREA_MAIN}"></k-tabs>`
+                }
                 
                 <k-tabs id="${SIDEBAR_AUXILIARY}"></k-tabs>
             </k-resizable-grid>
