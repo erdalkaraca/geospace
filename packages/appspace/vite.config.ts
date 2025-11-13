@@ -15,6 +15,9 @@ const dependencies = Object.keys(packageJson.dependencies || {});
 const peerDependencies = Object.keys(packageJson.peerDependencies || {});
 
 export default defineConfig({
+  worker: {
+    format: 'es',
+  },
   plugins: [
     dts({
       include: ['src/index.ts', 'src/api/index.ts', 'src/extensions/ai-system/index.ts', 'src/extensions/rag-system/index.ts', 'src/widgets/index.ts', 'src/parts/index.ts'],
