@@ -1,42 +1,28 @@
 <!doctype html>
 <html lang="en" class="wa-dark">
+
 <head>
-    <meta charset="UTF-8"/>
-    <link rel="icon" type="image/svg+xml" href="/geospace.svg"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>🌐geo!space</title>
-
-    <script src="https://cdn.jsdelivr.net/npm/pace-js@latest/pace.min.js"></script>
-    <link rel="stylesheet" href="./src/loading-bar.css">
-
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Loading...</title>
+    <!-- Pace.js loading indicator -->
+    <link rel="stylesheet" href="./loading-bar.css">
     <script type="module">
-        import "./src/geospace-app.ts"
+        // Import and start Pace.js (required when using ES modules)
+        import Pace from 'pace-js';
+        Pace.start();
     </script>
-
-    <style>
-        *, *::before, *::after {
-            box-sizing: border-box;
-        }
-        
-        html {
-            height: 100%;
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-        }
-        
-        body {
-            height: 100%;
-            width: 100%;
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-    </style>
+    
+    <script type="module">
+        // Import the app definition - it will register itself with autoStart: true
+        // The framework bootstraps automatically when importing from @kispace-io/appspace/api
+        // The app loader will automatically start when the app registers with autoStart: true
+        import "./src/geospace-app.ts";
+    </script>
 </head>
+
 <body>
     <!-- App will be rendered here by the app loader -->
 </body>
+
 </html>

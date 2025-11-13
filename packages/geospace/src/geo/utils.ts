@@ -2,7 +2,7 @@ import BaseLayer from "ol/layer/Base";
 import {Map} from "ol";
 import jsonata from "jsonata";
 import {parse} from "dotenv";
-import {KEY_NAME} from "../rt";
+import {GsSourceType, KEY_NAME} from "../rt";
 import {
     File,
     workspaceService,
@@ -10,6 +10,31 @@ import {
     TreeContribution
 } from "@kispace-io/appspace/api";
 import { WorkspaceModuleResolver } from "./workspace-module-resolver";
+
+// Map file extensions to GsSourceType
+export const FILE_EXTENSION_TO_SOURCE_TYPE: Record<string, GsSourceType> = {
+    '.geojson': GsSourceType.GeoJSON,
+    '.json': GsSourceType.GeoJSON,
+    '.kml': GsSourceType.KML,
+    '.gpx': GsSourceType.GPX,
+    '.tif': GsSourceType.GeoTIFF,
+    '.tiff': GsSourceType.GeoTIFF,
+    '.geotiff': GsSourceType.GeoTIFF
+};
+
+export const getSourceTypeFromFile = (file: File): GsSourceType | null => {
+    const fileName = file.getName().toLowerCase();
+    for (const [ext, sourceType] of Object.entries(FILE_EXTENSION_TO_SOURCE_TYPE)) {
+        if (fileName.endsWith(ext)) {
+            return sourceType;
+        }
+    }
+    return null;
+};
+
+export const isSupportedSpatialFile = (file: File): boolean => {
+    return getSourceTypeFromFile(file) !== null;
+};
 
 export const findOlLayer = (name: string, olMap: Map, notFound?: Function) => {
     const layers = olMap.getLayers()

@@ -12,7 +12,7 @@
  * - App Loader: Bridge between framework and application
  */
 
-import {render, TemplateResult} from "lit";
+import {render, TemplateResult, html} from "lit";
 import {rootContext} from "./di";
 import {createLogger} from "./logger";
 import {extensionRegistry, Extension} from "./extensionregistry";
@@ -121,8 +121,9 @@ export interface AppDefinition {
     /**
      * Returns the root component template for the application.
      * This is what gets rendered to the DOM.
+     * If not provided, defaults to rendering k-standard-app.
      */
-    render: () => TemplateResult;
+    render?: () => TemplateResult;
     
     /**
      * Optional cleanup function.
@@ -256,7 +257,7 @@ class AppLoaderService {
             
             const app = module.default as AppDefinition;
             
-            if (!app.id || !app.name || !app.version || !app.render) {
+            if (!app.id || !app.name || !app.version) {
                 throw new Error(`Module at ${url} does not export a valid AppDefinition`);
             }
             
@@ -422,9 +423,33 @@ class AppLoaderService {
         this.currentApp = app;
         logger.info(`App ${app.name} loaded successfully`);
         
+        // Update document metadata from app
+        this.updateDocumentMetadata(app);
+        
         // Auto-render if container provided
         if (container) {
             this.renderApp(container);
+        }
+    }
+    
+    /**
+     * Updates document title and favicon from app metadata
+     */
+    private updateDocumentMetadata(app: AppDefinition): void {
+        // Set document title
+        document.title = app.name;
+        
+        // Set favicon if provided in metadata
+        if (app.metadata?.favicon) {
+            const faviconPath = app.metadata.favicon;
+            let link = document.querySelector("link[rel*='icon']") as HTMLLinkElement;
+            if (!link) {
+                link = document.createElement('link');
+                link.rel = 'icon';
+                document.head.appendChild(link);
+            }
+            link.type = 'image/svg+xml';
+            link.href = faviconPath;
         }
     }
     
@@ -438,7 +463,11 @@ class AppLoaderService {
             throw new Error('No app loaded. Call loadApp() first.');
         }
         
-        render(this.currentApp.render(), container);
+        const template = this.currentApp.render 
+            ? this.currentApp.render() 
+            : html`<k-standard-app></k-standard-app>`;
+        
+        render(template, container);
         logger.info(`Rendered ${this.currentApp.name}`);
     }
     

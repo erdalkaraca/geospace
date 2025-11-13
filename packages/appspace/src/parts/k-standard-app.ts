@@ -24,6 +24,27 @@ export class KStandardApp extends KContainer {
     render() {
         return html`
             <style>
+                *, *::before, *::after {
+                    box-sizing: border-box;
+                }
+                
+                html {
+                    height: 100%;
+                    margin: 0;
+                    padding: 0;
+                    overflow: hidden;
+                }
+                
+                body {
+                    height: 100%;
+                    width: 100%;
+                    margin: 0;
+                    padding: 0;
+                    overflow: hidden;
+                    display: flex;
+                    flex-direction: column;
+                }
+                
                 k-standard-app {
                     display: flex;
                     flex-direction: column;

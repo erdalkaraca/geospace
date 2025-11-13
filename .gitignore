@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Allow .env files (they contain app configuration, not secrets)
+!.env
+!.env.example
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
