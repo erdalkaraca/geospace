@@ -47,6 +47,9 @@ jobs:
       - name: Build runtime library
         run: npm run build-gslib
 
+      - name: Build appspace package
+        run: npm run build --workspace=@kispace-io/appspace
+
       - name: Build app
         run: |
           #REPO=${GITHUB_REPOSITORY##*/}
