@@ -10,12 +10,12 @@ import {
     HTMLContribution,
     TOPIC_CONTRIBUTEIONS_CHANGED
 } from "../core/contributionregistry";
-import {Signal, SignalWatcher} from '@lit-labs/signals';
+import {Signal} from '@lit-labs/signals';
 import {unsafeHTML} from "lit/directives/unsafe-html.js";
 import {subscribe} from "../core/events";
 
 @customElement('k-toolbar')
-export class KToolbar extends SignalWatcher(KElement) {
+export class KToolbar extends KElement {
     @property()
     private position: "start" | "center" | "end" = "start";
 

@@ -9,13 +9,13 @@ import {
     HTMLContribution,
     TOPIC_CONTRIBUTEIONS_CHANGED
 } from "../core/contributionregistry";
-import {Signal, SignalWatcher} from '@lit-labs/signals';
+import {Signal} from '@lit-labs/signals';
 import {unsafeHTML} from "lit/directives/unsafe-html.js";
 import {subscribe} from "../core/events";
 import {createRef, ref} from "lit/directives/ref.js";
 
 @customElement('k-contextmenu')
-export class KContextMenu extends SignalWatcher(KElement) {
+export class KContextMenu extends KElement {
     @property({type: Boolean, attribute: 'is-editor'})
     private isEditor: boolean = false;
 

@@ -4,16 +4,20 @@ export interface SignalPort {
     [key: string]: any;
 }
 
-export const watchSignal = (signal: Signal.State<any>, callback: (value: any) => void) => {
+export const watchSignal = (signal: Signal.State<any>, callback: (value: any) => void): (() => void) => {
     const watcher = new Signal.subtle.Watcher(async () => {
         try {
             await 0;
             callback(signal.get());
         } finally {
-            watcher.watch();
+            watcher.watch(signal);
         }
     });
     watcher.watch(signal);
+    
+    return () => {
+        watcher.unwatch(signal);
+    };
 }
 
 export const watching = (signal: Signal.State<any>) => {

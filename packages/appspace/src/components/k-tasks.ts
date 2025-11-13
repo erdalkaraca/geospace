@@ -4,7 +4,6 @@ import {customElement} from "lit/decorators.js";
 import {KPart} from "../parts/k-part";
 import {css, html} from "lit";
 import {activeTasksSignal} from "../core/appstate";
-import {SignalWatcher} from "@lit-labs/signals";
 import {taskService} from "../core/taskservice";
 
 contributionRegistry.registerContribution(TOOLBAR_BOTTOM_CENTER, {
@@ -12,8 +11,7 @@ contributionRegistry.registerContribution(TOOLBAR_BOTTOM_CENTER, {
 } as HTMLContribution)
 
 @customElement('k-tasks')
-export class KTasks extends SignalWatcher(KPart) {
-
+export class KTasks extends KPart {
     static styles = css`
         wa-progress-bar::part(label) {
             text-align: center;
@@ -21,8 +19,13 @@ export class KTasks extends SignalWatcher(KPart) {
         }
     `
 
+    protected doBeforeUI() {
+        this.watch(activeTasksSignal, () => {
+            this.requestUpdate();
+        });
+    }
+
     protected render() {
-        // Trigger re-render when signal changes (ignore the counter value itself)
         activeTasksSignal.get()
         
         const taskCount = taskService.getActiveTasks().length
@@ -38,7 +41,6 @@ export class KTasks extends SignalWatcher(KPart) {
                     Active tasks: ${taskCount}
                 </wa-button>
                 ${taskService.getActiveTasks().map(taskProgress => {
-                    // Use manual progress if set (>= 0), otherwise calculate from steps
                     const hasProgress = taskProgress.progress >= 0 || taskProgress.totalSteps > 0
                     const progress = taskProgress.progress >= 0
                         ? taskProgress.progress

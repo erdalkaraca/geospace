@@ -2,7 +2,6 @@ import {customElement} from "lit/decorators.js";
 import {KElement} from "../parts/k-element";
 import {html} from "lit";
 import {activePartSignal} from "../core/appstate";
-import {SignalWatcher} from "@lit-labs/signals";
 import {contributionRegistry, HTMLContribution} from "../core/contributionregistry";
 import {TOOLBAR_BOTTOM_CENTER} from "../core/constants";
 import '../widgets/k-icon';
@@ -14,7 +13,12 @@ contributionRegistry.registerContribution(TOOLBAR_BOTTOM_CENTER, {
 } as HTMLContribution)
 
 @customElement('k-part-name')
-export class KPartName extends SignalWatcher(KElement) {
+export class KPartName extends KElement {
+    protected doBeforeUI() {
+        this.watch(activePartSignal, () => {
+            this.requestUpdate();
+        });
+    }
     
     private getPartName(): string {
         const activePart = activePartSignal.get();

@@ -12,6 +12,8 @@ Object.defineProperty(LitElement.prototype, "model", {
 });
 
 export abstract class KWidget extends LitElement {
+    private signalCleanups = new Set<() => void>();
+
     connectedCallback() {
         const proto = Object.getPrototypeOf(this)
 
@@ -35,6 +37,12 @@ export abstract class KWidget extends LitElement {
         })
         super.connectedCallback();
         this.doBeforeUI()
+    }
+
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        this.signalCleanups.forEach(cleanup => cleanup());
+        this.signalCleanups.clear();
     }
 
     protected subscribe(topic: string, callback: Function) {
@@ -67,8 +75,9 @@ export abstract class KWidget extends LitElement {
         commandRegistry.execute(command, execContext);
     }
 
-    protected watch(signal: Signal.State<any>, callback: (value: any) => void) {
-        watchSignal(signal, callback.bind(this));
+    protected watch(signal: Signal.State<any>, callback: (value: any) => void): void {
+        const cleanup = watchSignal(signal, callback.bind(this));
+        this.signalCleanups.add(cleanup);
     }
 
     protected firstUpdated(_changedProperties: PropertyValues) {
