@@ -2,6 +2,7 @@ import {Directory, File, FileSysDirHandleResource, TOPIC_WORKSPACE_CHANGED, work
 import {parsePipRequirementsFile} from "pip-requirements-js";
 import {publish} from "./events";
 import type {PyWorkerMessage, PyWorkerResponse} from "./pyworker";
+import PyWorker from "./pyworker?worker";
 
 // Message counter for tracking requests/responses
 let messageId = 0;
@@ -20,8 +21,8 @@ export class PyEnv {
         this.workspace = workspace;
         this.vars = vars ?? {};
 
-        const workerUrl = new URL('./pyworker.ts', import.meta.url);
-        this.worker = new Worker(workerUrl, { type: 'module' });
+        // Create Web Worker using Vite's ?worker import
+        this.worker = new PyWorker();
 
         // Set up message handler
         this.worker.onmessage = (event: MessageEvent<PyWorkerResponse>) => {
