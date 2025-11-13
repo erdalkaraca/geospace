@@ -47,6 +47,11 @@ export class KAView extends KPart {
     private toolApprovalAllowlist: Set<string> = new Set();
 
     @state()
+    private settingsProviderName: string = '';
+    @state()
+    private settingsModel: string = '';
+
+    @state()
     private pendingToolApprovals = new Map<string, {
         role: string;
         request: import("../core/interfaces").ToolApprovalRequest;
@@ -69,6 +74,9 @@ export class KAView extends KPart {
         }
         await this.providerManager.initialize();
         await this.loadSettings();
+        // Load provider and model from AI config
+        this.settingsProviderName = await this.providerManager.getSettingsProviderName() || '';
+        this.settingsModel = await this.providerManager.getSettingsModel() || '';
         this.requestUpdate();
     }
 
@@ -408,8 +416,8 @@ export class KAView extends KPart {
     }
 
     private async saveSettingsAndClose(apiKey?: string): Promise<void> {
-        const providerName = this.providerManager.getSettingsProviderName();
-        const model = this.providerManager.getSettingsModel();
+        const providerName = await this.providerManager.getSettingsProviderName();
+        const model = await this.providerManager.getSettingsModel();
         
         if (!providerName || !model) {
             toastError('Please select both provider and model');
@@ -417,6 +425,9 @@ export class KAView extends KPart {
         }
 
         await this.providerManager.saveSettings(providerName, model, apiKey, this.requireToolApproval, Array.from(this.toolApprovalAllowlist));
+        // Update local state
+        this.settingsProviderName = providerName;
+        this.settingsModel = model;
         this.settingsDialogOpen = false;
         toastInfo('Settings saved');
         this.requestUpdate();
@@ -468,8 +479,8 @@ export class KAView extends KPart {
                     <ai-settings-dialog
                         .open="${this.settingsDialogOpen}"
                         .providers="${this.providerManager.getProviders()}"
-                        .selectedProviderName="${this.providerManager.getSettingsProviderName() || ''}"
-                        .selectedModel="${this.providerManager.getSettingsModel() || ''}"
+                        .selectedProviderName="${this.settingsProviderName}"
+                        .selectedModel="${this.settingsModel}"
                         .availableModels="${this.providerManager.getAvailableModels()}"
                         .loadingModels="${this.providerManager.isLoadingModels()}"
                         .requireToolApproval="${this.requireToolApproval}"
@@ -698,9 +709,11 @@ export class KAView extends KPart {
                                                         }
                                                         
                                                         if (approval.allowListSelections.size > 0) {
+                                                            const providerName = await this.providerManager.getSettingsProviderName();
+                                                            const model = await this.providerManager.getSettingsModel();
                                                             await this.providerManager.saveSettings(
-                                                                this.providerManager.getSettingsProviderName() || '',
-                                                                this.providerManager.getSettingsModel() || '',
+                                                                providerName || '',
+                                                                model || '',
                                                                 undefined,
                                                                 this.requireToolApproval,
                                                                 Array.from(this.toolApprovalAllowlist)

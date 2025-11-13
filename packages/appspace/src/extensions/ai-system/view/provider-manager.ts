@@ -3,8 +3,6 @@ import type { ChatProvider, AIConfig } from "../core/types";
 import type { AIService } from "../service/ai-service";
 
 export interface AIViewSettings {
-    providerName?: string;
-    model?: string;
     requireToolApproval?: boolean;
     toolApprovalAllowlist?: string[];
 }
@@ -35,26 +33,12 @@ export class ProviderManager {
     }
 
     async loadSettings(): Promise<void> {
-        const settings: AIViewSettings = await appSettings.get(this.settingsKey) || {};
-        
-        if (settings.providerName) {
-            const provider = this.providers?.find(p => p.name === settings.providerName);
-            if (provider) {
-                this.selectedProvider = {
-                    ...provider,
-                    model: settings.model || provider.model
-                };
-                this.settingsProviderName = settings.providerName;
-                this.settingsModel = settings.model || provider.model;
-            }
-        }
-        
-        if (!this.selectedProvider && this.providers && this.providers.length > 0) {
+        // Get provider and model from AI config (default provider)
+        if (this.providers && this.providers.length > 0) {
             const defaultProvider = await this.aiService.getDefaultProvider();
             this.selectedProvider = defaultProvider;
             this.settingsProviderName = defaultProvider.name;
             this.settingsModel = defaultProvider.model;
-            await this.saveSettings(defaultProvider.name, defaultProvider.model);
         }
     }
 
@@ -64,11 +48,10 @@ export class ProviderManager {
     }
 
     async saveSettings(providerName: string, model: string, apiKey?: string, requireToolApproval?: boolean, toolApprovalAllowlist?: string[]): Promise<void> {
+        // Save only view-specific settings to AIViewSettings
         const currentSettings: AIViewSettings = await appSettings.get(this.settingsKey) || {};
         const settings: AIViewSettings = {
-            ...currentSettings,
-            providerName,
-            model
+            ...currentSettings
         };
         if (requireToolApproval !== undefined) {
             settings.requireToolApproval = requireToolApproval;
@@ -86,16 +69,18 @@ export class ProviderManager {
                 ...(apiKey !== undefined && { apiKey })
             };
             this.selectedProvider = updatedProvider;
+            this.settingsProviderName = providerName;
+            this.settingsModel = model;
             
-            if (apiKey !== undefined) {
-                await this.updateProviderApiKey(providerName, apiKey);
-            }
+            // Update provider in AI config (API key and model)
+            await this.updateProviderInAIConfig(providerName, { model, ...(apiKey !== undefined && { apiKey }) });
             
+            // Set as default provider in AI config
             await this.aiService.setDefaultProvider(providerName);
         }
     }
 
-    private async updateProviderApiKey(providerName: string, apiKey: string): Promise<void> {
+    private async updateProviderInAIConfig(providerName: string, updates: { model?: string; apiKey?: string }): Promise<void> {
         const { KEY_AI_CONFIG } = await import('../core/constants');
         const aiConfig = await appSettings.get(KEY_AI_CONFIG) || {};
         
@@ -104,7 +89,7 @@ export class ProviderManager {
             if (providerIndex >= 0) {
                 aiConfig.providers[providerIndex] = {
                     ...aiConfig.providers[providerIndex],
-                    apiKey
+                    ...updates
                 };
                 await appSettings.set(KEY_AI_CONFIG, aiConfig);
             }
@@ -169,7 +154,12 @@ export class ProviderManager {
         this.selectedProvider = provider;
     }
 
-    getSettingsProviderName(): string | undefined {
+    async getSettingsProviderName(): Promise<string | undefined> {
+        // Get from default provider in AI config
+        if (!this.settingsProviderName) {
+            const defaultProvider = await this.aiService.getDefaultProvider();
+            this.settingsProviderName = defaultProvider.name;
+        }
         return this.settingsProviderName;
     }
 
@@ -177,7 +167,12 @@ export class ProviderManager {
         this.settingsProviderName = name;
     }
 
-    getSettingsModel(): string | undefined {
+    async getSettingsModel(): Promise<string | undefined> {
+        // Get from default provider in AI config
+        if (!this.settingsModel) {
+            const defaultProvider = await this.aiService.getDefaultProvider();
+            this.settingsModel = defaultProvider.model;
+        }
         return this.settingsModel;
     }
 

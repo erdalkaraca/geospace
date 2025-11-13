@@ -300,6 +300,10 @@ export class KTenderEditor extends KPart {
                 }
 
                 tenderFile.indexedFiles = indexedFiles;
+                
+                // Clear all criteria answers when documents change
+                this.clearAllCriteriaAnswers();
+                
                 this.markDirty(true);
                 this.requestUpdate();
 
@@ -321,6 +325,13 @@ export class KTenderEditor extends KPart {
             return;
         }
 
+        const confirmMessage = `Remove ${file.filePath.split('/').pop()} from this tender?`;
+        const confirmed = await confirmDialog(confirmMessage);
+        
+        if (!confirmed) {
+            return;
+        }
+
         const indexedFiles = this.tenderFile.indexedFiles || [];
         const index = indexedFiles.findIndex(
             f => f.filePath === file.filePath && f.workspacePath === file.workspacePath
@@ -329,13 +340,18 @@ export class KTenderEditor extends KPart {
         if (index >= 0) {
             indexedFiles.splice(index, 1);
             this.tenderFile.indexedFiles = [...indexedFiles];
+            
+            // Clear all criteria answers when documents change
+            this.clearAllCriteriaAnswers();
+            
             this.markDirty(true);
             this.requestUpdate();
 
             if (documentIndexService && this.documentContext && this.documentContext.tags && this.documentContext.tags.length > 0) {
+                const context = this.documentContext;
                 try {
-                    await taskService.runAsync('Removing file from index', async (progress) => {
-                        progress.message = `Removing ${file.filePath} from context...`;
+                    await taskService.runAsync('Removing file from context', async (progress) => {
+                        progress.message = `Removing tag from ${file.filePath}...`;
                         
                         const workspace = await workspaceService.getWorkspace();
                         if (!workspace) {
@@ -347,44 +363,13 @@ export class KTenderEditor extends KPart {
                             throw new Error(`File not found: ${file.filePath}`);
                         }
 
-                        const documentBefore = await documentIndexService.getDocumentByPath(file.workspacePath, file.filePath);
-                        if (!documentBefore) {
-                            toastInfo(`Document not found in index: ${file.filePath.split('/').pop()}`);
-                            progress.progress = 100;
-                            return;
-                        }
-
-                        const tagsBefore = documentBefore.metadata.tags || [];
-                        const contextTags = this.documentContext?.tags || [];
+                        await documentIndexService.removeFileFromContext(resource, context);
                         
-                        // @ts-ignore
-                        await documentIndexService.removeFileFromContext(resource, this.documentContext);
-
-                        const documentAfter = await documentIndexService.getDocumentByPath(file.workspacePath, file.filePath);
-                        
-                        if (documentAfter) {
-                            const remainingTags = documentAfter.metadata.tags || [];
-                            
-                            if (remainingTags.length === 0) {
-                                progress.message = `Removing ${file.filePath} from index (no other contexts)...`;
-                                await documentIndexService.deleteDocumentByPath(file.workspacePath, file.filePath);
-                                toastInfo(`Removed ${file.filePath.split('/').pop()} from index`);
-                            } else {
-                                const stillHasContextTag = contextTags.some((tag: string) => remainingTags.includes(tag));
-                                if (stillHasContextTag) {
-                                    toastError(`Failed to remove context tag from ${file.filePath.split('/').pop()}. Tags before: ${tagsBefore.join(', ')}, Tags after: ${remainingTags.join(', ')}, Context tags: ${contextTags.join(', ')}`);
-                                } else {
-                                    toastInfo(`Removed ${file.filePath.split('/').pop()} from this context (still indexed in ${remainingTags.length} other context(s))`);
-                                }
-                            }
-                        } else {
-                            toastInfo(`Removed ${file.filePath.split('/').pop()} from index`);
-                        }
-
                         progress.progress = 100;
+                        toastInfo(`Removed ${file.filePath.split('/').pop()} from this tender`);
                     });
                 } catch (error) {
-                    toastError(`Failed to remove file from index: ${error}`);
+                    toastError(`Failed to remove file from context: ${error}`);
                 }
             }
         }
@@ -410,6 +395,64 @@ export class KTenderEditor extends KPart {
         this.requestUpdate();
     }
 
+    private getScoreStyle(score: number): string {
+        // Highly distinct color ranges with maximum visual separation
+        // Using saturated colors that are far apart on the color wheel
+        let r: number, g: number, b: number;
+        
+        if (score <= 20) {
+            // Pure bright red
+            r = 255;
+            g = 0;
+            b = 0;
+        } else if (score <= 40) {
+            // Bright orange
+            r = 255;
+            g = 140;
+            b = 0;
+        } else if (score <= 60) {
+            // Bright yellow
+            r = 255;
+            g = 255;
+            b = 0;
+        } else if (score <= 80) {
+            // Bright lime/yellow-green
+            r = 150;
+            g = 255;
+            b = 0;
+        } else {
+            // Bright green
+            r = 0;
+            g = 255;
+            b = 0;
+        }
+        
+        return `--wa-color-text-normal: rgb(${r}, ${g}, ${b}); --wa-color-neutral-border-normal: rgb(${r}, ${g}, ${b}); background: rgba(${r}, ${g}, ${b}, 0.2);`;
+    }
+
+    private clearAllCriteriaAnswers() {
+        if (!this.tenderFile || !this.tenderFile.criteria) {
+            return;
+        }
+
+        let hasChanges = false;
+        for (const criteria of this.tenderFile.criteria) {
+            if (criteria.answer || criteria.essence !== undefined || criteria.fulfillmentScore !== undefined || criteria.evaluatedAt) {
+                criteria.answer = undefined;
+                criteria.essence = undefined;
+                criteria.fulfillmentScore = undefined;
+                criteria.evaluatedAt = undefined;
+                hasChanges = true;
+            }
+        }
+
+        if (hasChanges) {
+            this.tenderFile.criteria = [...this.tenderFile.criteria];
+            this.markDirty(true);
+            this.requestUpdate();
+        }
+    }
+
     private async clearCriteria(criteriaId: string) {
         if (!this.tenderFile || !this.tenderFile.criteria) {
             return;
@@ -430,7 +473,7 @@ export class KTenderEditor extends KPart {
 
         criteria.answer = undefined;
         criteria.essence = undefined;
-        criteria.isFulfilled = undefined;
+        criteria.fulfillmentScore = undefined;
         criteria.evaluatedAt = undefined;
         this.markDirty(true);
         this.requestUpdate();
@@ -441,7 +484,7 @@ export class KTenderEditor extends KPart {
             return;
         }
 
-        const criteriaWithAnswers = this.tenderFile.criteria.filter(c => c.answer);
+        const criteriaWithAnswers = this.tenderFile.criteria.filter(c => c.answer || c.fulfillmentScore !== undefined);
         
         if (criteriaWithAnswers.length === 0) {
             toastInfo('No criteria have answers to clear');
@@ -459,10 +502,12 @@ export class KTenderEditor extends KPart {
         for (const criteria of criteriaWithAnswers) {
             criteria.answer = undefined;
             criteria.essence = undefined;
-            criteria.isFulfilled = undefined;
+            criteria.fulfillmentScore = undefined;
             criteria.evaluatedAt = undefined;
         }
 
+        // Create new array reference to trigger Lit reactivity
+        this.tenderFile.criteria = [...this.tenderFile.criteria];
         this.markDirty(true);
         this.requestUpdate();
         toastInfo(`Cleared answers for ${criteriaWithAnswers.length} criteria`);
@@ -513,34 +558,66 @@ export class KTenderEditor extends KPart {
             if (searchResults.length === 0) {
                 criteria.answer = 'No relevant information found in the indexed documents.';
                 criteria.essence = 'No relevant information found in the indexed documents.';
-                criteria.isFulfilled = false;
+                criteria.fulfillmentScore = 0;
                 criteria.evaluatedAt = Date.now();
                 this.markDirty(true);
                 this.requestUpdate();
                 return;
             }
 
-            const contextText = searchResults.map((result, idx) => {
-                return `[Document ${idx + 1}: ${result.document.fileName}]\n${result.matchedSnippets.join('\n\n')}`;
+            // Create a map of filePath -> document number based on order in indexedFiles
+            const documentNumberMap = new Map<string, number>();
+            if (this.tenderFile.indexedFiles) {
+                this.tenderFile.indexedFiles.forEach((indexedFile, index) => {
+                    const key = `${indexedFile.workspacePath}:${indexedFile.filePath}`;
+                    documentNumberMap.set(key, index + 1);
+                });
+            }
+
+            // Group snippets by document and assign numbers
+            const documentMap = new Map<string, { document: typeof searchResults[0]['document']; snippets: string[]; docNumber: number }>();
+            for (const result of searchResults) {
+                const docKey = `${result.document.workspacePath}:${result.document.filePath}`;
+                const docNumber = documentNumberMap.get(docKey) || 0;
+                
+                if (!documentMap.has(docKey)) {
+                    documentMap.set(docKey, { document: result.document, snippets: [], docNumber });
+                }
+                documentMap.get(docKey)!.snippets.push(...result.matchedSnippets);
+            }
+
+            // Sort by document number to maintain order
+            const sortedDocuments = Array.from(documentMap.entries())
+                .map(([key, { document, snippets, docNumber }]) => ({ key, document, snippets, docNumber }))
+                .sort((a, b) => a.docNumber - b.docNumber);
+
+            const contextText = sortedDocuments.map(({ document, snippets, docNumber }) => {
+                return `[${docNumber}] ${document.fileName}\nRelevant excerpts from this document:\n${snippets.join('\n\n')}`;
             }).join('\n\n---\n\n');
 
             const prompt = `Based on the following documents, please evaluate this criterion: "${criteria.question}"
 
-Documents:
 ${contextText}
 
 Please provide your evaluation as a valid JSON object with the following structure:
 {
   "essence": "A concise 1-2 sentence summary of the key information relevant to this criterion",
-  "fulfilled": "YES" | "NO" | "UNCLEAR",
-  "detailedAnswer": "A clear and detailed answer explaining your evaluation. If the information is not found in the documents, please state that."
+  "fulfillmentScore": 0-100,
+  "detailedAnswer": "A clear and detailed answer explaining your evaluation. When referencing information, always cite using the document number in backticks (e.g., \`[1]\`, \`[2]\`). For example: 'According to \`[1]\`, the deadline is...' or 'The document \`[2]\` states...'. Do not refer to individual excerpts or chunks as separate documents - they are all parts of the same source document."
 }
 
 Important:
 - Respond in the same language as the criterion question
 - Output ONLY valid JSON, no additional text before or after
-- "fulfilled" must be exactly "YES", "NO", or "UNCLEAR"
-- If the information is not found in the documents, set "fulfilled" to "NO" and explain in "detailedAnswer"`;
+- When citing information in your "detailedAnswer", always use the document number format in backticks: \`[1]\`, \`[2]\`, etc. (e.g., "According to \`[1]\`, ..." or "The document \`[2]\` states..."). The excerpts shown above are parts of complete documents, not separate documents themselves.
+- "fulfillmentScore" must be a number between 0 and 100 representing how well the criterion can be derived from the data:
+  * 100: The criterion is fully satisfied and clearly evident in the documents
+  * 75-99: The criterion is mostly satisfied with strong evidence
+  * 50-74: The criterion is partially satisfied with moderate evidence
+  * 25-49: The criterion is weakly satisfied with limited evidence
+  * 1-24: The criterion is barely satisfied with minimal evidence
+  * 0: The criterion cannot be satisfied or information is not found in the documents
+- If the information is not found in the documents, set "fulfillmentScore" to 0 and explain in "detailedAnswer"`;
 
             const chatConfig = await aiService.getDefaultProvider();
             
@@ -599,7 +676,7 @@ Important:
             try {
                 const parsed = JSON.parse(jsonText) as {
                     essence?: string;
-                    fulfilled?: string;
+                    fulfillmentScore?: number;
                     detailedAnswer?: string;
                 };
                 
@@ -607,9 +684,9 @@ Important:
                     criteria.essence = parsed.essence;
                 }
                 
-                if (parsed.fulfilled) {
-                    const fulfilledValue = parsed.fulfilled.toUpperCase();
-                    criteria.isFulfilled = fulfilledValue === 'YES' ? true : fulfilledValue === 'NO' ? false : undefined;
+                if (parsed.fulfillmentScore !== undefined) {
+                    // Clamp score to 0-100 range
+                    criteria.fulfillmentScore = Math.max(0, Math.min(100, Math.round(parsed.fulfillmentScore)));
                 }
                 
                 // Store the detailed answer (formatted as markdown for display)
@@ -626,15 +703,15 @@ Important:
                 
                 // Fallback regex parsing
                 const essenceMatch = fullAnswer.match(/(?:"essence"\s*:\s*")(.+?)(?=")/i);
-                const fulfilledMatch = fullAnswer.match(/(?:"fulfilled"\s*:\s*")(YES|NO|UNCLEAR)(?=")/i);
+                const scoreMatch = fullAnswer.match(/(?:"fulfillmentScore"\s*:\s*)(\d+)/i);
                 
                 if (essenceMatch && essenceMatch[1]) {
                     criteria.essence = essenceMatch[1].trim();
                 }
                 
-                if (fulfilledMatch && fulfilledMatch[1]) {
-                    const fulfilledValue = fulfilledMatch[1].toUpperCase();
-                    criteria.isFulfilled = fulfilledValue === 'YES' ? true : fulfilledValue === 'NO' ? false : undefined;
+                if (scoreMatch && scoreMatch[1]) {
+                    const score = parseInt(scoreMatch[1], 10);
+                    criteria.fulfillmentScore = Math.max(0, Math.min(100, score));
                 }
             }
             
@@ -645,7 +722,7 @@ Important:
             toastError(`Failed to evaluate criteria: ${error}`);
             criteria.answer = `Error: ${error}`;
             criteria.essence = `Error: ${error}`;
-            criteria.isFulfilled = undefined;
+            criteria.fulfillmentScore = undefined;
             criteria.evaluatedAt = Date.now();
             this.requestUpdate();
         } finally {
@@ -676,17 +753,20 @@ Important:
 
         try {
             await taskService.runAsync(`Evaluating ${criteriaToEvaluate.length} criteria`, async (progress) => {
-                for (let i = 0; i < criteriaToEvaluate.length; i++) {
-                    const criteria = criteriaToEvaluate[i];
-                    progress.message = `Evaluating: ${criteria.question} (${i + 1}/${criteriaToEvaluate.length})`;
-                    progress.progress = Math.round(((i + 1) / criteriaToEvaluate.length) * 100);
-
+                // Evaluate all criteria in parallel
+                const evaluationPromises = criteriaToEvaluate.map(async (criteria, index) => {
                     try {
                         await this.evaluateCriteria(criteria);
+                        progress.message = `Evaluated: ${criteria.question} (${index + 1}/${criteriaToEvaluate.length})`;
                     } catch (error) {
                         logger.warn(`Failed to evaluate criteria "${criteria.question}": ${error}`);
                     }
-                }
+                });
+
+                // Wait for all evaluations to complete
+                await Promise.all(evaluationPromises);
+                
+                progress.progress = 100;
             });
 
             toastInfo(`Evaluated ${criteriaToEvaluate.length} criteria`);
@@ -714,16 +794,17 @@ Important:
                                     ? html`<div class="empty-message">No files indexed yet. Drop files here to index them.</div>`
                                     : html`
                                         <div class="indexed-files-tags">
-                                            ${indexedFiles.map(file => {
+                                            ${indexedFiles.map((file, index) => {
                                                 const fileKey = `${file.workspacePath}:${file.filePath}`;
                                                 const isIndexing = this.indexingFiles.has(fileKey);
+                                                const docNumber = index + 1;
                                                 return html`
                                                     <wa-badge variant="neutral" appearance="outlined" class=${isIndexing ? 'indexing' : ''}>
                                                         ${isIndexing 
                                                             ? html`<wa-spinner size="small" slot="start"></wa-spinner>`
                                                             : html`<wa-icon name="file" slot="start"></wa-icon>`
                                                         }
-                                                        ${file.filePath.split('/').pop()}
+                                                        [${docNumber}] ${file.filePath.split('/').pop()}
                                                         ${!isIndexing ? html`
                                                             <wa-button
                                                                 variant="neutral"
@@ -752,43 +833,84 @@ Important:
                             <div class="criteria-section">
                                 <div class="criteria-header">
                                     <h3>Evaluation Criteria</h3>
-                                    ${criteria.length > 0 ? html`
-                                        <div class="criteria-stats">
-                                            ${(() => {
-                                                const total = criteria.length;
-                                                const fulfilled = criteria.filter(c => c.isFulfilled === true).length;
-                                                const notFulfilled = criteria.filter(c => c.isFulfilled === false).length;
-                                                const notEvaluated = criteria.filter(c => c.isFulfilled === undefined).length;
-                                                return html`
-                                                    <wa-badge variant="neutral" appearance="outlined" pill>
-                                                        <wa-icon name="list" slot="start"></wa-icon>
-                                                        ${total} Total
-                                                    </wa-badge>
-                                                    ${fulfilled > 0 ? html`
-                                                        <wa-badge variant="success" pill>
-                                                            <wa-icon name="check-circle" slot="start"></wa-icon>
-                                                            ${fulfilled} Fulfilled
-                                                        </wa-badge>
-                                                    ` : nothing}
-                                                    ${notFulfilled > 0 ? html`
-                                                        <wa-badge variant="danger" pill>
-                                                            <wa-icon name="xmark-circle" slot="start"></wa-icon>
-                                                            ${notFulfilled} Not Fulfilled
-                                                        </wa-badge>
-                                                    ` : nothing}
-                                                    ${notEvaluated > 0 ? html`
-                                                        <wa-badge variant="neutral" pill>
-                                                            <wa-icon name="question-circle" slot="start"></wa-icon>
-                                                            ${notEvaluated} Not Evaluated
-                                                        </wa-badge>
-                                                    ` : nothing}
-                                                `;
-                                            })()}
-                                        </div>
-                                    ` : nothing}
                                 </div>
+                                ${criteria.length > 0 ? html`
+                                    ${(() => {
+                                        const evaluated = criteria.filter(c => c.fulfillmentScore !== undefined);
+                                        if (evaluated.length === 0) return nothing;
+                                        
+                                        const total = criteria.length;
+                                        const notEvaluated = total - evaluated.length;
+                                        const avgScore = evaluated.length > 0
+                                            ? Math.round(evaluated.reduce((sum, c) => sum + (c.fulfillmentScore || 0), 0) / evaluated.length)
+                                            : 0;
+                                        
+                                        // Create bins: 0-20, 21-40, 41-60, 61-80, 81-100
+                                        const bins = [
+                                            { label: '0-20', min: 0, max: 20, count: 0, midScore: 10 },
+                                            { label: '21-40', min: 21, max: 40, count: 0, midScore: 30 },
+                                            { label: '41-60', min: 41, max: 60, count: 0, midScore: 50 },
+                                            { label: '61-80', min: 61, max: 80, count: 0, midScore: 70 },
+                                            { label: '81-100', min: 81, max: 100, count: 0, midScore: 90 }
+                                        ];
+                                        
+                                        evaluated.forEach(c => {
+                                            const score = c.fulfillmentScore || 0;
+                                            for (const bin of bins) {
+                                                if (score >= bin.min && score <= bin.max) {
+                                                    bin.count++;
+                                                    break;
+                                                }
+                                            }
+                                        });
+                                        
+                                        const maxCount = Math.max(...bins.map(b => b.count), 1);
+                                        
+                                        return html`
+                                            <div class="histogram-container">
+                                                <div class="histogram-header">
+                                                    <h4>Score Distribution</h4>
+                                                    <div class="criteria-stats">
+                                                        <wa-badge variant="neutral" appearance="outlined" pill>
+                                                            <wa-icon name="list" slot="start"></wa-icon>
+                                                            ${total} Total
+                                                        </wa-badge>
+                                                        ${evaluated.length > 0 ? html`
+                                                            <wa-badge 
+                                                                class="score-badge"
+                                                                style=${this.getScoreStyle(avgScore)}
+                                                                pill>
+                                                                <wa-icon name="chart-line" slot="start"></wa-icon>
+                                                                Avg: ${avgScore}%
+                                                            </wa-badge>
+                                                        ` : nothing}
+                                                        ${notEvaluated > 0 ? html`
+                                                            <wa-badge variant="neutral" pill>
+                                                                <wa-icon name="question-circle" slot="start"></wa-icon>
+                                                                ${notEvaluated} Not Evaluated
+                                                            </wa-badge>
+                                                        ` : nothing}
+                                                    </div>
+                                                </div>
+                                                <div class="histogram">
+                                                    ${bins.map(bin => html`
+                                                        <div class="histogram-bar-container">
+                                                            <div class="histogram-label">${bin.label}</div>
+                                                            <div class="histogram-bar" 
+                                                                 style="height: ${(bin.count / maxCount) * 100}%; ${this.getScoreStyle(bin.midScore)}"
+                                                                 title="${bin.count} criteria in ${bin.label}">
+                                                                ${bin.count > 0 ? html`<span class="bar-count">${bin.count}</span>` : nothing}
+                                                            </div>
+                                                        </div>
+                                                    `)}
+                                                </div>
+                                            </div>
+                                        `;
+                                    })()}
+                                ` : nothing}
                                 <div class="add-criteria">
                                     <wa-input
+                                        autocomplete="off"
                                         .value=${this.newCriteriaQuestion}
                                         @input=${(e: Event) => {
                                             const target = e.target as HTMLInputElement;
@@ -800,7 +922,7 @@ Important:
                                                 this.addCriteria();
                                             }
                                         }}
-                                        placeholder="Enter a question (e.g., 'When is submission/application deadline?')">
+                                        placeholder="Enter a question or criterion (e.g., 'When is submission/application deadline?')">
                                     </wa-input>
                                     <wa-button
                                         variant="primary"
@@ -881,13 +1003,13 @@ Important:
                                                         ${c.answer ? html`
                                                             <div class="criteria-answer">
                                                                 <div class="answer-header">
-                                                                    ${c.isFulfilled !== undefined ? html`
+                                                                    ${c.fulfillmentScore !== undefined ? html`
                                                                         <wa-badge 
-                                                                            variant=${c.isFulfilled ? 'success' : c.isFulfilled === false ? 'danger' : 'neutral'}
+                                                                            class="score-badge"
+                                                                            style=${this.getScoreStyle(c.fulfillmentScore)}
                                                                             pill>
-                                                                            ${c.isFulfilled ? html`<wa-icon name="check-circle" slot="start"></wa-icon>` : nothing}
-                                                                            ${c.isFulfilled === false ? html`<wa-icon name="xmark-circle" slot="start"></wa-icon>` : nothing}
-                                                                            ${c.isFulfilled === true ? 'Fulfilled' : c.isFulfilled === false ? 'Not Fulfilled' : 'Unclear'}
+                                                                            <wa-icon name="chart-line" slot="start"></wa-icon>
+                                                                            ${c.fulfillmentScore}%
                                                                         </wa-badge>
                                                                     ` : nothing}
                                                                     ${c.evaluatedAt ? html`
@@ -898,7 +1020,7 @@ Important:
                                                                 </div>
                                                                 ${c.essence ? html`
                                                                     <div class="answer-essence">
-                                                                        <strong>Essence:</strong> ${c.essence}
+                                                                        ${c.essence}
                                                                     </div>
                                                                 ` : nothing}
                                                                 <div class="answer-content">${unsafeHTML(marked.parse(c.answer) as string)}</div>
@@ -982,7 +1104,6 @@ Important:
             .criteria-header {
                 display: flex;
                 align-items: center;
-                justify-content: space-between;
                 gap: var(--wa-space-m);
                 margin-bottom: var(--wa-space-s);
             }
@@ -1018,10 +1139,10 @@ Important:
             }
 
             .criteria-item {
-                border: 1px solid var(--wa-color-border-normal);
+                border: 1px solid var(--wa-color-neutral-border-normal);
                 border-radius: var(--wa-border-radius-medium);
                 padding: var(--wa-space-s);
-                background: var(--wa-color-surface-normal);
+                background: var(--wa-color-surface-default);
             }
 
             .criteria-question {
@@ -1050,7 +1171,7 @@ Important:
                 gap: var(--wa-space-s);
                 margin-top: var(--wa-space-m);
                 padding: var(--wa-space-m);
-                background: var(--wa-color-surface-subtle);
+                background: var(--wa-color-surface-default);
                 border-radius: var(--wa-border-radius-small);
                 border-left: 3px solid var(--wa-color-brand-border-normal);
             }
@@ -1064,14 +1185,10 @@ Important:
 
             .answer-essence {
                 padding: var(--wa-space-xs) var(--wa-space-s);
-                background: var(--wa-color-surface-normal);
-                border-left: 3px solid var(--wa-color-border-accent);
+                background: var(--wa-color-surface-default);
+                border: 3px solid var(--wa-color-brand-border-normal);
                 border-radius: var(--wa-border-radius-small);
                 font-size: var(--wa-font-size-small);
-            }
-
-            .answer-essence strong {
-                color: var(--wa-color-text-accent);
             }
 
             .answer-content {
@@ -1113,6 +1230,76 @@ Important:
                 margin-top: var(--wa-space-xs);
                 font-size: var(--wa-font-size-small);
                 color: var(--wa-color-text-quiet);
+            }
+
+            .score-badge {
+                font-weight: var(--wa-font-weight-semibold);
+            }
+
+            .histogram-container {
+                margin-top: var(--wa-space-m);
+                padding: var(--wa-space-m);
+                background: var(--wa-color-surface-default);
+                border-radius: var(--wa-border-radius-medium);
+            }
+
+            .histogram-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: var(--wa-space-m);
+                margin-bottom: var(--wa-space-m);
+            }
+
+            .histogram-container h4 {
+                margin: 0;
+                font-size: var(--wa-font-size-small);
+                font-weight: var(--wa-font-weight-semibold);
+                color: var(--wa-color-text-normal);
+            }
+
+            .histogram {
+                display: flex;
+                align-items: flex-end;
+                justify-content: space-around;
+                gap: var(--wa-space-xs);
+                height: 120px;
+                padding: var(--wa-space-s) 0;
+            }
+
+            .histogram-bar-container {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                flex: 1;
+                height: 100%;
+            }
+
+            .histogram-label {
+                margin-bottom: var(--wa-space-xs);
+                font-size: var(--wa-font-size-small);
+                color: var(--wa-color-text-quiet);
+                text-align: center;
+            }
+
+            .histogram-bar {
+                width: 100%;
+                min-height: 4px;
+                border-radius: var(--wa-border-radius-small) var(--wa-border-radius-small) 0 0;
+                position: relative;
+                display: flex;
+                align-items: flex-end;
+                justify-content: center;
+                transition: height 0.3s ease;
+                border: 1px solid;
+            }
+
+            .bar-count {
+                position: absolute;
+                bottom: calc(-20px - var(--wa-space-xs));
+                font-size: var(--wa-font-size-small);
+                font-weight: var(--wa-font-weight-semibold);
+                color: var(--wa-color-text-normal);
             }
     `;
 }

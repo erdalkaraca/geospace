@@ -9,7 +9,7 @@ export interface Criteria {
     question: string;
     answer?: string;
     essence?: string;
-    isFulfilled?: boolean;
+    fulfillmentScore?: number;
     evaluatedAt?: number;
 }
 

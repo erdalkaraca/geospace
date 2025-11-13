@@ -902,10 +902,52 @@ class DocumentIndexService {
         context: DocumentSearchScope,
         options: DocumentIndexOptions = {}
     ): Promise<IndexedDocument> {
+        if (!this.isInitialized) {
+            await this.initialize();
+        }
+        this.ensureInitialized();
+
+        const workspace = file.getWorkspace();
+        const workspacePath = workspace.getName();
+        const filePath = file.getWorkspacePath();
+        const id = this.generateDocumentId(workspacePath, filePath);
+
+        const existing = await this.documentsCollection!.findOne(id).exec();
+        const existingDoc = existing ? (existing.toJSON() as IndexedDocument) : null;
+
         const contextTags = context.tags || [];
+        const newTags = [...(options.tags || []), ...contextTags];
+
+        if (existingDoc) {
+            const existingTags = existingDoc.metadata.tags || [];
+            const mergedTags = [...new Set([...existingTags, ...newTags])];
+            const tagsChanged = mergedTags.length !== existingTags.length || 
+                                newTags.some(tag => !existingTags.includes(tag));
+
+            if (tagsChanged) {
+                await this.updateDocumentMetadata(existingDoc.id, {
+                    metadata: {
+                        ...existingDoc.metadata,
+                        tags: mergedTags
+                    }
+                });
+                logger.debug(`Added tags to existing document: ${id}`);
+                return {
+                    ...existingDoc,
+                    metadata: {
+                        ...existingDoc.metadata,
+                        tags: mergedTags
+                    }
+                };
+            } else {
+                logger.debug(`Document already has all tags: ${id}`);
+                return existingDoc;
+            }
+        }
+
         return this.indexDocument(file, {
             ...options,
-            tags: [...(options.tags || []), ...contextTags]
+            tags: newTags
         });
     }
 
