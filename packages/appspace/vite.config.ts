@@ -20,10 +20,10 @@ export default defineConfig({
   },
   plugins: [
     dts({
-      include: ['src/index.ts', 'src/api/index.ts', 'src/extensions/ai-system/index.ts', 'src/extensions/rag-system/index.ts', 'src/widgets/index.ts', 'src/parts/index.ts'],
       outDir: 'dist',
       entryRoot: 'src',
-      rollupTypes: true,
+      rollupTypes: false,
+      tsconfigPath: path.resolve(__dirname, 'tsconfig.build.json'),
     }),
   ],
   build: {
