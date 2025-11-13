@@ -18,8 +18,10 @@ export {
     createLogger,
     setLogLevel,
     type LogLevel,
-    type Logger
+    type Logger,
+    default as logger
 } from '../core/logger';
+export { rootContext } from '../core/di';
 export { 
     infoDialog,
     navigableInfoDialog,

@@ -1,6 +1,5 @@
 import { html } from "lit";
-import { editorRegistry, contributionRegistry, File, type EditorInput } from "@kispace-io/appspace/api";
-import type { IconContribution } from "@kispace-io/appspace/core/contributionregistry";
+import { editorRegistry, contributionRegistry, File, type EditorInput, type IconContribution } from "@kispace-io/appspace/api";
 import "./tender-editor";
 
 export default function tendermatchExtension(_context: any) {

@@ -1,16 +1,15 @@
 import { customElement, property, state } from "lit/decorators.js";
-import { KPart } from "@kispace-io/appspace/parts/k-part";
+import { KPart } from "@kispace-io/appspace/api";
 import { html, css, nothing } from "lit";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { marked } from "marked";
 import type { EditorInput } from "@kispace-io/appspace/api";
 import { File, workspaceService, taskService, toastInfo, toastError, FileContentType } from "@kispace-io/appspace/api";
-import { confirmDialog } from "@kispace-io/appspace/core/dialog";
+import { confirmDialog, createLogger } from "@kispace-io/appspace/api";
 import { DocumentSearchScope, documentIndexService } from "@kispace-io/appspace/extensions/rag-system/document-index-service";
 import type { TenderFile, IndexedFile, Criteria } from "./tender-file";
 import { ragService } from "@kispace-io/appspace/extensions/rag-system/rag-service";
 import { aiService } from "@kispace-io/appspace/extensions/ai-system/service/ai-service";
-import { createLogger } from "@kispace-io/appspace/core/logger";
 import "@kispace-io/appspace/widgets/k-icon";
 import {
     createFileKey,

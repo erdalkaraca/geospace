@@ -32,6 +32,8 @@ jobs:
         with:
           node-version: 20
           cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+          scope: '@kispace-io'
 
       - name: Install dependencies
         run: npm ci
@@ -40,6 +42,7 @@ jobs:
         run: |
           VERSION=${GITHUB_REF_NAME}
           npm version --no-commit-hooks --no-git-tag-version "$VERSION" --workspace=@kispace-io/geospace
+          npm version --no-commit-hooks --no-git-tag-version "$VERSION" --workspace=@kispace-io/appspace
 
       - name: Build runtime library
         run: npm run build-gslib
@@ -49,6 +52,11 @@ jobs:
           #REPO=${GITHUB_REPOSITORY##*/}
           #export VITE_BASE_PATH="/$REPO/"
           npm run build
+
+      - name: Publish appspace package to npm
+        run: npm publish --workspace=@kispace-io/appspace --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Add CNAME file
         run: echo "geo.kispace.de" > ./dist/CNAME
@@ -66,6 +74,7 @@ jobs:
           echo "### Version: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Tests passed" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Build successful" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Published @kispace-io/appspace to npm" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Deployed to GitHub Pages" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Access" >> $GITHUB_STEP_SUMMARY

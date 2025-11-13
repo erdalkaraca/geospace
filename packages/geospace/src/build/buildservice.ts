@@ -12,7 +12,7 @@ import {
     toastInfo,
     taskService
 } from "@kispace-io/appspace/api";
-import {rootContext} from "@kispace-io/appspace/core/di";
+import {rootContext} from "@kispace-io/appspace/api";
 
 const indexHtml = (vars: any) => `
 <!doctype html>

@@ -28,9 +28,9 @@ import {
     type AgentContribution,
     type PromptEnhancer,
     type Extension,
-    type ExecutionContext
+    type ExecutionContext,
+    type IconContribution
 } from "@kispace-io/appspace/api";
-import type { IconContribution } from "@kispace-io/appspace/src/core/contributionregistry";
 
 // App-specific imports
 import "./geo/gs-map-editor-contributions"

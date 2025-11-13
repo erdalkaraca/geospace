@@ -16,7 +16,13 @@ export type {
     Extension 
 } from '../core/extensionregistry';
 export type {
-    Contribution
+    Contribution,
+    IconContribution,
+    CommandContribution,
+    HTMLContribution,
+    TabContribution,
+    PaneContribution,
+    ContributionChangeEvent
 } from '../core/contributionregistry';
 export type {
     Resource,
