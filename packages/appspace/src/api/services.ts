@@ -39,25 +39,6 @@ export { PyEnv } from '../core/pyservice';
 export { publish, subscribe } from '../core/events';
 export { watching } from '../core/signals';
 export { 
-    CID_AGENTS, 
-    CID_CHAT_PROVIDERS,
-    CID_PROMPT_ENHANCERS,
-    type AgentContribution, 
-    type AgentWorkflowOptions, 
-    type AgentWorkflowResult, 
-    type WorkflowExecution,
-    type PromptEnhancer,
-    type PromptEnhancerContribution,
-    type MessageProcessor,
-    type AgentHooks,
-    type UserAttentionRequest,
-    type UserAttentionType,
-    type UserAttentionHandler,
-    type ChatProvider,
-    type ChatProviderContribution,
-    aiService 
-} from '../extensions/ai-system';
-export { 
     fetchReleases,
     fetchLatestRelease,
     fetchReleaseByTag,

@@ -38,22 +38,6 @@ export type {
     SignalPort
 } from '../core/signals';
 export type {
-    AgentContribution,
-    AgentWorkflowOptions,
-    AgentWorkflowResult,
-    WorkflowExecution,
-    PromptEnhancer,
-    MessageProcessor,
-    AgentHooks,
-    UserAttentionRequest,
-    UserAttentionType,
-    UserAttentionHandler,
-    ChatHistory,
-    ChatMessage,
-    ChatProvider,
-    ChatProviderContribution
-} from '../extensions/ai-system';
-export type {
     NavigableDialogAction
 } from '../core/dialog';
 export type {

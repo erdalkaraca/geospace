@@ -1,5 +1,5 @@
-import type { PromptEnhancer, ExecutionContext, PromptEnhancerContribution } from "@kispace-io/appspace/api";
-import { CID_PROMPT_ENHANCERS } from "@kispace-io/appspace/api";
+import type { PromptEnhancer, ExecutionContext, PromptEnhancerContribution } from "@kispace-io/appspace/extensions/ai-system";
+import { CID_PROMPT_ENHANCERS } from "@kispace-io/appspace/extensions/ai-system";
 import { contributionRegistry } from "@kispace-io/appspace/api";
 
 const GEOSPACE_SPECIFIC_PROMPT = `

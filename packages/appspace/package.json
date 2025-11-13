@@ -11,8 +11,13 @@
   "exports": {
     ".": "./src/index.ts",
     "./api": "./src/api/index.ts",
-    "./extensions/*": "./src/extensions/*",
+    "./extensions/ai-system": "./src/extensions/ai-system/index.ts",
+    "./extensions/ai-system/*": "./src/extensions/ai-system/*",
+    "./extensions/rag-system": "./src/extensions/rag-system/index.ts",
+    "./extensions/rag-system/*": "./src/extensions/rag-system/*",
+    "./widgets": "./src/widgets/index.ts",
     "./widgets/*": "./src/widgets/*",
+    "./parts": "./src/parts/index.ts",
     "./parts/*": "./src/parts/*"
   },
   "files": [

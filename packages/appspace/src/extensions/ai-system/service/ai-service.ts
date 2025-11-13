@@ -1,6 +1,7 @@
 import { DependencyContext, rootContext } from "../../../core/di";
 import { publish, subscribe } from "../../../core/events";
 import { appSettings, TOPIC_SETTINGS_CHANGED } from "../../../core/settingsservice";
+import { contributionRegistry } from "../../../core/contributionregistry";
 import type { ExecutionContext } from "../../../core/commandregistry";
 import logger from "../../../core/logger";
 
@@ -12,7 +13,8 @@ import {
     TOPIC_AICONFIG_CHANGED,
     KEY_AI_CONFIG,
     AI_CONFIG_TEMPLATE,
-    MAX_TOOL_ITERATIONS
+    MAX_TOOL_ITERATIONS,
+    CID_CHAT_PROVIDERS
 } from "../core/constants";
 
 import type {
@@ -32,7 +34,8 @@ import type {
 
 import type {
     AgentContribution,
-    IProvider
+    IProvider,
+    ChatProviderContribution
 } from "../core/interfaces";
 
 import { ProviderFactory } from "../providers/provider-factory";
@@ -116,13 +119,17 @@ export class AIService {
         if (!this.aiConfig) {
             this.aiConfig = await appSettings.get(KEY_AI_CONFIG);
             if (!this.aiConfig) {
+                const contributions = contributionRegistry.getContributions(CID_CHAT_PROVIDERS) as ChatProviderContribution[];
+                const contributedProviders = contributions.map(contrib => contrib.provider);
+                
                 const initialConfig: AIConfig = {
                     ...AI_CONFIG_TEMPLATE,
-                    providers: []
+                    providers: contributedProviders
                 };
                 await appSettings.set(KEY_AI_CONFIG, initialConfig);
                 this.aiConfig = await appSettings.get(KEY_AI_CONFIG);
             }
+
             publish(TOPIC_AICONFIG_CHANGED, this.aiConfig);
         }
     }
@@ -332,7 +339,7 @@ export class AIService {
             options.onStatus?.('error');
             const errorMessage = error instanceof Error ? error.message : String(error);
             publish(TOPIC_AI_STREAM_ERROR, { requestId, error: errorMessage });
-            
+
             yield {
                 type: 'error',
                 content: errorMessage,
@@ -350,19 +357,19 @@ export class AIService {
     ): Promise<ChatMessage> {
         const stream = this.streamCompletion(options);
         let lastValue: IteratorResult<StreamChunk, AIServiceResult>;
-        
+
         while (true) {
             lastValue = await stream.next();
-            
+
             if (lastValue.done) {
                 return lastValue.value.message;
             }
-            
+
             const chunk = lastValue.value;
             if (chunk.type === 'error') {
                 throw new Error(chunk.content);
             }
-            
+
             if (chunk.type === 'done') {
                 const final = await stream.next();
                 if (final.done && final.value) {
@@ -381,15 +388,15 @@ export class AIService {
             role: message.role,
             content: message.content
         };
-        
+
         if ('tool_call_id' in message && message.tool_call_id) {
             apiMessage.tool_call_id = message.tool_call_id;
         }
-        
+
         if ('tool_calls' in message && (message as any).tool_calls) {
             apiMessage.tool_calls = (message as any).tool_calls;
         }
-        
+
         return apiMessage;
     }
 
@@ -406,7 +413,7 @@ export class AIService {
         );
 
         const matchingAgents = this.agentRegistry.getMatchingAgents(agentContext);
-        const roles = matchingAgents.length > 0 
+        const roles = matchingAgents.length > 0
             ? matchingAgents.map(a => a.role)
             : ['assistant'];
 
@@ -530,14 +537,14 @@ export class AIService {
 
         while (rawMessage.toolCalls && rawMessage.toolCalls.length > 0) {
             toolCallIteration++;
-            
+
             if (toolCallIteration > MAX_TOOL_ITERATIONS) {
                 console.warn(`[AIService] Maximum tool call iterations (${MAX_TOOL_ITERATIONS}) reached`);
                 break;
             }
-            
+
             let toolResults: ToolResult[] = [];
-            
+
             if (options.requireToolApproval && options.onToolApprovalRequest) {
                 const toolCallDescriptions = rawMessage.toolCalls.map(tc => {
                     const args = tc.function.arguments || "{}";
@@ -549,12 +556,12 @@ export class AIService {
                     }
                     return `${tc.function.name}(${Object.entries(parsedArgs).map(([k, v]) => `${k}=${v}`).join(", ")})`;
                 }).join(", ");
-                
+
                 const approvalRequest: import("../core/interfaces").ToolApprovalRequest = {
                     toolCalls: rawMessage.toolCalls,
                     message: `The AI wants to execute: ${toolCallDescriptions}`
                 };
-                
+
                 const approved = await options.onToolApprovalRequest(contrib.role, approvalRequest);
                 if (!approved) {
                     toolResults = rawMessage.toolCalls.map(tc => ({
@@ -571,18 +578,18 @@ export class AIService {
             } else {
                 toolResults = await this.toolExecutor.executeToolCalls(rawMessage.toolCalls, agentContext);
             }
-            
+
             const toolMessages: import("../core/types").ApiMessage[] = toolResults.map((tr) => ({
                 role: "tool",
                 content: tr.error ? JSON.stringify({ error: tr.error }) : JSON.stringify(tr.result),
                 tool_call_id: tr.id
             }));
-            
+
             const assistantMessage: any = {
                 role: "assistant",
                 content: rawMessage.content || ""
             };
-            
+
             if (rawMessage.toolCalls && rawMessage.toolCalls.length > 0) {
                 assistantMessage.tool_calls = rawMessage.toolCalls
                     .filter(tc => tc.function.name && tc.function.name.trim().length > 0)
@@ -595,38 +602,40 @@ export class AIService {
                         }
                     }));
             }
-            
+
             conversationHistory.push(assistantMessage, ...toolMessages);
-            
+
             const updatedMessages = conversationHistory;
-            
+
             rawMessage = await this.handleStreamingPromptDirect({
-                chatContext: { history: updatedMessages.map(m => ({
-                    role: m.role,
-                    content: m.content,
-                    ...(m.tool_call_id && { tool_call_id: m.tool_call_id }),
-                    ...(m.tool_calls && { tool_calls: m.tool_calls })
-                } as ChatMessage)) },
+                chatContext: {
+                    history: updatedMessages.map(m => ({
+                        role: m.role,
+                        content: m.content,
+                        ...(m.tool_call_id && { tool_call_id: m.tool_call_id }),
+                        ...(m.tool_calls && { tool_calls: m.tool_calls })
+                    } as ChatMessage))
+                },
                 chatConfig,
                 callContext: options.callContext,
                 stream: options.stream ?? true,
                 signal: options.signal,
                 tools
             });
-            
+
             const hasContent = rawMessage.content && rawMessage.content.trim().length > 0;
             const hasToolCalls = rawMessage.toolCalls && rawMessage.toolCalls.length > 0;
-            
+
             if (hasContent && !hasToolCalls) {
                 break;
             }
-            
+
             if (hasContent && hasToolCalls) {
                 console.warn(`[AIService] Model provided content but also called tools - treating as completion`);
                 break;
             }
         }
-        
+
         const processedMessage = await this.messageProcessor.process(
             rawMessage,
             contrib,

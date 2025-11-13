@@ -8,7 +8,6 @@ import {
     appLoaderService,
     createLogger,
     packageInfoService,
-    CID_AGENTS,
     contributionRegistry,
     editorRegistry,
     commandRegistry,
@@ -19,9 +18,9 @@ import {
     TOOLBAR_MAIN_RIGHT,
     File,
     StringFile,
-    type AgentContribution,
     type IconContribution
 } from "@kispace-io/appspace/api";
+import { CID_AGENTS, type AgentContribution } from "@kispace-io/appspace/extensions/ai-system";
 
 // App-specific imports
 import "./geo/gs-map-editor-contributions"
