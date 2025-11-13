@@ -6,25 +6,57 @@
     "type": "git",
     "url": "https://github.com/erdalkaraca/geospace.git"
   },
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./api": "./src/api/index.ts",
-    "./extensions/ai-system": "./src/extensions/ai-system/index.ts",
-    "./extensions/ai-system/*": "./src/extensions/ai-system/*",
-    "./extensions/rag-system": "./src/extensions/rag-system/index.ts",
-    "./extensions/rag-system/*": "./src/extensions/rag-system/*",
-    "./widgets": "./src/widgets/index.ts",
-    "./widgets/*": "./src/widgets/*",
-    "./parts": "./src/parts/index.ts",
-    "./parts/*": "./src/parts/*"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./api": {
+      "types": "./dist/api/index.d.ts",
+      "import": "./dist/api/index.js"
+    },
+    "./extensions/ai-system": {
+      "types": "./dist/extensions/ai-system/index.d.ts",
+      "import": "./dist/extensions/ai-system/index.js"
+    },
+    "./extensions/ai-system/*": {
+      "types": "./dist/extensions/ai-system/*.d.ts",
+      "import": "./dist/extensions/ai-system/*.js"
+    },
+    "./extensions/rag-system": {
+      "types": "./dist/extensions/rag-system/index.d.ts",
+      "import": "./dist/extensions/rag-system/index.js"
+    },
+    "./extensions/rag-system/*": {
+      "types": "./dist/extensions/rag-system/*.d.ts",
+      "import": "./dist/extensions/rag-system/*.js"
+    },
+    "./widgets": {
+      "types": "./dist/widgets/index.d.ts",
+      "import": "./dist/widgets/index.js"
+    },
+    "./widgets/*": {
+      "types": "./dist/widgets/*.d.ts",
+      "import": "./dist/widgets/*.js"
+    },
+    "./parts": {
+      "types": "./dist/parts/index.d.ts",
+      "import": "./dist/parts/index.js"
+    },
+    "./parts/*": {
+      "types": "./dist/parts/*.d.ts",
+      "import": "./dist/parts/*.js"
+    }
   },
   "files": [
+    "dist",
     "src",
     "tsconfig.json"
   ],
   "scripts": {
+    "build": "vite build",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
@@ -63,6 +95,7 @@
   },
   "devDependencies": {
     "typescript": "^5.9.3",
-    "vite": "^7.1.12"
+    "vite": "^7.1.12",
+    "vite-plugin-dts": "^4.5.4"
   }
 }
