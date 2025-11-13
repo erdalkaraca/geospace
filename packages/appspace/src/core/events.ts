@@ -1,8 +1,9 @@
-import PubSub from 'pubsub-js'
+import * as PubSubModule from 'pubsub-js'
+const PubSub = (PubSubModule as any).default || PubSubModule
 import {rootContext} from "./di";
 
 export const subscribe = (topic: string, callback: (data: any) => any) => {
-    PubSub.subscribe(topic, (_topic, data) => callback(data));
+    PubSub.subscribe(topic, (_topic: any, data: any) => callback(data));
 }
 
 export const publish = (topic: string, data: any) => {
