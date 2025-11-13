@@ -42,56 +42,6 @@ For general searches (not specific files), use rag.search-documents with just th
     }
 };
 
-export function createRAGSearchTool(): ToolDefinition {
-    return {
-        type: "function",
-        function: {
-            name: "search_workspace_documents",
-            description: "Search workspace documents by content, filename, or path. Use this to find relevant files and content when answering questions about the workspace. Returns documents with relevance scores and matched snippets. To reference a specific document, use filePath (exact path) or fileName (name match).",
-            parameters: {
-                type: "object",
-                properties: {
-                    query: {
-                        type: "string",
-                        description: "The search query describing what you want to find (keywords, phrases, or questions). Optional if filePath or fileName is provided."
-                    },
-                    limit: {
-                        type: "number",
-                        description: "Maximum number of results to return (default: 5, max: 20)"
-                    },
-                    fileType: {
-                        type: "string",
-                        description: "Optional: filter by file extension (e.g., 'md', 'ts', 'json', 'py')"
-                    },
-                    filePath: {
-                        type: "string",
-                        description: "Optional: get a specific document by its file path (e.g., 'src/utils/helper.ts'). If provided, this takes precedence over query search."
-                    },
-                    fileName: {
-                        type: "string",
-                        description: "Optional: get documents by file name (e.g., 'README.md'). If provided, searches for documents matching this name."
-                    },
-                    includePaths: {
-                        type: "array",
-                        items: { type: "string" },
-                        description: "Optional: scope search to specific file paths or patterns (e.g., ['src/**', 'docs/*.md']). Supports wildcards * and ?."
-                    },
-                    excludePaths: {
-                        type: "array",
-                        items: { type: "string" },
-                        description: "Optional: exclude specific file paths or patterns from search (e.g., ['node_modules/**', '*.test.ts']). Supports wildcards * and ?."
-                    },
-                    pathPattern: {
-                        type: "string",
-                        description: "Optional: regex pattern to match file paths (e.g., '^src/.*\\.ts$')"
-                    }
-                },
-                required: []
-            }
-        }
-    };
-}
-
 export function createRAGToolExecutor() {
     return async (toolName: string, params: any): Promise<any> => {
         if (toolName === 'search_workspace_documents') {

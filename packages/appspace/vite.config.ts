@@ -11,8 +11,18 @@ const packageJson = JSON.parse(
   readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8')
 );
 
-const dependencies = Object.keys(packageJson.dependencies || {});
-const peerDependencies = Object.keys(packageJson.peerDependencies || {});
+const isExternal = (id: string) => {
+  // Bundle relative imports (./something, ../something)
+  if (id.startsWith('./') || id.startsWith('../')) {
+    return false;
+  }
+  // Bundle absolute paths to source files (entry points)
+  if (path.isAbsolute(id) && id.includes('/src/')) {
+    return false;
+  }
+  // Everything else is external (dependencies, node_modules, etc.)
+  return true;
+};
 
 export default defineConfig({
   worker: {
@@ -42,11 +52,7 @@ export default defineConfig({
       },
     },
     rollupOptions: {
-      external: [
-        ...dependencies,
-        ...peerDependencies,
-        /^@kispace-io\/appspace\/.*/,
-      ],
+      external: isExternal,
       output: {
         preserveModules: false,
         entryFileNames: '[name].js',

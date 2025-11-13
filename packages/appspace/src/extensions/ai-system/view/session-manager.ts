@@ -195,7 +195,7 @@ export class SessionManager {
     getAllSessions(): Session[] {
         return Array.from(this.sessions.entries()).map(([id, history]) => ({
             id,
-            history,
+            history: history.history,
             title: this.sessionTitles.get(id) || 'New Chat'
         }));
     }

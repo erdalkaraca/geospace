@@ -55,6 +55,10 @@ export class WebDAVFileResource extends File {
         publish(TOPIC_WORKSPACE_CHANGED, this.getWorkspace());
     }
 
+    async size(): Promise<number | null> {
+        return this.resource.contentLength ?? null;
+    }
+
     async delete(): Promise<void> {
         await this.client.deleteResource(this.resource.href);
         publish(TOPIC_WORKSPACE_CHANGED, this.getWorkspace());
