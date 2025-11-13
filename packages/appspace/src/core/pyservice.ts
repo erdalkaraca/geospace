@@ -1,5 +1,6 @@
 import {Directory, File, FileSysDirHandleResource, TOPIC_WORKSPACE_CHANGED, workspaceService} from "./filesys";
-import {parsePipRequirementsFile} from "pip-requirements-js";
+import * as pipRequirements from "pip-requirements-js";
+const { parsePipRequirementsFile } = pipRequirements;
 import {publish} from "./events";
 import type {PyWorkerMessage, PyWorkerResponse} from "./pyworker";
 import PyWorker from "./pyworker?worker";
