@@ -39,7 +39,6 @@ import './geo/gs-map-props'
 import './geo/gs-catalog-contributions'
 import './geo/gs-command-handlers'
 import './geo/gs-catalog'
-import "./app" // Registers gs-app component
 
 import APP_SYS_PROMPT from "./geospace-sysprompt.txt?raw"
 import README from "../../../README.md?raw"
@@ -371,7 +370,7 @@ export const geospaceApp: AppDefinition = {
     },
 
     render() {
-        return html`<gs-app></gs-app>`;
+        return html`<k-standard-app></k-standard-app>`;
     },
 };
 
