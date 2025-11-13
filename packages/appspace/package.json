@@ -10,7 +10,10 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./api": "./src/api/index.ts"
+    "./api": "./src/api/index.ts",
+    "./extensions/*": "./src/extensions/*",
+    "./widgets/*": "./src/widgets/*",
+    "./parts/*": "./src/parts/*"
   },
   "files": [
     "src",
