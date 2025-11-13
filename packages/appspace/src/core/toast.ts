@@ -1,4 +1,5 @@
-import Toastify from "toastify-js";
+import * as ToastifyModule from "toastify-js";
+const Toastify = (ToastifyModule as any).default || ToastifyModule
 import {uiContext} from "./di";
 
 export const toastInfo = (msg: string) => {
