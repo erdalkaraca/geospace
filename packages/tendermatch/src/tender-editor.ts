@@ -12,11 +12,33 @@ import { ragService } from "@kispace-io/appspace/extensions/rag-system/rag-servi
 import { aiService } from "@kispace-io/appspace/extensions/ai-system/service/ai-service";
 import { createLogger } from "@kispace-io/appspace/core/logger";
 import "@kispace-io/appspace/widgets/k-icon";
+import {
+    createFileKey,
+    extractFileName,
+    clearCriteriaAnswer,
+    hasCriteriaAnswer,
+    createDocumentNumberMap,
+    createScoreStyle,
+    calculateHistogramBins,
+    parseAIResponse,
+    buildEvaluationPrompt,
+    buildContextText,
+    applyParsedResponse
+} from "./tender-editor-helpers";
+import type { RAGSearchResult } from "@kispace-io/appspace/extensions/rag-system/rag-service";
 
 const logger = createLogger('TenderEditor');
 
 function generateUUID(): string {
     return crypto.randomUUID();
+}
+
+async function getWorkspaceOrError() {
+    const workspace = await workspaceService.getWorkspace();
+    if (!workspace) {
+        throw new Error('No workspace available');
+    }
+    return workspace;
 }
 
 @customElement('k-tender-editor')
@@ -44,6 +66,17 @@ export class KTenderEditor extends KPart {
 
     private documentContext?: DocumentSearchScope;
     private currentFile?: File;
+
+    private markDirtyAndUpdate(dirty: boolean = true): void {
+        this.markDirty(dirty);
+        this.requestUpdate();
+    }
+
+    private ensureContextInitialized(): void {
+        if (!this.documentContext || !this.tenderFile || !this.currentFile) {
+            throw new Error('Document context not initialized');
+        }
+    }
 
     protected async doBeforeUI() {
         if (!this.input?.data || !(this.input.data instanceof File)) {
@@ -179,12 +212,7 @@ export class KTenderEditor extends KPart {
 
     private async indexWorkspaceFile(filePath: string) {
         try {
-            const workspace = await workspaceService.getWorkspace();
-            if (!workspace) {
-                toastError('No workspace available');
-                return;
-            }
-
+            const workspace = await getWorkspaceOrError();
             const file = await workspace.getResource(filePath);
             if (!(file instanceof File)) {
                 toastError(`Not a file: ${filePath}`);
@@ -192,7 +220,7 @@ export class KTenderEditor extends KPart {
             }
 
             const workspacePath = workspace.getName();
-            const fileKey = `${workspacePath}:${filePath}`;
+            const fileKey = createFileKey(workspacePath, filePath);
             this.indexingFiles.add(fileKey);
             this.requestUpdate();
 
@@ -209,12 +237,7 @@ export class KTenderEditor extends KPart {
 
     private async indexNativeFiles(files: FileList | globalThis.File[]) {
         try {
-            const workspace = await workspaceService.getWorkspace();
-            if (!workspace) {
-                toastError('No workspace available');
-                return;
-            }
-
+            const workspace = await getWorkspaceOrError();
             const fileArray = Array.from(files);
             let indexed = 0;
             let failed = 0;
@@ -230,7 +253,7 @@ export class KTenderEditor extends KPart {
                         const workspaceFile = await workspace.getResource(nativeFile.name);
                         if (workspaceFile instanceof File) {
                             const filePath = workspaceFile.getWorkspacePath();
-                            const fileKey = `${workspacePath}:${filePath}`;
+                            const fileKey = createFileKey(workspacePath, filePath);
                             this.indexingFiles.add(fileKey);
                             this.requestUpdate();
 
@@ -261,28 +284,27 @@ export class KTenderEditor extends KPart {
     }
 
     private async indexFile(file: File) {
-        if (!this.documentContext || !this.tenderFile || !this.currentFile) {
-            toastError('Document context not initialized');
+        try {
+            this.ensureContextInitialized();
+        } catch (error) {
+            toastError(String(error));
             return;
         }
-
 
         const workspace = file.getWorkspace();
         const workspacePath = workspace.getName();
         const filePath = file.getWorkspacePath();
-        const tenderFile = this.tenderFile;
-        const currentFile = this.currentFile;
 
         await taskService.runAsync(`Indexing ${file.getName()}`, async (progress) => {
             progress.message = `Indexing ${file.getName()}...`;
             try {
                 await documentIndexService.indexFileInContext(file, this.documentContext!);
                 
-                if (!tenderFile.indexedFiles) {
-                    tenderFile.indexedFiles = [];
+                if (!this.tenderFile!.indexedFiles) {
+                    this.tenderFile!.indexedFiles = [];
                 }
 
-                const indexedFiles = [...(tenderFile.indexedFiles || [])];
+                const indexedFiles = [...this.tenderFile!.indexedFiles];
                 const existingIndex = indexedFiles.findIndex(
                     f => f.filePath === filePath && f.workspacePath === workspacePath
                 );
@@ -299,13 +321,9 @@ export class KTenderEditor extends KPart {
                     indexedFiles.push(indexedFile);
                 }
 
-                tenderFile.indexedFiles = indexedFiles;
-                
-                // Clear all criteria answers when documents change
+                this.tenderFile!.indexedFiles = indexedFiles;
                 this.clearAllCriteriaAnswers();
-                
-                this.markDirty(true);
-                this.requestUpdate();
+                this.markDirtyAndUpdate();
 
                 progress.progress = 100;
             } catch (error) {
@@ -325,7 +343,8 @@ export class KTenderEditor extends KPart {
             return;
         }
 
-        const confirmMessage = `Remove ${file.filePath.split('/').pop()} from this tender?`;
+        const fileName = extractFileName(file.filePath);
+        const confirmMessage = `Remove ${fileName} from this tender?`;
         const confirmed = await confirmDialog(confirmMessage);
         
         if (!confirmed) {
@@ -340,33 +359,24 @@ export class KTenderEditor extends KPart {
         if (index >= 0) {
             indexedFiles.splice(index, 1);
             this.tenderFile.indexedFiles = [...indexedFiles];
-            
-            // Clear all criteria answers when documents change
             this.clearAllCriteriaAnswers();
-            
-            this.markDirty(true);
-            this.requestUpdate();
+            this.markDirtyAndUpdate();
 
-            if (documentIndexService && this.documentContext && this.documentContext.tags && this.documentContext.tags.length > 0) {
+            if (this.documentContext.tags && this.documentContext.tags.length > 0) {
                 const context = this.documentContext;
                 try {
                     await taskService.runAsync('Removing file from context', async (progress) => {
                         progress.message = `Removing tag from ${file.filePath}...`;
                         
-                        const workspace = await workspaceService.getWorkspace();
-                        if (!workspace) {
-                            throw new Error('No workspace available');
-                        }
-
+                        const workspace = await getWorkspaceOrError();
                         const resource = await workspace.getResource(file.filePath);
                         if (!(resource instanceof File)) {
                             throw new Error(`File not found: ${file.filePath}`);
                         }
 
                         await documentIndexService.removeFileFromContext(resource, context);
-                        
                         progress.progress = 100;
-                        toastInfo(`Removed ${file.filePath.split('/').pop()} from this tender`);
+                        toastInfo(`Removed ${fileName} from this tender`);
                     });
                 } catch (error) {
                     toastError(`Failed to remove file from context: ${error}`);
@@ -396,70 +406,35 @@ export class KTenderEditor extends KPart {
     }
 
     private getScoreStyle(score: number): string {
-        // Highly distinct color ranges with maximum visual separation
-        // Using saturated colors that are far apart on the color wheel
-        let r: number, g: number, b: number;
-        
-        if (score <= 20) {
-            // Pure bright red
-            r = 255;
-            g = 0;
-            b = 0;
-        } else if (score <= 40) {
-            // Bright orange
-            r = 255;
-            g = 140;
-            b = 0;
-        } else if (score <= 60) {
-            // Bright yellow
-            r = 255;
-            g = 255;
-            b = 0;
-        } else if (score <= 80) {
-            // Bright lime/yellow-green
-            r = 150;
-            g = 255;
-            b = 0;
-        } else {
-            // Bright green
-            r = 0;
-            g = 255;
-            b = 0;
-        }
-        
-        return `--wa-color-text-normal: rgb(${r}, ${g}, ${b}); --wa-color-neutral-border-normal: rgb(${r}, ${g}, ${b}); background: rgba(${r}, ${g}, ${b}, 0.2);`;
+        return createScoreStyle(score);
     }
 
     private clearAllCriteriaAnswers() {
-        if (!this.tenderFile || !this.tenderFile.criteria) {
+        if (!this.tenderFile?.criteria) {
             return;
         }
 
         let hasChanges = false;
         for (const criteria of this.tenderFile.criteria) {
-            if (criteria.answer || criteria.essence !== undefined || criteria.fulfillmentScore !== undefined || criteria.evaluatedAt) {
-                criteria.answer = undefined;
-                criteria.essence = undefined;
-                criteria.fulfillmentScore = undefined;
-                criteria.evaluatedAt = undefined;
+            if (hasCriteriaAnswer(criteria)) {
+                clearCriteriaAnswer(criteria);
                 hasChanges = true;
             }
         }
 
         if (hasChanges) {
             this.tenderFile.criteria = [...this.tenderFile.criteria];
-            this.markDirty(true);
-            this.requestUpdate();
+            this.markDirtyAndUpdate();
         }
     }
 
     private async clearCriteria(criteriaId: string) {
-        if (!this.tenderFile || !this.tenderFile.criteria) {
+        if (!this.tenderFile?.criteria) {
             return;
         }
 
         const criteria = this.tenderFile.criteria.find(c => c.id === criteriaId);
-        if (!criteria || !criteria.answer) {
+        if (!criteria || !hasCriteriaAnswer(criteria)) {
             return;
         }
 
@@ -471,20 +446,16 @@ export class KTenderEditor extends KPart {
             return;
         }
 
-        criteria.answer = undefined;
-        criteria.essence = undefined;
-        criteria.fulfillmentScore = undefined;
-        criteria.evaluatedAt = undefined;
-        this.markDirty(true);
-        this.requestUpdate();
+        clearCriteriaAnswer(criteria);
+        this.markDirtyAndUpdate();
     }
 
     private async clearAllCriteria() {
-        if (!this.tenderFile || !this.tenderFile.criteria) {
+        if (!this.tenderFile?.criteria) {
             return;
         }
 
-        const criteriaWithAnswers = this.tenderFile.criteria.filter(c => c.answer || c.fulfillmentScore !== undefined);
+        const criteriaWithAnswers = this.tenderFile.criteria.filter(hasCriteriaAnswer);
         
         if (criteriaWithAnswers.length === 0) {
             toastInfo('No criteria have answers to clear');
@@ -500,16 +471,11 @@ export class KTenderEditor extends KPart {
         }
 
         for (const criteria of criteriaWithAnswers) {
-            criteria.answer = undefined;
-            criteria.essence = undefined;
-            criteria.fulfillmentScore = undefined;
-            criteria.evaluatedAt = undefined;
+            clearCriteriaAnswer(criteria);
         }
 
-        // Create new array reference to trigger Lit reactivity
         this.tenderFile.criteria = [...this.tenderFile.criteria];
-        this.markDirty(true);
-        this.requestUpdate();
+        this.markDirtyAndUpdate();
         toastInfo(`Cleared answers for ${criteriaWithAnswers.length} criteria`);
     }
 
@@ -565,59 +531,9 @@ export class KTenderEditor extends KPart {
                 return;
             }
 
-            // Create a map of filePath -> document number based on order in indexedFiles
-            const documentNumberMap = new Map<string, number>();
-            if (this.tenderFile.indexedFiles) {
-                this.tenderFile.indexedFiles.forEach((indexedFile, index) => {
-                    const key = `${indexedFile.workspacePath}:${indexedFile.filePath}`;
-                    documentNumberMap.set(key, index + 1);
-                });
-            }
-
-            // Group snippets by document and assign numbers
-            const documentMap = new Map<string, { document: typeof searchResults[0]['document']; snippets: string[]; docNumber: number }>();
-            for (const result of searchResults) {
-                const docKey = `${result.document.workspacePath}:${result.document.filePath}`;
-                const docNumber = documentNumberMap.get(docKey) || 0;
-                
-                if (!documentMap.has(docKey)) {
-                    documentMap.set(docKey, { document: result.document, snippets: [], docNumber });
-                }
-                documentMap.get(docKey)!.snippets.push(...result.matchedSnippets);
-            }
-
-            // Sort by document number to maintain order
-            const sortedDocuments = Array.from(documentMap.entries())
-                .map(([key, { document, snippets, docNumber }]) => ({ key, document, snippets, docNumber }))
-                .sort((a, b) => a.docNumber - b.docNumber);
-
-            const contextText = sortedDocuments.map(({ document, snippets, docNumber }) => {
-                return `[${docNumber}] ${document.fileName}\nRelevant excerpts from this document:\n${snippets.join('\n\n')}`;
-            }).join('\n\n---\n\n');
-
-            const prompt = `Based on the following documents, please evaluate this criterion: "${criteria.question}"
-
-${contextText}
-
-Please provide your evaluation as a valid JSON object with the following structure:
-{
-  "essence": "A concise 1-2 sentence summary of the key information relevant to this criterion",
-  "fulfillmentScore": 0-100,
-  "detailedAnswer": "A clear and detailed answer explaining your evaluation. When referencing information, always cite using the document number in backticks (e.g., \`[1]\`, \`[2]\`). For example: 'According to \`[1]\`, the deadline is...' or 'The document \`[2]\` states...'. Do not refer to individual excerpts or chunks as separate documents - they are all parts of the same source document."
-}
-
-Important:
-- Respond in the same language as the criterion question
-- Output ONLY valid JSON, no additional text before or after
-- When citing information in your "detailedAnswer", always use the document number format in backticks: \`[1]\`, \`[2]\`, etc. (e.g., "According to \`[1]\`, ..." or "The document \`[2]\` states..."). The excerpts shown above are parts of complete documents, not separate documents themselves.
-- "fulfillmentScore" must be a number between 0 and 100 representing how well the criterion can be derived from the data:
-  * 100: The criterion is fully satisfied and clearly evident in the documents
-  * 75-99: The criterion is mostly satisfied with strong evidence
-  * 50-74: The criterion is partially satisfied with moderate evidence
-  * 25-49: The criterion is weakly satisfied with limited evidence
-  * 1-24: The criterion is barely satisfied with minimal evidence
-  * 0: The criterion cannot be satisfied or information is not found in the documents
-- If the information is not found in the documents, set "fulfillmentScore" to 0 and explain in "detailedAnswer"`;
+            const documentNumberMap = createDocumentNumberMap(this.tenderFile.indexedFiles || []);
+            const contextText = buildContextText(searchResults, documentNumberMap);
+            const prompt = buildEvaluationPrompt(criteria.question, contextText);
 
             const chatConfig = await aiService.getDefaultProvider();
             
@@ -657,67 +573,17 @@ Important:
             }
 
             const fullAnswer = answer.join('');
+            const parsed = parseAIResponse(fullAnswer);
             
-            // Try to extract JSON from the response (may have markdown code blocks or extra text)
-            let jsonText = fullAnswer.trim();
-            
-            // Remove markdown code blocks if present
-            const codeBlockMatch = jsonText.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/);
-            if (codeBlockMatch) {
-                jsonText = codeBlockMatch[1];
+            if (parsed) {
+                applyParsedResponse(criteria, parsed, fullAnswer);
             } else {
-                // Try to find JSON object in the text
-                const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
-                if (jsonMatch) {
-                    jsonText = jsonMatch[0];
-                }
-            }
-            
-            try {
-                const parsed = JSON.parse(jsonText) as {
-                    essence?: string;
-                    fulfillmentScore?: number;
-                    detailedAnswer?: string;
-                };
-                
-                if (parsed.essence) {
-                    criteria.essence = parsed.essence;
-                }
-                
-                if (parsed.fulfillmentScore !== undefined) {
-                    // Clamp score to 0-100 range
-                    criteria.fulfillmentScore = Math.max(0, Math.min(100, Math.round(parsed.fulfillmentScore)));
-                }
-                
-                // Store the detailed answer (formatted as markdown for display)
-                if (parsed.detailedAnswer) {
-                    criteria.answer = parsed.detailedAnswer;
-                } else {
-                    // Fallback: use the full response if JSON parsing succeeded but detailedAnswer is missing
-                    criteria.answer = fullAnswer;
-                }
-            } catch (parseError) {
-                // If JSON parsing fails, fall back to the original text and try regex parsing
-                logger.warn(`Failed to parse JSON response, falling back to text parsing: ${parseError}`);
+                logger.warn('Failed to parse AI response, using fallback');
                 criteria.answer = fullAnswer;
-                
-                // Fallback regex parsing
-                const essenceMatch = fullAnswer.match(/(?:"essence"\s*:\s*")(.+?)(?=")/i);
-                const scoreMatch = fullAnswer.match(/(?:"fulfillmentScore"\s*:\s*)(\d+)/i);
-                
-                if (essenceMatch && essenceMatch[1]) {
-                    criteria.essence = essenceMatch[1].trim();
-                }
-                
-                if (scoreMatch && scoreMatch[1]) {
-                    const score = parseInt(scoreMatch[1], 10);
-                    criteria.fulfillmentScore = Math.max(0, Math.min(100, score));
-                }
             }
             
             criteria.evaluatedAt = Date.now();
-            this.markDirty(true);
-            this.requestUpdate();
+            this.markDirtyAndUpdate();
         } catch (error) {
             toastError(`Failed to evaluate criteria: ${error}`);
             criteria.answer = `Error: ${error}`;
@@ -804,7 +670,7 @@ Important:
                                                             ? html`<wa-spinner size="small" slot="start"></wa-spinner>`
                                                             : html`<wa-icon name="file" slot="start"></wa-icon>`
                                                         }
-                                                        [${docNumber}] ${file.filePath.split('/').pop()}
+                                                        [${docNumber}] ${extractFileName(file.filePath)}
                                                         ${!isIndexing ? html`
                                                             <wa-button
                                                                 variant="neutral"
@@ -845,24 +711,7 @@ Important:
                                             ? Math.round(evaluated.reduce((sum, c) => sum + (c.fulfillmentScore || 0), 0) / evaluated.length)
                                             : 0;
                                         
-                                        // Create bins: 0-20, 21-40, 41-60, 61-80, 81-100
-                                        const bins = [
-                                            { label: '0-20', min: 0, max: 20, count: 0, midScore: 10 },
-                                            { label: '21-40', min: 21, max: 40, count: 0, midScore: 30 },
-                                            { label: '41-60', min: 41, max: 60, count: 0, midScore: 50 },
-                                            { label: '61-80', min: 61, max: 80, count: 0, midScore: 70 },
-                                            { label: '81-100', min: 81, max: 100, count: 0, midScore: 90 }
-                                        ];
-                                        
-                                        evaluated.forEach(c => {
-                                            const score = c.fulfillmentScore || 0;
-                                            for (const bin of bins) {
-                                                if (score >= bin.min && score <= bin.max) {
-                                                    bin.count++;
-                                                    break;
-                                                }
-                                            }
-                                        });
+                                        const bins = calculateHistogramBins(evaluated);
                                         
                                         const maxCount = Math.max(...bins.map(b => b.count), 1);
                                         
