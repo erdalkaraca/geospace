@@ -80,7 +80,11 @@ export abstract class KWidget extends LitElement {
                 const disabledSignal = commandContribution.disabled as Signal.Computed<boolean> | undefined;
                 if (disabledSignal) {
                     const cleanup = watchSignal(disabledSignal, () => {
-                        this.requestUpdate();
+                        try {
+                            this.requestUpdate();
+                        } catch (error) {
+                            console.error("Error updating widget: " + error);
+                        }
                     });
                     cleanups.push(cleanup);
                     this.signalCleanups.add(cleanup);
