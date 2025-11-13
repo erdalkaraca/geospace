@@ -41,11 +41,13 @@ export { watching } from '../core/signals';
 export { 
     CID_AGENTS, 
     CID_CHAT_PROVIDERS,
+    CID_PROMPT_ENHANCERS,
     type AgentContribution, 
     type AgentWorkflowOptions, 
     type AgentWorkflowResult, 
     type WorkflowExecution,
     type PromptEnhancer,
+    type PromptEnhancerContribution,
     type MessageProcessor,
     type AgentHooks,
     type UserAttentionRequest,

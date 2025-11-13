@@ -1,7 +1,9 @@
 import type { ExecutionContext } from "../../../core/commandregistry";
 import type { ChatMessage, ApiMessage } from "../core/types";
-import type { PromptEnhancer, AgentContribution, AgentToolsConfig } from "../core/interfaces";
+import type { PromptEnhancer, AgentContribution, AgentToolsConfig, PromptEnhancerContribution } from "../core/interfaces";
 import { ToolRegistry } from "../tools/tool-registry";
+import { contributionRegistry } from "../../../core/contributionregistry";
+import { CID_PROMPT_ENHANCERS } from "../core/constants";
 
 export class PromptBuilder {
     private toolRegistry = new ToolRegistry();
@@ -37,6 +39,14 @@ export class PromptBuilder {
         });
     }
 
+    private getContributedEnhancers(): PromptEnhancer[] {
+        const contributions = contributionRegistry.getContributions(CID_PROMPT_ENHANCERS) as PromptEnhancerContribution[];
+        return contributions.map(contrib => ({
+            ...contrib.enhancer,
+            priority: contrib.priority ?? contrib.enhancer.priority
+        }));
+    }
+
     private async enhancePrompt(
         prompt: string,
         contribution: AgentContribution,
@@ -46,7 +56,8 @@ export class PromptBuilder {
 
         const allEnhancers = [
             ...(contribution.promptEnhancers || []),
-            ...this.enhancers
+            ...this.enhancers,
+            ...this.getContributedEnhancers()
         ].sort((a, b) => (b.priority || 0) - (a.priority || 0));
 
         for (const enhancer of allEnhancers) {

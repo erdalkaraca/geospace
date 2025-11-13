@@ -34,6 +34,11 @@ export interface PromptEnhancer {
     priority?: number;
 }
 
+export interface PromptEnhancerContribution extends Contribution {
+    enhancer: PromptEnhancer;
+    priority?: number;
+}
+
 export interface MessageProcessor {
     process(message: ChatMessage, context: ExecutionContext): Promise<ChatMessage>;
     priority?: number;

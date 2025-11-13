@@ -9,6 +9,7 @@ export const TOPIC_AGENT_WORKFLOW_ERROR = "events/aiservice/agentWorkflowError";
 
 export const CID_AGENTS = "aiservice.agents";
 export const CID_CHAT_PROVIDERS = "aiservice.chatProviders";
+export const CID_PROMPT_ENHANCERS = "aiservice.promptEnhancers";
 
 export const KEY_AI_CONFIG = "aiConfig";
 

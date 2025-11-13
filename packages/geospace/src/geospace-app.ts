@@ -10,25 +10,16 @@ import {
     packageInfoService,
     CID_AGENTS,
     contributionRegistry,
-    extensionRegistry,
-    workspaceService,
     editorRegistry,
     commandRegistry,
     registerAll,
     activeSelectionSignal,
-    SIDEBAR_MAIN,
     SIDEBAR_MAIN_BOTTOM,
-    SIDEBAR_AUXILIARY,
     TOOLBAR_MAIN,
-    TOOLBAR_BOTTOM,
-    TOOLBAR_BOTTOM_END,
     TOOLBAR_MAIN_RIGHT,
     File,
     StringFile,
     type AgentContribution,
-    type PromptEnhancer,
-    type Extension,
-    type ExecutionContext,
     type IconContribution
 } from "@kispace-io/appspace/api";
 
@@ -40,7 +31,8 @@ import './geo/gs-catalog-contributions'
 import './geo/gs-command-handlers'
 import './geo/gs-catalog'
 
-import APP_SYS_PROMPT from "./geospace-sysprompt.txt?raw"
+import GENERAL_SYS_PROMPT from "../../appspace/src/agents/general-assistant-prompt.txt?raw"
+import { registerGeospacePromptEnhancer } from "./geo/geospace-prompt-enhancer"
 import README from "../../../README.md?raw"
 import { getSourceTypeFromFile, isSupportedSpatialFile } from "./geo/utils";
 import { DEFAULT_GSMAP } from "./rt";
@@ -67,13 +59,6 @@ const GEOSPACE_UI_CONTRIBUTIONS = [
         html: `<span style="margin-right: 1rem;"><span><nobr>🌐<i><b>geo!</b></i><small>space</small></nobr></span></span>`
     },
     {
-        target: SIDEBAR_MAIN,
-        name: "filebrowser",
-        label: "Workspace",
-        icon: "folder-open",
-        component: (id: string) => html`<k-filebrowser id="${id}"></k-filebrowser>`
-    },
-    {
         target: "system.fastviews-bottomend",
         name: "catalog",
         label: "Catalog",
@@ -86,38 +71,6 @@ const GEOSPACE_UI_CONTRIBUTIONS = [
         label: "Map Properties",
         icon: "fg map-options",
         component: (id: string) => html`<gs-map-props id="${id}"></gs-map-props>`
-    },
-    {
-        target: SIDEBAR_AUXILIARY,
-        name: "aiview",
-        label: "AI",
-        icon: "robot",
-        component: (id: string) => html`<k-aiview id="${id}"></k-aiview>`
-    },
-    {
-        target: "system.fastviews-bottomend",
-        name: "log-terminal",
-        label: "Log Messages",
-        icon: "list",
-        component: (id: string) => html`<k-log-terminal id="${id}"></k-log-terminal>`
-    },
-    {
-        target: TOOLBAR_BOTTOM,
-        slot: "start",
-        label: "Workspace",
-        html: `<k-workspace-name></k-workspace-name>`
-    },
-    {
-        target: TOOLBAR_BOTTOM_END,
-        label: `v${appVersion}`,
-        icon: "circle-info",
-        command: "show_version_info",
-        showLabel: true,
-    },
-    {
-        target: TOOLBAR_BOTTOM_END,
-        label: `Fast Views`,
-        html: `<k-fastviews target="system.fastviews-bottomend" icon="bolt" title="Fast Views"></k-fastviews>`
     },
     {
         target: "contextmenu:filebrowser",
@@ -205,18 +158,7 @@ export const geospaceApp: AppDefinition = {
             devDependencies: geospacePackageJson.devDependencies
         });
 
-        const appSupportPromptEnhancer: PromptEnhancer = {
-            enhance: async (prompt: string, _context: ExecutionContext) => {
-                return workspaceService.getWorkspace().then(workspace => {
-                    const appState = {
-                        workspace: workspace?.getName(),
-                        activeEditor: editorRegistry.getEditorArea()?.getActiveEditor()
-                    }
-                    const appStateStr = `***App's state:***\n${JSON.stringify(appState, null, 2)}`
-                    return `${appStateStr}\n\n${prompt}`
-                })
-            }
-        }
+        registerGeospacePromptEnhancer();
 
         contributionRegistry.registerContribution(CID_AGENTS, {
             label: "App Support",
@@ -224,20 +166,7 @@ export const geospaceApp: AppDefinition = {
             role: "appsupport",
             priority: 100,
             icon: "question-circle",
-            sysPrompt: () => {
-                const extensions = extensionRegistry.getExtensions().map((e: Extension) => {
-                    return {
-                        id: e.id,
-                        name: e.name,
-                        description: e.description,
-                        experimental: e.experimental,
-                        installedAndEnabled: extensionRegistry.isEnabled(e.id)
-                    }
-                })
-                const extensionsStr = `***Available Extensions:***\n${JSON.stringify(extensions, null, 2)}`
-                return `${APP_SYS_PROMPT}\n\n${extensionsStr}`
-            },
-            promptEnhancers: [appSupportPromptEnhancer],
+            sysPrompt: GENERAL_SYS_PROMPT,
             tools: {
                 enabled: true,
             }
