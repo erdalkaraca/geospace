@@ -54,7 +54,8 @@
   "files": [
     "dist",
     "src",
-    "tsconfig.json"
+    "tsconfig.json",
+    "README.md"
   ],
   "scripts": {
     "build": "vite build",
