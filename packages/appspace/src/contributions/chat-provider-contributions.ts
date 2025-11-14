@@ -3,11 +3,22 @@ import { CID_CHAT_PROVIDERS, ChatProviderContribution } from "../extensions/ai-s
 
 contributionRegistry.registerContribution<ChatProviderContribution>(CID_CHAT_PROVIDERS, {
     target: CID_CHAT_PROVIDERS,
-    label: "Ollama",
+    label: "Ollama (Local)",
     provider: {
         name: "ollama",
         model: "gemma3:12b",
-        chatApiEndpoint: "http://localhost:11434/v1/chat/completions",
+        chatApiEndpoint: "https://<your-server>/v1/chat/completions",
+        apiKey: ""
+    }
+});
+
+contributionRegistry.registerContribution<ChatProviderContribution>(CID_CHAT_PROVIDERS, {
+    target: CID_CHAT_PROVIDERS,
+    label: "OpenWebUI (Self Hosted)",
+    provider: {
+        name: "openwebui",
+        model: "gemma3:12b",
+        chatApiEndpoint: "https://<your-server>/api/v1/chat/completion",
         apiKey: ""
     }
 });
@@ -67,7 +78,19 @@ contributionRegistry.registerContribution<ChatProviderContribution>(CID_CHAT_PRO
         model: "mistral-large-latest",
         chatApiEndpoint: "https://api.mistral.ai/v1/chat/completions",
         apiKey: "<your api key>",
-        ocrApiEndpoint: "https://api.mistral.ai/v1/ocr"
+        ocrApiEndpoint: "https://api.mistral.ai/v1/ocr",
+        ocrModel: "mistral-ocr-latest"
+    }
+});
+
+contributionRegistry.registerContribution<ChatProviderContribution>(CID_CHAT_PROVIDERS, {
+    target: CID_CHAT_PROVIDERS,
+    label: "LiteLLM",
+    provider: {
+        name: "litellm",
+        model: "gpt-3.5-turbo",
+        chatApiEndpoint: "https://<your-server>/v1/chat/completions",
+        apiKey: "<your api key>"
     }
 });
 

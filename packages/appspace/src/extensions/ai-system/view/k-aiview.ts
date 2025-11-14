@@ -29,7 +29,20 @@ import { confirmDialog } from "../../../core/dialog";
 @customElement('k-aiview')
 export class KAView extends KPart {
     private sessionManager = new SessionManager();
-    private streamManager = new StreamManager(() => this.requestUpdate());
+    private scrollDebounceTimer?: ReturnType<typeof setTimeout>;
+    
+    private streamManager = new StreamManager(() => {
+        this.requestUpdate();
+        // Debounce scroll during streaming - only scroll every 100ms
+        if (this.scrollDebounceTimer) {
+            clearTimeout(this.scrollDebounceTimer);
+        }
+        this.scrollDebounceTimer = setTimeout(async () => {
+            await this.updateComplete;
+            this.scrollToBottom();
+            this.scrollDebounceTimer = undefined;
+        }, 100);
+    });
     private providerManager = new ProviderManager(aiService);
     private agentGroupManager = new AgentGroupManager();
 
@@ -40,16 +53,8 @@ export class KAView extends KPart {
     private inputValue: string = '';
 
     @state()
-    private settingsDialogOpen: boolean = false;
-
-    @state()
     private requireToolApproval: boolean = true;
     private toolApprovalAllowlist: Set<string> = new Set();
-
-    @state()
-    private settingsProviderName: string = '';
-    @state()
-    private settingsModel: string = '';
 
     @state()
     private pendingToolApprovals = new Map<string, {
@@ -74,9 +79,6 @@ export class KAView extends KPart {
         }
         await this.providerManager.initialize();
         await this.loadSettings();
-        // Load provider and model from AI config
-        this.settingsProviderName = await this.providerManager.getSettingsProviderName() || '';
-        this.settingsModel = await this.providerManager.getSettingsModel() || '';
         this.requestUpdate();
     }
 
@@ -104,29 +106,28 @@ export class KAView extends KPart {
         this.requestUpdate();
     }
 
-    private scrollToBottom(): void {
-        requestAnimationFrame(() => {
-            const activeSessionId = this.sessionManager.getActiveSessionId();
-            if (!activeSessionId) return;
-            
-            const tabPanel = this.shadowRoot?.querySelector(`wa-tab-panel[name="${activeSessionId}"]`);
-            const scroller = tabPanel?.querySelector('wa-scroller.chat-messages') as any;
-            if (scroller) {
-                const scrollContainer = scroller.shadowRoot?.querySelector('.scroll-container') as HTMLElement;
-                if (scrollContainer) {
-                    scrollContainer.scrollTop = scrollContainer.scrollHeight;
-                } else if (scroller.scrollTo) {
-                    scroller.scrollTo({ top: scroller.scrollHeight, behavior: 'smooth' });
-                }
+    private async scrollToBottom(): Promise<void> {
+        await this.updateComplete;
+        const activeSessionId = this.sessionManager.getActiveSessionId();
+        if (!activeSessionId) return;
+        
+        const tabPanel = this.shadowRoot?.querySelector(`wa-tab-panel[name="${activeSessionId}"]`);
+        const scroller = tabPanel?.querySelector('wa-scroller.chat-messages') as any;
+        if (scroller) {
+            // Try multiple methods to scroll
+            const scrollContainer = scroller.shadowRoot?.querySelector('.scroll-container') as HTMLElement;
+            if (scrollContainer) {
+                scrollContainer.scrollTop = scrollContainer.scrollHeight;
+            } else if (scroller.scrollTo) {
+                scroller.scrollTo({ top: scroller.scrollHeight, behavior: 'smooth' });
+            } else if (scroller.scrollTop !== undefined) {
+                scroller.scrollTop = scroller.scrollHeight;
             }
-        });
+        }
     }
 
     protected updated(changedProperties: PropertyValues) {
         super.updated(changedProperties);
-        if (changedProperties.has('busy')) {
-            this.scrollToBottom();
-        }
     }
 
     private async sendMessage(): Promise<void> {
@@ -224,6 +225,8 @@ export class KAView extends KPart {
 
         await this.sessionManager.persistSessions();
         this.requestUpdate();
+        await this.updateComplete;
+        this.scrollToBottom();
         this.busy = true;
 
         this.abortController = new AbortController();
@@ -298,12 +301,14 @@ export class KAView extends KPart {
                         this.requestUpdate();
                     });
                 },
-                onAgentStart: (role: string) => {
+                onAgentStart: async (role: string) => {
                     const streamIndex = this.streamManager.createStreamingMessage(role, sessionId);
                     streamingAgents.set(role, streamIndex);
                     
                     this.agentGroupManager.updateAgentStatus(groupId, role, 'streaming');
                     this.requestUpdate();
+                    await this.updateComplete;
+                    this.scrollToBottom();
                 },
                 onToken: (role: string, token: string) => {
                     const streamIndex = streamingAgents.get(role);
@@ -327,6 +332,8 @@ export class KAView extends KPart {
                         this.agentGroupManager.updateAgentStatus(groupId, role, 'completed', message, messageIndex);
                         await this.sessionManager.persistSessions();
                         this.requestUpdate();
+                        await this.updateComplete;
+                        this.scrollToBottom();
                     }
                 },
                 onAgentError: (role: string, error: Error) => {
@@ -374,63 +381,8 @@ export class KAView extends KPart {
     }
 
     private async openSettingsDialog(): Promise<void> {
-        this.settingsDialogOpen = true;
-        const selectedProvider = this.providerManager.getSelectedProvider();
-        const providerName = selectedProvider?.name || this.providerManager.getProviders()[0]?.name;
-        
-        if (providerName) {
-            this.providerManager.setSettingsProviderName(providerName);
-            if (selectedProvider?.model) {
-                this.providerManager.setSettingsModel(selectedProvider.model);
-            }
-            try {
-                await this.providerManager.fetchModels(providerName);
-            } catch (error) {
-                toastError(`Failed to fetch models: ${error}`);
-            }
-        }
-        this.requestUpdate();
-    }
-
-    private closeSettingsDialog(): void {
-        this.settingsDialogOpen = false;
-        this.providerManager.resetModelSelection();
-        this.requestUpdate();
-    }
-
-    private async onProviderChange(providerName: string): Promise<void> {
-        this.providerManager.setSettingsProviderName(providerName);
-        this.providerManager.setSettingsModel(undefined);
-        this.providerManager.resetModelSelection();
-        try {
-            await this.providerManager.fetchModels(providerName);
-        } catch (error) {
-            toastError(`Failed to fetch models: ${error}`);
-        }
-        this.requestUpdate();
-    }
-
-    private async onModelChange(event: Event): Promise<void> {
-        const target = event.target as any;
-        this.providerManager.setSettingsModel(target.value);
-    }
-
-    private async saveSettingsAndClose(apiKey?: string): Promise<void> {
-        const providerName = await this.providerManager.getSettingsProviderName();
-        const model = await this.providerManager.getSettingsModel();
-        
-        if (!providerName || !model) {
-            toastError('Please select both provider and model');
-            return;
-        }
-
-        await this.providerManager.saveSettings(providerName, model, apiKey, this.requireToolApproval, Array.from(this.toolApprovalAllowlist));
-        // Update local state
-        this.settingsProviderName = providerName;
-        this.settingsModel = model;
-        this.settingsDialogOpen = false;
-        toastInfo('Settings saved');
-        this.requestUpdate();
+        const { commandRegistry } = await import("../../../core/commandregistry");
+        commandRegistry.execute("open_ai_config", {});
     }
 
     private renderMessage(session: any, message: ChatMessage, index: number, isStreaming?: boolean): TemplateResult {
@@ -475,35 +427,6 @@ export class KAView extends KPart {
 
         return html`
             <div class="chat-container">
-                ${when(this.settingsDialogOpen, () => html`
-                    <ai-settings-dialog
-                        .open="${this.settingsDialogOpen}"
-                        .providers="${this.providerManager.getProviders()}"
-                        .selectedProviderName="${this.settingsProviderName}"
-                        .selectedModel="${this.settingsModel}"
-                        .availableModels="${this.providerManager.getAvailableModels()}"
-                        .loadingModels="${this.providerManager.isLoadingModels()}"
-                        .requireToolApproval="${this.requireToolApproval}"
-                        .toolApprovalAllowlist="${Array.from(this.toolApprovalAllowlist)}"
-                        @provider-change="${(e: CustomEvent) => this.onProviderChange(e.detail.providerName)}"
-                        @model-change="${(e: CustomEvent) => this.onModelChange(e)}"
-                        @tool-approval-change="${(e: CustomEvent) => {
-                            this.requireToolApproval = e.detail.value;
-                            this.requestUpdate();
-                        }}"
-                        @allowlist-change="${(e: CustomEvent) => {
-                            this.toolApprovalAllowlist = new Set(e.detail.allowlist || []);
-                            this.requestUpdate();
-                        }}"
-                        @save="${(e: CustomEvent) => {
-                            this.providerManager.setSettingsProviderName(e.detail.providerName);
-                            this.providerManager.setSettingsModel(e.detail.model);
-                            this.saveSettingsAndClose(e.detail.apiKey);
-                        }}"
-                        @cancel="${() => this.closeSettingsDialog()}">
-                    </ai-settings-dialog>
-                `)}
-                
                 ${when(sessionIds.length > 0, () => html`
                     <wa-tab-group 
                         active="${activeSessionId || sessionIds[0] || ''}" 
@@ -797,6 +720,10 @@ export class KAView extends KPart {
             flex-direction: column;
         }
 
+        .chat-messages {
+            margin-right: 0.5rem;
+        }
+
         .toolbar {
             display: flex;
             align-items: center;
@@ -934,7 +861,6 @@ export class KAView extends KPart {
             width: 100%;
             overflow: hidden;
             position: relative;
-            --wa-scrollbar-width: 10px;
         }
 
         wa-tab::part(base) {

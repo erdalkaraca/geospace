@@ -74,7 +74,8 @@ export class AIChatInput extends LitElement {
             <div class="input-container">
                 <div class="input-row">
                     <wa-textarea
-                        placeholder="Type your message..."
+                        placeholder="Type your message and press Enter..."
+                        size="small"
                         resize="auto"
                         rows="1"
                         .value="${this.value}"
@@ -86,23 +87,15 @@ export class AIChatInput extends LitElement {
                     ${when(this.busy, () => html`
                         <wa-button
                             appearance="plain"
-                            size="medium"
+                            size="small"
                             @click="${this.cancel}">
                             <wa-icon name="stop" label="Stop"></wa-icon>
-                        </wa-button>
-                    `, () => html`
-                        <wa-button
-                            appearance="plain"
-                            size="medium"
-                            ?disabled="${!this.value.trim() || !this.hasProvider}"
-                            @click="${this.send}">
-                            <wa-icon name="paper-plane" label="Send"></wa-icon>
                         </wa-button>
                     `)}
 
                     <wa-button
                         appearance="plain"
-                        size="medium"
+                        size="small"
                         @click="${this.openSettings}">
                         <wa-icon name="gear" label="Settings"></wa-icon>
                     </wa-button>
@@ -118,9 +111,8 @@ export class AIChatInput extends LitElement {
         }
 
         .input-container {
-            padding: 1rem;
-            border-top: solid var(--wa-border-width-s) var(--wa-color-neutral-border-loud);
-            background-color: var(--wa-color-surface-default);
+            margin-bottom: 0.25rem;
+            margin-left: 0.25rem;
         }
 
         .input-row {

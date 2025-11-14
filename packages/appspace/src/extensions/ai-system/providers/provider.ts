@@ -49,7 +49,24 @@ export abstract class BaseProvider implements IProvider {
         }
 
         const contentType = response.headers.get('content-type') || '';
-        const reader = response.body?.getReader();
+        const contentLength = response.headers.get('content-length');
+        
+        if (!response.body) {
+            yield {
+                type: 'error',
+                content: `Response body is null or empty (Content-Length: ${contentLength || 'unknown'}). This may indicate: 1) The endpoint doesn't support streaming, 2) Authentication is required/invalid, 3) The endpoint URL is incorrect. For Open WebUI, ensure you're using the correct endpoint and API key.`,
+                metadata: { 
+                    status: response.status, 
+                    contentType,
+                    contentLength,
+                    endpoint: params.chatConfig.chatApiEndpoint,
+                    hasApiKey: !!params.chatConfig.apiKey
+                }
+            };
+            return;
+        }
+
+        const reader = response.body.getReader();
 
         if (!reader) {
             yield {
@@ -61,8 +78,16 @@ export abstract class BaseProvider implements IProvider {
 
         const parser = this.createParser(contentType, params.chatConfig.chatApiEndpoint);
         
-        for await (const chunk of parser.parse(reader)) {
-            yield chunk;
+        try {
+            for await (const chunk of parser.parse(reader)) {
+                yield chunk;
+            }
+        } catch (error) {
+            yield {
+                type: 'error',
+                content: error instanceof Error ? error.message : 'Failed to parse response stream',
+                metadata: { error, contentType, endpoint: params.chatConfig.chatApiEndpoint }
+            };
         }
     }
 }

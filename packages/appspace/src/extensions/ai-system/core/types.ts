@@ -37,12 +37,15 @@ export interface ChatProvider {
     apiKey: string;
     chatApiEndpoint: string;
     ocrApiEndpoint?: string;
+    ocrModel?: string;
     parameters?: Record<string, any>;
 }
 
 export interface AIConfig {
     defaultProvider?: string;
     providers: ChatProvider[];
+    requireToolApproval?: boolean;
+    toolApprovalAllowlist?: string[];
 }
 
 export interface ApiMessage {

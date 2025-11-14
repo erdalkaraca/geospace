@@ -51,6 +51,7 @@ import type { TokenUsage } from "../core/types";
 
 export class AIService {
     private aiConfig?: AIConfig;
+    private configCheckPromise?: Promise<void>;
     private providerFactory: ProviderFactory;
     private agentRegistry: AgentRegistry;
     private promptBuilder: PromptBuilder;
@@ -71,6 +72,7 @@ export class AIService {
 
         subscribe(TOPIC_SETTINGS_CHANGED, () => {
             this.aiConfig = undefined;
+            this.configCheckPromise = undefined;
             this.checkAIConfig().then();
         });
 
@@ -118,22 +120,69 @@ export class AIService {
         this.providerFactory.registerProvider(provider);
     }
 
-    private async checkAIConfig() {
-        if (!this.aiConfig) {
+    private getContributedProviders(): ChatProvider[] {
+        const contributions = contributionRegistry.getContributions(CID_CHAT_PROVIDERS) as ChatProviderContribution[];
+        return contributions.map(contrib => contrib.provider);
+    }
+
+    private mergeProviders(existing: ChatProvider[], contributed: ChatProvider[]): ChatProvider[] {
+        const existingNames = new Set(existing.map(p => p.name));
+        const missing = contributed.filter(provider => !existingNames.has(provider.name));
+        return missing.length > 0 ? [...existing, ...missing] : existing;
+    }
+
+    private async createInitialConfig(): Promise<AIConfig> {
+        const contributedProviders = this.getContributedProviders();
+        const initialConfig: AIConfig = {
+            ...AI_CONFIG_TEMPLATE,
+            providers: contributedProviders
+        };
+        await appSettings.set(KEY_AI_CONFIG, initialConfig);
+        return await appSettings.get(KEY_AI_CONFIG);
+    }
+
+    private async updateConfigWithMissingProviders(config: AIConfig): Promise<AIConfig> {
+        const contributedProviders = this.getContributedProviders();
+        const mergedProviders = this.mergeProviders(config.providers, contributedProviders);
+        
+        if (mergedProviders.length !== config.providers.length) {
+            const updatedConfig: AIConfig = {
+                ...config,
+                providers: mergedProviders
+            };
+            await appSettings.set(KEY_AI_CONFIG, updatedConfig);
+            return updatedConfig;
+        }
+        
+        return config;
+    }
+
+    private async checkAIConfig(): Promise<void> {
+        if (this.aiConfig) {
+            return;
+        }
+
+        if (this.configCheckPromise) {
+            return this.configCheckPromise;
+        }
+
+        this.configCheckPromise = this.performConfigCheck();
+        return this.configCheckPromise;
+    }
+
+    private async performConfigCheck(): Promise<void> {
+        try {
             this.aiConfig = await appSettings.get(KEY_AI_CONFIG);
+            
             if (!this.aiConfig) {
-                const contributions = contributionRegistry.getContributions(CID_CHAT_PROVIDERS) as ChatProviderContribution[];
-                const contributedProviders = contributions.map(contrib => contrib.provider);
-                
-                const initialConfig: AIConfig = {
-                    ...AI_CONFIG_TEMPLATE,
-                    providers: contributedProviders
-                };
-                await appSettings.set(KEY_AI_CONFIG, initialConfig);
-                this.aiConfig = await appSettings.get(KEY_AI_CONFIG);
+                this.aiConfig = await this.createInitialConfig();
+            } else {
+                this.aiConfig = await this.updateConfigWithMissingProviders(this.aiConfig);
             }
 
             publish(TOPIC_AICONFIG_CHANGED, this.aiConfig);
+        } finally {
+            this.configCheckPromise = undefined;
         }
     }
 
