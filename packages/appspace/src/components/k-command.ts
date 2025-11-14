@@ -48,7 +48,6 @@ export class KCommand extends KWidget {
 
     @state()
     private dropdownContributions: Contribution[] = []
-    private contributionSignalCleanup?: () => void;
 
     private handleClick(event?: Event) {
         if (this.disabled) return
@@ -97,10 +96,6 @@ export class KCommand extends KWidget {
             subscribe(TOPIC_CONTRIBUTEIONS_CHANGED, (event: ContributionChangeEvent) => {
                 if (this.dropdown && event.target === this.dropdown) {
                     this.dropdownContributions = event.contributions;
-                    if (this.contributionSignalCleanup) {
-                        this.contributionSignalCleanup();
-                    }
-                    this.contributionSignalCleanup = this.watchContributionSignals(this.dropdownContributions);
                     this.requestUpdate();
                 }
             })
@@ -109,12 +104,7 @@ export class KCommand extends KWidget {
 
     private loadDropdownContributions() {
         if (!this.dropdown) return
-        if (this.contributionSignalCleanup) {
-            this.contributionSignalCleanup();
-            this.contributionSignalCleanup = undefined;
-        }
         this.dropdownContributions = contributionRegistry.getContributions(this.dropdown)
-        this.contributionSignalCleanup = this.watchContributionSignals(this.dropdownContributions);
         this.requestUpdate()
     }
 

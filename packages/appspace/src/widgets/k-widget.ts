@@ -2,9 +2,8 @@ import {LitElement, PropertyValues} from "lit";
 import {subscribe as event_subscribe} from "../core/events";
 import {toastError, toastInfo} from "../core/toast";
 import {commandRegistry, ExecuteParams} from "../core/commandregistry";
-import {Signal} from "@lit-labs/signals";
+import {Signal, SignalWatcher} from "@lit-labs/signals";
 import {watchSignal} from "../core/signals";
-import {Contribution, CommandContribution} from "../core/contributionregistry";
 
 Object.defineProperty(LitElement.prototype, "model", {
     enumerable: true,
@@ -12,7 +11,7 @@ Object.defineProperty(LitElement.prototype, "model", {
     writable: true
 });
 
-export abstract class KWidget extends LitElement {
+export abstract class KWidget extends SignalWatcher(LitElement) {
     private signalCleanups = new Set<() => void>();
 
     connectedCallback() {
@@ -70,33 +69,6 @@ export abstract class KWidget extends LitElement {
     protected watch(signal: Signal.State<any> | Signal.Computed<any>, callback: (value: any) => void): void {
         const cleanup = watchSignal(signal as Signal.State<any>, callback.bind(this));
         this.signalCleanups.add(cleanup);
-    }
-
-    protected watchContributionSignals(contributions: Contribution[]): () => void {
-        const cleanups: (() => void)[] = [];
-        for (const contribution of contributions) {
-            if ("command" in contribution) {
-                const commandContribution = contribution as CommandContribution;
-                const disabledSignal = commandContribution.disabled as Signal.Computed<boolean> | undefined;
-                if (disabledSignal) {
-                    const cleanup = watchSignal(disabledSignal, () => {
-                        try {
-                            this.requestUpdate();
-                        } catch (error) {
-                            console.error("Error updating widget: " + error);
-                        }
-                    });
-                    cleanups.push(cleanup);
-                    this.signalCleanups.add(cleanup);
-                }
-            }
-        }
-        return () => {
-            cleanups.forEach(cleanup => {
-                cleanup();
-                this.signalCleanups.delete(cleanup);
-            });
-        };
     }
 
     protected firstUpdated(_changedProperties: PropertyValues) {

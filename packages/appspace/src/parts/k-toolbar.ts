@@ -30,7 +30,6 @@ export class KToolbar extends KElement {
 
     @state()
     private contributions: Contribution[] = [];
-    private contributionSignalCleanup?: () => void;
 
     protected doBeforeUI() {
         const id = this.getAttribute("id");
@@ -70,16 +69,10 @@ export class KToolbar extends KElement {
     }
 
     private loadContributions(id: string) {
-        if (this.contributionSignalCleanup) {
-            this.contributionSignalCleanup();
-            this.contributionSignalCleanup = undefined;
-        }
-
         const specific = contributionRegistry.getContributions(id);
         
         if (!id.includes(':')) {
             this.contributions = specific;
-            this.contributionSignalCleanup = this.watchContributionSignals(specific);
             return;
         }
         
@@ -99,7 +92,6 @@ export class KToolbar extends KElement {
         }
         
         this.contributions = [...wildcard, ...categoryMatches, ...specific];
-        this.contributionSignalCleanup = this.watchContributionSignals(this.contributions);
     }
 
     contributionCreator(contribution: Contribution) {

@@ -61,12 +61,10 @@
     "build": "vite build",
     "type-check": "tsc --noEmit"
   },
-  "peerDependencies": {
+  "dependencies": {
     "lit": "^3.2.1",
     "marked": "^12.0.0 || ^16.4.1",
-    "@lit-labs/signals": "^0.1.3"
-  },
-  "dependencies": {
+    "@lit-labs/signals": "^0.1.3",
     "@awesome.me/webawesome": "^3.0.0",
     "@fortawesome/fontawesome-free": "^7.1.0",
     "@fortawesome/fontawesome-svg-core": "^7.1.0",

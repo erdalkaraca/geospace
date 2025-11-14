@@ -1,18 +1,18 @@
 import {Signal} from "@lit-labs/signals";
 
 export const watchSignal = (signal: Signal.State<any> | Signal.Computed<any>, callback: (value: any) => void): (() => void) => {
-    const signalToWatch = signal as Signal.State<any>;
     const watcher = new Signal.subtle.Watcher(async () => {
         try {
             await 0;
-            callback(signalToWatch.get());
+            callback(signal.get());
         } finally {
-            watcher.watch(signalToWatch);
+            watcher.watch(signal);
         }
     });
-    watcher.watch(signalToWatch);
+    watcher.watch(signal);
+    signal.get();
     
     return () => {
-        watcher.unwatch(signalToWatch);
+        watcher.unwatch(signal);
     };
 }
