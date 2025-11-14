@@ -1,7 +1,7 @@
 import type { ExecutionContext } from "../../../core/commandregistry";
 import type { Contribution } from "../../../core/contributionregistry";
 import type { DependencyContext } from "../../../core/di";
-import type { ChatMessage, ChatHistory, ChatProvider, ToolDefinition, StreamChunk, UserAttentionRequest, WorkflowExecution, ApiMessage } from "./types";
+import type { ChatMessage, ChatHistory, ChatProvider, ToolDefinition, StreamChunk, UserAttentionRequest, WorkflowExecution, ApiMessage, TokenUsage } from "./types";
 
 export interface ChatProviderContribution extends Contribution {
     provider: ChatProvider;
@@ -123,6 +123,7 @@ export interface AIServiceOptions {
 export interface AIServiceResult {
     message: ChatMessage;
     streamController?: ReadableStreamDefaultController<StreamChunk>;
+    tokenUsage?: TokenUsage;
 }
 
 export type { ApiMessage } from "./types";

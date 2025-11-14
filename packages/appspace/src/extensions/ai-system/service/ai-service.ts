@@ -45,6 +45,9 @@ import { MessageProcessorService } from "../agents/message-processor";
 import { ToolExecutor } from "../tools/tool-executor";
 import { WorkflowEngine } from "../workflows/workflow-engine";
 import { ToolRegistry } from "../tools/tool-registry";
+import { TokenEstimator } from "../utils/token-estimator";
+import { tokenUsageTracker } from "./token-usage-tracker";
+import type { TokenUsage } from "../core/types";
 
 export class AIService {
     private aiConfig?: AIConfig;
@@ -274,6 +277,7 @@ export class AIService {
                 role: 'assistant',
                 content: ''
             };
+            let tokenUsage: TokenUsage | undefined;
 
             for await (const chunk of provider.stream({
                 model: chatConfig.model,
@@ -310,6 +314,9 @@ export class AIService {
                     publish(TOPIC_AI_STREAM_CHUNK, { requestId, chunk });
                     yield chunk;
                 } else if (chunk.type === 'done') {
+                    if (chunk.metadata?.usage) {
+                        tokenUsage = chunk.metadata.usage as TokenUsage;
+                    }
                     options.onStatus?.('complete');
                     publish(TOPIC_AI_STREAM_COMPLETE, { requestId });
                     yield chunk;
@@ -326,8 +333,27 @@ export class AIService {
                 ...(finalToolCalls.length > 0 && { toolCalls: finalToolCalls })
             };
 
+            if (!tokenUsage) {
+                const promptTokens = TokenEstimator.estimatePromptTokens(messages, options.tools);
+                const completionTokens = TokenEstimator.estimateCompletionTokens(
+                    accumulatedContent,
+                    finalToolCalls
+                );
+                tokenUsage = {
+                    promptTokens,
+                    completionTokens,
+                    totalTokens: promptTokens + completionTokens,
+                    estimated: true
+                };
+            }
+
+            tokenUsageTracker.recordUsage(chatConfig.name, tokenUsage).catch(err => {
+                logger.error(`Failed to record token usage: ${err instanceof Error ? err.message : String(err)}`);
+            });
+
             return {
                 message: finalMessage,
+                tokenUsage
             };
         } catch (error) {
             if (error instanceof Error && error.name === 'AbortError') {

@@ -106,3 +106,17 @@ export interface StreamChunk {
 
 export type WorkflowExecution = 'parallel' | 'sequential' | 'conditional';
 
+export interface TokenUsage {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+    estimated?: boolean;
+}
+
+export interface ProviderTokenUsage {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+    requestCount: number;
+}
+

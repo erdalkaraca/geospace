@@ -1,9 +1,12 @@
 import { StreamParser } from "./stream-parser";
-import type { StreamChunk } from "../../core/types";
+import type { StreamChunk, TokenUsage } from "../../core/types";
 
 export class OllamaParser extends StreamParser {
+    private usage: TokenUsage | null = null;
+
     async *parse(reader: ReadableStreamDefaultReader<Uint8Array>): AsyncGenerator<StreamChunk> {
         let buffer = '';
+        this.usage = null;
 
         try {
             while (true) {
@@ -31,7 +34,12 @@ export class OllamaParser extends StreamParser {
                         }
 
                         if (json.done) {
-                            yield { type: 'done', content: '' };
+                            this.extractUsage(json);
+                            const doneChunk: StreamChunk = { type: 'done', content: '' };
+                            if (this.usage) {
+                                doneChunk.metadata = { usage: this.usage };
+                            }
+                            yield doneChunk;
                             continue;
                         }
 
@@ -63,6 +71,9 @@ export class OllamaParser extends StreamParser {
             if (buffer.trim()) {
                 try {
                     const json = JSON.parse(buffer);
+                    if (json.done) {
+                        this.extractUsage(json);
+                    }
                     if (json.message?.content) {
                         yield {
                             type: 'token',
@@ -77,9 +88,26 @@ export class OllamaParser extends StreamParser {
                 }
             }
 
-            yield { type: 'done', content: '' };
+            const doneChunk: StreamChunk = { type: 'done', content: '' };
+            if (this.usage) {
+                doneChunk.metadata = { usage: this.usage };
+            }
+            yield doneChunk;
         } finally {
             reader.releaseLock();
+        }
+    }
+
+    private extractUsage(json: any): void {
+        if (json.prompt_eval_count !== undefined || json.eval_count !== undefined) {
+            const promptTokens = json.prompt_eval_count || 0;
+            const completionTokens = json.eval_count || 0;
+            this.usage = {
+                promptTokens,
+                completionTokens,
+                totalTokens: promptTokens + completionTokens,
+                estimated: false
+            };
         }
     }
 }

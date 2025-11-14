@@ -1,9 +1,12 @@
 import { StreamParser } from "./stream-parser";
-import type { StreamChunk, ToolCall } from "../../core/types";
+import type { StreamChunk, ToolCall, TokenUsage } from "../../core/types";
 
 export class SSEParser extends StreamParser {
+    private usage: TokenUsage | null = null;
+
     async *parse(reader: ReadableStreamDefaultReader<Uint8Array>): AsyncGenerator<StreamChunk> {
         let buffer = '';
+        this.usage = null;
 
         try {
             while (true) {
@@ -22,7 +25,11 @@ export class SSEParser extends StreamParser {
                         const data = line.slice(6).trim();
                         
                         if (data === '[DONE]') {
-                            yield { type: 'done', content: '' };
+                            const doneChunk: StreamChunk = { type: 'done', content: '' };
+                            if (this.usage) {
+                                doneChunk.metadata = { usage: this.usage };
+                            }
+                            yield doneChunk;
                             continue;
                         }
 
@@ -37,6 +44,8 @@ export class SSEParser extends StreamParser {
                                 };
                                 continue;
                             }
+
+                            this.extractUsage(json);
 
                             const chunk = this.parseChunk(json);
                             if (chunk) {
@@ -55,6 +64,7 @@ export class SSEParser extends StreamParser {
                     if (data !== '[DONE]') {
                         try {
                             const json = JSON.parse(data);
+                            this.extractUsage(json);
                             const chunk = this.parseChunk(json);
                             if (chunk) {
                                 yield chunk;
@@ -65,9 +75,25 @@ export class SSEParser extends StreamParser {
                 }
             }
 
-            yield { type: 'done', content: '' };
+            const doneChunk: StreamChunk = { type: 'done', content: '' };
+            if (this.usage) {
+                doneChunk.metadata = { usage: this.usage };
+            }
+            yield doneChunk;
         } finally {
             reader.releaseLock();
+        }
+    }
+
+    private extractUsage(json: any): void {
+        if (json.usage) {
+            const usage = json.usage;
+            this.usage = {
+                promptTokens: usage.prompt_tokens || 0,
+                completionTokens: usage.completion_tokens || 0,
+                totalTokens: usage.total_tokens || 0,
+                estimated: false
+            };
         }
     }
 
