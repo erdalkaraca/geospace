@@ -91,6 +91,53 @@ async function handleOperation(method: string, params: any) {
                 return { extent: [0, 0, 0, 0] };
             }
 
+        case 'captureScreenshot':
+            if (mapRenderer && mapRenderer.olMap) {
+                const olMap = mapRenderer.olMap;
+                
+                // Wait for the map to finish rendering
+                await new Promise<void>((resolve) => {
+                    // Trigger a render to ensure we get a fresh rendercomplete event
+                    olMap.renderSync();
+                    
+                    // Wait for rendercomplete event
+                    olMap.once('rendercomplete', () => {
+                        resolve();
+                    });
+                    
+                    // Fallback timeout in case rendercomplete doesn't fire
+                    setTimeout(() => {
+                        resolve();
+                    }, 2000);
+                });
+
+                // Get the map size
+                const size = olMap.getSize();
+                const width = size ? size[0] : olMap.getViewport().clientWidth;
+                const height = size ? size[1] : olMap.getViewport().clientHeight;
+
+                // Capture the canvas as base64
+                try {
+                    const canvas = olMap.getViewport().querySelector('canvas');
+                    if (!canvas) {
+                        return { success: false, error: 'Map canvas not found' };
+                    }
+                    
+                    const dataUrl = canvas.toDataURL('image/png');
+                    
+                    return {
+                        success: true,
+                        dataUrl,
+                        width,
+                        height
+                    };
+                } catch (error: any) {
+                    return { success: false, error: `Failed to capture canvas: ${error.message}` };
+                }
+            } else {
+                return { success: false, error: 'Map renderer not available' };
+            }
+
         case 'resolveAsset':
             // Forward asset resolution to the host
             try {

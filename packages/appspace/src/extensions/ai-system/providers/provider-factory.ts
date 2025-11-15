@@ -13,6 +13,8 @@ export class ProviderFactory {
     private registerDefaultProviders(): void {
         this.providers.push(new OpenAIProvider());
         this.providers.push(new OllamaProvider());
+        // Note: Transformers.js is used for in-browser ML tasks (zero-shot classification, embeddings)
+        // via InBrowserMLService, not as a chat provider
     }
 
     registerProvider(provider: IProvider): void {

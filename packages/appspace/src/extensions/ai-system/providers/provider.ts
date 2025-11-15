@@ -14,6 +14,68 @@ export abstract class BaseProvider implements IProvider {
         return new OllamaParser();
     }
 
+    /**
+     * Get available models from the provider's API endpoint
+     * Default implementation fetches from /v1/models endpoint
+     * Providers can override this for custom behavior
+     */
+    async getAvailableModels(chatProvider: ChatProvider): Promise<Array<{ id: string; name: string }>> {
+        if (!chatProvider.chatApiEndpoint) {
+            return [];
+        }
+
+        try {
+            const endpoint = chatProvider.chatApiEndpoint;
+            let baseUrl = endpoint;
+            
+            // Extract base URL from various endpoint formats
+            if (endpoint.includes('/v1/chat/completions')) {
+                baseUrl = endpoint.replace('/v1/chat/completions', '');
+            } else if (endpoint.includes('/api/v1/chat/completions')) {
+                baseUrl = endpoint.replace('/api/v1/chat/completions', '');
+            } else if (endpoint.includes('/api/chat/completion')) {
+                baseUrl = endpoint.replace('/api/chat/completion', '');
+            } else {
+                try {
+                    const url = new URL(endpoint);
+                    baseUrl = `${url.protocol}//${url.host}`;
+                } catch {
+                    // Invalid URL, can't fetch models
+                    return [];
+                }
+            }
+            
+            const modelsUrl = `${baseUrl}/v1/models`;
+            
+            const headers: HeadersInit = {
+                'Content-Type': 'application/json'
+            };
+            
+            if (chatProvider.apiKey) {
+                headers['Authorization'] = `Bearer ${chatProvider.apiKey}`;
+            }
+            
+            const response = await fetch(modelsUrl, {
+                method: 'GET',
+                headers
+            });
+
+            if (!response.ok) {
+                return [];
+            }
+
+            const data = await response.json();
+            const models = data.data || [];
+            
+            return models.map((m: any) => ({
+                id: m.id,
+                name: m.name || m.id
+            }));
+        } catch (error) {
+            return [];
+        }
+    }
+
     async *stream(params: StreamingParams): AsyncIterable<StreamChunk> {
         const requestBody: any = {
             model: params.model,

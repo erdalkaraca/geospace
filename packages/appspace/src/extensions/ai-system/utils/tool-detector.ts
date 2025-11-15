@@ -1,5 +1,6 @@
-import { pipeline } from '@xenova/transformers';
 import { createLogger } from '../../../core/logger';
+import { inBrowserMLService } from '../../in-browser-ml/in-browser-ml-service';
+import { MLTask, MLModel } from '../../in-browser-ml/ml-models';
 
 const logger = createLogger('ToolDetector');
 
@@ -31,9 +32,9 @@ export class ToolDetector {
                 // Use a lightweight zero-shot classification model
                 // This model is small and runs efficiently in the browser
                 // Quantized size is approximately 60-80MB (varies by browser cache)
-                this.classifier = await pipeline(
-                    'zero-shot-classification',
-                    'Xenova/distilbert-base-uncased-mnli', // Efficient zero-shot classification model
+                this.classifier = await inBrowserMLService.getPipeline(
+                    MLTask.ZERO_SHOT_CLASSIFICATION,
+                    MLModel.ZERO_SHOT_CLASSIFICATION,
                     {
                         quantized: true, // Use quantized version for smaller size and faster inference
                     }

@@ -98,6 +98,10 @@ export class GsMapEditor extends KPart {
             
             <wa-divider orientation="vertical"></wa-divider>
             
+            <k-command cmd="capture_map_screenshot" icon="camera" title="Capture screenshot"></k-command>
+            
+            <wa-divider orientation="vertical"></wa-divider>
+            
             <k-command cmd="toggle_color_mode" icon="circle-half-stroke" title="Toggle dark/light mode"></k-command>
             <k-command cmd="toggle_mobile_view" icon="mobile" title="Toggle mobile view"></k-command>
             

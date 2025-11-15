@@ -34,6 +34,14 @@
       "types": "./dist/extensions/rag-system/*.d.ts",
       "import": "./dist/extensions/rag-system/*.js"
     },
+    "./extensions/in-browser-ml": {
+      "types": "./dist/extensions/in-browser-ml/index.d.ts",
+      "import": "./dist/extensions/in-browser-ml/index.js"
+    },
+    "./extensions/in-browser-ml/*": {
+      "types": "./dist/extensions/in-browser-ml/*.d.ts",
+      "import": "./dist/extensions/in-browser-ml/*.js"
+    },
     "./widgets": {
       "types": "./dist/widgets/index.d.ts",
       "import": "./dist/widgets/index.js"

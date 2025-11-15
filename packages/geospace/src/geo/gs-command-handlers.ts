@@ -11,12 +11,19 @@ import {
     toSourceUrl
 } from "../rt";
 import {GsMapEditor} from "./gs-map-editor";
+import {IFrameMapRenderer} from "./proxy-map-renderer";
 import {
     commandRegistry,
     activePartSignal,
     promptDialog,
     createLogger,
-    type ExecutionContext
+    workspaceService,
+    type ExecutionContext,
+    File,
+    FileContentType,
+    toastInfo,
+    toastError,
+    taskService
 } from "@kispace-io/appspace/api";
 
 const logger = createLogger('GsCommandHandlers');
@@ -493,6 +500,186 @@ commandRegistry.registerAll({
             const operations = editor.mapOperations;
             if (operations) {
                 await operations.switchColorMode();
+            }
+        }
+    }
+})
+
+commandRegistry.registerAll({
+    command: {
+        "id": "capture_map_screenshot",
+        "name": "Capture map screenshot",
+        "description": "Takes a screenshot of the currently visible OpenLayers map and returns it as a base64-encoded data URL. Useful for analyzing map imagery with ML tools.",
+        "parameters": [
+            {
+                "name": "filePath",
+                "description": "Optional path for the screenshot file. If provided, the screenshot will be saved to this path. If not provided, a unique filename based on date and time will be generated and the screenshot will be saved (e.g., 'screenshot-2024-01-15-14-30-45.png').",
+                "type": "string",
+                "required": false
+            }
+        ],
+        "output": [
+            {
+                "name": "dataUrl",
+                "description": "Base64-encoded data URL of the map screenshot (format: data:image/png;base64,...)",
+                "type": "string"
+            },
+            {
+                "name": "width",
+                "description": "Width of the captured image in pixels",
+                "type": "number"
+            },
+            {
+                "name": "height",
+                "description": "Height of the captured image in pixels",
+                "type": "number"
+            },
+            {
+                "name": "filePath",
+                "description": "Path of the saved file (always present as screenshot is always saved)",
+                "type": "string"
+            }
+        ]
+    },
+    handler: {
+        canExecute: (context: ExecutionContext) => {
+            return context.activeEditor instanceof GsMapEditor;
+        },
+        execute: async (context: ExecutionContext) => {
+            try {
+                const editor = context.activeEditor as GsMapEditor;
+                if (!(editor instanceof GsMapEditor)) {
+                    return { error: "Active editor is not a map editor" };
+                }
+
+                const renderer = editor.getRenderer();
+                if (!renderer || !(renderer instanceof IFrameMapRenderer)) {
+                    return { error: "Map renderer not available" };
+                }
+
+                return await taskService.runAsync("Capturing map screenshot", async (progress) => {
+                    try {
+                        progress.message = "Capturing screenshot from map...";
+                        progress.progress = 10;
+                        
+                        logger.info('Capturing map screenshot...');
+                        const result = await (renderer as any).sendMessage('captureScreenshot', {});
+                        
+                        if (!result) {
+                            logger.error('No result from captureScreenshot');
+                            toastError('Failed to capture screenshot: No result from iframe');
+                            throw new Error("No result from screenshot capture");
+                        }
+                        
+                        if (!result.success) {
+                            logger.error(`Screenshot capture failed: ${result.error || 'Unknown error'}`);
+                            toastError(`Failed to capture screenshot: ${result.error || 'Unknown error'}`);
+                            throw new Error(result.error || "Failed to capture screenshot");
+                        }
+
+                        progress.message = "Preparing to save screenshot...";
+                        progress.progress = 50;
+                        
+                        logger.info('Screenshot captured, saving to workspace...');
+                        const workspace = await workspaceService.getWorkspace();
+                        if (!workspace) {
+                            logger.error('No workspace available');
+                            toastError('Failed to save screenshot: No workspace available');
+                            throw new Error("No workspace available");
+                        }
+
+                        // Determine filename
+                        let filename = context.params?.filePath;
+                        
+                        if (!filename) {
+                            // Get map file name as prefix
+                            let mapFileName = "map";
+                            if (editor.input?.data instanceof File) {
+                                const mapFile = editor.input.data as File;
+                                const fullName = mapFile.getName();
+                                // Remove .geospace extension if present
+                                mapFileName = fullName.replace(/\.geospace$/i, '');
+                                // Sanitize filename (remove invalid characters)
+                                mapFileName = mapFileName.replace(/[^a-zA-Z0-9_-]/g, '_');
+                            }
+                            
+                            // Generate unique filename based on date and time
+                            const now = new Date();
+                            const year = now.getFullYear();
+                            const month = String(now.getMonth() + 1).padStart(2, '0');
+                            const day = String(now.getDate()).padStart(2, '0');
+                            const hours = String(now.getHours()).padStart(2, '0');
+                            const minutes = String(now.getMinutes()).padStart(2, '0');
+                            const seconds = String(now.getSeconds()).padStart(2, '0');
+                            filename = `${mapFileName}-screenshot-${year}-${month}-${day}-${hours}-${minutes}-${seconds}.png`;
+                        }
+
+                        // Ensure .png extension
+                        const finalFilename = filename.endsWith('.png') ? filename : `${filename}.png`;
+                        
+                        progress.message = `Saving screenshot to ${finalFilename}...`;
+                        progress.progress = 70;
+                        
+                        logger.info(`Saving screenshot to: ${finalFilename}`);
+                        
+                        // Convert base64 data URL to Blob
+                        if (!result.dataUrl) {
+                            logger.error('No dataUrl in screenshot result');
+                            toastError('Failed to save screenshot: No image data received');
+                            throw new Error("No image data in screenshot result");
+                        }
+                        
+                        const base64Data = result.dataUrl.split(',')[1]; // Remove data:image/png;base64, prefix
+                        if (!base64Data) {
+                            logger.error('Invalid dataUrl format');
+                            toastError('Failed to save screenshot: Invalid image data format');
+                            throw new Error("Invalid image data format");
+                        }
+                        
+                        progress.message = "Converting image data...";
+                        progress.progress = 80;
+                        
+                        const binaryData = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+                        const blob = new Blob([binaryData], { type: 'image/png' });
+                        
+                        // Create file and save
+                        const file = await workspace.getResource(finalFilename, { create: true }) as File;
+                        if (!file) {
+                            logger.error(`Failed to create file resource: ${finalFilename}`);
+                            toastError(`Failed to save screenshot: Could not create file ${finalFilename}`);
+                            throw new Error(`Failed to create file: ${finalFilename}`);
+                        }
+
+                        progress.message = "Writing file to workspace...";
+                        progress.progress = 90;
+                        
+                        logger.info(`Saving blob (size: ${blob.size} bytes) to file...`);
+                        // Save as binary data
+                        await file.saveContents(blob, {
+                            contentType: FileContentType.BINARY
+                        });
+
+                        progress.message = "Screenshot saved successfully";
+                        progress.progress = 100;
+
+                        logger.info(`Screenshot saved successfully to: ${finalFilename}`);
+                        toastInfo(`Screenshot saved: ${finalFilename}`);
+                        return {
+                            dataUrl: result.dataUrl,
+                            width: result.width,
+                            height: result.height,
+                            filePath: finalFilename
+                        };
+                    } catch (error: any) {
+                        logger.error(`Screenshot capture failed: ${error.message}`);
+                        toastError(`Failed to capture screenshot: ${error.message}`);
+                        throw error;
+                    }
+                });
+            } catch (error: any) {
+                logger.error(`Failed to capture map screenshot: ${error.message}`);
+                toastError(`Failed to capture screenshot: ${error.message}`);
+                return { error: `Failed to capture map screenshot: ${error.message}` };
             }
         }
     }

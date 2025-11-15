@@ -135,11 +135,20 @@ extensionRegistry.registerExtension({
 })
 
 extensionRegistry.registerExtension({
+    id: "system.in-browser-ml",
+    name: "In-Browser ML",
+    description: "In-browser machine learning service using transformers.js for specialized tasks (zero-shot classification, embeddings, etc.)",
+    loader: () => import("./in-browser-ml/in-browser-ml-extension"),
+    icon: "brain",
+})
+
+extensionRegistry.registerExtension({
     id: "system.ai-system",
     name: "AI System",
     description: "Modern AI service with streaming support and agent workflows",
     loader: () => import("./ai-system/ai-system-extension"),
     icon: "robot",
+    dependencies: ["system.in-browser-ml"],
 })
 
 extensionRegistry.registerExtension({

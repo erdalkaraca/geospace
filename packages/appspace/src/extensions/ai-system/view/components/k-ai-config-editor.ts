@@ -5,10 +5,13 @@ import { when } from 'lit/directives/when.js';
 import { KPart } from '../../../../parts/k-part';
 import { EditorInput } from '../../../../core/editorregistry';
 import { appSettings, TOPIC_SETTINGS_CHANGED } from '../../../../core/settingsservice';
-import { KEY_AI_CONFIG, TOPIC_AICONFIG_CHANGED } from '../../core/constants';
+import { KEY_AI_CONFIG, TOPIC_AICONFIG_CHANGED, CID_CHAT_PROVIDERS } from '../../core/constants';
 import { subscribe } from '../../../../core/events';
 import { confirmDialog } from '../../../../core/dialog';
+import { contributionRegistry } from '../../../../core/contributionregistry';
+import { ProviderFactory } from '../../providers/provider-factory';
 import type { AIConfig, ChatProvider } from '../../core/types';
+import type { ChatProviderContribution } from '../../core/interfaces';
 
 @customElement('k-ai-config-editor')
 export class KAIConfigEditor extends KPart {
@@ -52,6 +55,8 @@ export class KAIConfigEditor extends KPart {
     @state()
     private availableCommands: Array<{ id: string; name: string; description?: string }> = [];
 
+    private providerFactory: ProviderFactory = new ProviderFactory();
+
     protected async doInitUI() {
         await this.loadAvailableCommands();
         await this.loadConfig();
@@ -66,7 +71,12 @@ export class KAIConfigEditor extends KPart {
     private async loadConfig() {
         const config = await appSettings.get(KEY_AI_CONFIG) as AIConfig | undefined;
         this.aiConfig = config;
-        this.providers = config?.providers || [];
+        
+        // Merge contributed providers with config providers
+        const contributedProviders = this.getContributedProviders();
+        const configProviders = config?.providers || [];
+        this.providers = this.mergeProviders(configProviders, contributedProviders);
+        
         const savedDefaultProvider = config?.defaultProvider || '';
         // Validate that the default provider still exists in the providers list
         if (savedDefaultProvider && !this.providers.find(p => p.name === savedDefaultProvider)) {
@@ -106,6 +116,17 @@ export class KAIConfigEditor extends KPart {
             name: cmd.name || id,
             description: cmd.description
         })).sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    private getContributedProviders(): ChatProvider[] {
+        const contributions = contributionRegistry.getContributions(CID_CHAT_PROVIDERS) as ChatProviderContribution[];
+        return contributions.map(contrib => contrib.provider);
+    }
+
+    private mergeProviders(existing: ChatProvider[], contributed: ChatProvider[]): ChatProvider[] {
+        const existingNames = new Set(existing.map(p => p.name));
+        const missing = contributed.filter(provider => !existingNames.has(provider.name));
+        return missing.length > 0 ? [...existing, ...missing] : existing;
     }
 
 
@@ -185,58 +206,21 @@ export class KAIConfigEditor extends KPart {
     }
 
     private async fetchModels(provider: ChatProvider): Promise<void> {
-        if (!provider.chatApiEndpoint) {
-            this.availableModels = [];
-            this.loadingModels = false;
-            return;
-        }
-
         this.loadingModels = true;
         this.availableModels = []; // Clear previous models
         await this.updateComplete; // Wait for the update to complete so spinner can render
 
         try {
-            const endpoint = provider.chatApiEndpoint;
-            let baseUrl = endpoint;
+            // Get the provider instance - it handles model listing itself
+            const providerInstance = this.providerFactory.getProvider(provider);
             
-            if (endpoint.includes('/v1/chat/completions')) {
-                baseUrl = endpoint.replace('/v1/chat/completions', '');
-            } else if (endpoint.includes('/api/v1/chat/completions')) {
-                baseUrl = endpoint.replace('/api/v1/chat/completions', '');
-            } else if (endpoint.includes('/api/chat/completion')) {
-                baseUrl = endpoint.replace('/api/chat/completion', '');
+            if (providerInstance.getAvailableModels) {
+                const models = await providerInstance.getAvailableModels(provider);
+                this.availableModels = Array.isArray(models) ? models : [];
             } else {
-                const url = new URL(endpoint);
-                baseUrl = `${url.protocol}//${url.host}`;
-            }
-            
-            const modelsUrl = `${baseUrl}/v1/models`;
-            
-            const headers: HeadersInit = {
-                'Content-Type': 'application/json'
-            };
-            
-            if (provider.apiKey) {
-                headers['Authorization'] = `Bearer ${provider.apiKey}`;
-            }
-            
-            const response = await fetch(modelsUrl, {
-                method: 'GET',
-                headers
-            });
-
-            if (!response.ok) {
+                // Provider doesn't support model listing
                 this.availableModels = [];
-                return;
             }
-
-            const data = await response.json();
-            const models = data.data || [];
-            
-            this.availableModels = models.map((m: any) => ({
-                id: m.id,
-                name: m.name || m.id
-            }));
         } catch (error) {
             this.availableModels = [];
         } finally {

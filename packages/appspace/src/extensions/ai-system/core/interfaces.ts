@@ -27,6 +27,12 @@ export interface IProvider {
     canHandle(chatProvider: ChatProvider): boolean;
     stream(params: StreamingParams): AsyncIterable<StreamChunk>;
     complete?(params: CompletionParams): Promise<ChatMessage>;
+    /**
+     * Get available models for this provider
+     * Returns a list of models with id and display name
+     * If not implemented, returns empty array
+     */
+    getAvailableModels?(chatProvider: ChatProvider): Promise<Array<{ id: string; name: string }>> | Array<{ id: string; name: string }>;
 }
 
 export interface PromptEnhancer {
