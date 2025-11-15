@@ -45,7 +45,8 @@ const GEOSPACE_EXTENSIONS = [
     "system.memoryusage",
     "system.pythonpackagemanager",
     "system.settings-tree",
-    "system.ai-system"
+    "system.ai-system",
+    "system.howto"
 ];
 
 const GEOSPACE_UI_CONTRIBUTIONS = [

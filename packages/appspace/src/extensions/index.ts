@@ -160,3 +160,11 @@ extensionRegistry.registerExtension({
     experimental: true,
     dependencies: ["system.ai-system"],
 })
+
+extensionRegistry.registerExtension({
+    id: "system.howto",
+    name: "HowTo System",
+    description: "Step-by-step workflow system with pre and post condition checks",
+    loader: () => import("./howto-system/howto-extension"),
+    icon: "list-check",
+})
