@@ -4,6 +4,7 @@ import type { PromptEnhancer, AgentContribution, AgentToolsConfig, PromptEnhance
 import { ToolRegistry } from "../tools/tool-registry";
 import { contributionRegistry } from "../../../core/contributionregistry";
 import { CID_PROMPT_ENHANCERS } from "../core/constants";
+import { toolDetector } from "../utils/tool-detector";
 
 export class PromptBuilder {
     private toolRegistry = new ToolRegistry();
@@ -96,12 +97,36 @@ export class PromptBuilder {
         const sanitizedMessages = this.sanitizeMessagesForAPI(messages);
         const messagesCopy = this.rewriteChatHistoryForAgent(sanitizedMessages, contribution.role);
 
+        // Resolve tools config if it's a function
+        let toolsConfig = contribution.tools;
+        if (typeof toolsConfig === 'function') {
+            toolsConfig = await toolsConfig();
+        }
+
         let tools: import("../core/types").ToolDefinition[] | undefined;
-        if (contribution.tools?.enabled) {
-            tools = this.toolRegistry.getAvailableTools(
-                context,
-                contribution.tools.commandFilter
-            );
+        if (toolsConfig?.enabled) {
+            // If smart tool detection is enabled, check if the prompt needs tools
+            if (toolsConfig.smartToolDetection) {
+                const lastUserMessage = messages[messages.length - 1];
+                const userPrompt = lastUserMessage?.content || '';
+                
+                // Use ML model to detect if tools are needed
+                const needsTools = await toolDetector.needsTools(userPrompt);
+                
+                if (needsTools) {
+                    tools = this.toolRegistry.getAvailableTools(
+                        context,
+                        toolsConfig.commandFilter
+                    );
+                }
+                // If not needed, tools remains undefined (no tools provided)
+            } else {
+                // Default behavior: always provide tools if enabled
+                tools = this.toolRegistry.getAvailableTools(
+                    context,
+                    toolsConfig.commandFilter
+                );
+            }
         }
 
         // Enhance system prompt with contextual information (app state, language context, etc.)

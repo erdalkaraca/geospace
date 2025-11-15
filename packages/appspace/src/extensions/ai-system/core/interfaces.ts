@@ -52,6 +52,7 @@ export interface AgentHooks {
 export interface AgentToolsConfig {
     enabled: boolean;
     commandFilter?: (command: any, context: ExecutionContext) => boolean;
+    smartToolDetection?: boolean; // Use ML model to detect if prompt needs tools (reduces token usage)
 }
 
 export interface AgentContribution extends Contribution {
@@ -64,7 +65,7 @@ export interface AgentContribution extends Contribution {
     promptEnhancers?: PromptEnhancer[];
     messageProcessors?: MessageProcessor[];
     hooks?: AgentHooks;
-    tools?: AgentToolsConfig;
+    tools?: AgentToolsConfig | (() => AgentToolsConfig | Promise<AgentToolsConfig>);
 }
 
 export interface UserAttentionHandler {

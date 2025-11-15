@@ -5,8 +5,10 @@ import { contributionRegistry, HTMLContribution } from "../../core/contributionr
 import { editorRegistry, EditorInput } from "../../core/editorregistry";
 import { registerAll } from "../../core/commandregistry";
 import { TOOLBAR_BOTTOM, TOOLBAR_MAIN_RIGHT } from "../../core/constants";
-import { CID_AGENTS } from "./core/constants";
-import type { AgentContribution } from "./core/interfaces";
+import { CID_AGENTS, KEY_AI_CONFIG } from "./core/constants";
+import type { AgentContribution, AgentToolsConfig } from "./core/interfaces";
+import type { AIConfig } from "./core/types";
+import { appSettings } from "../../core/settingsservice";
 import GENERAL_SYS_PROMPT from "./general-assistant-prompt.txt?raw";
 import "./view/k-aiview";
 import "./view/k-token-usage";
@@ -17,6 +19,7 @@ export default ({ }: any) => {
     
     // Register default App Support agent with general assistant prompt
     // Apps can enhance this prompt using prompt enhancers
+    // smartToolDetection is read from AIConfig dynamically
     contributionRegistry.registerContribution(CID_AGENTS, {
         label: "App Support",
         description: "General app support",
@@ -24,8 +27,16 @@ export default ({ }: any) => {
         priority: 100,
         icon: "question-circle",
         sysPrompt: GENERAL_SYS_PROMPT,
-        tools: {
-            enabled: true,
+        tools: () => {
+            // Read smartToolDetection setting from AIConfig synchronously
+            // This will be resolved in the prompt builder
+            return appSettings.get(KEY_AI_CONFIG).then((config: AIConfig | undefined) => {
+                const smartToolDetection = config?.smartToolDetection ?? false;
+                return {
+                    enabled: true,
+                    smartToolDetection
+                } as AgentToolsConfig;
+            });
         }
     } as AgentContribution);
     

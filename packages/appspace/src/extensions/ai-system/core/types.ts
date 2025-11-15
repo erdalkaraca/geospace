@@ -46,6 +46,7 @@ export interface AIConfig {
     providers: ChatProvider[];
     requireToolApproval?: boolean;
     toolApprovalAllowlist?: string[];
+    smartToolDetection?: boolean; // Use ML model to detect if prompt needs tools (reduces token usage)
 }
 
 export interface ApiMessage {

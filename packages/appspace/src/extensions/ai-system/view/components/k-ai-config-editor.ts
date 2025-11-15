@@ -47,6 +47,9 @@ export class KAIConfigEditor extends KPart {
     private toolApprovalAllowlist: string[] = [];
 
     @state()
+    private smartToolDetection: boolean = false;
+
+    @state()
     private availableCommands: Array<{ id: string; name: string; description?: string }> = [];
 
     protected async doInitUI() {
@@ -78,6 +81,12 @@ export class KAIConfigEditor extends KPart {
             this.requireToolApproval = true; // Default to true if missing
         }
         this.toolApprovalAllowlist = config?.toolApprovalAllowlist || [];
+        // Load smartToolDetection from config, default to false if missing
+        if (config?.smartToolDetection !== undefined) {
+            this.smartToolDetection = config.smartToolDetection;
+        } else {
+            this.smartToolDetection = false; // Default to false if missing
+        }
         this.hasChanges = false;
         this.markDirty(false);
         this.editingCell = null;
@@ -86,6 +95,7 @@ export class KAIConfigEditor extends KPart {
         await this.updateComplete;
         this.syncCheckboxStates();
         this.syncToolApprovalCheckbox();
+        this.syncSmartToolDetectionCheckbox();
     }
 
     private async loadAvailableCommands() {
@@ -119,6 +129,13 @@ export class KAIConfigEditor extends KPart {
         }
     }
 
+    private syncSmartToolDetectionCheckbox() {
+        const checkbox = this.shadowRoot?.querySelector('.tool-detection-section wa-checkbox') as any;
+        if (checkbox) {
+            checkbox.checked = this.smartToolDetection;
+        }
+    }
+
     private async saveConfig() {
         if (!this.aiConfig) {
             return;
@@ -129,7 +146,8 @@ export class KAIConfigEditor extends KPart {
             defaultProvider: this.defaultProvider,
             providers: this.providers,
             requireToolApproval: this.requireToolApproval,
-            toolApprovalAllowlist: this.toolApprovalAllowlist
+            toolApprovalAllowlist: this.toolApprovalAllowlist,
+            smartToolDetection: this.smartToolDetection
         };
 
         await appSettings.set(KEY_AI_CONFIG, updatedConfig);
@@ -537,6 +555,23 @@ export class KAIConfigEditor extends KPart {
                             }}">
                             Require approval before executing tools
                         </wa-checkbox>
+                    </div>
+
+                    <div class="tool-detection-section" style="margin-top: 1.5rem;">
+                        <wa-checkbox
+                            .checked="${this.smartToolDetection}"
+                            @change="${(e: Event) => {
+                                const checkbox = e.target as any;
+                                this.smartToolDetection = checkbox.checked;
+                                this.markDirtyAndUpdate();
+                            }}">
+                            Use smart tool detection (reduces token usage)
+                        </wa-checkbox>
+                        <p class="hint" style="margin-top: 0.5rem; margin-left: 1.75rem; color: var(--wa-color-text-secondary, #666); font-size: 0.875rem;">
+                            When enabled, a small ML model running in your browser will detect if a prompt needs tools. 
+                            This reduces token usage for simple queries like greetings. 
+                            <strong>Note:</strong> The model (approximately 60-80MB quantized) will be downloaded on first use, which may take some time.
+                        </p>
                     </div>
 
                     <div class="allowlist-section">
