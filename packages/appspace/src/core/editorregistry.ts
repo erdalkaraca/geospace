@@ -27,6 +27,43 @@ export interface EditorInputHandler {
     ranking?: number;  // Higher ranking = higher priority (default: 0)
 }
 
+/**
+ * Interface for editors that can provide content, selection, and snippets.
+ * Implement this interface to make editor content accessible via commands.
+ */
+export interface EditorContentProvider {
+    /**
+     * Gets the complete contents of the editor.
+     * @returns The full content as a string, or null if not available.
+     */
+    getContent(): string | null;
+
+    /**
+     * Gets the currently selected text in the editor.
+     * @returns The selected text, or null if no selection exists.
+     */
+    getSelection(): string | null;
+
+    /**
+     * Gets a code snippet with n lines before and after the cursor position.
+     * @param lines Number of lines before and after the cursor (default: 5).
+     * @returns An object containing the snippet, cursor line number, or null if not available.
+     */
+    getSnippet(lines?: number): { snippet: string; cursorLine: number } | null;
+
+    /**
+     * Gets the programming language of the editor content.
+     * @returns The language identifier (e.g., 'python', 'javascript'), or null if not available.
+     */
+    getLanguage(): string | null;
+
+    /**
+     * Gets the workspace path of the file being edited.
+     * @returns The file path relative to the workspace, or null if not available.
+     */
+    getFilePath(): string | null;
+}
+
 class EditorRegistry {
     private editorInputHandlers: EditorInputHandler[] = [];
     private listenersAttached = false;

@@ -22,24 +22,15 @@ export class AgentRegistry {
             .sort((a, b) => (b.priority || 0) - (a.priority || 0));
     }
 
-    getDefaultAgent(): AgentContribution {
-        return {
-            role: 'assistant',
-            label: 'Assistant',
-            description: 'General assistant',
-            sysPrompt: 'You are a helpful AI assistant.',
-            priority: 0,
-            tools: {
-                enabled: true
-            }
-        } as AgentContribution;
-    }
-
     getMatchingAgents(
         context: ExecutionContext,
         roles?: string[]
     ): AgentContribution[] {
         const contributions = this.getAgentContributions();
+        
+        if (contributions.length === 0) {
+            throw new Error('No agents are registered. The App Support agent should be available from the AI system extension.');
+        }
         
         let activeContributions = contributions.filter(contrib => {
             if (roles && !roles.includes(contrib.role)) {
@@ -57,23 +48,14 @@ export class AgentRegistry {
             );
             
             if (activeContributions.length === 0) {
-                const defaultRole = roles.includes('assistant') ? 'assistant' : roles[0];
-                if (defaultRole === 'assistant') {
-                    activeContributions.push(this.getDefaultAgent());
-                } else {
-                    const matching = contributions.find(c => c.role === defaultRole);
-                    if (matching) {
-                        activeContributions.push(matching);
-                    } else {
-                        activeContributions.push(this.getDefaultAgent());
-                    }
-                }
+                const requestedRoles = roles.join(', ');
+                throw new Error(`No agents found for requested roles: ${requestedRoles}. Available agents: ${contributions.map(c => c.role).join(', ')}`);
             }
         } else {
             activeContributions = this.filterAndSortAgents(activeContributions, context);
             
             if (activeContributions.length === 0) {
-                activeContributions.push(this.getDefaultAgent());
+                throw new Error(`No agents can handle the current context. Available agents: ${contributions.map(c => c.role).join(', ')}`);
             }
         }
 

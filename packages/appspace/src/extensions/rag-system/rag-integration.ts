@@ -34,7 +34,7 @@ NEVER use filePath or fileName parameters in rag.search-documents without first 
 
 For general searches (not specific files), use rag.search-documents with just the query parameter to search across all indexed documents. This is more efficient than reading files one by one.`;
 
-            return `${instruction}\n\n${prompt}`;
+            return `${prompt}\n\n${instruction}`;
         } catch (error) {
             logger.warn(`RAG enhancement failed: ${error}`);
             return prompt;

@@ -7,6 +7,8 @@ import { html } from "lit";
 import { toastError, toastInfo } from "../core/toast";
 import { activeEditorSignal, activePartSignal } from "../core/appstate";
 import { appSettings } from "../core/settingsservice";
+import { extensionRegistry } from "../core/extensionregistry";
+import type { Extension } from "../core/extensionregistry";
 import "./files";
 import "./version-info";
 
@@ -229,7 +231,36 @@ registerAll({
     }
 })
 
-commandRegistry.registerAll({
+registerAll({
+    command: {
+        "id": "list_extensions",
+        "name": "List extensions",
+        "description": "Lists all available extensions with their status (enabled/disabled)",
+        "parameters": [],
+        "output": [
+            {
+                "name": "extensions",
+                "description": "array of extension objects with id, name, description, experimental flag, and enabled status"
+            }
+        ]
+    },
+    handler: {
+        execute: async (_context: any) => {
+            const extensions = extensionRegistry.getExtensions().map((e: Extension) => {
+                return {
+                    id: e.id,
+                    name: e.name,
+                    description: e.description,
+                    experimental: e.experimental,
+                    enabled: extensionRegistry.isEnabled(e.id)
+                }
+            });
+            return extensions;
+        }
+    }
+})
+
+registerAll({
     command: {
         "id": "toast_message",
         "name": "Toast message to user",

@@ -4,12 +4,17 @@ import {customElement, property, state} from "lit/decorators.js";
 import {KPart} from "../../parts/k-part";
 import {css, html} from "lit";
 import {createRef, ref} from "lit/directives/ref.js";
-import {EditorInput, editorRegistry} from "../../core/editorregistry";
+import {EditorInput, editorRegistry, EditorContentProvider} from "../../core/editorregistry";
 import {styleMap} from "lit/directives/style-map.js";
 import {PyEnv} from "../../core/pyservice";
 import {File, workspaceService} from "../../core/filesys";
 import logger from '../../core/logger';
 import {pythonPackageManagerService} from "../python-package-manager/package-manager-extension";
+import {contributionRegistry} from "../../core/contributionregistry";
+import {CID_PROMPT_ENHANCERS, type PromptEnhancer, type PromptEnhancerContribution} from "../ai-system";
+import type {ExecutionContext} from "../../core/commandregistry";
+import PYTHON_PROMPT from "./py-programming-prompt.txt?raw";
+import JAVASCRIPT_PROMPT from "./js-programming-prompt.txt?raw";
 
 function getWorkerUrl(label: string): string {
     let workerModulePath: string;
@@ -68,7 +73,7 @@ editorRegistry.registerEditorInputHandler({
 })
 
 @customElement('k-monaco-editor')
-export class KMonacoEditor extends KPart {
+export class KMonacoEditor extends KPart implements EditorContentProvider {
     @property({attribute: false})
     public input?: EditorInput;
     @property()
@@ -157,7 +162,72 @@ export class KMonacoEditor extends KPart {
     }
 
     public getLanguage() {
-        return this.model.getLanguageId()?.toLowerCase()
+        return this.model?.getLanguageId()?.toLowerCase() || null
+    }
+
+    // EditorContentProvider implementation
+    public getContent(): string | null {
+        if (!this.model) {
+            return null
+        }
+        return this.model.getValue()
+    }
+
+    public getSelection(): string | null {
+        if (!this.editor || !this.model) {
+            return null
+        }
+        try {
+            const selection = this.editor.getSelection()
+            if (!selection || selection.isEmpty()) {
+                return null
+            }
+            return this.model.getValueInRange(selection) || null
+        } catch (err) {
+            return null
+        }
+    }
+
+    public getSnippet(lines: number = 5): { snippet: string; cursorLine: number } | null {
+        if (!this.editor || !this.model) {
+            return null
+        }
+        try {
+            const position = this.editor.getPosition()
+            if (!position) {
+                return null
+            }
+
+            if (isNaN(lines) || lines < 0) {
+                lines = 5
+            }
+
+            const cursorLineNumber = position.lineNumber
+            const totalLines = this.model.getLineCount()
+            
+            // Calculate the range (1-based line numbers in Monaco)
+            const startLine = Math.max(1, cursorLineNumber - lines)
+            const endLine = Math.min(totalLines, cursorLineNumber + lines)
+            
+            // Get the snippet
+            const snippet = this.model.getValueInRange({
+                startLineNumber: startLine,
+                startColumn: 1,
+                endLineNumber: endLine,
+                endColumn: this.model.getLineMaxColumn(endLine)
+            })
+
+            return {
+                snippet,
+                cursorLine: cursorLineNumber
+            }
+        } catch (err) {
+            return null
+        }
+    }
+
+    public getFilePath(): string | null {
+        return this.input?.data?.getWorkspacePath() || null
     }
 
     protected renderToolbar() {
@@ -331,4 +401,46 @@ declare global {
         'k-monaco-editor': KMonacoEditor
     }
 }
+
+// Helper to check if active editor is a Monaco editor with specific language
+function isMonacoEditorWithLanguage(context: ExecutionContext, language: string): boolean {
+    const activeEditor = context.activeEditor as any;
+    return activeEditor &&
+        typeof activeEditor.getEditor === 'function' &&
+        typeof activeEditor.getLanguage === 'function' &&
+        activeEditor.getLanguage() === language;
+}
+
+// Python programming prompt enhancer
+const pythonPromptEnhancer: PromptEnhancer = {
+    priority: 50,
+    enhance: async (prompt: string, context: ExecutionContext) => {
+        if (!isMonacoEditorWithLanguage(context, 'python')) {
+            return prompt;
+        }
+        return `${prompt}\n\n${PYTHON_PROMPT}`;
+    }
+};
+
+// JavaScript programming prompt enhancer
+const javascriptPromptEnhancer: PromptEnhancer = {
+    priority: 50,
+    enhance: async (prompt: string, context: ExecutionContext) => {
+        if (!isMonacoEditorWithLanguage(context, 'javascript')) {
+            return prompt;
+        }
+        return `${prompt}\n\n${JAVASCRIPT_PROMPT}`;
+    }
+};
+
+// Register prompt enhancers for programming languages
+contributionRegistry.registerContribution(CID_PROMPT_ENHANCERS, {
+    label: "Python Programming Enhancer",
+    enhancer: pythonPromptEnhancer
+} as PromptEnhancerContribution);
+
+contributionRegistry.registerContribution(CID_PROMPT_ENHANCERS, {
+    label: "JavaScript Programming Enhancer",
+    enhancer: javascriptPromptEnhancer
+} as PromptEnhancerContribution);
 

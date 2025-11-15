@@ -1,9 +1,9 @@
-import {registerAll} from "../core/commandregistry";
+import {registerAll, type ExecutionContext} from "../core/commandregistry";
 import {File, workspaceService, Directory} from "../core/filesys";
 import {toastError, toastInfo} from "../core/toast";
 import {promptDialog, confirmDialog} from "../core/dialog";
 import {activeSelectionSignal} from "../core/appstate";
-import {editorRegistry} from "../core/editorregistry";
+import {editorRegistry, EditorContentProvider} from "../core/editorregistry";
 import logger from "../core/logger";
 
 async function getWorkspaceAndPath(params: any, requirePath: boolean = true): Promise<{workspace: Directory, path: string} | null> {
@@ -18,6 +18,70 @@ async function getWorkspaceAndPath(params: any, requirePath: boolean = true): Pr
     }
 
     return { workspace, path: path || '' }
+}
+
+/**
+ * Type guard to check if an editor implements EditorContentProvider
+ */
+function isEditorContentProvider(editor: any): editor is EditorContentProvider {
+    return editor &&
+        typeof editor.getContent === 'function' &&
+        typeof editor.getSelection === 'function' &&
+        typeof editor.getSnippet === 'function' &&
+        typeof editor.getLanguage === 'function' &&
+        typeof editor.getFilePath === 'function';
+}
+
+/**
+ * Helper to get a resource from path or active selection
+ */
+async function getResourceFromContext(context: ExecutionContext, params?: any): Promise<any> {
+    let resource = undefined
+    const path = params?.path || context.params?.["path"]
+    
+    if (path) {
+        const workspaceDir = await workspaceService.getWorkspace()
+        if (workspaceDir) {
+            resource = await workspaceDir.getResource(path)
+        }
+    }
+
+    if (!resource) {
+        resource = activeSelectionSignal.get()
+    }
+
+    return resource
+}
+
+/**
+ * Helper to read text file contents with error handling
+ */
+async function readTextFile(file: File): Promise<string | null> {
+    try {
+        const contents = await file.getContents()
+        if (typeof contents !== 'string') {
+            toastError("File is not a text file")
+            return null
+        }
+        return contents
+    } catch (err: any) {
+        toastError(`Failed to read file: ${err.message}`)
+        return null
+    }
+}
+
+/**
+ * Helper to create null editor response
+ */
+function createNullEditorResponse(includeCursorLine: boolean = false) {
+    const base = {
+        filePath: null,
+        language: null
+    }
+    if (includeCursorLine) {
+        return { ...base, snippet: null, cursorLine: null }
+    }
+    return base
 }
 
 async function getWorkspaceAndFile(params: any, requirePath: boolean = true): Promise<{workspace: Directory, path: string, file: File} | null> {
@@ -147,19 +211,7 @@ registerAll({
     },
     handler: {
         execute: async context => {
-            let resource = undefined
-            let path = context.params && context.params["path"]
-            if (path) {
-                const workspaceDir = await workspaceService.getWorkspace()
-                if (workspaceDir) {
-                    resource = await workspaceDir.getResource(path)
-                }
-            }
-
-            if (!resource) {
-                resource = activeSelectionSignal.get()
-            }
-
+            const resource = await getResourceFromContext(context)
             if (!resource) {
                 toastError("No resource to rename provided!")
                 return
@@ -203,24 +255,12 @@ registerAll({
     },
     handler: {
         execute: async context => {
-            let resource = undefined
-            let path = context.params && context.params["path"]
-            if (path) {
-                const workspaceDir = await workspaceService.getWorkspace()
-                if (workspaceDir) {
-                    resource = await workspaceDir.getResource(path)
-                }
-            }
-
-            if (!resource) {
-                resource = activeSelectionSignal.get()
-            }
-
+            const resource = await getResourceFromContext(context)
             if (!resource) {
                 toastError("No resource to delete provided!")
                 return
             }
-            path = resource.getWorkspacePath()
+            const path = resource.getWorkspacePath()
             const confirmParam = context.params && context.params["confirm"]
             let yes = true
             if (confirmParam === undefined || confirmParam === true) {
@@ -349,20 +389,14 @@ registerAll({
                 return
             }
 
-            try {
-                const contents = await file.getContents()
-                if (typeof contents !== 'string') {
-                    toastError("File is not a text file")
-                    return
-                }
-
-                const lines = contents.split('\n')
-                const headLines = lines.slice(0, numLines).join('\n')
-                return headLines
-            } catch (err: any) {
-                toastError(`Failed to read file: ${err.message}`)
+            const contents = await readTextFile(file)
+            if (!contents) {
                 return
             }
+
+            const lines = contents.split('\n')
+            const headLines = lines.slice(0, numLines).join('\n')
+            return headLines
         }
     }
 })
@@ -406,20 +440,14 @@ registerAll({
                 return
             }
 
-            try {
-                const contents = await file.getContents()
-                if (typeof contents !== 'string') {
-                    toastError("File is not a text file")
-                    return
-                }
-
-                const lines = contents.split('\n')
-                const tailLines = lines.slice(-numLines).join('\n')
-                return tailLines
-            } catch (err: any) {
-                toastError(`Failed to read file: ${err.message}`)
+            const contents = await readTextFile(file)
+            if (!contents) {
                 return
             }
+
+            const lines = contents.split('\n')
+            const tailLines = lines.slice(-numLines).join('\n')
+            return tailLines
         }
     }
 })
@@ -452,18 +480,7 @@ registerAll({
 
             const { file } = result
 
-            try {
-                const contents = await file.getContents()
-                if (typeof contents !== 'string') {
-                    toastError("File is not a text file")
-                    return
-                }
-
-                return contents
-            } catch (err: any) {
-                toastError(`Failed to read file: ${err.message}`)
-                return
-            }
+            return await readTextFile(file)
         }
     }
 })
@@ -504,26 +521,20 @@ registerAll({
 
             const { file } = result
 
-            try {
-                const contents = await file.getContents()
-                if (typeof contents !== 'string') {
-                    toastError("File is not a text file")
-                    return
-                }
-
-                const lines = contents.split('\n')
-                const lineCount = lines.length
-                const wordCount = contents.trim() === '' ? 0 : contents.trim().split(/\s+/).filter(w => w.length > 0).length
-                const charCount = contents.length
-
-                return {
-                    lines: lineCount,
-                    words: wordCount,
-                    characters: charCount
-                }
-            } catch (err: any) {
-                toastError(`Failed to read file: ${err.message}`)
+            const contents = await readTextFile(file)
+            if (!contents) {
                 return
+            }
+
+            const lines = contents.split('\n')
+            const lineCount = lines.length
+            const wordCount = contents.trim() === '' ? 0 : contents.trim().split(/\s+/).filter(w => w.length > 0).length
+            const charCount = contents.length
+
+            return {
+                lines: lineCount,
+                words: wordCount,
+                characters: charCount
             }
         }
     }
@@ -666,6 +677,151 @@ registerAll({
             } catch (err: any) {
                 toastError(`Failed to list files: ${err.message}`)
                 return []
+            }
+        }
+    }
+})
+
+registerAll({
+    command: {
+        "id": "get_active_editor_content",
+        "name": "Get active editor content",
+        "description": "Gets the complete contents of the currently active editor. Returns null if no editor is active or if the editor is not a code editor.",
+        "parameters": [],
+        "output": [
+            {
+                "name": "content",
+                "description": "the complete contents of the active editor, or null if no editor is active"
+            },
+            {
+                "name": "filePath",
+                "description": "the workspace path of the file in the active editor, or null if no editor is active"
+            },
+            {
+                "name": "language",
+                "description": "the programming language of the active editor, or null if no editor is active"
+            }
+        ]
+    },
+    handler: {
+        execute: async (context: ExecutionContext) => {
+            const activeEditor = context.activeEditor as any
+            if (!isEditorContentProvider(activeEditor)) {
+                return { ...createNullEditorResponse(), content: null }
+            }
+
+            try {
+                return {
+                    content: activeEditor.getContent(),
+                    filePath: activeEditor.getFilePath(),
+                    language: activeEditor.getLanguage()
+                }
+            } catch (err: any) {
+                return { ...createNullEditorResponse(), content: null }
+            }
+        }
+    }
+})
+
+registerAll({
+    command: {
+        "id": "get_active_editor_selection",
+        "name": "Get active editor selection",
+        "description": "Gets the currently selected text in the active editor. Returns null if no editor is active, no selection exists, or if the editor is not a code editor.",
+        "parameters": [],
+        "output": [
+            {
+                "name": "selection",
+                "description": "the selected text in the active editor, or null if no selection exists or no editor is active"
+            },
+            {
+                "name": "filePath",
+                "description": "the workspace path of the file in the active editor, or null if no editor is active"
+            },
+            {
+                "name": "language",
+                "description": "the programming language of the active editor, or null if no editor is active"
+            }
+        ]
+    },
+    handler: {
+        execute: async (context: ExecutionContext) => {
+            const activeEditor = context.activeEditor as any
+            if (!isEditorContentProvider(activeEditor)) {
+                return { ...createNullEditorResponse(), selection: null }
+            }
+
+            try {
+                return {
+                    selection: activeEditor.getSelection(),
+                    filePath: activeEditor.getFilePath(),
+                    language: activeEditor.getLanguage()
+                }
+            } catch (err: any) {
+                return { ...createNullEditorResponse(), selection: null }
+            }
+        }
+    }
+})
+
+registerAll({
+    command: {
+        "id": "get_active_editor_snippet",
+        "name": "Get active editor snippet around cursor",
+        "description": "Gets a code snippet from the active editor with n lines before and n lines after the cursor position. Useful for getting context around the cursor without loading the entire file.",
+        "parameters": [
+            {
+                "name": "lines",
+                "description": "number of lines to include before and after the cursor position (default: 5)",
+                "type": "number",
+                "required": false
+            }
+        ],
+        "output": [
+            {
+                "name": "snippet",
+                "description": "the code snippet with n lines before and after the cursor, or null if no editor is active"
+            },
+            {
+                "name": "filePath",
+                "description": "the workspace path of the file in the active editor, or null if no editor is active"
+            },
+            {
+                "name": "language",
+                "description": "the programming language of the active editor, or null if no editor is active"
+            },
+            {
+                "name": "cursorLine",
+                "description": "the line number where the cursor is positioned (1-based), or null if no editor is active"
+            }
+        ]
+    },
+    handler: {
+        execute: async (context: ExecutionContext) => {
+            const activeEditor = context.activeEditor as any
+            if (!isEditorContentProvider(activeEditor)) {
+                return createNullEditorResponse(true)
+            }
+
+            try {
+                const numLines = context.params?.lines ? parseInt(context.params.lines, 10) : 5
+                if (isNaN(numLines) || numLines < 0) {
+                    return createNullEditorResponse(true)
+                }
+
+                const snippetResult = activeEditor.getSnippet(numLines)
+                if (!snippetResult) {
+                    return createNullEditorResponse(true)
+                }
+
+                return {
+                    snippet: snippetResult.snippet,
+                    filePath: activeEditor.getFilePath(),
+                    language: activeEditor.getLanguage(),
+                    cursorLine: snippetResult.cursorLine
+                }
+            } catch (err: any) {
+                return createNullEditorResponse(true)
             }
         }
     }

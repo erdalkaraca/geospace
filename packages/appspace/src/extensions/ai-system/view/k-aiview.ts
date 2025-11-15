@@ -239,6 +239,10 @@ export class KAView extends KPart {
             const callContext = uiContext.createChild({ ...execContext });
 
             const contributions = aiService.getAgentContributions();
+            if (contributions.length === 0) {
+                throw new Error('No agents are registered. The App Support agent should be available from the AI system extension.');
+            }
+            
             const matchingAgents = contributions.filter(contrib => {
                 if (contrib.canHandle) {
                     return contrib.canHandle({ ...callContext.getProxy(), userPrompt: prompt });
@@ -246,9 +250,11 @@ export class KAView extends KPart {
                 return true;
             }).sort((a, b) => (b.priority || 0) - (a.priority || 0));
 
-            const roles = matchingAgents.length > 0 
-                ? matchingAgents.map(a => a.role)
-                : ['assistant'];
+            if (matchingAgents.length === 0) {
+                throw new Error(`No agents can handle the current context. Available agents: ${contributions.map(c => c.role).join(', ')}`);
+            }
+
+            const roles = matchingAgents.map(a => a.role);
 
             const currentSession = this.sessionManager.getSession(sessionId);
             if (!currentSession) return;

@@ -20,7 +20,6 @@ import {
     StringFile,
     type IconContribution
 } from "@kispace-io/appspace/api";
-import { CID_AGENTS, type AgentContribution } from "@kispace-io/appspace/extensions/ai-system";
 
 // App-specific imports
 import "./geo/gs-map-editor-contributions"
@@ -30,7 +29,6 @@ import './geo/gs-catalog-contributions'
 import './geo/gs-command-handlers'
 import './geo/gs-catalog'
 
-import GENERAL_SYS_PROMPT from "../../appspace/src/agents/general-assistant-prompt.txt?raw"
 import { registerGeospacePromptEnhancer } from "./geo/geospace-prompt-enhancer"
 import README from "../../../README.md?raw"
 import { getSourceTypeFromFile, isSupportedSpatialFile } from "./geo/utils";
@@ -149,19 +147,8 @@ export const geospaceApp: AppDefinition = {
             devDependencies: geospacePackageJson.devDependencies
         });
 
+        // Register prompt enhancer to add geo!space-specific context to the default App Support agent
         registerGeospacePromptEnhancer();
-
-        contributionRegistry.registerContribution(CID_AGENTS, {
-            label: "App Support",
-            description: "General app support",
-            role: "appsupport",
-            priority: 100,
-            icon: "question-circle",
-            sysPrompt: GENERAL_SYS_PROMPT,
-            tools: {
-                enabled: true,
-            }
-        } as AgentContribution)
 
         contributionRegistry.registerContribution<IconContribution>('system.icons', {
             label: 'geo!space File Icons',

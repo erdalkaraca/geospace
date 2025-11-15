@@ -25,7 +25,7 @@ When a .geospace file is open, the map editor provides:
 
 const geospacePromptEnhancer: PromptEnhancer = {
     enhance: async (prompt: string, _context: ExecutionContext) => {
-        return `${GEOSPACE_SPECIFIC_PROMPT}\n\n${prompt}`;
+        return `${prompt}\n\n${GEOSPACE_SPECIFIC_PROMPT}`;
     },
     priority: 5
 };

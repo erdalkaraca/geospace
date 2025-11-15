@@ -5,12 +5,29 @@ import { contributionRegistry, HTMLContribution } from "../../core/contributionr
 import { editorRegistry, EditorInput } from "../../core/editorregistry";
 import { registerAll } from "../../core/commandregistry";
 import { TOOLBAR_BOTTOM, TOOLBAR_MAIN_RIGHT } from "../../core/constants";
+import { CID_AGENTS } from "./core/constants";
+import type { AgentContribution } from "./core/interfaces";
+import GENERAL_SYS_PROMPT from "./general-assistant-prompt.txt?raw";
 import "./view/k-aiview";
 import "./view/k-token-usage";
 import "./view/components/k-ai-config-editor";
 
 export default ({ }: any) => {
     rootContext.put("aiService", aiService);
+    
+    // Register default App Support agent with general assistant prompt
+    // Apps can enhance this prompt using prompt enhancers
+    contributionRegistry.registerContribution(CID_AGENTS, {
+        label: "App Support",
+        description: "General app support",
+        role: "appsupport",
+        priority: 100,
+        icon: "question-circle",
+        sysPrompt: GENERAL_SYS_PROMPT,
+        tools: {
+            enabled: true,
+        }
+    } as AgentContribution);
     
     contributionRegistry.registerContribution(TOOLBAR_BOTTOM, {
         target: TOOLBAR_BOTTOM,

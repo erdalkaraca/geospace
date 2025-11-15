@@ -24,9 +24,6 @@ import '../widgets/index';
 // Register framework extensions (system extensions)
 import '../extensions';
 
-// Register framework agents
-import '../agents';
-
 // Register framework contributions
 import '../contributions';
 
