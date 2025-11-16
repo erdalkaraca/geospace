@@ -10,7 +10,8 @@ import {
     workspaceService,
     toastError,
     toastInfo,
-    taskService
+    taskService,
+    ProgressMonitor
 } from "@kispace-io/appspace/api";
 import {rootContext} from "@kispace-io/appspace/api";
 
@@ -212,6 +213,14 @@ let workspacePlugin = {
 
 export class BuildService {
     private initialized = false
+    private workspaceCache: any = null
+
+    private async getWorkspace() {
+        if (!this.workspaceCache) {
+            this.workspaceCache = (await workspaceService.getWorkspace())!
+        }
+        return this.workspaceCache
+    }
 
     public async init() {
         if (!this.initialized) {
@@ -222,51 +231,65 @@ export class BuildService {
         }
     }
 
-    private async downloadFile(fromDlLink: string, toWsPath: any) {
-        const workspace = (await workspaceService.getWorkspace())!
+    private async downloadFile(fromDlLink: string, toWsPath: string) {
+        const workspace = await this.getWorkspace()
         const link = (import.meta.env.VITE_BASE_PATH || "") + fromDlLink
-        await fetch(link).then(async response => response.blob())
-            .then(async contents => {
-                await workspace.getResource(toWsPath, {
-                    create: true
-                }).then((resource) => resource as File)
-                    .then(file => file.saveContents(contents))
-            })
+        const response = await fetch(link)
+        const contents = await response.blob()
+        const resource = await workspace.getResource(toWsPath, { create: true }) as File
+        await resource.saveContents(contents)
     }
 
-    public async build(options: BuildOptions, cleanAfterBuild = undefined) {
-        await this.init()
-
-        const libPath = "build/gs-lib.js"
-        const buildAppJs = "build/app.js"
-        const distIndexHtml = "dist/index.html"
-        const distAppJs = "dist/app.js"
-
-        const workspace = (await workspaceService.getWorkspace())!
-        if (await workspace.getResource("build")) {
-            await (await workspace.getResource("build") as Directory).delete()
+    private async deleteDirectoryIfExists(path: string) {
+        const workspace = await this.getWorkspace()
+        const resource = await workspace.getResource(path)
+        if (resource) {
+            await (resource as Directory).delete()
         }
-        if (await workspace.getResource("dist")) {
-            await (await workspace.getResource("dist") as Directory).delete()
+    }
+
+    private async downloadIcons(iconPaths: string[], updateProgress: (step: number, message: string) => void, currentStep: { value: number }) {
+        for (const iconPath of iconPaths) {
+            const fileName = iconPath.split('/').pop() || iconPath
+            updateProgress(++currentStep.value, `Downloading icon: ${fileName}...`)
+            await this.downloadFile(iconPath, `dist/assets/icons/${fileName}`)
         }
+    }
 
-        await this.downloadFile("/lib/gs-lib.js", libPath)
-        await this.downloadFile("/lib/gs-lib.css", "dist/app.css")
-        await this.downloadFile("/pwa/staticwebapp.config.json", "dist/staticwebapp.config.json")
-        await this.downloadFile("/pwa/sw.js", "dist/sw.js")
+    private async cleanBuildDirectories(updateProgress: (step: number, message: string) => void, currentStep: { value: number }) {
+        updateProgress(++currentStep.value, "Cleaning build directories...")
+        await Promise.all([
+            this.deleteDirectoryIfExists("build"),
+            this.deleteDirectoryIfExists("dist")
+        ])
+    }
 
-        const vars = {
-            ...options,
-            libPath: libPath
+    private async downloadCoreFiles(libPath: string, updateProgress: (step: number, message: string) => void, currentStep: { value: number }) {
+        const coreFiles = [
+            { path: "/lib/gs-lib.js", dest: libPath, message: "Downloading library files..." },
+            { path: "/lib/gs-lib.css", dest: "dist/app.css", message: "Downloading stylesheet..." },
+            { path: "/pwa/staticwebapp.config.json", dest: "dist/staticwebapp.config.json", message: "Downloading configuration files..." },
+            { path: "/pwa/sw.js", dest: "dist/sw.js", message: "Downloading service worker..." }
+        ]
+
+        for (const file of coreFiles) {
+            updateProgress(++currentStep.value, file.message)
+            await this.downloadFile(file.path, file.dest)
         }
+    }
 
-        // Read the downloaded service worker and inject version
+    private async processServiceWorker(vars: any, updateProgress: (step: number, message: string) => void, currentStep: { value: number }) {
+        updateProgress(++currentStep.value, "Processing service worker...")
+        const workspace = await this.getWorkspace()
         const swFile = await workspace.getResource("dist/sw.js") as File
         const swContent = await swFile.getContents()
         await this.createFile("dist/sw.js", (vars: any) => {
             return swContent.replace(/\$PWA_VERSION/g, vars["version"])
         }, vars)
+    }
 
+    private async createManifest(vars: any, updateProgress: (step: number, message: string) => void, currentStep: { value: number }) {
+        updateProgress(++currentStep.value, "Creating manifest file...")
         await this.createFile("dist/manifest.json", (vars: any) => {
             const manifest = JSON.parse(JSON.stringify(manifestJson))
             manifest.name = vars["title"]
@@ -275,27 +298,28 @@ export class BuildService {
             manifest.version = vars["version"]
             return JSON.stringify(manifest)
         }, vars)
+    }
 
-        await this.downloadFile("/pwa/assets/icons/24x24.png", "dist/assets/icons/24x24.png")
-        await this.downloadFile("/pwa/assets/icons/48x48.png", "dist/assets/icons/48x48.png")
-        await this.downloadFile("/pwa/assets/icons/192x192.png", "dist/assets/icons/192x192.png")
-        await this.downloadFile("/pwa/assets/icons/512x512.png", "dist/assets/icons/512x512.png")
-        await this.downloadFile("/pwa/assets/icons/icon_24.png", "dist/assets/icons/icon_24.png")
-        await this.downloadFile("/pwa/assets/icons/icon_48.png", "dist/assets/icons/icon_48.png")
-        await this.downloadFile("/pwa/assets/icons/icon_192.png", "dist/assets/icons/icon_192.png")
-        await this.downloadFile("/pwa/assets/icons/icon_512.png", "dist/assets/icons/icon_512.png")
-
+    private async copyWorkspaceAssets(updateProgress: (step: number, message: string) => void, currentStep: { value: number }) {
+        updateProgress(++currentStep.value, "Copying workspace assets...")
+        const workspace = await this.getWorkspace()
         const assetDir = await workspace.getResource("assets") as Directory
         if (assetDir) {
             await assetDir.copyTo("dist/assets")
         }
+    }
 
+    private async generateBuildFiles(buildAppJs: string, distIndexHtml: string, vars: any, updateProgress: (step: number, message: string) => void, currentStep: { value: number }) {
+        updateProgress(++currentStep.value, "Generating application code...")
         await this.createFile(buildAppJs, appJs, vars)
+        updateProgress(++currentStep.value, "Generating HTML file...")
         await this.createFile(distIndexHtml, indexHtml, vars)
+    }
 
-        const outFile = await workspace.getResource(distAppJs, {
-            create: true
-        }) as File
+    private async bundleCode(buildAppJs: string, distAppJs: string, updateProgress: (step: number, message: string) => void, currentStep: { value: number }) {
+        updateProgress(++currentStep.value, "Bundling and minifying code...")
+        const workspace = await this.getWorkspace()
+        const outFile = await workspace.getResource(distAppJs, { create: true }) as File
         const result = await esbuild.build({
             entryPoints: [buildAppJs],
             bundle: true,
@@ -304,15 +328,93 @@ export class BuildService {
             minify: true,
             plugins: [workspacePlugin]
         })
-        await outFile.saveContents(result.outputFiles![0].contents);
+        updateProgress(++currentStep.value, "Saving bundled output...")
+        await outFile.saveContents(result.outputFiles![0].contents)
+    }
+
+    private async cleanupBuild(cleanAfterBuild: boolean | undefined, updateProgress: (step: number, message: string) => void, currentStep: { value: number }) {
         if (cleanAfterBuild === undefined || cleanAfterBuild) {
-            await (await workspace.getResource("build") as Directory).delete()
+            updateProgress(++currentStep.value, "Cleaning up temporary files...")
+            await this.deleteDirectoryIfExists("build")
         }
+    }
+
+    public async build(options: BuildOptions, cleanAfterBuild = undefined, progressMonitor?: ProgressMonitor) {
+        const updateProgress = (step: number, message: string) => {
+            if (progressMonitor) {
+                progressMonitor.currentStep = step
+                progressMonitor.message = message
+            }
+        }
+
+        const totalSteps = 23  // Maximum steps (includes conditional cleanup)
+        if (progressMonitor) {
+            progressMonitor.totalSteps = totalSteps
+        }
+
+        const currentStep = { value: 0 }
+
+        // Build phase 1: Initialization
+        updateProgress(++currentStep.value, "Initializing build system...")
+        await this.init()
+
+        const libPath = "build/gs-lib.js"
+        const buildAppJs = "build/app.js"
+        const distIndexHtml = "dist/index.html"
+        const distAppJs = "dist/app.js"
+
+        // Build phase 2: Cleanup
+        await this.cleanBuildDirectories(updateProgress, currentStep)
+
+        // Build phase 3: Download core files
+        await this.downloadCoreFiles(libPath, updateProgress, currentStep)
+
+        const vars = {
+            ...options,
+            libPath: libPath
+        }
+
+        // Build phase 4: Process service worker and manifest
+        await this.processServiceWorker(vars, updateProgress, currentStep)
+        await this.createManifest(vars, updateProgress, currentStep)
+
+        // Build phase 5: Download icons
+        const iconPaths = [
+            "/pwa/assets/icons/24x24.png",
+            "/pwa/assets/icons/48x48.png",
+            "/pwa/assets/icons/192x192.png",
+            "/pwa/assets/icons/512x512.png",
+            "/pwa/assets/icons/icon_24.png",
+            "/pwa/assets/icons/icon_48.png",
+            "/pwa/assets/icons/icon_192.png",
+            "/pwa/assets/icons/icon_512.png"
+        ]
+        await this.downloadIcons(iconPaths, updateProgress, currentStep)
+
+        // Build phase 6: Copy assets
+        await this.copyWorkspaceAssets(updateProgress, currentStep)
+
+        // Build phase 7: Generate build files
+        await this.generateBuildFiles(buildAppJs, distIndexHtml, vars, updateProgress, currentStep)
+
+        // Build phase 8: Bundle code
+        await this.bundleCode(buildAppJs, distAppJs, updateProgress, currentStep)
+
+        // Build phase 9: Cleanup
+        await this.cleanupBuild(cleanAfterBuild, updateProgress, currentStep)
+
+        // Build phase 10: Finalize
+        updateProgress(++currentStep.value, "Finalizing build...")
+        const workspace = await this.getWorkspace()
         workspace.touch()
+        
+        if (progressMonitor) {
+            progressMonitor.message = "Build completed successfully!"
+        }
     }
 
     private async createFile(fileName: string, contentCreator: (vars: any) => string, vars: {}) {
-        const workspace = (await workspaceService.getWorkspace())!
+        const workspace = await this.getWorkspace()
         const entryFile = (await workspace.getResource(fileName, {
             create: true
         }))! as File
@@ -323,12 +425,14 @@ export class BuildService {
         const gsMap = JSON.parse(await mapFile.getContents())
         const env = await loadEnvs(envPath || ".env")
         env["BUILD_TIME"] = new Date()
-        taskService.runAsync("Building map", () => buildService.build({
-            title: mapFile.getName(),
-            gsMap: gsMap,
-            env: env,
-            version: env["VERSION"] || "0.0.0"
-        }))
+        taskService.runAsync("Building map", async (progressMonitor) => {
+            await buildService.build({
+                title: mapFile.getName(),
+                gsMap: gsMap,
+                env: env,
+                version: env["VERSION"] || "0.0.0"
+            }, undefined, progressMonitor)
+        })
             .then(() => {
                 toastInfo("🚀 Map files copied to 'dist' folder in your workspace!")
             }).catch(err => {

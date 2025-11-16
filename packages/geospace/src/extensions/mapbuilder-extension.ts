@@ -9,6 +9,8 @@ import {
     workspaceService,
     toastInfo,
     toastError,
+    taskService,
+    ProgressMonitor,
     type CommandRegistry,
     contributionRegistry
 } from "@kispace-io/appspace/api";
@@ -16,16 +18,63 @@ import {
 const GEOSPACE_EXTENSION = ".geospace";
 const ENV_EXTENSION = ".env";
 
-async function collectFilesByExtension(directory: Directory, extension: string): Promise<string[]> {
+// Folders to skip when collecting files (case-insensitive)
+const SKIP_FOLDERS = [
+    "node_modules",
+    ".git",
+    "dist",
+    "build",
+    ".next",
+    ".cache",
+    ".vscode",
+    ".idea",
+    "coverage",
+    ".nyc_output",
+    ".parcel-cache",
+    ".turbo",
+    ".yarn",
+    ".pnp",
+    ".svelte-kit",
+    ".nuxt",
+    ".output",
+    "target",
+    "out",
+    ".temp",
+    ".tmp"
+];
+
+function shouldSkipDirectory(dirName: string): boolean {
+    const lowerName = dirName.toLowerCase();
+    return SKIP_FOLDERS.some(skipFolder => lowerName === skipFolder.toLowerCase());
+}
+
+async function collectFilesByExtension(
+    directory: Directory, 
+    extension: string, 
+    progressMonitor?: ProgressMonitor,
+    processedCount: { value: number } = { value: 0 }
+): Promise<string[]> {
     const files: string[] = [];
     const children = await directory.listChildren(true);
     
     for (const child of children) {
+        processedCount.value++;
+        const childPath = child.getWorkspacePath();
+        
+        if (progressMonitor) {
+            progressMonitor.message = `Scanning: ${childPath}`;
+            // Use current step to show progress, but don't set totalSteps since we don't know the total
+            progressMonitor.currentStep = processedCount.value;
+        }
+        
         if (child instanceof File && child.getName().toLowerCase().endsWith(extension)) {
-            files.push(child.getWorkspacePath());
+            files.push(childPath);
         } else if (child instanceof Directory) {
-            const subFiles = await collectFilesByExtension(child, extension);
-            files.push(...subFiles);
+            // Skip directories that match the skip list
+            if (!shouldSkipDirectory(child.getName())) {
+                const subFiles = await collectFilesByExtension(child, extension, progressMonitor, processedCount);
+                files.push(...subFiles);
+            }
         }
     }
     
@@ -211,8 +260,22 @@ export default ({commandRegistry}: { commandRegistry: CommandRegistry }) => {
                 }
                 
                 if (ask && (!mapFile || !envPath)) {
-                    const geospaceFiles = await collectFilesByExtension(workspace, GEOSPACE_EXTENSION);
-                    const envFiles = await collectFilesByExtension(workspace, ENV_EXTENSION);
+                    let geospaceFiles: string[] = [];
+                    let envFiles: string[] = [];
+                    
+                    // Collect files with progress reporting
+                    await taskService.runAsync("Collecting files", async (progressMonitor) => {
+                        progressMonitor.message = "Scanning workspace for .geospace files...";
+                        const geospaceCount = { value: 0 };
+                        geospaceFiles = await collectFilesByExtension(workspace, GEOSPACE_EXTENSION, progressMonitor, geospaceCount);
+                        
+                        progressMonitor.message = "Scanning workspace for .env files...";
+                        progressMonitor.currentStep = 0;
+                        const envCount = { value: 0 };
+                        envFiles = await collectFilesByExtension(workspace, ENV_EXTENSION, progressMonitor, envCount);
+                        
+                        progressMonitor.message = `Found ${geospaceFiles.length} .geospace files and ${envFiles.length} .env files`;
+                    });
                     
                     const currentGeospacePath = mapFile?.getWorkspacePath();
                     const result = await showFileSelectionDialog(

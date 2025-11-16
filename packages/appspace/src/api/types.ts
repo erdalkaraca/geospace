@@ -41,4 +41,7 @@ export type {
     TreeNode,
     TreeContribution
 } from '../core/tree-utils';
+export type {
+    ProgressMonitor
+} from '../core/taskservice';
 
