@@ -92,15 +92,29 @@ registerAll({
                 return message;
             };
             
+            const handleClose = () => {
+                cleanup();
+            };
+
+            const handleAfterHide = () => {
+                cleanup();
+            };
+
             const updateDialog = (index: number) => {
                 const releaseContent = buildReleaseContent(index);
                 const hasNavigation = releases.length > 0;
 
                 const template = html`
-                    <wa-dialog label="${app.name}" open @wa-request-close=${cleanup}>
+                    <wa-dialog 
+                        label="About ${app.name}" 
+                        open 
+                        light-dismiss
+                        style="--width: 600px;"
+                        @wa-request-close=${handleClose}
+                        @wa-after-hide=${handleAfterHide}
+                    >
                         <style>
                             .dialog-content {
-                                width: 600px;
                                 height: 600px;
                             }
                             
@@ -153,7 +167,7 @@ registerAll({
                                     Next →
                                 </wa-button>
                             ` : ''}
-                            <wa-button variant="primary" @click=${cleanup}>Close</wa-button>
+                            <wa-button variant="primary" data-dialog="close">Close</wa-button>
                         </div>
                     </wa-dialog>
                 `;
