@@ -1,6 +1,6 @@
 import { html, render } from "lit";
-import {GsMapEditor} from "../geo/gs-map-editor";
-import {buildService} from "../build/buildservice";
+import {GsMapEditor} from "../../geo/gs-map-editor";
+import {buildService} from "./buildservice";
 import {
     activePartSignal,
     activeSelectionSignal,

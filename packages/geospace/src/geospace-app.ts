@@ -96,7 +96,7 @@ const GEOSPACE_EXTENSION_CONTRIBUTIONS = [
         id: "geospace.mapBuilder",
         name: "geo!space Map Builder",
         description: "Compile a geo!space file to an interactive website",
-        loader: () => import("./extensions/mapbuilder-extension"),
+        loader: () => import("./extensions/build/mapbuilder-extension"),
         icon: "earth"
     },
     {

@@ -46,10 +46,8 @@ import BaseLayer from "ol/layer/Base";
 import {apply as applyMapboxStyle} from "ol-mapbox-style";
 import LayerGroup from "ol/layer/Group";
 import {Control} from "ol/control";
-import {html} from "lit";
-import {when} from "lit/directives/when.js";
 import * as ol from "./gs-olns"
-import {createRef, ref} from "lit/directives/ref.js";
+import {lit} from "./gs-litns";
 import {v4 as uuidv4} from 'uuid'
 import PubSub from 'pubsub-js'
 import {GsControlAdapter, GsOverlayAdapter} from "./gs-ol-adapters";
@@ -421,8 +419,10 @@ const importSrc = async (adapter: GsControlAdapter | GsOverlayAdapter, src: stri
         const init = () => {
             olMap.removeEventListener("rendercomplete", init)
             const vars: any = {
-                html: html,
-                when: when,
+                // backward compatibility
+                ...lit,
+                // forward compatibility
+                lit: lit,
                 style: adapter.style.bind(adapter),
                 render: adapter.render.bind(adapter),
                 map: olMap,
@@ -430,8 +430,6 @@ const importSrc = async (adapter: GsControlAdapter | GsOverlayAdapter, src: stri
                 querySelector: adapter.getElement().querySelector.bind(adapter.getElement()),
                 querySelectorAll: adapter.getElement().querySelector.bind(adapter.getElement()),
                 ol: ol,
-                ref: ref,
-                createRef: createRef,
                 env: olMap.get(KEY_ENV) || {},
                 utils: {
                     uuid: uuidv4
