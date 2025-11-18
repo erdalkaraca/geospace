@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
 import { fileURLToPath } from 'url'
-import { dirname, resolve } from 'path'
+import { dirname as pathDirname, resolve, basename } from 'path'
 import { readFileSync } from 'fs'
 
 const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
+const __dirname = pathDirname(__filename)
 
 // Parse command line arguments
 const args = process.argv.slice(2)
@@ -68,9 +68,12 @@ for (let i = 1; i < args.length; i++) {
     }
 }
 
-// Resolve paths relative to current working directory
-const projectRoot = process.cwd()
-const resolvedMapFile = resolve(projectRoot, mapFile)
+// Resolve the map file path (can be absolute or relative to cwd)
+const resolvedMapFile = resolve(process.cwd(), mapFile)
+
+// Use the directory of the .geospace file as the project root
+const projectRoot = pathDirname(resolvedMapFile)
+const mapFileName = basename(resolvedMapFile)
 
 // Load environment variables if env file is provided
 let env = {}
@@ -111,7 +114,8 @@ const progress = (step, message, totalSteps) => {
         const gsLibPath = resolve(__dirname, '..')
 
         // Build the project
-        await buildProject(projectRoot, resolvedMapFile, {
+        // mapFile should be relative to projectRoot (just the filename)
+        await buildProject(projectRoot, mapFileName, {
             title: options.title,
             version: options.version || '1.0.0',
             env: env || {},

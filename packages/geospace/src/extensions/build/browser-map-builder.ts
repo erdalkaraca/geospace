@@ -284,7 +284,6 @@ export class BrowserMapBuilder {
     public async buildMapFile(mapFile: File, envPath?: string) {
         const gsMap = JSON.parse(await mapFile.getContents())
         const env = await loadEnvs(envPath || ".env")
-        env["BUILD_TIME"] = new Date()
         taskService.runAsync("Building map", async (progressMonitor) => {
             await browserMapBuilder.build({
                 title: mapFile.getName(),

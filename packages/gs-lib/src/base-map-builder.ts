@@ -377,7 +377,7 @@ export async function buildMap(
     const entryPointContent = generateAppJs({
         gsMap: options.gsMap,
         gsLibPath: buildGsLibPath,
-        env: options.env
+        env: { ...options.env, BUILD_TIME: new Date() }
     })
     await fs.writeFile(`${buildDir}/app.js`, entryPointContent)
     
