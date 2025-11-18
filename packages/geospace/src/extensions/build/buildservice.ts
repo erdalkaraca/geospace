@@ -95,17 +95,6 @@ let workspacePlugin = {
         build.onResolve({filter: /.*/}, (args: OnResolveArgs) => {
             if (!/^(?!https?:\/\/).+/.test(args.path)) return;
             
-            // Resolve @kispace-io/gs-lib to workspace path
-            // The package files are copied to workspace before bundling
-            if (args.path === '@kispace-io/gs-lib') {
-                return {path: 'build/gs-lib/index.js', namespace: "virtual-workspace"};
-            }
-            if (args.path.startsWith('@kispace-io/gs-lib/')) {
-                // Resolve subpath imports
-                const subpath = args.path.replace('@kispace-io/gs-lib/', '');
-                return {path: `build/gs-lib/${subpath}`, namespace: "virtual-workspace"};
-            }
-            
             let resolvedPath = args.path;
             
             // If path starts with '/', remove it to make it workspace-relative
@@ -121,7 +110,7 @@ let workspacePlugin = {
                 
                 const isRelative = args.path.startsWith('./') || args.path.startsWith('../');
                 const hasPathSeparator = resolvedPath.includes('/');
-                const isGeneratedBuildFile = importerPath.startsWith('build/');
+                        const isGeneratedBuildFile = importerPath.startsWith('__build/');
                 
                 // Only resolve relative to importer if:
                 // 1. It's explicitly relative (./ or ../), OR
@@ -247,7 +236,7 @@ export class BuildService {
     private async cleanBuildDirectories(updateProgress: (step: number, message: string) => void, currentStep: { value: number }) {
         updateProgress(++currentStep.value, "Cleaning build directories...")
         await Promise.all([
-            this.deleteDirectoryIfExists("build"),
+            this.deleteDirectoryIfExists("__build"),
             this.deleteDirectoryIfExists("dist")
         ])
     }
@@ -258,13 +247,13 @@ export class BuildService {
         // Ensure directories exist first to avoid race conditions
         const workspace = await this.getWorkspace()
         await Promise.all([
-            workspace.getResource("build/gs-lib/", { create: true }),
+            workspace.getResource("__build/gs-lib/", { create: true }),
             workspace.getResource("dist/", { create: true })
         ])
         
         // Copy files in parallel
         await Promise.all([
-            this.copyFileFromGsLib(import("../../../../gs-lib/dist/index.js?raw"), "build/gs-lib/index.js", { errorContext: "gs-lib package" }),
+            this.copyFileFromGsLib(import("../../../../gs-lib/dist/index.js?raw"), "__build/gs-lib/index.js", { errorContext: "gs-lib package" }),
             this.copyFileFromGsLib(import("../../../../gs-lib/dist/gs-lib.css?raw"), "dist/app.css", { errorContext: "gs-lib CSS" })
         ])
     }
@@ -362,7 +351,7 @@ export class BuildService {
     private async cleanupBuild(cleanAfterBuild: boolean | undefined, updateProgress: (step: number, message: string) => void, currentStep: { value: number }) {
         if (cleanAfterBuild === undefined || cleanAfterBuild) {
             updateProgress(++currentStep.value, "Cleaning up temporary files...")
-            await this.deleteDirectoryIfExists("build")
+            await this.deleteDirectoryIfExists("__build")
         }
     }
 
@@ -385,7 +374,7 @@ export class BuildService {
         updateProgress(++currentStep.value, "Initializing build system...")
         await this.init()
 
-        const buildAppJs = "build/app.js"
+        const buildAppJs = "__build/app.js"
         const distIndexHtml = "dist/index.html"
         const distAppJs = "dist/app.js"
 
@@ -397,7 +386,7 @@ export class BuildService {
 
         const vars = {
             ...options,
-            gsLibPath: "build/gs-lib/index.js"
+            gsLibPath: "__build/gs-lib/index.js"
         }
         
         // Build phase 4: Copy PWA core files from gs-lib (includes service worker, manifest, icons)
