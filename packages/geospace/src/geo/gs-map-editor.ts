@@ -1,9 +1,5 @@
-import { css, html, unsafeCSS } from 'lit'
-import { customElement, property } from 'lit/decorators.js'
-import { createRef, ref, Ref } from 'lit/directives/ref.js'
-import { when } from 'lit/directives/when.js'
-import { keyed } from 'lit/directives/keyed.js'
-import { DEFAULT_GSMAP, ensureUuidsRecursive, GsMap, GsLayerType, GsSourceType, DEFAULT_STYLES, DEFAULT_STYLE_RULES } from "../rt";
+import { css, html, unsafeCSS, customElement, property, createRef, ref, Ref, when, keyed } from '@kispace-io/appspace/externals/lit-exports';
+import { DEFAULT_GSMAP, ensureUuidsRecursive, GsMap, GsLayerType, GsSourceType, DEFAULT_STYLES, DEFAULT_STYLE_RULES } from "@kispace-io/gs-lib";
 import { findLayerByUuid } from "./map-renderer";
 import { mapChangedSignal, MapEvents, FeatureSelection } from "./gs-signals";
 import olCSS from "ol/ol.css?raw";

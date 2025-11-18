@@ -1,4 +1,4 @@
-import {GsMap, GsLayer, GsControl, GsOverlay} from "../rt";
+import {GsMap, GsLayer, GsControl, GsOverlay} from "@kispace-io/gs-lib";
 
 /**
  * Sync event types that describe what changed in the map

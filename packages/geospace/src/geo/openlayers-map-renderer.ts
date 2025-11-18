@@ -1,29 +1,26 @@
 import {MapOperations, MapRenderer, MapSyncEvent} from "./map-renderer";
-import {gsLib, GsMap, GsSourceType, KEY_NAME, toOlLayer, KEY_STATE, KEY_UUID} from "../rt/gs-lib";
-import {toGsFeature} from "../rt/gs-ol2gs";
-import {cleanupEventSubscriptions, toOlStyle} from "../rt/gs-gs2ol";
-import {ensureUuid, getStyleForFeature, GsFeature, GsGeometry} from "../rt/gs-model";
-import {v4 as uuidv4} from 'uuid';
-import {Map as OlMap} from "ol";
-import {Feature} from "ol";
-import BaseLayer from "ol/layer/Base";
-import type {FeatureLike} from "ol/Feature";
-import VectorLayer from "ol/layer/Vector";
-import VectorSource from "ol/source/Vector";
-import Draw from "ol/interaction/Draw.js";
-import Select from "ol/interaction/Select.js";
-import {click} from "ol/events/condition.js";
-import {Style, Stroke, Fill, Circle as CircleStyle} from "ol/style.js";
-import {getLength, getArea} from "ol/sphere.js";
-import LineString from "ol/geom/LineString.js";
-import type {Geometry} from "ol/geom";
+import {gsLib, GsMap, GsSourceType, KEY_NAME, toOlLayer, KEY_STATE, KEY_UUID, toGsFeature, cleanupEventSubscriptions, toOlStyle, ensureUuid, getStyleForFeature, GsFeature, GsGeometry, events} from "@kispace-io/gs-lib";
+import {v4 as uuidv4} from '@kispace-io/appspace/externals/third-party';
+import {
+    Map as OlMap,
+    Feature,
+    style,
+    sphere,
+    geom,
+    layer as layerNS,
+    source as sourceNS,
+    interaction as interactionNS,
+    FeatureLike,
+    eventsCondition,
+    BaseLayer
+} from "@kispace-io/gs-lib";
 
 /**
  * Lightweight helper to extract minimal GsFeature data for style evaluation
  * Avoids the overhead of full toGsFeature() conversion
  */
 function getFeatureStyleData(feature: Feature): GsFeature {
-    const geometry = feature.getGeometry() as Geometry;
+    const geometry = feature.getGeometry() as geom.Geometry;
     return ensureUuid({
         geometry: ensureUuid({
             type: geometry.getType(),
@@ -46,7 +43,7 @@ export class OpenLayersMapRenderer implements MapRenderer {
     private onSyncCallback?: (event: MapSyncEvent) => void;
     private isDestroyed: boolean = false;
     private operations?: OpenLayersMapOperations;
-    private styleCache: Map<string, Style> = new Map();
+    private styleCache: Map<string, style.Style> = new Map();
 
     constructor(gsMap: GsMap, env?: any) {
         this.gsMap = gsMap;
@@ -92,13 +89,13 @@ export class OpenLayersMapRenderer implements MapRenderer {
         
         const layers = this.olMap.getLayers().getArray();
         layers.forEach(layer => {
-            if (layer instanceof VectorLayer) {
+            if (layer instanceof layerNS.Vector) {
                 this.applyStyleToVectorLayer(layer);
             }
         });
     }
     
-    private applyStyleToVectorLayer(layer: VectorLayer): void {
+    private applyStyleToVectorLayer(layer: layerNS.Vector): void {
         const layerName = layer.get(KEY_NAME);
         
         // Create a style function that applies rules to each feature
@@ -240,7 +237,7 @@ export class OpenLayersMapRenderer implements MapRenderer {
             }
         }
         
-        if (!olLayer || !(olLayer instanceof VectorLayer)) return;
+        if (!olLayer || !(olLayer instanceof layerNS.Vector)) return;
 
         const source = olLayer.getSource();
         if (!source) return;
@@ -311,8 +308,8 @@ export class OpenLayersMapRenderer implements MapRenderer {
  * This bridges the gap between command intents and the GsMap domain model
  */
 export class OpenLayersMapOperations implements MapOperations {
-    private drawInteraction?: Draw;
-    private selectInteraction?: Select;
+    private drawInteraction?: interactionNS.Draw;
+    private selectInteraction?: interactionNS.Select;
     private activeDrawingLayerUuid?: string;
     private keyDownListener?: (event: KeyboardEvent) => void;
 
@@ -502,7 +499,7 @@ export class OpenLayersMapOperations implements MapOperations {
             }
         }
         
-        if (!layer || !(layer instanceof VectorLayer)) {
+        if (!layer || !(layer instanceof layerNS.Vector)) {
             throw new Error('Drawing only supported on vector layers');
         }
         
@@ -516,7 +513,7 @@ export class OpenLayersMapOperations implements MapOperations {
             throw new Error('Drawing only supported on layers with in-memory features, not URL-loaded data');
         }
         
-        this.drawInteraction = new Draw({
+        this.drawInteraction = new interactionNS.Draw({
             source: source,
             type: geometryType
         });
@@ -583,7 +580,7 @@ export class OpenLayersMapOperations implements MapOperations {
         const olLayers = this.olMap.getLayers();
         
         // Get all vector layers to enable selection across all of them
-        const vectorLayers = olLayers.getArray().filter(layer => layer instanceof VectorLayer) as VectorLayer<VectorSource>[];
+        const vectorLayers = olLayers.getArray().filter(layer => layer instanceof layerNS.Vector) as layerNS.Vector<sourceNS.Vector>[];
         
         if (vectorLayers.length === 0) {
             throw new Error('No vector layers available for selection');
@@ -593,19 +590,19 @@ export class OpenLayersMapOperations implements MapOperations {
         const selectionStyle = gsMap?.styles?.['selection'];
         
         const selectOptions: any = {
-            condition: click,
+            condition: eventsCondition.click,
             layers: vectorLayers,
             hitTolerance: 5,
             style: selectionStyle ? toOlStyle(selectionStyle) : (_feature: any) => {
-                const stroke = new Stroke({
+                const stroke = new style.Stroke({
                     color: 'rgba(255, 255, 0, 1)',
                     width: 3
                 });
-                const fill = new Fill({
+                const fill = new style.Fill({
                     color: 'rgba(255, 255, 0, 0.3)'
                 });
-                return new Style({
-                    image: new CircleStyle({
+                return new style.Style({
+                    image: new style.Circle({
                         radius: 7,
                         fill: fill,
                         stroke: stroke
@@ -616,7 +613,7 @@ export class OpenLayersMapOperations implements MapOperations {
             }
         };
         
-        this.selectInteraction = new Select(selectOptions);
+        this.selectInteraction = new interactionNS.Select(selectOptions);
         
         // Listen for feature selection events
         this.selectInteraction.on('select', (event: any) => {
@@ -625,7 +622,7 @@ export class OpenLayersMapOperations implements MapOperations {
                 // Find which layer this feature belongs to
                 let featureLayerUuid: string | undefined;
                 olLayers.getArray().forEach((layer) => {
-                    if (layer instanceof VectorLayer) {
+                    if (layer instanceof layerNS.Vector) {
                         const source = layer.getSource();
                         if (source && source.hasFeature(selectedFeature)) {
                             const uuid = layer.get(KEY_UUID);
@@ -648,9 +645,9 @@ export class OpenLayersMapOperations implements MapOperations {
                         
                         try {
                             if (geometryType === 'LineString' || geometryType === 'MultiLineString') {
-                                metrics.length = getLength(geometry, { projection: this.olMap.getView().getProjection() });
+                                metrics.length = sphere.getLength(geometry, { projection: this.olMap.getView().getProjection() });
                             } else if (geometryType === 'Polygon' || geometryType === 'MultiPolygon') {
-                                metrics.area = getArea(geometry, { projection: this.olMap.getView().getProjection() });
+                                metrics.area = sphere.getArea(geometry, { projection: this.olMap.getView().getProjection() });
                                 // For polygons, also calculate perimeter
                                 const coordinates = geometryType === 'Polygon' 
                                     ? (geometry as any).getCoordinates()[0]
@@ -658,8 +655,8 @@ export class OpenLayersMapOperations implements MapOperations {
                                 
                                 if (coordinates && coordinates.length > 0) {
                                     // Calculate perimeter by measuring the outer ring
-                                    const perimeterLine = new LineString(coordinates);
-                                    metrics.length = getLength(perimeterLine, { projection: this.olMap.getView().getProjection() });
+                                    const perimeterLine = new geom.LineString(coordinates);
+                                    metrics.length = sphere.getLength(perimeterLine, { projection: this.olMap.getView().getProjection() });
                                 }
                             }
                         } catch (error) {
@@ -706,7 +703,7 @@ export class OpenLayersMapOperations implements MapOperations {
             // Find which layer this feature belongs to
             for (let i = 0; i < olLayers.getLength(); i++) {
                 const layer = olLayers.item(i);
-                if (layer instanceof VectorLayer) {
+                if (layer instanceof layerNS.Vector) {
                     const source = layer.getSource();
                     if (source && source.hasFeature(feature)) {
                         source.removeFeature(feature);

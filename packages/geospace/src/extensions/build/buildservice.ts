@@ -2,7 +2,7 @@ import * as esbuild from 'esbuild-wasm'
 import {OnLoadArgs, OnResolveArgs} from 'esbuild-wasm'
 import wasmUrl from 'esbuild-wasm/esbuild.wasm?url'
 import manifestJson from "../../../public/pwa/manifest.json"
-import {GsMap, GsScript} from "../../rt";
+import {GsMap, GsScript} from "@kispace-io/gs-lib";
 import {loadEnvs} from "../../geo/utils";
 import {
     Directory,
@@ -16,6 +16,9 @@ import {
 import {rootContext} from "@kispace-io/appspace/api";
 import {indexHtmlTemplate} from "./index-html-template";
 
+// Lit and WebAwesome are direct dependencies of gs-lib and are bundled automatically
+// No runtime imports needed - they're included when gs-lib is imported
+
 const appJs = (vars: any) => {
     const imports: string[] = []
     const moduleEntries: string[] = []
@@ -27,6 +30,8 @@ const appJs = (vars: any) => {
         imports.push(`import ${modName} from '${src}'`)
         moduleEntries.push(`"${src}": ${modName}`)
     })
+    
+    // Lit and WebAwesome are bundled with gs-lib - no runtime imports needed
     
     return `
 import {gsLib} from "${vars.libPath}"
@@ -256,7 +261,15 @@ export class BuildService {
             outfile: "app.js",
             format: "esm",
             minify: true,
-            plugins: [workspacePlugin]
+            plugins: [workspacePlugin],
+            // Runtime dependencies (lit, webawesome) are imported from CDN in the generated code
+            // Mark CDN URLs and node_modules as external - they'll be loaded at runtime
+            external: [
+                // CDN URLs are already external (imported as URLs)
+                // node_modules packages should be external since we're using CDN
+            ],
+            // Don't bundle node_modules - we're using CDN for runtime dependencies
+            packages: 'external'
         })
         updateProgress(++currentStep.value, "Saving bundled output...")
         await outFile.saveContents(result.outputFiles![0].contents)
@@ -277,7 +290,7 @@ export class BuildService {
             }
         }
 
-        const totalSteps = 23  // Maximum steps (includes conditional cleanup)
+        const totalSteps = 22  // Maximum steps (includes conditional cleanup)
         if (progressMonitor) {
             progressMonitor.totalSteps = totalSteps
         }

@@ -57,6 +57,18 @@
     "./parts/*": {
       "types": "./dist/parts/*.d.ts",
       "import": "./dist/parts/*.js"
+    },
+    "./externals/webawesome": {
+      "types": "./dist/externals/webawesome.d.ts",
+      "import": "./dist/externals/webawesome.js"
+    },
+    "./externals/lit": {
+      "types": "./dist/externals/lit-exports.d.ts",
+      "import": "./dist/externals/lit-exports.js"
+    },
+    "./externals/third-party": {
+      "types": "./dist/externals/third-party.d.ts",
+      "import": "./dist/externals/third-party.js"
     }
   },
   "files": [

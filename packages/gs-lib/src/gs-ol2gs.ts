@@ -1,5 +1,5 @@
-import {Feature, BaseObject} from "@kispace-io/gs-lib";
-import {geom as olGeom} from "@kispace-io/gs-lib";
+import {Feature} from "ol";
+import * as olGeom from "ol/geom";
 import {
     GsFeature,
     GsGeometry,
@@ -9,6 +9,7 @@ import {
     KEY_STATE,
     KEY_UUID
 } from "./gs-model";
+import BaseObject from "ol/Object";
 
 export const toGsLayerType = (tag: string) => {
     switch (tag?.toLowerCase()) {

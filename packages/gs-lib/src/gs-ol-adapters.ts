@@ -1,4 +1,4 @@
-import {Map} from "@kispace-io/gs-lib";
+import {Map} from "ol";
 import {GsOlControl, GsOlOverlay} from "./gs-gs2ol";
 import {render as litRender} from "@kispace-io/appspace/externals/lit-exports";
 

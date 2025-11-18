@@ -11,7 +11,8 @@ export default defineConfig({
     root: __dirname,
     resolve: {
         alias: {
-            '@kispace-io/appspace': path.resolve(__dirname, '../appspace/src')
+            '@kispace-io/appspace': path.resolve(__dirname, '../appspace/src'),
+            '@kispace-io/gs-lib': path.resolve(__dirname, '../gs-lib/src')
         }
     },
     optimizeDeps: {

@@ -1,4 +1,4 @@
-import { html } from "lit";
+import { html } from "@kispace-io/appspace/externals/lit-exports";
 import geospacePackageJson from "../package.json";
 const appVersion = geospacePackageJson.version;
 
@@ -32,7 +32,7 @@ import './geo/gs-catalog'
 import { registerGeospacePromptEnhancer } from "./geo/geospace-prompt-enhancer"
 import README from "../../../README.md?raw"
 import { getSourceTypeFromFile, isSupportedSpatialFile } from "./geo/utils";
-import { DEFAULT_GSMAP } from "./rt";
+import { DEFAULT_GSMAP } from "@kispace-io/gs-lib";
 
 const logger = createLogger('GeoSpaceApp');
 

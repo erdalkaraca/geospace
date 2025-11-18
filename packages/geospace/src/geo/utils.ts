@@ -1,8 +1,7 @@
-import BaseLayer from "ol/layer/Base";
-import {Map} from "ol";
+import {BaseLayer, Map} from "@kispace-io/gs-lib";
 import jsonata from "jsonata";
 import {parse} from "dotenv";
-import {GsSourceType, KEY_NAME} from "../rt";
+import {GsSourceType, KEY_NAME} from "@kispace-io/gs-lib";
 import {
     File,
     workspaceService,

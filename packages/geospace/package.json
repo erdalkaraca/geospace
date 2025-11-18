@@ -8,17 +8,15 @@
     "build": "vite build",
     "preview": "vite preview",
     "type-check": "tsc --noEmit",
-    "build-gslib": "esbuild src/rt/gs-lib.ts --outfile=public/lib/gs-lib.js --bundle --minify --format=esm"
+    "build-gslib": "esbuild ../gs-lib/src/gs-lib.ts --outfile=public/lib/gs-lib.js --bundle --minify --format=esm"
   },
   "dependencies": {
     "@kispace-io/appspace": "file:../appspace",
+    "@kispace-io/gs-lib": "file:../gs-lib",
     "esbuild-wasm": "^0.25.11",
-    "ol": "^10.6.1",
-    "ol-mapbox-style": "^13.1.0",
     "osmtogeojson": "^3.0.0-beta.5",
     "font-gis": "^1.0.6",
-    "pace-js": "^1.2.4",
-    "pubsub-js": "^1.9.5"
+    "pace-js": "^1.2.4"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",

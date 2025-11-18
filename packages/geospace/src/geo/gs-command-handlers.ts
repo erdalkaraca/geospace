@@ -1,4 +1,4 @@
-import {fromLonLat} from "ol/proj";
+import {proj} from "@kispace-io/gs-lib";
 import {MapOperations} from "./map-renderer";
 import {replaceUris} from "./utils";
 import {
@@ -9,7 +9,7 @@ import {
     toGsLayerType,
     toGsSourceType,
     toSourceUrl
-} from "../rt";
+} from "@kispace-io/gs-lib";
 import {GsMapEditor} from "./gs-map-editor";
 import {IFrameMapRenderer} from "./proxy-map-renderer";
 import {
@@ -154,7 +154,7 @@ commandRegistry.registerAll({
         canExecute,
         execute: async context => {
             const operations = getMapOperations(context);
-            const coords = fromLonLat([Number(context.params!["lon"]).valueOf(), Number(context.params!["lat"]).valueOf()]);
+            const coords = proj.fromLonLat([Number(context.params!["lon"]).valueOf(), Number(context.params!["lat"]).valueOf()]);
 
             await operations.setCenter([coords[0], coords[1]]);
         }
@@ -413,9 +413,7 @@ commandRegistry.registerAll({
             // Transform extent if latlon parameter is set
             let extent4326 = extent;
             if (latlon || latlon === undefined) {
-                // Transform from map projection to WGS84 (EPSG:4326)
-                const {transformExtent} = await import("ol/proj");
-                extent4326 = transformExtent(extent, 'EPSG:3857', 'EPSG:4326');
+                extent4326 = proj.transformExtent(extent, 'EPSG:3857', 'EPSG:4326');
 
                 // Reverse coordinates to lat/lon if requested
                 [extent4326[0], extent4326[1]] = [extent4326[1], extent4326[0]];

@@ -28,22 +28,31 @@ import {
     KEY_UUID,
     KEY_URL
 } from "./gs-model";
-import {
-    Feature, Map, Overlay, View, MapOptions, BaseObject,
-    Circle as CircleStyle, Fill, Icon, RegularShape, Stroke, Style, Text,
-    GeoTIFF, OSM, Source, TileWMS, WMTS, XYZ, optionsFromCapabilities,
-    FeatureFormat, WMTSCapabilities, VectorSource, GeoJSON, GPX,
-    TileLayer, TileSource, VectorLayer, BaseLayer, applyMapboxStyle,
-    LayerGroup, Control
-} from "@kispace-io/gs-lib";
-import {geom as olGeom} from "@kispace-io/gs-lib";
+import {Feature, Map, Overlay, View} from "ol";
+import {MapOptions} from "ol/Map";
+import BaseObject from "ol/Object";
+import * as olGeom from "ol/geom";
+import {Circle as CircleStyle, Fill, Icon, RegularShape, Stroke, Style, Text} from "ol/style";
+import {GeoTIFF, OSM, Source, TileWMS, WMTS, XYZ} from "ol/source";
+import {optionsFromCapabilities} from "ol/source/WMTS";
+import FeatureFormat from "ol/format/Feature";
+import WMTSCapabilities from "ol/format/WMTSCapabilities";
+import VectorSource from "ol/source/Vector";
+import {GeoJSON, GPX} from "ol/format";
+import TileLayer from "ol/layer/Tile";
+import TileSource from "ol/source/Tile";
+import VectorLayer from "ol/layer/Vector";
+import BaseLayer from "ol/layer/Base";
+import {apply as applyMapboxStyle} from "ol-mapbox-style";
+import LayerGroup from "ol/layer/Group";
+import {Control} from "ol/control";
 import * as ol from "./gs-olns"
 import {lit} from "./gs-litns";
 import {v4 as uuidv4} from '@kispace-io/appspace/externals/third-party'
 import PubSub from '@kispace-io/appspace/externals/third-party'
 import {GsControlAdapter, GsOverlayAdapter} from "./gs-ol-adapters";
 import {rtUtils} from "./index";
-import {Layer} from "@kispace-io/gs-lib";
+import Layer from "ol/layer/Layer";
 
 const withState = <T extends BaseObject>(state: GsState, olObject: T): T => {
     if (state.uuid) {

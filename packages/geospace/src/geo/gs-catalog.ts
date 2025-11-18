@@ -1,6 +1,4 @@
-import {css, html, TemplateResult} from 'lit'
-import {customElement, state} from 'lit/decorators.js'
-import {createRef, ref} from "lit/directives/ref.js";
+import {css, html, TemplateResult, customElement, state, createRef, ref} from '@kispace-io/appspace/externals/lit-exports';
 import {
     KPart,
     TreeContribution,

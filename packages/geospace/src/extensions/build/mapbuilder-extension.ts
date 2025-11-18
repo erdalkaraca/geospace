@@ -1,4 +1,4 @@
-import { html, render } from "lit";
+import { html, render } from "@kispace-io/appspace/externals/lit-exports";
 import {GsMapEditor} from "../../geo/gs-map-editor";
 import {buildService} from "./buildservice";
 import {

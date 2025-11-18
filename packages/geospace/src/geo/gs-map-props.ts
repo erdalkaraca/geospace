@@ -1,9 +1,7 @@
-import {css, html} from 'lit'
-import {customElement, state} from 'lit/decorators.js'
-import {when} from "lit/directives/when.js";
+import {css, html, customElement, state, when} from '@kispace-io/appspace/externals/lit-exports';
 import {GsMapEditor} from "./gs-map-editor";
 import {mapChangedSignal} from "./gs-signals";
-import {GsLayer, GsControl, GsOverlay} from "../rt/gs-model";
+import {GsLayer, GsControl, GsOverlay} from "@kispace-io/gs-lib";
 import {getOriginalUri} from "./utils";
 import {findLayerByUuid, findLayerIndexByUuid} from "./map-renderer";
 import {

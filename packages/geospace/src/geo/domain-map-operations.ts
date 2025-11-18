@@ -1,5 +1,5 @@
 import { MapOperations, MapRenderer, findLayerByUuid, findLayerIndexByUuid, findControlIndexByUuid, findOverlayIndexByUuid } from "./map-renderer";
-import { GsMap } from "../rt/gs-model";
+import { GsMap } from "@kispace-io/gs-lib";
 
 /**
  * Domain model operations that only update the GsMap domain model

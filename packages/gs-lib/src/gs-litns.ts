@@ -1,7 +1,21 @@
 // Lit namespace module - exports all lit APIs for user modules
-// Note: This file is used by the build service to generate code for user modules
-// It imports from appspace's lit-exports to ensure consistency
-import {html, css, nothing, svg, LitElement, unsafeCSS, when, repeat, keyed, classMap, styleMap, ifDefined, guard, cache, unsafeHTML, until, live, createRef, ref} from "@kispace-io/appspace/externals/lit-exports";
+// Lit is required for gs-ol-adapters (uses lit.render) and for user modules
+// WebAwesome is imported here to make it available to user modules (treated as part of lit)
+
+// Re-export all Lit APIs from appspace's externals/lit module - single source of truth
+export * from "@kispace-io/appspace/externals/lit-exports";
+
+// Import specific items needed for defineComponent and lit namespace object
+import {
+    html, css, nothing, svg, LitElement, unsafeCSS,
+    when, repeat, keyed, classMap, styleMap, ifDefined,
+    guard, cache, unsafeHTML, until, live, createRef, ref, render
+} from "@kispace-io/appspace/externals/lit-exports";
+
+// Import WebAwesome components from appspace's externals/webawesome module
+// This maintains a single source of truth - Vite will optimize the build to only include what's needed
+// WebAwesome is treated as part of lit, so it's always available to user modules
+import "@kispace-io/appspace/externals/webawesome";
 
 /**
  * Helper function to define a custom web component from a simple function.

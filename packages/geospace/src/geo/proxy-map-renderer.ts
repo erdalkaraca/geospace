@@ -1,5 +1,5 @@
 import {MapOperations, MapRenderer, MapSyncEvent} from "./map-renderer";
-import {GsMap} from "../rt";
+import {GsMap} from "@kispace-io/gs-lib";
 
 const iframeSrc = "iframe-map-renderer.html";
 

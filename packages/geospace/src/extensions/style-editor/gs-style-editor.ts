@@ -1,6 +1,5 @@
-import { css, html, LitElement } from 'lit'
-import { customElement, property, state } from 'lit/decorators.js'
-import { GsMap, GsStyle, GsStyleRule, GsStylesMap } from "../../rt/gs-model";
+import { css, html, LitElement, customElement, property, state } from '@kispace-io/appspace/externals/lit-exports'
+import { GsMap, GsStyle, GsStyleRule, GsStylesMap } from "@kispace-io/gs-lib";
 
 @customElement('gs-style-editor')
 export class GsStyleEditor extends LitElement {

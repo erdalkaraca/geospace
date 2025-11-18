@@ -1,5 +1,5 @@
 import { OpenLayersMapRenderer } from './openlayers-map-renderer';
-import { rtUtils } from '../rt/index';
+import { rtUtils } from '@kispace-io/gs-lib';
 
 // Override asset resolution to use the existing resolveAssetInHost function
 rtUtils.resolveUrl = async (path: string) => {

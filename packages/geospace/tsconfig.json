@@ -16,7 +16,9 @@
     "noFallthroughCasesInSwitch": true,
     "paths": {
       "@kispace-io/appspace": ["../appspace/src"],
-      "@kispace-io/appspace/*": ["../appspace/src/*"]
+      "@kispace-io/appspace/*": ["../appspace/src/*"],
+      "@kispace-io/gs-lib": ["../gs-lib/src"],
+      "@kispace-io/gs-lib/*": ["../gs-lib/src/*"]
     }
   },
   "include": ["src"],
