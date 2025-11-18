@@ -34,12 +34,8 @@ function validateCISetup() {
   
   const checks = [
     {
-      command: 'npm run build-gslib',
-      description: 'Runtime library build'
-    },
-    {
       command: 'npm run build',
-      description: 'Application build'
+      description: 'Application build (includes gs-lib via prebuild)'
     }
   ];
   

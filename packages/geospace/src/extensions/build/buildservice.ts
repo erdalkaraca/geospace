@@ -1,7 +1,6 @@
 import * as esbuild from 'esbuild-wasm'
 import {OnLoadArgs, OnResolveArgs} from 'esbuild-wasm'
 import wasmUrl from 'esbuild-wasm/esbuild.wasm?url'
-import manifestJson from "../../../public/pwa/manifest.json"
 import {GsMap, GsScript} from "@kispace-io/gs-lib";
 import {loadEnvs} from "../../geo/utils";
 import {
@@ -14,10 +13,10 @@ import {
     ProgressMonitor
 } from "@kispace-io/appspace/api";
 import {rootContext} from "@kispace-io/appspace/api";
-import {indexHtmlTemplate} from "./index-html-template";
 
 // Lit and WebAwesome are direct dependencies of gs-lib and are bundled automatically
 // No runtime imports needed - they're included when gs-lib is imported
+
 
 const appJs = (vars: any) => {
     const imports: string[] = []
@@ -34,7 +33,7 @@ const appJs = (vars: any) => {
     // Lit and WebAwesome are bundled with gs-lib - no runtime imports needed
     
     return `
-import {gsLib} from "${vars.libPath}"
+import {gsLib} from "${vars.gsLibPath}"
 ${imports.join("\n")}
     
 export const renderMap = (mapContainerSelector) => {
@@ -95,6 +94,17 @@ let workspacePlugin = {
     setup(build: any) {
         build.onResolve({filter: /.*/}, (args: OnResolveArgs) => {
             if (!/^(?!https?:\/\/).+/.test(args.path)) return;
+            
+            // Resolve @kispace-io/gs-lib to workspace path
+            // The package files are copied to workspace before bundling
+            if (args.path === '@kispace-io/gs-lib') {
+                return {path: 'build/gs-lib/index.js', namespace: "virtual-workspace"};
+            }
+            if (args.path.startsWith('@kispace-io/gs-lib/')) {
+                // Resolve subpath imports
+                const subpath = args.path.replace('@kispace-io/gs-lib/', '');
+                return {path: `build/gs-lib/${subpath}`, namespace: "virtual-workspace"};
+            }
             
             let resolvedPath = args.path;
             
@@ -166,15 +176,6 @@ export class BuildService {
         }
     }
 
-    private async downloadFile(fromDlLink: string, toWsPath: string) {
-        const workspace = await this.getWorkspace()
-        const link = (import.meta.env.VITE_BASE_PATH || "") + fromDlLink
-        const response = await fetch(link)
-        const contents = await response.blob()
-        const resource = await workspace.getResource(toWsPath, { create: true }) as File
-        await resource.saveContents(contents)
-    }
-
     private async deleteDirectoryIfExists(path: string) {
         const workspace = await this.getWorkspace()
         const resource = await workspace.getResource(path)
@@ -183,11 +184,63 @@ export class BuildService {
         }
     }
 
-    private async downloadIcons(iconPaths: string[], updateProgress: (step: number, message: string) => void, currentStep: { value: number }) {
-        for (const iconPath of iconPaths) {
-            const fileName = iconPath.split('/').pop() || iconPath
-            updateProgress(++currentStep.value, `Downloading icon: ${fileName}...`)
-            await this.downloadFile(iconPath, `dist/assets/icons/${fileName}`)
+    /**
+     * Helper function to copy files from gs-lib to workspace.
+     * Handles memory management and error handling consistently.
+     * 
+     * @param importPromise - Promise from import() call (e.g., import("../../../../gs-lib/dist/index.js?raw")) so Vite can analyze it
+     * @param destPath - Destination path in workspace
+     * @param options - Optional configuration
+     * @param options.processor - Optional function to process content before saving (for text files)
+     * @param options.binary - If true, uses ?url and fetches as blob; if false, uses ?raw for text
+     * @param options.errorContext - Context for error messages
+     */
+    private async copyFileFromGsLib(
+        importPromise: Promise<any>,
+        destPath: string,
+        options: {
+            processor?: (content: string) => string | Promise<string>;
+            binary?: boolean;
+            errorContext?: string;
+        } = {}
+    ): Promise<void> {
+        const workspace = await this.getWorkspace()
+        const { processor, binary = false, errorContext = "file" } = options
+        
+        // Use block scope to limit lifetime of large variables
+        {
+            let content: string | Blob;
+            
+            try {
+                const module = await importPromise
+                
+                if (binary) {
+                    // For binary files, module.default is a URL - fetch it
+                    const url = module.default
+                    const response = await fetch(url)
+                    if (!response.ok) {
+                        throw new Error(`Failed to fetch: ${response.statusText}`)
+                    }
+                    content = await response.blob()
+                } else {
+                    // For text files, module.default is the content
+                    content = module.default as string
+                    
+                    // Process content if processor provided
+                    if (processor) {
+                        content = await processor(content as string)
+                    }
+                }
+                
+                // Save to workspace
+                const destFile = await workspace.getResource(destPath, { create: true }) as File
+                await destFile.saveContents(content)
+            } catch (error) {
+                throw new Error(`Failed to copy ${errorContext}: ${error}. Make sure gs-lib is built (run: npm run build --workspace=@kispace-io/gs-lib)`)
+            } finally {
+                // Explicitly clear reference to allow garbage collection
+                content = undefined as any;
+            }
         }
     }
 
@@ -199,40 +252,66 @@ export class BuildService {
         ])
     }
 
-    private async downloadCoreFiles(libPath: string, updateProgress: (step: number, message: string) => void, currentStep: { value: number }) {
-        const coreFiles = [
-            { path: "/lib/gs-lib.js", dest: libPath, message: "Downloading library files..." },
-            { path: "/lib/gs-lib.css", dest: "dist/app.css", message: "Downloading stylesheet..." },
-            { path: "/pwa/staticwebapp.config.json", dest: "dist/staticwebapp.config.json", message: "Downloading configuration files..." },
-            { path: "/pwa/sw.js", dest: "dist/sw.js", message: "Downloading service worker..." }
-        ]
-
-        for (const file of coreFiles) {
-            updateProgress(++currentStep.value, file.message)
-            await this.downloadFile(file.path, file.dest)
-        }
-    }
-
-    private async processServiceWorker(vars: any, updateProgress: (step: number, message: string) => void, currentStep: { value: number }) {
-        updateProgress(++currentStep.value, "Processing service worker...")
+    private async copyGsLibPackage(updateProgress: (step: number, message: string) => void, currentStep: { value: number }) {
+        updateProgress(++currentStep.value, "Copying gs-lib package...")
+        
+        // Ensure directories exist first to avoid race conditions
         const workspace = await this.getWorkspace()
-        const swFile = await workspace.getResource("dist/sw.js") as File
-        const swContent = await swFile.getContents()
-        await this.createFile("dist/sw.js", (vars: any) => {
-            return swContent.replace(/\$PWA_VERSION/g, vars["version"])
-        }, vars)
+        await Promise.all([
+            workspace.getResource("build/gs-lib/", { create: true }),
+            workspace.getResource("dist/", { create: true })
+        ])
+        
+        // Copy files in parallel
+        await Promise.all([
+            this.copyFileFromGsLib(import("../../../../gs-lib/dist/index.js?raw"), "build/gs-lib/index.js", { errorContext: "gs-lib package" }),
+            this.copyFileFromGsLib(import("../../../../gs-lib/dist/gs-lib.css?raw"), "dist/app.css", { errorContext: "gs-lib CSS" })
+        ])
     }
 
-    private async createManifest(vars: any, updateProgress: (step: number, message: string) => void, currentStep: { value: number }) {
+    private async copyPwaCoreFiles(vars: any, updateProgress: (step: number, message: string) => void, currentStep: { value: number }) {
+        updateProgress(++currentStep.value, "Copying PWA core files...")
+        await this.copyFileFromGsLib(import("../../../../gs-lib/public/pwa/staticwebapp.config.json?raw"), "dist/staticwebapp.config.json", {
+            errorContext: "PWA config"
+        })
+        
+        // Process and copy service worker
+        updateProgress(++currentStep.value, "Processing service worker...")
+        await this.copyFileFromGsLib(import("../../../../gs-lib/public/pwa/sw.js?raw"), "dist/sw.js", {
+            processor: (content: string) => content.replace(/\$PWA_VERSION/g, vars["version"]),
+            errorContext: "service worker"
+        })
+        
+        // Process and copy manifest
         updateProgress(++currentStep.value, "Creating manifest file...")
-        await this.createFile("dist/manifest.json", (vars: any) => {
-            const manifest = JSON.parse(JSON.stringify(manifestJson))
-            manifest.name = vars["title"]
-            manifest.short_name = vars["title"]
-            manifest.description = vars["title"]
-            manifest.version = vars["version"]
-            return JSON.stringify(manifest)
-        }, vars)
+        await this.copyFileFromGsLib(import("../../../../gs-lib/public/pwa/manifest.json?raw"), "dist/manifest.json", {
+            processor: (content: string) => {
+                const manifest = JSON.parse(content)
+                manifest.name = vars["title"]
+                manifest.short_name = vars["title"]
+                manifest.description = vars["title"]
+                manifest.version = vars["version"]
+                return JSON.stringify(manifest, null, 2)
+            },
+            errorContext: "manifest"
+        })
+        
+        // Copy PWA icons in parallel
+        // Ensure directory exists first to avoid race conditions when creating files in parallel
+        updateProgress(++currentStep.value, "Copying PWA icons...")
+        const workspace = await this.getWorkspace()
+        await workspace.getResource("dist/assets/icons/", { create: true })
+        
+        await Promise.all([
+            this.copyFileFromGsLib(import("../../../../gs-lib/public/pwa/assets/icons/24x24.png?url"), "dist/assets/icons/24x24.png", { binary: true, errorContext: "icon 24x24.png" }),
+            this.copyFileFromGsLib(import("../../../../gs-lib/public/pwa/assets/icons/48x48.png?url"), "dist/assets/icons/48x48.png", { binary: true, errorContext: "icon 48x48.png" }),
+            this.copyFileFromGsLib(import("../../../../gs-lib/public/pwa/assets/icons/192x192.png?url"), "dist/assets/icons/192x192.png", { binary: true, errorContext: "icon 192x192.png" }),
+            this.copyFileFromGsLib(import("../../../../gs-lib/public/pwa/assets/icons/512x512.png?url"), "dist/assets/icons/512x512.png", { binary: true, errorContext: "icon 512x512.png" }),
+            this.copyFileFromGsLib(import("../../../../gs-lib/public/pwa/assets/icons/icon_24.png?url"), "dist/assets/icons/icon_24.png", { binary: true, errorContext: "icon icon_24.png" }),
+            this.copyFileFromGsLib(import("../../../../gs-lib/public/pwa/assets/icons/icon_48.png?url"), "dist/assets/icons/icon_48.png", { binary: true, errorContext: "icon icon_48.png" }),
+            this.copyFileFromGsLib(import("../../../../gs-lib/public/pwa/assets/icons/icon_192.png?url"), "dist/assets/icons/icon_192.png", { binary: true, errorContext: "icon icon_192.png" }),
+            this.copyFileFromGsLib(import("../../../../gs-lib/public/pwa/assets/icons/icon_512.png?url"), "dist/assets/icons/icon_512.png", { binary: true, errorContext: "icon icon_512.png" })
+        ])
     }
 
     private async copyWorkspaceAssets(updateProgress: (step: number, message: string) => void, currentStep: { value: number }) {
@@ -248,7 +327,12 @@ export class BuildService {
         updateProgress(++currentStep.value, "Generating application code...")
         await this.createFile(buildAppJs, appJs, vars)
         updateProgress(++currentStep.value, "Generating HTML file...")
-        await this.createFile(distIndexHtml, indexHtmlTemplate, vars)
+        
+        // Copy and process HTML template from gs-lib
+        await this.copyFileFromGsLib(import("../../../../gs-lib/public/index.html?raw"), distIndexHtml, {
+            processor: (content: string) => content.replace(/\$TITLE/g, vars["title"]),
+            errorContext: "index HTML"
+        })
     }
 
     private async bundleCode(buildAppJs: string, distAppJs: string, updateProgress: (step: number, message: string) => void, currentStep: { value: number }) {
@@ -268,8 +352,8 @@ export class BuildService {
                 // CDN URLs are already external (imported as URLs)
                 // node_modules packages should be external since we're using CDN
             ],
-            // Don't bundle node_modules - we're using CDN for runtime dependencies
-            packages: 'external'
+            // Bundle @kispace-io/gs-lib, but keep other packages external
+            packages: 'bundle'
         })
         updateProgress(++currentStep.value, "Saving bundled output...")
         await outFile.saveContents(result.outputFiles![0].contents)
@@ -301,7 +385,6 @@ export class BuildService {
         updateProgress(++currentStep.value, "Initializing build system...")
         await this.init()
 
-        const libPath = "build/gs-lib.js"
         const buildAppJs = "build/app.js"
         const distIndexHtml = "dist/index.html"
         const distAppJs = "dist/app.js"
@@ -309,30 +392,16 @@ export class BuildService {
         // Build phase 2: Cleanup
         await this.cleanBuildDirectories(updateProgress, currentStep)
 
-        // Build phase 3: Download core files
-        await this.downloadCoreFiles(libPath, updateProgress, currentStep)
+        // Build phase 3: Copy gs-lib package to workspace
+        await this.copyGsLibPackage(updateProgress, currentStep)
 
         const vars = {
             ...options,
-            libPath: libPath
+            gsLibPath: "build/gs-lib/index.js"
         }
-
-        // Build phase 4: Process service worker and manifest
-        await this.processServiceWorker(vars, updateProgress, currentStep)
-        await this.createManifest(vars, updateProgress, currentStep)
-
-        // Build phase 5: Download icons
-        const iconPaths = [
-            "/pwa/assets/icons/24x24.png",
-            "/pwa/assets/icons/48x48.png",
-            "/pwa/assets/icons/192x192.png",
-            "/pwa/assets/icons/512x512.png",
-            "/pwa/assets/icons/icon_24.png",
-            "/pwa/assets/icons/icon_48.png",
-            "/pwa/assets/icons/icon_192.png",
-            "/pwa/assets/icons/icon_512.png"
-        ]
-        await this.downloadIcons(iconPaths, updateProgress, currentStep)
+        
+        // Build phase 4: Copy PWA core files from gs-lib (includes service worker, manifest, icons)
+        await this.copyPwaCoreFiles(vars, updateProgress, currentStep)
 
         // Build phase 6: Copy assets
         await this.copyWorkspaceAssets(updateProgress, currentStep)

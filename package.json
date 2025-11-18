@@ -10,7 +10,6 @@
     "dev": "npm run dev --workspace=@kispace-io/geospace",
     "build": "npm run build --workspace=@kispace-io/geospace",
     "preview": "npm run preview --workspace=@kispace-io/geospace",
-    "build-gslib": "npm run build-gslib --workspace=@kispace-io/geospace",
     "lint": "echo 'No linting configured yet'",
     "type-check": "npm run type-check --workspace=@kispace-io/appspace && npm run type-check --workspace=@kispace-io/geospace",
     "ci": "npm run type-check",

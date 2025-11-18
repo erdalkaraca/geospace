@@ -7,6 +7,10 @@ import dts from 'vite-plugin-dts';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const isExternal = (id: string) => {
+  // Exclude Vite-specific modules (development only)
+  if (id === '@vite/client' || id.startsWith('@vite/')) {
+    return true;
+  }
   // Bundle relative imports (./something, ../something)
   if (id.startsWith('./') || id.startsWith('../')) {
     return false;
@@ -19,8 +23,10 @@ const isExternal = (id: string) => {
   if (path.isAbsolute(id) && id.includes('/src/')) {
     return false;
   }
-  // Everything else is external (dependencies, node_modules, etc.)
-  return true;
+  // Bundle all dependencies to make gs-lib self-contained
+  // This is needed for the build service which runs in browser (esbuild-wasm)
+  // and can't access node_modules
+  return false; // Bundle everything
 };
 
 export default defineConfig({
@@ -53,6 +59,8 @@ export default defineConfig({
         preserveModules: false,
         entryFileNames: '[name].js',
         format: 'es',
+        // Output a single file to make it easier to copy for build service
+        inlineDynamicImports: true,
       },
     },
     outDir: 'dist',

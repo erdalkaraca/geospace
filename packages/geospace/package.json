@@ -4,11 +4,12 @@
   "type": "module",
   "license": "EPL-2.0",
   "scripts": {
+    "predev": "npm run build --workspace=@kispace-io/gs-lib",
     "dev": "vite",
+    "prebuild": "npm run build --workspace=@kispace-io/gs-lib",
     "build": "vite build",
     "preview": "vite preview",
-    "type-check": "tsc --noEmit",
-    "build-gslib": "esbuild ../gs-lib/src/gs-lib.ts --outfile=public/lib/gs-lib.js --bundle --minify --format=esm"
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@kispace-io/appspace": "file:../appspace",

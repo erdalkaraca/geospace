@@ -58,9 +58,6 @@ jobs:
           VERSION=${GITHUB_REF_NAME}
           npm version --no-commit-hooks --no-git-tag-version "$VERSION" --workspace=@kispace-io/geospace
 
-      - name: Build runtime library
-        run: npm run build-gslib
-
       - name: Build app
         id: build-status
         run: |
