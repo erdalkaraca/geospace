@@ -25,15 +25,16 @@ const appJs = (vars: any) => {
         .map((script: GsScript) => script.src)
         .filter((src: string) => src) // Filter out empty src
     
-    // Generate imports for all scripts so esbuild can bundle them
-    // Use dynamic import() so they're bundled but not executed until needed
+    // Generate static imports for all scripts so esbuild can bundle them
+    // Static imports ensure esbuild bundles them, and they'll be available at runtime
     const scriptImports = scriptPaths.map((src: string, index: number) => {
         // Escape the src for use in template string
         const escapedSrc = src.replace(/`/g, '\\`').replace(/\$/g, '\\$')
-        return `const script${index} = () => import('${escapedSrc}')`
+        return `import script${index} from '${escapedSrc}'`
     })
     
-    // Create a modules map that maps src to the import function
+    // Create a modules map that maps src to the imported module
+    // This allows gs-lib to properly parameterize user modules at runtime
     const modulesMap = scriptPaths.map((src: string, index: number) => {
         const escapedSrc = JSON.stringify(src)
         return `${escapedSrc}: script${index}`
