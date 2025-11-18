@@ -9,6 +9,9 @@
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "bin": {
+    "map-builder": "./bin/map-builder"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -18,7 +21,9 @@
   "files": [
     "dist",
     "src",
+    "lib",
     "public",
+    "bin",
     "tsconfig.json",
     "README.md"
   ],

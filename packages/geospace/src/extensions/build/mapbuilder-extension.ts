@@ -1,6 +1,6 @@
 import { html, render } from "@kispace-io/appspace/externals/lit-exports";
 import {GsMapEditor} from "../../geo/gs-map-editor";
-import {buildService} from "./buildservice";
+import {browserMapBuilder} from "./browser-map-builder";
 import {
     activePartSignal,
     activeSelectionSignal,
@@ -316,7 +316,7 @@ export default ({commandRegistry}: { commandRegistry: CommandRegistry }) => {
                     return;
                 }
                 
-                return buildService.buildMapFile(mapFile, envPath);
+                return browserMapBuilder.buildMapFile(mapFile, envPath);
             }
         },
         contribution: {
