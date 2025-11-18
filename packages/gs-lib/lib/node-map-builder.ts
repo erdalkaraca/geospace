@@ -4,8 +4,7 @@ import {
     FileSystem,
     ProgressCallback,
     buildMap,
-    calculateTotalSteps,
-    createCopyAssetsFunction
+    calculateTotalSteps
 } from '../src/base-map-builder'
 import {GsMap} from '../src/gs-model'
 
@@ -169,8 +168,22 @@ export async function buildProject(
     
     const buildTitle = title || path.basename(mapFile, '.geospace')
     
-    // Use standard copyAssets function
-    const copyAssets = createCopyAssetsFunction(fs)
+    // Create Node.js-specific copyAssets function using native fs.cp()
+    const copyAssets = async (fileSys: FileSystem, outputDir: string) => {
+        const assetsSrc = path.resolve(projectRoot, 'assets')
+        const assetsDest = path.resolve(projectRoot, outputDir, 'assets')
+        
+        // Check if assets directory exists
+        try {
+            await nodeFs.access(assetsSrc)
+        } catch {
+            // Assets directory doesn't exist, skip copying
+            return
+        }
+        
+        // Use Node.js native fs.cp() for recursive directory copy (available since v16.7.0)
+        await nodeFs.cp(assetsSrc, assetsDest, { recursive: true })
+    }
     
     // Build using unified function
     // Dynamic import to avoid bundling esbuild in browser builds
