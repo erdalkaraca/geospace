@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { fileURLToPath } from 'url'
-import { dirname as pathDirname, resolve, basename } from 'path'
+import { dirname as pathDirname, resolve, basename, isAbsolute } from 'path'
 import { readFileSync } from 'fs'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -79,7 +79,11 @@ const mapFileName = basename(resolvedMapFile)
 let env = {}
 if (options.envFile) {
     try {
-        const envPath = resolve(projectRoot, options.envFile)
+        // If env file path is already absolute, use it as-is
+        // Otherwise, resolve it relative to projectRoot (the .geospace file's directory)
+        const envPath = isAbsolute(options.envFile) 
+            ? options.envFile 
+            : resolve(projectRoot, options.envFile)
         const envContent = readFileSync(envPath, 'utf-8')
         envContent.split('\n').forEach(line => {
             const trimmed = line.trim()
