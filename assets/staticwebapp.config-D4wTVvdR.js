@@ -1,0 +1,7 @@
+const n=`{
+  "navigationFallback": {
+    "rewrite": "index.html",
+    "exclude": ["*.{css,js,mjs,ts,png,gif,ico,jpg,svg,json,woff2,ttf}"]
+  }
+}
+`;export{n as default};
