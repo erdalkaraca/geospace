@@ -5,7 +5,7 @@
   "license": "EPL-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/erdalkaraca/geospace.git"
+    "url": "git+https://github.com/erdalkaraca/geospace.git"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -38,6 +38,9 @@
   "peerDependencies": {
     "@kispace-io/appspace": "*"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "devDependencies": {
     "@types/node": "^24.9.2",
     "@types/uuid": "^10.0.0",
@@ -46,4 +49,3 @@
     "vite-plugin-dts": "^4.5.4"
   }
 }
-
