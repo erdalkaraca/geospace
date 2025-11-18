@@ -19,25 +19,35 @@ import {rootContext} from "@kispace-io/appspace/api";
 
 
 const appJs = (vars: any) => {
-    const imports: string[] = []
-    const moduleEntries: string[] = []
-    
+    // Collect all script paths from controls and overlays
     const allScripts = [...(vars.gsMap.controls || []), ...(vars.gsMap.overlays || [])]
-    allScripts.forEach((script: GsScript, index: number) => {
-        const src = script.src
-        const modName = `map_mod${index}`
-        imports.push(`import ${modName} from '${src}'`)
-        moduleEntries.push(`"${src}": ${modName}`)
+    const scriptPaths = allScripts
+        .map((script: GsScript) => script.src)
+        .filter((src: string) => src) // Filter out empty src
+    
+    // Generate imports for all scripts so esbuild can bundle them
+    // Use dynamic import() so they're bundled but not executed until needed
+    const scriptImports = scriptPaths.map((src: string, index: number) => {
+        // Escape the src for use in template string
+        const escapedSrc = src.replace(/`/g, '\\`').replace(/\$/g, '\\$')
+        return `const script${index} = () => import('${escapedSrc}')`
     })
     
-    // Lit and WebAwesome are bundled with gs-lib - no runtime imports needed
+    // Create a modules map that maps src to the import function
+    const modulesMap = scriptPaths.map((src: string, index: number) => {
+        const escapedSrc = JSON.stringify(src)
+        return `${escapedSrc}: script${index}`
+    }).join(',\n        ')
     
     return `
 import {gsLib} from "${vars.gsLibPath}"
-${imports.join("\n")}
-    
+
+${scriptImports.join('\n')}
+
 export const renderMap = (mapContainerSelector) => {
-    const modules = {${moduleEntries.join(",")}}
+    const modules = {
+        ${modulesMap}
+    }
     return gsLib({
         containerSelector: mapContainerSelector,
         gsMap: ${JSON.stringify(vars.gsMap)},
@@ -110,7 +120,7 @@ let workspacePlugin = {
                 
                 const isRelative = args.path.startsWith('./') || args.path.startsWith('../');
                 const hasPathSeparator = resolvedPath.includes('/');
-                        const isGeneratedBuildFile = importerPath.startsWith('__build/');
+                const isGeneratedBuildFile = importerPath.startsWith('__build/');
                 
                 // Only resolve relative to importer if:
                 // 1. It's explicitly relative (./ or ../), OR
