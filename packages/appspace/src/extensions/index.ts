@@ -10,6 +10,14 @@ extensionRegistry.registerExtension({
 })
 
 extensionRegistry.registerExtension({
+    id: "system.github-service",
+    name: "GitHub Service",
+    description: "GitHub API service for fetching release information",
+    loader: () => import("./github-service/github-service-extension"),
+    icon: "code-branch",
+})
+
+extensionRegistry.registerExtension({
     id: "system.pyterminal",
     name: "Python terminal",
     description: "Python terminal view",

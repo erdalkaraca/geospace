@@ -37,14 +37,6 @@ export {
 export { taskService } from '../core/taskservice';
 export { PyEnv } from '../core/pyservice';
 export { publish, subscribe } from '../core/events';
-export { 
-    fetchReleases,
-    fetchLatestRelease,
-    fetchReleaseByTag,
-    isNewerVersion,
-    getGitHubConfig,
-    type GitHubRelease
-} from '../core/github-service';
 export { configureFramework, getFrameworkConfig } from '../core/config';
 export { treeNodeComparator } from '../core/tree-utils';
 export type { TreeContribution, TreeNode } from '../core/tree-utils';

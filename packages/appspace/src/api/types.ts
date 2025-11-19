@@ -1,5 +1,5 @@
 // Re-export framework types for app usage
-export type { AppDefinition, AppContributions } from '../core/apploader';
+export type { AppDefinition, AppContributions, ReleaseEntry, ReleaseHistory } from '../core/apploader';
 export type { 
     Command, 
     Parameter, 

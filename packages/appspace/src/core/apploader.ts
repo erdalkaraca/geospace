@@ -75,6 +75,41 @@ export interface AppContributions {
 }
 
 /**
+ * Represents a single release entry in the release history.
+ * Compatible with GitHub release format but with optional html_url.
+ */
+export interface ReleaseEntry {
+    /** Release tag name (e.g., "v1.0.0") */
+    tag_name: string;
+    
+    /** Human-readable release name */
+    name: string;
+    
+    /** Release notes/description (markdown supported) */
+    body: string;
+    
+    /** ISO 8601 timestamp when the release was published */
+    published_at: string;
+    
+    /** Optional URL to the release page */
+    html_url?: string;
+    
+    /** Whether this is a pre-release */
+    prerelease?: boolean;
+    
+    /** Whether this release is a draft */
+    draft?: boolean;
+}
+
+/**
+ * Release history can be provided as:
+ * - A static array of releases
+ * - A function that returns releases asynchronously
+ * This allows apps to either provide pre-loaded releases or fetch them dynamically.
+ */
+export type ReleaseHistory = ReleaseEntry[];
+
+/**
  * Application definition interface.
  * Applications implement this interface to integrate with the framework.
  */
@@ -117,6 +152,14 @@ export interface AppDefinition {
      * Use this for custom initialization logic that can't be expressed declaratively.
      */
     initialize?: () => void | Promise<void>;
+    
+    /**
+     * Optional release history for the application.
+     * Can be a static array of releases or a callback function that returns releases (synchronously or asynchronously).
+     * If not provided, the version-info command will attempt to fetch releases from GitHub
+     * (if metadata.github is configured).
+     */
+    releaseHistory?: ReleaseHistory | (() => ReleaseHistory | Promise<ReleaseHistory>);
     
     /**
      * Returns the root component template for the application.

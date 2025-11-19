@@ -42,6 +42,7 @@ const GEOSPACE_EXTENSIONS = [
     "system.monaco",
     "system.download",
     "system.commandpalette",
+    "system.github-service",
     "system.memoryusage",
     "system.pythonpackagemanager",
     "system.settings-tree",
@@ -138,6 +139,15 @@ export const geospaceApp: AppDefinition = {
     contributions: {
         ui: GEOSPACE_UI_CONTRIBUTIONS,
         extensions: GEOSPACE_EXTENSION_CONTRIBUTIONS
+    },
+    releaseHistory: async () => {
+        try {
+            const { fetchReleases } = await import("@kispace-io/appspace/extensions/github-service/github-service");
+            return await fetchReleases();
+        } catch (error) {
+            console.error('Failed to fetch release history from GitHub:', error);
+            return [];
+        }
     },
 
     async initialize() {
