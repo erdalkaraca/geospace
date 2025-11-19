@@ -8,6 +8,8 @@
 // The framework automatically bootstraps when this module is imported.
 // Apps can opt-in to bootstrap by importing this module.
 
+import '../i18n';
+
 // Initialize core services (set up global event listeners and state)
 import './keybindings';  // Sets up global keyboard event listener
 import './dialog';       // Initializes dialog utilities

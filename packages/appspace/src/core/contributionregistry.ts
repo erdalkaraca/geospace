@@ -63,11 +63,11 @@ class ContributionRegistry {
         publish(TOPIC_CONTRIBUTEIONS_CHANGED, { target, contributions: targetSlot } as ContributionChangeEvent)
     }
 
-    getContributions(target: string): Contribution[] {
+    getContributions<T extends Contribution>(target: string): T[] {
         if (!this.contributions.has(target)) {
             this.contributions.set(target, [])
         }
-        return this.contributions.get(target)!
+        return this.contributions.get(target)! as T[]
     }
 }
 

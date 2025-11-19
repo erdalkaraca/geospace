@@ -1,0 +1,33 @@
+{
+    "namespace": "filebrowser",
+    "en": {
+        "CONNECT_WORKSPACE": "Connect Workspace...",
+        "RELOAD_WORKSPACE": "Reload workspace folder",
+        "CREATE_NEW": "Create new...",
+        "RENAME_RESOURCE": "Rename selected resource",
+        "DELETE_RESOURCE": "Delete selected resource",
+        "OPEN": "Open",
+        "RENAME": "Rename",
+        "DELETE": "Delete",
+        "FILE": "File",
+        "FOLDER": "Folder",
+        "FILE_EXISTS_OVERWRITE": "File \"{fileName}\" already exists. Do you want to overwrite it?",
+        "SELECT_WORKSPACE": "Select a workspace.",
+        "DROP_FILES_HERE": "📁 Drop files here"
+    },
+    "de": {
+        "CONNECT_WORKSPACE": "Arbeitsbereich verbinden...",
+        "RELOAD_WORKSPACE": "Arbeitsbereich-Ordner neu laden",
+        "CREATE_NEW": "Neu erstellen...",
+        "RENAME_RESOURCE": "Ausgewählte Ressource umbenennen",
+        "DELETE_RESOURCE": "Ausgewählte Ressource löschen",
+        "OPEN": "Öffnen",
+        "RENAME": "Umbenennen",
+        "DELETE": "Löschen",
+        "FILE": "Datei",
+        "FOLDER": "Ordner",
+        "FILE_EXISTS_OVERWRITE": "Die Datei \"{fileName}\" existiert bereits. Möchten Sie sie überschreiben?",
+        "SELECT_WORKSPACE": "Wählen Sie einen Arbeitsbereich aus.",
+        "DROP_FILES_HERE": "📁 Dateien hier ablegen"
+    }
+}

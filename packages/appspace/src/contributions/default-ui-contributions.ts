@@ -46,3 +46,8 @@ contributionRegistry.registerContribution(TOOLBAR_BOTTOM_END, {
     html: `<k-fastviews target="system.fastviews-bottomend" icon="bolt" title="Fast Views"></k-fastviews>`
 });
 
+contributionRegistry.registerContribution(TOOLBAR_BOTTOM_END, {
+    label: "Language",
+    html: () => html`<k-language-selector></k-language-selector>`
+});
+

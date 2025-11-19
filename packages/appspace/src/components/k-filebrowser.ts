@@ -1,7 +1,7 @@
 
-import {css, html, TemplateResult} from 'lit'
-import {customElement, state} from 'lit/decorators.js'
-import {KPart} from "../parts/k-part";
+import { css, html, TemplateResult } from 'lit'
+import { customElement, state } from 'lit/decorators.js'
+import { KPart } from "../parts/k-part";
 import {
     Directory,
     File,
@@ -10,18 +10,20 @@ import {
     TOPIC_WORKSPACE_CONNECTED,
     workspaceService
 } from "../core/filesys";
-import {when} from "lit/directives/when.js";
-import {subscribe, topic} from "../core/events";
-import {createRef, ref} from "lit/directives/ref.js";
-import {HIDE_DOT_RESOURCE} from "../core/constants";
+import { when } from "lit/directives/when.js";
+import { subscribe, topic } from "../core/events";
+import { createRef, ref } from "lit/directives/ref.js";
+import { HIDE_DOT_RESOURCE } from "../core/constants";
 
-import {commandRegistry} from "../core/commandregistry";
-import {TreeNode, treeNodeComparator} from "../core/tree-utils";
-import {activeSelectionSignal} from "../core/appstate";
-import {confirmDialog} from "../core/dialog";
-import {editorRegistry} from "../core/editorregistry";
+import { commandRegistry } from "../core/commandregistry";
+import { TreeNode, treeNodeComparator } from "../core/tree-utils";
+import { activeSelectionSignal } from "../core/appstate";
+import { confirmDialog } from "../core/dialog";
+import { editorRegistry } from "../core/editorregistry";
 import { TOPIC_CONTRIBUTEIONS_CHANGED, type ContributionChangeEvent } from '../core/contributionregistry';
+import { i18n } from '../core/i18n';
 
+const t = i18n('filebrowser');
 
 @customElement('k-filebrowser')
 export class KFileBrowser extends KPart {
@@ -34,7 +36,7 @@ export class KFileBrowser extends KPart {
 
     protected doBeforeUI() {
         this.initializeWorkspace();
-        
+
         subscribe(TOPIC_CONTRIBUTEIONS_CHANGED, (event: ContributionChangeEvent) => {
             if (event.target === 'system.icons') {
                 this.requestUpdate();
@@ -65,24 +67,24 @@ export class KFileBrowser extends KPart {
 
     protected renderToolbar() {
         const canModify = activeSelectionSignal.get() instanceof Resource;
-        
+
         return html`
-            <k-command icon="folder-open" title="Connect workspace..." dropdown="filebrowser.connections"></k-command>
-            <k-command cmd="reload_workspace" icon="repeat" title="Reload workspace folder"></k-command>
-            <k-command cmd="create_file" icon="plus" title="Create new..." dropdown="filebrowser.create"></k-command>
-            <k-command cmd="rename_resource" icon="pen" ?disabled=${!canModify} title="Rename selected resource (F2)"></k-command>
-            <k-command cmd="delete_resource" icon="trash" ?disabled=${!canModify} title="Delete selected resource"></k-command>
+            <k-command icon="folder-open" title="${t('CONNECT_WORKSPACE')}" dropdown="filebrowser.connections"></k-command>
+            <k-command cmd="reload_workspace" icon="repeat" title="${t('RELOAD_WORKSPACE')}"></k-command>
+            <k-command cmd="create_file" icon="plus" title="${t('CREATE_NEW')}" dropdown="filebrowser.create"></k-command>
+            <k-command cmd="rename_resource" icon="pen" ?disabled=${!canModify} title="${t('RENAME_RESOURCE')}"></k-command>
+            <k-command cmd="delete_resource" icon="trash" ?disabled=${!canModify} title="${t('DELETE_RESOURCE')}"></k-command>
         `;
     }
 
     protected renderContextMenu() {
         const canModify = activeSelectionSignal.get() instanceof Resource;
-        
+
         return html`
-            <k-command cmd="open_editor" icon="folder-open">Open</k-command>
-            <k-command cmd="create_file" icon="plus" dropdown="filebrowser.create">Create new...</k-command>
-            <k-command cmd="rename_resource" icon="pen" ?disabled=${!canModify}>Rename</k-command>
-            <k-command cmd="delete_resource" icon="trash" ?disabled=${!canModify}>Delete</k-command>
+            <k-command cmd="open_editor" icon="folder-open">${t('OPEN')}</k-command>
+            <k-command cmd="create_file" icon="plus" dropdown="filebrowser.create">${t('CREATE_NEW')}</k-command>
+            <k-command cmd="rename_resource" icon="pen" ?disabled=${!canModify}>${t('RENAME')}</k-command>
+            <k-command cmd="delete_resource" icon="trash" ?disabled=${!canModify}>${t('DELETE')}</k-command>
         `;
     }
 
@@ -149,10 +151,10 @@ export class KFileBrowser extends KPart {
         const isLazy = !node.leaf && node.children.length === 0;
         const resource = node.data as Resource;
         const isFile = resource instanceof File;
-        const icon = isFile 
+        const icon = isFile
             ? editorRegistry.getFileIcon(resource.getName())
             : (node.icon || "folder-open");
-        
+
         return html`
             <wa-tree-item 
                 draggable=${isFile}
@@ -162,7 +164,7 @@ export class KFileBrowser extends KPart {
                 .model=${node} 
                 ?expanded=${expanded}
                 ?lazy=${isLazy}>
-                <span><wa-icon name=${icon} label="${node.leaf ? 'File' : 'Folder'}"></wa-icon> ${node.label}</span>
+                <span><wa-icon name=${icon} label="${node.leaf ? t('FILE') : t('FOLDER')}"></wa-icon> ${node.label}</span>
                 ${node.children.map(child => this.createTreeItems(child, false))}
             </wa-tree-item>`
     }
@@ -172,12 +174,12 @@ export class KFileBrowser extends KPart {
 
         const filePath = file.getWorkspacePath();
         const fileName = file.getName();
-        
+
         e.dataTransfer.effectAllowed = 'copy';
         e.dataTransfer.setData('text/plain', filePath);
         e.dataTransfer.setData('application/x-workspace-file', filePath);
         e.dataTransfer.setData('text/uri-list', filePath);
-        
+
         if (e.dataTransfer.setDragImage) {
             const dragImage = document.createElement('div');
             dragImage.textContent = fileName;
@@ -204,7 +206,7 @@ export class KFileBrowser extends KPart {
         if (this.loadingNodes.has(node)) {
             return;
         }
-        
+
         this.loadingNodes.add(node);
         try {
             for (const childResource of await resource.listChildren(false)) {
@@ -251,15 +253,15 @@ export class KFileBrowser extends KPart {
 
         const dragOverHandler = (e: DragEvent) => {
             if (!e.dataTransfer?.types.includes('Files')) return;
-            
+
             e.preventDefault();
             e.dataTransfer.dropEffect = 'copy';
-            
+
             treeElement.classList.add('drag-over');
-            
+
             const target = e.target as HTMLElement;
             const treeItem = target.closest('wa-tree-item') as HTMLElement;
-            
+
             if (treeItem && treeItem !== this.currentDropTarget) {
                 this.currentDropTarget?.classList.remove('drop-target');
                 this.currentDropTarget = treeItem;
@@ -269,7 +271,7 @@ export class KFileBrowser extends KPart {
 
         const dragEnterHandler = (e: DragEvent) => {
             if (!e.dataTransfer?.types.includes('Files')) return;
-            
+
             e.preventDefault();
             treeElement.classList.add('drag-over');
         };
@@ -278,7 +280,7 @@ export class KFileBrowser extends KPart {
             const rect = treeElement.getBoundingClientRect();
             const x = e.clientX;
             const y = e.clientY;
-            
+
             if (x <= rect.left || x >= rect.right || y <= rect.top || y >= rect.bottom) {
                 treeElement.classList.remove('drag-over');
                 this.currentDropTarget?.classList.remove('drop-target');
@@ -315,11 +317,11 @@ export class KFileBrowser extends KPart {
     private async getDropTarget(e: DragEvent): Promise<Directory> {
         const target = e.target as HTMLElement;
         const treeItem = target.closest('wa-tree-item');
-        
+
         if (treeItem) {
             const node: TreeNode = (treeItem as any).model;
             const resource = node.data as Resource;
-            
+
             if (resource instanceof Directory) {
                 return resource;
             }
@@ -328,7 +330,7 @@ export class KFileBrowser extends KPart {
                 return parent;
             }
         }
-        
+
         return this.workspaceDir!;
     }
 
@@ -337,36 +339,36 @@ export class KFileBrowser extends KPart {
         let processed = 0;
         let failed = 0;
         let skipped = 0;
-        
+
         for (const file of files) {
             try {
                 const targetPath = this.buildTargetPath(targetDir, file.name);
-                
+
                 const existingFile = await this.workspaceDir!.getResource(targetPath);
                 if (existingFile) {
-                    const overwrite = await confirmDialog(`File "${file.name}" already exists. Do you want to overwrite it?`);
+                    const overwrite = await confirmDialog(t('FILE_EXISTS_OVERWRITE', { fileName: file.name }));
                     if (!overwrite) {
                         skipped++;
                         continue;
                     }
                 }
-                
+
                 const workspaceFile = await this.workspaceDir!.getResource(
-                    targetPath, 
+                    targetPath,
                     { create: true }
                 ) as File;
-                
+
                 await workspaceFile.saveContents(file);
-                
+
                 processed++;
             } catch (error) {
                 console.error(`Failed to upload ${file.name}:`, error);
                 failed++;
             }
         }
-        
+
         console.log(`Uploaded ${processed}/${total} files${skipped > 0 ? `, ${skipped} skipped` : ''}${failed > 0 ? `, ${failed} failed` : ''}`);
-        
+
         await this.loadWorkspace(this.workspaceDir);
     }
 
@@ -377,9 +379,9 @@ export class KFileBrowser extends KPart {
 
     render() {
         return html`
-            <div class="tree" ${ref(this.treeRef)}>
+            <div class="tree" ${ref(this.treeRef)} style="--drop-files-text: '${t('DROP_FILES_HERE')}'">
                 ${when(!this.workspaceDir, () => html`
-                    <k-no-content message="Select a workspace."></k-no-content>`, () => html`
+                    <k-no-content message="${t('SELECT_WORKSPACE')}"></k-no-content>`, () => html`
                 `)}
                 <wa-tree @wa-selection-change=${this.nobubble(this.onSelectionChanged)}
                          style="--indent-guide-width: 1px;">
@@ -407,7 +409,7 @@ export class KFileBrowser extends KPart {
         }
         
         .tree.drag-over::before {
-            content: '📁 Drop files here';
+            content: var(--drop-files-text);
             position: absolute;
             top: 50%;
             left: 50%;
