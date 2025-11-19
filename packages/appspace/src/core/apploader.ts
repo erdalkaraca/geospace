@@ -214,6 +214,7 @@ class AppLoaderService {
     private started: boolean = false;
     private defaultAppId?: string;
     private container: HTMLElement = document.body;
+    private systemRequiredExtensions: Set<string> = new Set();
     
     /**
      * Register an application with the framework.
@@ -241,6 +242,10 @@ class AppLoaderService {
         if (options?.autoStart && !this.started) {
             this.start();
         }
+    }
+
+    registerSystemRequiredExtension(extensionId: string) {
+        this.systemRequiredExtensions.add(extensionId);
     }
     
     /**
@@ -416,8 +421,8 @@ class AppLoaderService {
                 await this.currentApp.dispose();
             }
             
-            // Disable current app's extensions
-            if (this.currentApp.extensions) {
+            // Disable current app's extensions (but not system-required ones)
+            if (this.currentApp.extensions && this.currentApp.extensions.length > 0) {
                 logger.info(`Disabling ${this.currentApp.extensions.length} extensions...`);
                 this.currentApp.extensions.forEach(extId => {
                     extensionRegistry.disable(extId);
@@ -449,8 +454,12 @@ class AppLoaderService {
             }
         }
         
+        const extensionsSet = new Set<string>(app.extensions || []);
+        this.systemRequiredExtensions.forEach(extId => extensionsSet.add(extId));
+        app.extensions = Array.from(extensionsSet);
+        
         // Enable new app's extensions (after contributions are registered)
-        if (app.extensions) {
+        if (app.extensions.length > 0) {
             logger.info(`Enabling ${app.extensions.length} extensions...`);
             app.extensions.forEach(extId => {
                 extensionRegistry.enable(extId);

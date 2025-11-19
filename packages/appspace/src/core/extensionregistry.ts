@@ -172,7 +172,7 @@ class ExtensionRegistry {
         this.load(extensionId).then(() => {
             this.updateEnablement(extensionId, true, informUser)
         }).catch(_e => {
-            logger.error(`Could not load extension: ${extensionId}`)
+            logger.error(`Could not load extension: ${extensionId}: ${_e}`)
         })
     }
 
