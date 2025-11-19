@@ -5,6 +5,9 @@ import {KPart} from "../parts/k-part";
 import {css, html, render} from "lit";
 import {activeTasksSignal} from "../core/appstate";
 import {taskService, ProgressMonitor} from "../core/taskservice";
+import {i18n} from "../core/i18n";
+
+const t = i18n('tasks');
 
 contributionRegistry.registerContribution(TOOLBAR_BOTTOM_CENTER, {
     html: "<k-tasks></k-tasks>"
@@ -66,7 +69,7 @@ function updateProgressDialog(forceOpen = false) {
 
     const template = html`
         <wa-dialog 
-            label="Active Tasks" 
+            label="${t('ACTIVE_TASKS')}" 
             open
             light-dismiss
             style="--width: 600px;"
@@ -246,10 +249,10 @@ export class KTasks extends KPart {
         }
         
         return html`
-            <div class="task-indicator" @click=${this.handleIndicatorClick} title="Active tasks: ${taskCount}. Click to view details.">
+            <div class="task-indicator" @click=${this.handleIndicatorClick} title="${t('ACTIVE_TASKS_TITLE', { taskCount: taskCount.toString() })}">
                 <wa-spinner 
                     style="font-size: 1rem; --indicator-color: var(--wa-color-warning-fill-loud);" 
-                    label="Active tasks"
+                    label="${t('ACTIVE_TASKS')}"
                 ></wa-spinner>
                 <span class="task-count">${taskCount}</span>
             </div>

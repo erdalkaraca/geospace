@@ -1,13 +1,14 @@
 import { css, html, LitElement } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
+import { t } from '../../ai-system-extension';
 
 @customElement('ai-empty-state')
 export class AIEmptyState extends LitElement {
     @property({ type: String })
-    public message: string = 'No AI provider configured';
+    public message: string = t('NO_PROVIDER_CONFIGURED');
 
     @property({ type: String })
-    public hint: string = 'Click the settings button to configure';
+    public hint: string = t('CLICK_SETTINGS_TO_CONFIGURE');
 
     render() {
         return html`

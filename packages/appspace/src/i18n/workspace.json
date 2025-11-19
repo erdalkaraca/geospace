@@ -1,0 +1,12 @@
+{
+    "namespace": "workspace",
+    "en": {
+        "NO_WORKSPACE": "<no workspace>",
+        "LOAD_WORKSPACE": "Load workspace"
+    },
+    "de": {
+        "NO_WORKSPACE": "<kein Arbeitsbereich>",
+        "LOAD_WORKSPACE": "Arbeitsbereich laden"
+    }
+}
+

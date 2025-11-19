@@ -25,6 +25,7 @@ import { StreamManager } from "./stream-manager";
 import { ProviderManager } from "./provider-manager";
 import { AgentGroupManager } from "./agent-group-manager";
 import { confirmDialog } from "../../../core/dialog";
+import { t } from "../ai-system-extension";
 
 @customElement('k-aiview')
 export class KAView extends KPart {
@@ -451,11 +452,11 @@ export class KAView extends KPart {
                             
                             return html`
                                 <wa-tab panel="${sessionId}">
-                                    <span>${this.sessionManager.getSessionTitle(sessionId) || `Chat ${index + 1}`}</span>
+                                    <span>${this.sessionManager.getSessionTitle(sessionId) || `${t('CHAT')} ${index + 1}`}</span>
                                     ${when(sessionIds.length > 1, () => html`
                                         <wa-icon 
                                             name="xmark" 
-                                            label="Close"
+                                            label="${t('CLOSE')}"
                                             @click="${(e: Event) => {
                                                 e.stopPropagation();
                                                 this.deleteSession(sessionId);
@@ -518,13 +519,13 @@ export class KAView extends KPart {
                                     variant="neutral"
                                     appearance="plain"
                                     size="small"
-                                    title="Archived Sessions"
+                                    title="${t('ARCHIVED_SESSIONS')}"
                                     with-caret>
-                                    <wa-icon name="clock-rotate-left" label="Archived Sessions"></wa-icon>
+                                    <wa-icon name="clock-rotate-left" label="${t('ARCHIVED_SESSIONS')}"></wa-icon>
                                     <span style="margin-left: 0.25rem;">${this.sessionManager.getArchivedSessionCount()}</span>
                                 </wa-button>
                                 <h6 style="padding: var(--wa-space-xs) var(--wa-space-s); margin: 0; color: var(--wa-color-neutral-50); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">
-                                    Archived Sessions
+                                    ${t('ARCHIVED_SESSIONS')}
                                 </h6>
                                 ${this.sessionManager.getArchivedSessions().map(archived => html`
                                     <wa-dropdown-item 
@@ -532,7 +533,7 @@ export class KAView extends KPart {
                                             await this.sessionManager.restoreSession(archived.id);
                                             this.requestUpdate();
                                         }}">
-                                        <wa-icon name="history" label="Restore" slot="icon"></wa-icon>
+                                        <wa-icon name="history" label="${t('RESTORE')}" slot="icon"></wa-icon>
                                         <span style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;">
                                             ${archived.title}
                                         </span>
@@ -545,15 +546,16 @@ export class KAView extends KPart {
                                 <wa-dropdown-item 
                                     @click="${async () => {
                                         const count = this.sessionManager.getArchivedSessionCount();
-                                        if (await confirmDialog(`Are you sure you want to permanently delete all ${count} archived session${count > 1 ? 's' : ''}?`)) {
+                                        const plural = count > 1 ? 's' : '';
+                                        if (await confirmDialog(t('DELETE_ALL_CONFIRM', { count: count.toString(), plural }))) {
                                             for (const archived of this.sessionManager.getArchivedSessions()) {
                                                 await this.sessionManager.permanentlyDeleteSession(archived.id);
                                             }
                                             this.requestUpdate();
                                         }
                                     }}">
-                                    <wa-icon name="trash" label="Delete All" slot="icon"></wa-icon>
-                                    <span>Delete All Archived</span>
+                                    <wa-icon name="trash" label="${t('DELETE_ALL_ARCHIVED')}" slot="icon"></wa-icon>
+                                    <span>${t('DELETE_ALL_ARCHIVED')}</span>
                                 </wa-dropdown-item>
                             </wa-dropdown>
                         `)}
@@ -562,20 +564,20 @@ export class KAView extends KPart {
                             variant="neutral"
                             appearance="plain"
                             size="small"
-                            title="New Chat"
+                            title="${t('NEW_CHAT')}"
                             @click="${() => {
                                 this.createNewSession();
                                 this.requestUpdate();
                             }}">
-                            <wa-icon name="plus" label="New Chat"></wa-icon>
+                            <wa-icon name="plus" label="${t('NEW_CHAT')}"></wa-icon>
                         </wa-button>
                     </wa-tab-group>
                 `)}
                 
                 ${when(!selectedProvider, () => html`
                     <ai-empty-state
-                        message="No AI provider configured"
-                        hint="Click the settings button to configure">
+                        message="${t('NO_PROVIDER_CONFIGURED')}"
+                        hint="${t('CLICK_SETTINGS_TO_CONFIGURE')}">
                     </ai-empty-state>
                 `)}
 
@@ -597,7 +599,14 @@ export class KAView extends KPart {
                                     return `${tc.function.name}${argsStr ? `(${argsStr})` : "()"}`;
                                 }).join(", ");
                                 
-                                const summaryText = `Tool execution pending: ${toolCount} tool${toolCount > 1 ? 's' : ''} (${toolCalls[0]?.function.name}${toolCount > 1 ? ', ...' : ''})`;
+                                const plural = toolCount > 1 ? 's' : '';
+                                const more = toolCount > 1 ? ', ...' : '';
+                                const summaryText = t('TOOL_EXECUTION_PENDING', { 
+                                    toolCount: toolCount.toString(), 
+                                    plural, 
+                                    toolName: toolCalls[0]?.function.name || '',
+                                    more 
+                                });
                                 
                                 return html`
                                     <wa-details class="approval-details">
@@ -614,7 +623,7 @@ export class KAView extends KPart {
                                                         this.pendingToolApprovals.delete(approvalId);
                                                         this.requestUpdate();
                                                     }}">
-                                                    <wa-icon name="xmark" label="Cancel"></wa-icon>
+                                                    <wa-icon name="xmark" label="${t('CANCEL')}"></wa-icon>
                                                 </wa-button>
                                                 <wa-button
                                                     appearance="plain"
@@ -653,13 +662,13 @@ export class KAView extends KPart {
                                                         this.pendingToolApprovals.delete(approvalId);
                                                         this.requestUpdate();
                                                     }}">
-                                                    <wa-icon name="check" label="Approve"></wa-icon>
+                                                    <wa-icon name="check" label="${t('APPROVE')}"></wa-icon>
                                                 </wa-button>
                                             </div>
                                         </span>
                                         <div class="approval-content">
                                             <div class="approval-message">
-                                                <strong>Agent "${approval.role}" wants to execute the following tools:</strong>
+                                                <strong>${t('AGENT_WANTS_TO_EXECUTE', { role: approval.role })}</strong>
                                                 <ul class="tool-list">
                                                     ${toolCalls.map(tc => {
                                                         const args = tc.function.arguments || "{}";
@@ -686,7 +695,7 @@ export class KAView extends KPart {
                                                                             this.requestUpdate();
                                                                         }}">
                                                                     </wa-checkbox>
-                                                                    <span>Always allow</span>
+                                                                    <span>${t('ALWAYS_ALLOW')}</span>
                                                                 </label>
                                                                 <code>${tc.function.name}${argsStr}</code>
                                                             </li>

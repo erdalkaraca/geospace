@@ -1,0 +1,12 @@
+{
+    "namespace": "partname",
+    "en": {
+        "NO_PART": "<no part>",
+        "ACTIVE_PART": "Active part"
+    },
+    "de": {
+        "NO_PART": "<kein Bereich>",
+        "ACTIVE_PART": "Aktiver Bereich"
+    }
+}
+

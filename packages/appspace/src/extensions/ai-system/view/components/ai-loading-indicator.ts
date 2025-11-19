@@ -1,5 +1,6 @@
 import { css, html, LitElement } from 'lit';
 import { customElement } from 'lit/decorators.js';
+import { t } from '../../ai-system-extension';
 
 @customElement('ai-loading-indicator')
 export class AILoadingIndicator extends LitElement {
@@ -9,9 +10,9 @@ export class AILoadingIndicator extends LitElement {
                 <div class="message-header">
                     <div class="message-meta">
                         <wa-animation name="flip" duration="2000" play>
-                            <wa-icon name="robot" label="AI Assistant"></wa-icon>
+                            <wa-icon name="robot" label="${t('AI_ASSISTANT')}"></wa-icon>
                         </wa-animation>
-                        <span class="role-name">AI Assistant</span>
+                        <span class="role-name">${t('AI_ASSISTANT')}</span>
                     </div>
                 </div>
                 <div class="message-content loading-dots">

@@ -14,6 +14,60 @@ export interface LanguageBundleContribution extends Omit<Contribution, 'label'> 
     [languageCode: string]: any;
 }
 
+function replaceParameters(text: string, params?: Record<string, string>): string {
+    if (!params) {
+        return text;
+    }
+
+    return text.replace(/\{(\w+)\}/g, (match, paramKey) => {
+        return params[paramKey] !== undefined ? params[paramKey] : match;
+    });
+}
+
+export class LazyTranslation extends String {
+    private cachedValue?: string;
+    private cachedLanguage?: string;
+
+    constructor(
+        private readonly i18nService: I18nService,
+        private readonly namespace: string,
+        private readonly key: string,
+        private readonly params?: Record<string, string>
+    ) {
+        super('');
+    }
+
+    toString(): string {
+        const currentLanguage = this.i18nService.currentLanguageSignal.get();
+        
+        if (this.cachedValue !== undefined && this.cachedLanguage === currentLanguage) {
+            return this.cachedValue;
+        }
+
+        this.cachedValue = this.i18nService.translate(this.namespace, this.key, this.params);
+        this.cachedLanguage = currentLanguage;
+        return this.cachedValue;
+    }
+
+    valueOf(): string {
+        return this.toString();
+    }
+
+    [Symbol.toPrimitive](hint: 'default' | 'string' | 'number'): string | number {
+        if (hint === 'number') {
+            const num = Number(this.toString());
+            return isNaN(num) ? 0 : num;
+        }
+        return this.toString();
+    }
+
+    toJSON(): string {
+        return this.toString();
+    }
+}
+
+export type UILabel = string | LazyTranslation;
+
 class I18nService {
     private static readonly DEFAULT_LANGUAGE = 'en';
     private readonly translationCache = new Map<string, Record<string, string>>();
@@ -56,7 +110,7 @@ class I18nService {
         return `${namespace}:${language}`;
     }
 
-    private mergeTranslationsForLanguage(
+    public mergeTranslationsForLanguage(
         contributions: LanguageBundleContribution[],
         namespace: string,
         language: string
@@ -95,14 +149,35 @@ class I18nService {
         this.translationCache.clear();
     }
 
-    private replaceParameters(text: string, params?: Record<string, string>): string {
-        if (!params) {
-            return text;
+    public translate(namespace: string, key: string, params?: Record<string, string>): string {
+        const currentLanguage = this.currentLanguageSignal.get();
+        const primaryLanguage = this.getPrimaryLanguage(currentLanguage);
+        const contributions = this.languageContributionsSignal.get();
+
+        let translation: string | undefined;
+
+        const currentLangTranslations = this.mergeTranslationsForLanguage(contributions, namespace, currentLanguage);
+        if (currentLangTranslations[key]) {
+            translation = currentLangTranslations[key];
+        } else {
+            const primaryLangTranslations = currentLanguage !== primaryLanguage
+                ? this.mergeTranslationsForLanguage(contributions, namespace, primaryLanguage)
+                : currentLangTranslations;
+            if (primaryLangTranslations[key]) {
+                translation = primaryLangTranslations[key];
+            } else if (primaryLanguage !== I18nService.DEFAULT_LANGUAGE && currentLanguage !== I18nService.DEFAULT_LANGUAGE) {
+                const defaultLangTranslations = this.mergeTranslationsForLanguage(contributions, namespace, I18nService.DEFAULT_LANGUAGE);
+                if (defaultLangTranslations[key]) {
+                    translation = defaultLangTranslations[key];
+                }
+            }
         }
 
-        return text.replace(/\{(\w+)\}/g, (match, paramKey) => {
-            return params[paramKey] !== undefined ? params[paramKey] : match;
-        });
+        if (!translation) {
+            return key;
+        }
+
+        return replaceParameters(translation, params);
     }
 
     private initialize(): void {
@@ -125,34 +200,13 @@ class I18nService {
 
     public i18n(namespace: string) {
         return (key: string, params?: Record<string, string>): string => {
-            const currentLanguage = this.currentLanguageSignal.get();
-            const primaryLanguage = this.getPrimaryLanguage(currentLanguage);
-            const contributions = this.languageContributionsSignal.get();
+            return this.translate(namespace, key, params);
+        };
+    }
 
-            let translation: string | undefined;
-
-            const currentLangTranslations = this.mergeTranslationsForLanguage(contributions, namespace, currentLanguage);
-            if (currentLangTranslations[key]) {
-                translation = currentLangTranslations[key];
-            } else {
-                const primaryLangTranslations = currentLanguage !== primaryLanguage
-                    ? this.mergeTranslationsForLanguage(contributions, namespace, primaryLanguage)
-                    : currentLangTranslations;
-                if (primaryLangTranslations[key]) {
-                    translation = primaryLangTranslations[key];
-                } else if (primaryLanguage !== I18nService.DEFAULT_LANGUAGE && currentLanguage !== I18nService.DEFAULT_LANGUAGE) {
-                    const defaultLangTranslations = this.mergeTranslationsForLanguage(contributions, namespace, I18nService.DEFAULT_LANGUAGE);
-                    if (defaultLangTranslations[key]) {
-                        translation = defaultLangTranslations[key];
-                    }
-                }
-            }
-
-            if (!translation) {
-                return key;
-            }
-
-            return this.replaceParameters(translation, params);
+    public i18nLazy(namespace: string) {
+        return (key: string, params?: Record<string, string>): LazyTranslation => {
+            return new LazyTranslation(this, namespace, key, params);
         };
     }
 }
@@ -164,3 +218,4 @@ export const currentLanguageSignal = i18nService.currentLanguageSignal;
 export const languageContributionsSignal = i18nService.languageContributionsSignal;
 
 export const i18n = (namespace: string) => i18nService.i18n(namespace);
+export const i18nLazy = (namespace: string) => i18nService.i18nLazy(namespace);

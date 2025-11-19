@@ -2,6 +2,7 @@ import { css, html, LitElement } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { when } from 'lit/directives/when.js';
 import type { ChatMessage } from '../../core/types';
+import { t } from '../../ai-system-extension';
 import './ai-chat-message';
 
 interface AgentResponseInfo {
@@ -84,9 +85,9 @@ export class AIAgentResponseCard extends LitElement {
                             variant="neutral"
                             appearance="plain"
                             size="small"
-                            title="Copy"
+                            title="${t('COPY')}"
                             @click="${() => this.copyToClipboard(this.message?.content || '')}">
-                            <wa-icon name="copy" label="Copy"></wa-icon>
+                            <wa-icon name="copy" label="${t('COPY')}"></wa-icon>
                         </wa-button>
                     </div>
                 </div>

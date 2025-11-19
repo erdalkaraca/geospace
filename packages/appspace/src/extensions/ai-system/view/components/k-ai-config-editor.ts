@@ -12,6 +12,7 @@ import { contributionRegistry } from '../../../../core/contributionregistry';
 import { ProviderFactory } from '../../providers/provider-factory';
 import type { AIConfig, ChatProvider } from '../../core/types';
 import type { ChatProviderContribution } from '../../core/interfaces';
+import { t } from '../../ai-system-extension';
 
 @customElement('k-ai-config-editor')
 export class KAIConfigEditor extends KPart {
@@ -292,7 +293,7 @@ export class KAIConfigEditor extends KPart {
 
     private async deleteProvider(index: number) {
         const providerToDelete = this.providers[index];
-        const confirmed = await confirmDialog(`Delete provider "${providerToDelete.name}"?`);
+        const confirmed = await confirmDialog(t('DELETE_PROVIDER_CONFIRM', { name: providerToDelete.name }));
         if (confirmed) {
             // Clear default provider if it's the one being deleted
             if (this.defaultProvider === providerToDelete.name) {
@@ -386,7 +387,7 @@ export class KAIConfigEditor extends KPart {
             ${when(this.loadingModels, () => html`
                 <wa-input
                     .value="${this.editingValue}"
-                    placeholder="Loading models..."
+                    placeholder="${t('LOADING_MODELS')}"
                     readonly>
                     <wa-animation name="spinner" play slot="start"></wa-animation>
                 </wa-input>
@@ -404,7 +405,7 @@ export class KAIConfigEditor extends KPart {
                         <wa-input
                             slot="trigger"
                             .value="${this.editingValue}"
-                            placeholder="Select a model"
+                            placeholder="${t('SELECT_MODEL')}"
                             readonly
                             @keydown="${(e: KeyboardEvent) => {
                                 if (e.key === 'Escape') {
@@ -430,13 +431,13 @@ export class KAIConfigEditor extends KPart {
         return html`
             <div class="ai-config-editor">
                 <div class="editor-header">
-                    <h2>Providers</h2>
+                    <h2>${t('PROVIDERS')}</h2>
                     <div class="header-actions">
                         <wa-button 
                             variant="brand" 
                             appearance="filled"
                             @click="${() => this.addProvider()}">
-                            Add Provider
+                            ${t('ADD_PROVIDER')}
                         </wa-button>
                     </div>
                 </div>
@@ -445,14 +446,14 @@ export class KAIConfigEditor extends KPart {
                     <table class="providers-table">
                         <thead>
                             <tr>
-                                <th>Default</th>
-                                <th>Name</th>
-                                <th>Model</th>
-                                <th>API Endpoint</th>
-                                <th>API Key</th>
-                                <th>OCR Endpoint</th>
-                                <th>OCR Model</th>
-                                <th>Actions</th>
+                                <th>${t('DEFAULT')}</th>
+                                <th>${t('NAME')}</th>
+                                <th>${t('MODEL')}</th>
+                                <th>${t('API_ENDPOINT')}</th>
+                                <th>${t('API_KEY')}</th>
+                                <th>${t('OCR_ENDPOINT')}</th>
+                                <th>${t('OCR_MODEL')}</th>
+                                <th>${t('ACTIONS')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -498,13 +499,13 @@ export class KAIConfigEditor extends KPart {
                                         ${this.renderEditableCell(index, 'chatApiEndpoint', html`<span class="endpoint-text">${provider.chatApiEndpoint}</span>`)}
                                     </td>
                                     <td class="editable-cell" @dblclick="${() => this.startCellEditing(index, 'apiKey')}">
-                                        ${this.renderEditableCell(index, 'apiKey', html`<span class="api-key-text">${provider.apiKey ? '••••••••' : ''}</span>`, 'password', 'API Key')}
+                                        ${this.renderEditableCell(index, 'apiKey', html`<span class="api-key-text">${provider.apiKey ? '••••••••' : ''}</span>`, 'password', t('API_KEY'))}
                                     </td>
                                     <td class="editable-cell" @dblclick="${() => this.startCellEditing(index, 'ocrApiEndpoint')}">
-                                        ${this.renderEditableCell(index, 'ocrApiEndpoint', provider.ocrApiEndpoint || '-', 'text', 'Optional')}
+                                        ${this.renderEditableCell(index, 'ocrApiEndpoint', provider.ocrApiEndpoint || '-', 'text', t('OPTIONAL'))}
                                     </td>
                                     <td class="editable-cell" @dblclick="${() => this.startCellEditing(index, 'ocrModel')}">
-                                        ${this.renderEditableCell(index, 'ocrModel', provider.ocrModel || '-', 'text', 'Optional')}
+                                        ${this.renderEditableCell(index, 'ocrModel', provider.ocrModel || '-', 'text', t('OPTIONAL'))}
                                     </td>
                                     <td>
                                         <wa-button
@@ -512,7 +513,7 @@ export class KAIConfigEditor extends KPart {
                                             appearance="plain"
                                             size="small"
                                             @click="${() => this.deleteProvider(index)}">
-                                            Delete
+                                            ${t('DELETE_PROVIDER')}
                                         </wa-button>
                                     </td>
                                 </tr>
@@ -523,12 +524,12 @@ export class KAIConfigEditor extends KPart {
 
                 ${when(this.providers.length === 0, () => html`
                     <div class="empty-state">
-                        <p>No providers configured. Click "Add Provider" to get started.</p>
+                        <p>${t('NO_PROVIDERS_CONFIGURED')}</p>
                     </div>
                 `)}
 
                 <div class="tool-approval-section">
-                    <h3>Tool Approvals</h3>
+                    <h3>${t('TOOL_APPROVALS')}</h3>
                     <div class="tool-approval-controls">
                         <wa-checkbox
                             .checked="${this.requireToolApproval}"
@@ -537,7 +538,7 @@ export class KAIConfigEditor extends KPart {
                                 this.requireToolApproval = checkbox.checked;
                                 this.markDirtyAndUpdate();
                             }}">
-                            Require approval before executing tools
+                            ${t('REQUIRE_APPROVAL_BEFORE_EXECUTING')}
                         </wa-checkbox>
                     </div>
 
@@ -549,26 +550,24 @@ export class KAIConfigEditor extends KPart {
                                 this.smartToolDetection = checkbox.checked;
                                 this.markDirtyAndUpdate();
                             }}">
-                            Use smart tool detection (reduces token usage)
+                            ${t('SMART_TOOL_DETECTION')}
                         </wa-checkbox>
                         <p class="hint" style="margin-top: 0.5rem; margin-left: 1.75rem; color: var(--wa-color-text-secondary, #666); font-size: 0.875rem;">
-                            When enabled, a small ML model running in your browser will detect if a prompt needs tools. 
-                            This reduces token usage for simple queries like greetings. 
-                            <strong>Note:</strong> The model (approximately 60-80MB quantized) will be downloaded on first use, which may take some time.
+                            ${t('SMART_TOOL_DETECTION_HINT')}
                         </p>
                     </div>
 
                     <div class="allowlist-section">
                         <h4>
-                            Approved Commands 
+                            ${t('APPROVED_COMMANDS')}
                             <span class="command-stats">
                                 (${this.toolApprovalAllowlist.length}/${this.availableCommands.length})
                             </span>
                         </h4>
                         <p class="hint">
                             ${this.requireToolApproval 
-                                ? 'Select commands that can be executed without approval:' 
-                                : 'These commands will be approved automatically when approval is enabled:'}
+                                ? t('SELECT_COMMANDS_WITHOUT_APPROVAL')
+                                : t('COMMANDS_AUTO_APPROVED')}
                         </p>
                         <div class="commands-list ${!this.requireToolApproval ? 'disabled' : ''}">
                             ${this.availableCommands.map(cmd => html`

@@ -1,0 +1,42 @@
+{
+    "namespace": "logterminal",
+    "en": {
+        "ALL_LOGS": "All logs",
+        "ALL": "All",
+        "INFO_LOGS": "Info logs",
+        "INFO": "Info",
+        "WARNING_LOGS": "Warning logs",
+        "WARNINGS": "Warnings",
+        "ERROR_LOGS": "Error logs",
+        "ERRORS": "Errors",
+        "DEBUG_LOGS": "Debug logs",
+        "DEBUG": "Debug",
+        "AUTO_SCROLL_ENABLED": "Auto-scroll enabled",
+        "AUTO_SCROLL_DISABLED": "Auto-scroll disabled",
+        "AUTO_SCROLL": "Auto-scroll",
+        "MANUAL": "Manual",
+        "CLEAR_LOGS": "Clear logs",
+        "CLEAR": "Clear",
+        "NO_LOG_MESSAGES": "No log messages"
+    },
+    "de": {
+        "ALL_LOGS": "Alle Protokolle",
+        "ALL": "Alle",
+        "INFO_LOGS": "Info-Protokolle",
+        "INFO": "Info",
+        "WARNING_LOGS": "Warnungsprotokolle",
+        "WARNINGS": "Warnungen",
+        "ERROR_LOGS": "Fehlerprotokolle",
+        "ERRORS": "Fehler",
+        "DEBUG_LOGS": "Debug-Protokolle",
+        "DEBUG": "Debug",
+        "AUTO_SCROLL_ENABLED": "Automatisches Scrollen aktiviert",
+        "AUTO_SCROLL_DISABLED": "Automatisches Scrollen deaktiviert",
+        "AUTO_SCROLL": "Automatisches Scrollen",
+        "MANUAL": "Manuell",
+        "CLEAR_LOGS": "Protokolle löschen",
+        "CLEAR": "Löschen",
+        "NO_LOG_MESSAGES": "Keine Protokollnachrichten"
+    }
+}
+

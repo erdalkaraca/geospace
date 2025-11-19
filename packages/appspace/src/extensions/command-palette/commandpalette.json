@@ -1,0 +1,28 @@
+{
+    "namespace": "commandpalette",
+    "en": {
+        "PLACEHOLDER": "Type a command name...",
+        "NO_COMMANDS_FOUND": "No commands found",
+        "PARAMETERS": "Parameters",
+        "ENTER_PARAMETERS": "Enter parameters for {commandName}",
+        "CANCEL": "Cancel",
+        "EXECUTE": "Execute",
+        "OPEN_COMMAND_PALETTE": "Open Command Palette",
+        "OPEN_COMMAND_PALETTE_DESC": "Opens the command palette to execute commands",
+        "MISSING_REQUIRED_PARAMS": "Missing required parameters: {params}",
+        "ENTER_PARAM": "Enter {paramName}"
+    },
+    "de": {
+        "PLACEHOLDER": "Befehlsname eingeben...",
+        "NO_COMMANDS_FOUND": "Keine Befehle gefunden",
+        "PARAMETERS": "Parameter",
+        "ENTER_PARAMETERS": "Parameter für {commandName} eingeben",
+        "CANCEL": "Abbrechen",
+        "EXECUTE": "Ausführen",
+        "OPEN_COMMAND_PALETTE": "Befehls-Palette öffnen",
+        "OPEN_COMMAND_PALETTE_DESC": "Öffnet die Befehls-Palette zum Ausführen von Befehlen",
+        "MISSING_REQUIRED_PARAMS": "Erforderliche Parameter fehlen: {params}",
+        "ENTER_PARAM": "{paramName} eingeben"
+    }
+}
+

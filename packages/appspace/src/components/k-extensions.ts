@@ -6,6 +6,9 @@ import {Extension, extensionRegistry, TOPIC_EXTENSIONS_CHANGED} from "../core/ex
 import '../widgets/k-icon';
 import {subscribe} from "../core/events";
 import {appLoaderService} from "../core/apploader";
+import {i18n} from "../core/i18n";
+
+const t = i18n('extensions');
 
 
 @customElement('k-extensions')
@@ -63,8 +66,8 @@ export class KExtensions extends KPart {
         }
         const filter = this.filterText.toLowerCase();
         return extensionRegistry.getExtensions().filter(ext => {
-            return ext.name.toLowerCase().includes(filter) ||
-                   (ext.description?.toLowerCase().includes(filter) ?? false) ||
+            return String(ext.name).toLowerCase().includes(filter) ||
+                   (ext.description ? String(ext.description).toLowerCase().includes(filter) : false) ||
                    ext.id.toLowerCase().includes(filter);
         });
     }
@@ -83,8 +86,8 @@ export class KExtensions extends KPart {
             }
         });
         
-        enabled.sort((a, b) => a.name.localeCompare(b.name));
-        available.sort((a, b) => a.name.localeCompare(b.name));
+        enabled.sort((a, b) => String(a.name).localeCompare(String(b.name)));
+        available.sort((a, b) => String(a.name).localeCompare(String(b.name)));
         
         return { enabled, available };
     }
@@ -107,7 +110,7 @@ export class KExtensions extends KPart {
     protected renderToolbar() {
         return html`
             <wa-input
-                placeholder="Filter extensions..."
+                placeholder="${t('FILTER_PLACEHOLDER')}"
                 .value=${this.filterText}
                 @input=${(e: Event) => this.handleFilterInput(e)}
                 @wa-clear=${() => this.clearFilter()}
@@ -135,7 +138,7 @@ export class KExtensions extends KPart {
                             <wa-tree-item expanded>
                                 <span>
                                     <wa-icon name="check-circle" style="color: var(--wa-color-success-50);"></wa-icon>
-                                    Installed (${grouped.enabled.length})
+                                    ${t('INSTALLED')} (${grouped.enabled.length})
                                 </span>
                                 ${grouped.enabled.map(e => {
                                     const isExternal = this.isExternalExtension(e);
@@ -151,7 +154,7 @@ export class KExtensions extends KPart {
                             <wa-tree-item expanded>
                                 <span>
                                     <wa-icon name="circle" style="color: var(--wa-color-neutral-50);"></wa-icon>
-                                    Available (${grouped.available.length})
+                                    ${t('AVAILABLE')} (${grouped.available.length})
                                 </span>
                                 ${grouped.available.map(e => {
                                     const isExternal = this.isExternalExtension(e);
@@ -166,7 +169,7 @@ export class KExtensions extends KPart {
                     ` : ''}
                     ${!hasAnyExtensions ? html`
                         <div style="padding: 1em; text-align: center; opacity: 0.7;">
-                            No extensions match "${this.filterText}"
+                            ${t('NO_MATCHES', { filterText: this.filterText })}
                         </div>
                     ` : ''}
                 </wa-tree>
@@ -180,33 +183,33 @@ export class KExtensions extends KPart {
                                 ${when(isExternal, () => html`
                                     <div class="marketplace-badge">
                                         <wa-icon name="store"></wa-icon>
-                                        <span>External Extension</span>
+                                        <span>${t('EXTERNAL_EXTENSION')}</span>
                                     </div>
                                 `)}
                                 <hr>
                                 <div>
                                     ${when(isEnabled, () => html`
                                         <wa-button 
-                                            title="${this.isExtensionRequired(e.id) ? 'This extension is required by the current app and cannot be uninstalled' : 'Disable this extension'}" 
+                                            title="${this.isExtensionRequired(e.id) ? t('REQUIRED_HINT') : t('DISABLE_TITLE')}" 
                                             @click="${() => this.disable(e)}"
                                             variant="danger" 
                                             appearance="plain"
                                             ?disabled=${this.isExtensionRequired(e.id)}>
-                                            <wa-icon name="xmark" label="Uninstall"></wa-icon>&nbsp;Uninstall (requires restart)
+                                            <wa-icon name="xmark" label="Uninstall"></wa-icon>&nbsp;${t('UNINSTALL')}
                                         </wa-button>
                                         ${when(this.isExtensionRequired(e.id), () => html`
                                             <div class="required-hint">
                                                 <wa-icon name="info-circle" style="color: var(--wa-color-primary-50);"></wa-icon>
-                                                <span>This extension is required by the current app and cannot be uninstalled</span>
+                                                <span>${t('REQUIRED_HINT')}</span>
                                             </div>
                                         `)}
                                     `, () => html`
                                         <wa-button 
-                                            title="Enable this extension" 
+                                            title="${t('ENABLE_TITLE')}" 
                                             @click="${() => this.enable(e)}"
                                             variant="brand" 
                                             appearance="plain">
-                                            <wa-icon name="download" label="Install"></wa-icon>&nbsp;Install
+                                            <wa-icon name="download" label="Install"></wa-icon>&nbsp;${t('INSTALL')}
                                         </wa-button>
                                     `)}
                                 </div>
@@ -216,7 +219,7 @@ export class KExtensions extends KPart {
                                         <wa-button size="small" variant="warning" appearance="plain">
                                             <wa-icon name="triangle-exclamation" label="Warning"></wa-icon>
                                         </wa-button>
-                                        <small><i>This is an experimental extension!</i></small>
+                                        <small><i>${t('EXPERIMENTAL')}</i></small>
                                     </div>
                                 `)}
 
@@ -225,13 +228,13 @@ export class KExtensions extends KPart {
                                         ${when(e.version, () => html`
                                             <div style="display: flex; align-items: center; gap: 0.5rem;">
                                                 <wa-icon name="tag" style="font-size: 0.9em; opacity: 0.7;"></wa-icon>
-                                                <span style="font-size: 0.9em; opacity: 0.8;">Version: <strong>${e.version}</strong></span>
+                                                <span style="font-size: 0.9em; opacity: 0.8;">${t('VERSION')} <strong>${e.version}</strong></span>
                                             </div>
                                         `)}
                                         ${when(e.author, () => html`
                                             <div style="display: flex; align-items: center; gap: 0.5rem;">
                                                 <wa-icon name="user" style="font-size: 0.9em; opacity: 0.7;"></wa-icon>
-                                                <span style="font-size: 0.9em; opacity: 0.8;">Author: <strong>${e.author}</strong></span>
+                                                <span style="font-size: 0.9em; opacity: 0.8;">${t('AUTHOR')} <strong>${e.author}</strong></span>
                                             </div>
                                         `)}
                                     </div>
@@ -243,7 +246,7 @@ export class KExtensions extends KPart {
                                     <div style="margin-top: 1.5em;">
                                         <h3 style="margin-bottom: 0.5em;">
                                             <wa-icon name="puzzle-piece" style="font-size: 0.9em;"></wa-icon>
-                                            Dependencies
+                                            ${t('DEPENDENCIES')}
                                         </h3>
                                         <div class="dependencies-list">
                                             ${e.dependencies!.map(depId => {
@@ -258,7 +261,7 @@ export class KExtensions extends KPart {
                                                         <k-icon name="${depExt?.icon || 'puzzle-piece'}"></k-icon>
                                                         <span>${depExt?.name || depId}</span>
                                                         ${!isEnabled ? html`
-                                                            <span class="dependency-badge">Not Installed</span>
+                                                            <span class="dependency-badge">${t('NOT_INSTALLED')}</span>
                                                         ` : ''}
                                                     </div>
                                                 `;
@@ -266,7 +269,7 @@ export class KExtensions extends KPart {
                                         </div>
                                         <small style="opacity: 0.7; display: block; margin-top: 0.5em;">
                                             <wa-icon name="info-circle" style="font-size: 0.9em;"></wa-icon>
-                                            Dependencies are automatically installed when this extension is enabled.
+                                            ${t('DEPENDENCIES_HINT')}
                                         </small>
                                     </div>
                                 `)}

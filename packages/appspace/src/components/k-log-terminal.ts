@@ -3,6 +3,9 @@ import { customElement, state } from 'lit/decorators.js';
 import { KPart } from '../parts/k-part';
 import { createRef, ref, Ref } from 'lit/directives/ref.js';
 import { registerLogHandler, unregisterLogHandler, type LogLevel } from '../core/logger';
+import { i18n } from '../core/i18n';
+
+const t = i18n('logterminal');
 
 export interface LogMessage {
     timestamp: Date;
@@ -107,7 +110,7 @@ export class KLogTerminal extends KPart {
         return html`
             <k-command 
                 icon="list"
-                title="All logs"
+                title="${t('ALL_LOGS')}"
                 appearance="${this.filter === 'all' ? 'filled' : 'plain'}"
                 variant="${this.filter === 'all' ? 'brand' : 'neutral'}"
                 .action=${() => {
@@ -115,12 +118,12 @@ export class KLogTerminal extends KPart {
                     this.saveSettings();
                     this.updateToolbar();
                 }}>
-                All (${this.messages.length})
+                ${t('ALL')} (${this.messages.length})
             </k-command>
 
             <k-command 
                 icon="circle-info"
-                title="Info logs"
+                title="${t('INFO_LOGS')}"
                 appearance="${this.filter === 'info' ? 'filled' : 'plain'}"
                 variant="${this.filter === 'info' ? 'brand' : 'neutral'}"
                 .action=${() => {
@@ -128,12 +131,12 @@ export class KLogTerminal extends KPart {
                     this.saveSettings();
                     this.updateToolbar();
                 }}>
-                Info${infoCount > 0 ? ` (${infoCount})` : ''}
+                ${t('INFO')}${infoCount > 0 ? ` (${infoCount})` : ''}
             </k-command>
 
             <k-command 
                 icon="triangle-exclamation"
-                title="Warning logs"
+                title="${t('WARNING_LOGS')}"
                 appearance="${this.filter === 'warning' ? 'filled' : 'plain'}"
                 variant="${this.filter === 'warning' ? 'brand' : 'neutral'}"
                 .action=${() => {
@@ -141,12 +144,12 @@ export class KLogTerminal extends KPart {
                     this.saveSettings();
                     this.updateToolbar();
                 }}>
-                Warnings${warningCount > 0 ? ` (${warningCount})` : ''}
+                ${t('WARNINGS')}${warningCount > 0 ? ` (${warningCount})` : ''}
             </k-command>
 
             <k-command 
                 icon="circle-xmark"
-                title="Error logs"
+                title="${t('ERROR_LOGS')}"
                 appearance="${this.filter === 'error' ? 'filled' : 'plain'}"
                 variant="${this.filter === 'error' ? 'brand' : 'neutral'}"
                 .action=${() => {
@@ -154,12 +157,12 @@ export class KLogTerminal extends KPart {
                     this.saveSettings();
                     this.updateToolbar();
                 }}>
-                Errors${errorCount > 0 ? ` (${errorCount})` : ''}
+                ${t('ERRORS')}${errorCount > 0 ? ` (${errorCount})` : ''}
             </k-command>
 
             <k-command 
                 icon="bug"
-                title="Debug logs"
+                title="${t('DEBUG_LOGS')}"
                 appearance="${this.filter === 'debug' ? 'filled' : 'plain'}"
                 variant="${this.filter === 'debug' ? 'brand' : 'neutral'}"
                 .action=${() => {
@@ -167,14 +170,14 @@ export class KLogTerminal extends KPart {
                     this.saveSettings();
                     this.updateToolbar();
                 }}>
-                Debug${debugCount > 0 ? ` (${debugCount})` : ''}
+                ${t('DEBUG')}${debugCount > 0 ? ` (${debugCount})` : ''}
             </k-command>
 
             <wa-divider orientation="vertical"></wa-divider>
 
             <k-command 
                 icon="arrow-down" 
-                title="${this.autoScroll ? 'Auto-scroll enabled' : 'Auto-scroll disabled'}"
+                title="${this.autoScroll ? t('AUTO_SCROLL_ENABLED') : t('AUTO_SCROLL_DISABLED')}"
                 appearance="${this.autoScroll ? 'filled' : 'plain'}"
                 variant="${this.autoScroll ? 'brand' : 'neutral'}"
                 .action=${() => {
@@ -182,14 +185,14 @@ export class KLogTerminal extends KPart {
                     this.saveSettings();
                     this.updateToolbar();
                 }}>
-                ${this.autoScroll ? 'Auto-scroll' : 'Manual'}
+                ${this.autoScroll ? t('AUTO_SCROLL') : t('MANUAL')}
             </k-command>
 
             <k-command 
                 icon="trash" 
-                title="Clear logs"
+                title="${t('CLEAR_LOGS')}"
                 .action=${() => this.clear()}>
-                Clear
+                ${t('CLEAR')}
             </k-command>
         `;
     }
@@ -201,7 +204,7 @@ export class KLogTerminal extends KPart {
             <div class="log-terminal">
                 <div class="messages" ${ref(this.containerRef)}>
                     ${filteredMessages.length === 0 
-                        ? html`<div class="empty-state">No log messages</div>`
+                        ? html`<div class="empty-state">${t('NO_LOG_MESSAGES')}</div>`
                         : filteredMessages.map(msg => html`
                             <div class="message" data-level="${msg.level}">
                                 <span class="timestamp">${this.formatTimestamp(msg.timestamp)}</span>

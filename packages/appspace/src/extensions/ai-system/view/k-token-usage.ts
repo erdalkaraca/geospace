@@ -6,6 +6,7 @@ import { subscribe } from "../../../core/events";
 import { confirmDialog } from "../../../core/dialog";
 import { TOPIC_AI_STREAM_COMPLETE } from "../core/constants";
 import type { ProviderTokenUsage } from "../core/types";
+import { t } from "../ai-system-extension";
 
 @customElement('k-token-usage')
 export class KTokenUsage extends KElement {
@@ -122,7 +123,7 @@ export class KTokenUsage extends KElement {
     }
 
     private async handleReset() {
-        if (await confirmDialog('Reset all token usage statistics?')) {
+        if (await confirmDialog(t('RESET_CONFIRM'))) {
             await tokenUsageTracker.reset();
             await this.loadUsage();
         }
@@ -143,31 +144,31 @@ export class KTokenUsage extends KElement {
                     slot="trigger"
                     appearance="plain"
                     size="small"
-                    title="Click to view detailed token usage statistics">
-                    <wa-icon name="database" label="Token usage" slot="start"></wa-icon>
-                    ${this.formatNumber(this.totalUsage.totalTokens)} tokens
+                    title="${t('TOKEN_USAGE_STATS')}">
+                    <wa-icon name="database" label="${t('TOKEN_USAGE')}" slot="start"></wa-icon>
+                    ${this.formatNumber(this.totalUsage.totalTokens)} ${t('TOKENS')}
                 </wa-button>
                 
-                <h3>Token Usage Statistics</h3>
+                <h3>${t('TOKEN_USAGE_STATS')}</h3>
                 
-                <h6>Total Usage</h6>
+                <h6>${t('TOTAL_USAGE')}</h6>
                 <wa-dropdown-item>
-                    <span>Total</span>
+                    <span>${t('TOTAL')}</span>
                     <div class="total-stats">
                         <div class="stat-item">
-                            <span class="stat-label">Prompt</span>
+                            <span class="stat-label">${t('PROMPT')}</span>
                             <span class="stat-value">${this.formatNumber(this.totalUsage.promptTokens)}</span>
                         </div>
                         <div class="stat-item">
-                            <span class="stat-label">Completion</span>
+                            <span class="stat-label">${t('COMPLETION')}</span>
                             <span class="stat-value">${this.formatNumber(this.totalUsage.completionTokens)}</span>
                         </div>
                         <div class="stat-item">
-                            <span class="stat-label">Total</span>
+                            <span class="stat-label">${t('TOTAL')}</span>
                             <span class="stat-value">${this.formatNumber(this.totalUsage.totalTokens)}</span>
                         </div>
                         <div class="stat-item">
-                            <span class="stat-label">Requests</span>
+                            <span class="stat-label">${t('REQUESTS')}</span>
                             <span class="stat-value">${this.totalUsage.requestCount}</span>
                         </div>
                     </div>
@@ -175,25 +176,25 @@ export class KTokenUsage extends KElement {
                 
                 ${Object.keys(this.providerUsage).length > 0 ? html`
                     <wa-divider></wa-divider>
-                    <h6>By Provider</h6>
+                    <h6>${t('BY_PROVIDER')}</h6>
                     ${Object.entries(this.providerUsage).map(([name, usage]) => html`
                         <wa-dropdown-item>
                             <span class="provider-name">${name}</span>
                             <div class="provider-stats">
                                 <div class="stat-item">
-                                    <span class="stat-label">Prompt</span>
+                                    <span class="stat-label">${t('PROMPT')}</span>
                                     <span class="stat-value">${this.formatNumber(usage.promptTokens)}</span>
                                 </div>
                                 <div class="stat-item">
-                                    <span class="stat-label">Completion</span>
+                                    <span class="stat-label">${t('COMPLETION')}</span>
                                     <span class="stat-value">${this.formatNumber(usage.completionTokens)}</span>
                                 </div>
                                 <div class="stat-item">
-                                    <span class="stat-label">Total</span>
+                                    <span class="stat-label">${t('TOTAL')}</span>
                                     <span class="stat-value">${this.formatNumber(usage.totalTokens)}</span>
                                 </div>
                                 <div class="stat-item">
-                                    <span class="stat-label">Requests</span>
+                                    <span class="stat-label">${t('REQUESTS')}</span>
                                     <span class="stat-value">${usage.requestCount}</span>
                                 </div>
                             </div>
@@ -204,7 +205,7 @@ export class KTokenUsage extends KElement {
                 <wa-divider></wa-divider>
                 <wa-dropdown-item variant="danger" @click=${this.handleReset}>
                     <wa-icon name="trash" slot="icon"></wa-icon>
-                    Reset Statistics
+                    ${t('RESET_STATISTICS')}
                 </wa-dropdown-item>
             </wa-dropdown>
         `;

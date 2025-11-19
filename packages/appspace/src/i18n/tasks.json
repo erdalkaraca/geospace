@@ -1,0 +1,12 @@
+{
+    "namespace": "tasks",
+    "en": {
+        "ACTIVE_TASKS": "Active Tasks",
+        "ACTIVE_TASKS_TITLE": "Active tasks: {taskCount}. Click to view details."
+    },
+    "de": {
+        "ACTIVE_TASKS": "Aktive Aufgaben",
+        "ACTIVE_TASKS_TITLE": "Aktive Aufgaben: {taskCount}. Klicken Sie, um Details anzuzeigen."
+    }
+}
+

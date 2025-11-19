@@ -4,13 +4,14 @@ import {html} from "lit";
 import {workspaceService, TOPIC_WORKSPACE_CONNECTED} from "../core/filesys";
 import {subscribe} from "../core/events";
 import {commandRegistry} from "../core/commandregistry";
+import {i18n} from "../core/i18n";
 
-const NO_WORKSPACE_LABEL = "<no workspace>";
+const t = i18n('workspace');
 
 @customElement('k-workspace-name')
 export class KWorkspaceName extends KElement {
     
-    private workspaceName = NO_WORKSPACE_LABEL;
+    private workspaceName = t('NO_WORKSPACE');
 
     protected doInitUI() {
         this.updateWorkspaceName();
@@ -22,7 +23,7 @@ export class KWorkspaceName extends KElement {
 
     private updateWorkspaceName() {
         workspaceService.getWorkspace().then(workspace => {
-            this.workspaceName = workspace?.getName() || NO_WORKSPACE_LABEL;
+            this.workspaceName = workspace?.getName() || t('NO_WORKSPACE');
             this.requestUpdate();
         });
     }
@@ -38,7 +39,7 @@ export class KWorkspaceName extends KElement {
             <wa-button 
                 appearance="plain"
                 size="small"
-                title="Load workspace"
+                title="${t('LOAD_WORKSPACE')}"
                 @click=${this.handleLoadWorkspace}>
                 <wa-icon name="folder-open" slot="start" label="Workspace"></wa-icon>
                 ${this.workspaceName}

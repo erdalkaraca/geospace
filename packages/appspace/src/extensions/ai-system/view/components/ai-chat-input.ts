@@ -1,6 +1,7 @@
 import { css, html, LitElement } from 'lit';
 import { customElement, property, query } from 'lit/decorators.js';
 import { when } from 'lit/directives/when.js';
+import { t } from '../../ai-system-extension';
 
 @customElement('ai-chat-input')
 export class AIChatInput extends LitElement {
@@ -74,7 +75,7 @@ export class AIChatInput extends LitElement {
             <div class="input-container">
                 <div class="input-row">
                     <wa-textarea
-                        placeholder="Type your message and press Enter..."
+                        placeholder="${t('TYPE_MESSAGE_ENTER')}"
                         size="small"
                         resize="auto"
                         rows="1"
@@ -89,7 +90,7 @@ export class AIChatInput extends LitElement {
                             appearance="plain"
                             size="small"
                             @click="${this.cancel}">
-                            <wa-icon name="stop" label="Stop"></wa-icon>
+                            <wa-icon name="stop" label="${t('STOP')}"></wa-icon>
                         </wa-button>
                     `)}
 
@@ -97,7 +98,7 @@ export class AIChatInput extends LitElement {
                         appearance="plain"
                         size="small"
                         @click="${this.openSettings}">
-                        <wa-icon name="gear" label="Settings"></wa-icon>
+                        <wa-icon name="gear" label="${t('SETTINGS')}"></wa-icon>
                     </wa-button>
                 </div>
             </div>

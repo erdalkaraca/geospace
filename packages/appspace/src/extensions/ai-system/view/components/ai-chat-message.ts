@@ -4,6 +4,7 @@ import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { when } from 'lit/directives/when.js';
 import { marked } from 'marked';
 import type { ChatMessage } from '../../core/types';
+import { t } from '../../ai-system-extension';
 
 @customElement('ai-chat-message')
 export class AIChatMessage extends LitElement {
@@ -41,7 +42,7 @@ export class AIChatMessage extends LitElement {
         return markdownHtml.replace(/<pre><code([^>]*)>([\s\S]*?)<\/code><\/pre>/gi, (match, attrs, codeText) => {
             return `<div class="code-block-wrapper">
                 <div class="code-block-header">
-                    <wa-copy-button value="${this.escapeHtmlAttribute(codeText.trim())}" size="small" label="Copy code"></wa-copy-button>
+                    <wa-copy-button value="${this.escapeHtmlAttribute(codeText.trim())}" size="small" label="${t('COPY_CODE')}"></wa-copy-button>
                 </div>
                 <div class="code-block-content">
                     <pre><code${attrs}>${codeText}</code></pre>
@@ -152,7 +153,7 @@ export class AIChatMessage extends LitElement {
                             </wa-icon>
                             <span class="role-name">${message.role}</span>
                             ${when(hasAttention, () => html`
-                                <wa-icon name="bell" label="Requires attention"></wa-icon>
+                                <wa-icon name="bell" label="${t('REQUIRES_ATTENTION')}"></wa-icon>
                             `)}
                             <span class="timestamp">${this.formatTimestamp()}</span>
                         </div>
@@ -161,9 +162,9 @@ export class AIChatMessage extends LitElement {
                                 variant="neutral"
                                 appearance="plain"
                                 size="small"
-                                title="Copy"
+                                title="${t('COPY')}"
                                 @click="${() => this.copyToClipboard(message.content)}">
-                                <wa-icon slot="label" name="copy" label="Copy"></wa-icon>
+                                <wa-icon slot="label" name="copy" label="${t('COPY')}"></wa-icon>
                             </wa-button>
                             ${when(message.actions?.length, () => html`
                                 ${message.actions!.map(a => html`
@@ -205,14 +206,14 @@ export class AIChatMessage extends LitElement {
                                                 appearance="filled"
                                                 size="small"
                                 @click="${() => this.handleAttentionResponse(reqIndex, request, true)}">
-                                Confirm
+                                ${t('CONFIRM')}
                             </wa-button>
                             <wa-button
                                 variant="neutral"
                                 appearance="plain"
                                 size="small"
                                 @click="${() => this.handleAttentionResponse(reqIndex, request, false)}">
-                                Cancel
+                                ${t('CANCEL')}
                             </wa-button>
                                         `)}
                                         ${when(request.type === 'input', () => html`
@@ -220,7 +221,7 @@ export class AIChatMessage extends LitElement {
                                                 <wa-input
                                                     value="${this.attentionInputValue}"
                                                     @input="${(e: Event) => { this.attentionInputValue = (e.target as HTMLInputElement).value }}"
-                                                    placeholder="Enter your response...">
+                                                    placeholder="${t('ENTER_RESPONSE')}">
                                                 </wa-input>
                                                 <wa-button
                                                     variant="brand"
@@ -228,7 +229,7 @@ export class AIChatMessage extends LitElement {
                                                     size="small"
                                                     ?disabled="${!this.attentionInputValue.trim()}"
                                                     @click="${() => this.handleAttentionResponse(reqIndex, request, this.attentionInputValue)}">
-                                                    Submit
+                                                    ${t('SUBMIT')}
                                                 </wa-button>
                                             </div>
                                         `)}
@@ -238,14 +239,14 @@ export class AIChatMessage extends LitElement {
                                                 appearance="filled"
                                                 size="small"
                                                 @click="${() => this.handleAttentionResponse(reqIndex, request, true)}">
-                                                Approve
+                                                ${t('APPROVE')}
                                             </wa-button>
                                             <wa-button
                                                 variant="neutral"
                                                 appearance="plain"
                                                 size="small"
                                                 @click="${() => this.handleAttentionResponse(reqIndex, request, false)}">
-                                                Reject
+                                                ${t('REJECT')}
                                             </wa-button>
                                         `)}
                                         ${when(request.type === 'execution', () => html`
@@ -254,14 +255,14 @@ export class AIChatMessage extends LitElement {
                                                 appearance="filled"
                                                 size="small"
                                                 @click="${() => this.handleAttentionResponse(reqIndex, request, true)}">
-                                                Execute
+                                                ${t('EXECUTE')}
                                             </wa-button>
                                             <wa-button
                                                 variant="neutral"
                                                 appearance="plain"
                                                 size="small"
                                                 @click="${() => this.handleAttentionResponse(reqIndex, request, false)}">
-                                                Cancel
+                                                ${t('CANCEL')}
                                             </wa-button>
                                         `)}
                                     </div>
@@ -280,7 +281,7 @@ export class AIChatMessage extends LitElement {
                                         bubbles: true,
                                         composed: true
                                     }))}">
-                                    Continue Workflow
+                                    ${t('CONTINUE_WORKFLOW')}
                                 </wa-button>
                             </div>
                         `)}
@@ -290,17 +291,17 @@ export class AIChatMessage extends LitElement {
                             variant="neutral"
                             appearance="plain"
                             size="small"
-                            title="Copy"
+                            title="${t('COPY')}"
                             @click="${() => this.copyToClipboard(message.content)}">
-                            <wa-icon name="copy" label="Copy"></wa-icon>
+                            <wa-icon name="copy" label="${t('COPY')}"></wa-icon>
                         </wa-button>
                         <wa-button
                             variant="neutral"
                             appearance="plain"
                             size="small"
-                            title="Resend"
+                            title="${t('RESEND')}"
                             @click="${(e: Event) => this.handleResend(e)}">
-                            <wa-icon name="rotate-right" label="Resend"></wa-icon>
+                            <wa-icon name="rotate-right" label="${t('RESEND')}"></wa-icon>
                         </wa-button>
                     `)}
                 </div>

@@ -7,6 +7,9 @@ import { contributionRegistry, TabContribution, ContributionChangeEvent, TOPIC_C
 import { subscribe } from '../core/events'
 import { Signal } from '@lit-labs/signals'
 import { KTabs } from '../parts/k-tabs'
+import { i18n } from '../core/i18n'
+
+const t = i18n('fastviews');
 
 @customElement('k-fastviews')
 export class KFastViews extends KWidget {
@@ -248,7 +251,7 @@ export class KFastViews extends KWidget {
             ${!this.containerId ? html`
                 <wa-drawer 
                     ${ref(this.drawerRef)}
-                    label="${this.title || 'Fast Views'}"
+                    label="${this.title || t('FAST_VIEWS')}"
                     placement="end"
                     ?open=${this.drawerOpen}
                     @wa-hide=${this.handleDrawerHide}

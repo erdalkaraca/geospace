@@ -13,6 +13,10 @@ import { KPart } from "../../parts/k-part";
 import { TOOLBAR_MAIN_CENTER } from "../../core/constants";
 import { subscribe } from "../../core/events";
 import { CommandRegistry, ExecutionContext, commandRegistry } from "../../api";
+import { SYSTEM_LANGUAGE_BUNDLES, i18n } from "../../core/i18n";
+import commandpaletteBundle from "./commandpalette.json";
+
+const t = i18n('commandpalette');
 
 // Event topic for opening the command palette
 const TOPIC_OPEN_COMMAND_PALETTE = "commandpalette/open";
@@ -230,7 +234,7 @@ export class KCommandPalette extends KPart {
 
         if (missingParams && missingParams.length > 0) {
             if ((this as any).toastError) {
-                (this as any).toastError(`Missing required parameters: ${missingParams.join(', ')}`);
+                (this as any).toastError(t('MISSING_REQUIRED_PARAMS', { params: missingParams.join(', ') }));
             }
             return;
         }
@@ -403,7 +407,7 @@ export class KCommandPalette extends KPart {
         return html`
             <wa-input
                 ${ref(this.inputRef)}
-                placeholder="Type a command name..."
+                placeholder="${t('PLACEHOLDER')}"
                 .value=${this.inputValue}
                 @input=${this.handleInputChange}
                 @keydown=${this.handleKeyDown}
@@ -443,8 +447,8 @@ export class KCommandPalette extends KPart {
                     `)}
                 ` : html`
                     <div class="no-results">
-                        <wa-icon name="search" label="No results" style="font-size: 24px; margin-bottom: 4px; opacity: 0.3;"></wa-icon>
-                        <div>No commands found</div>
+                        <wa-icon name="search" label="${t('NO_COMMANDS_FOUND')}" style="font-size: 24px; margin-bottom: 4px; opacity: 0.3;"></wa-icon>
+                        <div>${t('NO_COMMANDS_FOUND')}</div>
                     </div>
                 `}
             </div>
@@ -452,20 +456,20 @@ export class KCommandPalette extends KPart {
             ${this.showParameterPrompt && this.selectedCommand ? html`
                 <wa-dialog 
                     ${ref(this.dialogRef)}
-                    label="${this.selectedCommand.name} - Parameters"
+                    label="${this.selectedCommand.name} - ${t('PARAMETERS')}"
                     open
                     @wa-request-close=${this.closeParameterPrompt}
                     @click=${this.handleDialogClick}
                 >
                     <div class="parameter-prompt-title">
-                        Enter parameters for ${this.selectedCommand.name}
+                        ${t('ENTER_PARAMETERS', { commandName: this.selectedCommand.name })}
                     </div>
                     ${this.selectedCommand.parameters?.map((param: any) => html`
                         <div class="parameter-field">
                             <wa-input
                                 label="${param.name}${param.required ? ' *' : ''}"
                                 hint=${param.description || ''}
-                                placeholder=${param.description || `Enter ${param.name}`}
+                                placeholder=${param.description || t('ENTER_PARAM', { paramName: param.name })}
                                 .value=${this.parameterValues[param.name] || ''}
                                 @input=${(e: Event) => this.handleParameterInput(param.name, (e.target as any).value)}
                             ></wa-input>
@@ -473,10 +477,10 @@ export class KCommandPalette extends KPart {
                     `)}
                     <div class="parameter-actions">
                         <wa-button variant="default" @click=${this.closeParameterPrompt}>
-                            Cancel
+                            ${t('CANCEL')}
                         </wa-button>
                         <wa-button variant="primary" @click=${this.executeWithParameters}>
-                            Execute
+                            ${t('EXECUTE')}
                         </wa-button>
                     </div>
                 </wa-dialog>
@@ -486,6 +490,10 @@ export class KCommandPalette extends KPart {
 }
 
 export default ({ contributionRegistry, commandRegistry, toastInfo, toastError, html, publish }: any) => {
+    // Register language bundle
+    contributionRegistry.registerContribution(SYSTEM_LANGUAGE_BUNDLES,
+        commandpaletteBundle as any);
+
     // Register command to open palette using events
     commandRegistry.registerHandler('commandpalette.open', {
         execute: () => {
@@ -496,8 +504,8 @@ export default ({ contributionRegistry, commandRegistry, toastInfo, toastError, 
 
     commandRegistry.registerCommand({
         id: 'commandpalette.open',
-        name: 'Open Command Palette',
-        description: 'Opens the command palette to execute commands',
+        name: t('OPEN_COMMAND_PALETTE'),
+        description: t('OPEN_COMMAND_PALETTE_DESC'),
         icon: 'terminal',
         keyBinding: 'CTRL+SHIFT+P'
     });

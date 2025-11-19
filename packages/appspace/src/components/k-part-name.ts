@@ -5,8 +5,9 @@ import {activePartSignal} from "../core/appstate";
 import {contributionRegistry, HTMLContribution} from "../core/contributionregistry";
 import {TOOLBAR_BOTTOM_CENTER} from "../core/constants";
 import '../widgets/k-icon';
+import {i18n} from "../core/i18n";
 
-const NO_PART_LABEL = "<no part>";
+const t = i18n('partname');
 
 contributionRegistry.registerContribution(TOOLBAR_BOTTOM_CENTER, {
     html: "<k-part-name></k-part-name>"
@@ -23,10 +24,10 @@ export class KPartName extends KElement {
     private getPartName(): string {
         const activePart = activePartSignal.get();
         if (!activePart) {
-            return NO_PART_LABEL;
+            return t('NO_PART');
         }
 
-        return activePart.tabContribution?.label || activePart.getAttribute('id') || NO_PART_LABEL;
+        return activePart.tabContribution?.label || activePart.getAttribute('id') || t('NO_PART');
     }
 
     protected render() {
@@ -37,7 +38,7 @@ export class KPartName extends KElement {
             <wa-button 
                 appearance="plain"
                 size="small"
-                title="Active part">
+                title="${t('ACTIVE_PART')}">
                 <k-icon slot="start" name="${partIcon}" label="Part"></k-icon>
                 ${this.getPartName()}
             </wa-button>

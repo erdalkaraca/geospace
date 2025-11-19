@@ -144,6 +144,7 @@ export class KLanguageSelector extends KElement {
     protected render() {
         const currentLanguage = currentLanguageSignal.get();
         const languageName = getLanguageName(currentLanguage);
+        const buttonLabel = `${currentLanguage.toUpperCase()} ${languageName}`;
         
         return html`
             <wa-button 
@@ -151,7 +152,7 @@ export class KLanguageSelector extends KElement {
                 size="small"
                 title="Current language: ${languageName}"
                 @click=${() => showLanguageSelectorDialog()}>
-                ${languageName}
+                ${buttonLabel}
             </wa-button>
         `;
     }

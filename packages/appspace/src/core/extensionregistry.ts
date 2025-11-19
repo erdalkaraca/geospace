@@ -24,15 +24,17 @@ const KEY_EXTERNAL_EXTENSIONS = "extensions.external"
  * })
  * ```
  */
+import { UILabel } from "./i18n";
+
 export interface Extension {
     /** Unique identifier for the extension (e.g., "system.notebook") */
     id: string;
     
     /** Human-readable name of the extension */
-    name: string;
+    name: UILabel;
     
     /** Optional description of what the extension does */
-    description?: string;
+    description?: UILabel;
     
     /** Optional URL to load the extension module from */
     url?: string;

@@ -3,6 +3,7 @@ import { customElement, property } from 'lit/decorators.js';
 import { when } from 'lit/directives/when.js';
 import { repeat } from 'lit/directives/repeat.js';
 import type { ChatMessage } from '../../core/types';
+import { t } from '../../ai-system-extension';
 import './ai-agent-response-card';
 
 interface AgentResponseInfo {
@@ -66,8 +67,8 @@ export class AIAgentResponseGroup extends LitElement {
                 ${when(!isSingleAgent, () => html`
                     <div class="agent-group-header">
                         <div class="agent-group-title">
-                            <wa-icon name="robot" label="Multiple Agents"></wa-icon>
-                            <span>Multiple Agents Responded</span>
+                            <wa-icon name="robot" label="${t('MULTIPLE_AGENTS')}"></wa-icon>
+                            <span>${t('MULTIPLE_AGENTS')}</span>
                             ${when(!allCompleted, () => html`
                                 <span class="agent-status-badge">
                                     ${when(streamingCount > 0, () => html`
@@ -105,8 +106,8 @@ export class AIAgentResponseGroup extends LitElement {
                 ${when(quickActions.length > 0 && allCompleted, () => html`
                     <div class="quick-actions-bar">
                         <div class="quick-actions-label">
-                            <wa-icon name="bolt" label="Quick Actions"></wa-icon>
-                            <span>Quick Actions</span>
+                            <wa-icon name="bolt" label="${t('QUICK_ACTIONS')}"></wa-icon>
+                            <span>${t('QUICK_ACTIONS')}</span>
                         </div>
                         <div class="quick-actions-buttons">
                             ${repeat(quickActions, (action, index) => index.toString(), (action) => html`
