@@ -13,17 +13,6 @@
         Pace.start();
     </script>
     <script type="module">
-        // Wait for all resources (including CSS) to be loaded before starting the app
-        if (document.readyState !== 'complete') {
-            await new Promise<void>((resolve) => {
-                if (document.readyState === 'complete') {
-                    resolve();
-                } else {
-                    window.addEventListener('load', () => resolve(), { once: true });
-                }
-            });
-        }
-        
         // TODO: Create an entry file (e.g., ./src/my-app-entry.ts) that:
         // 1. Waits for document load (copy the code above)
         // 2. Imports your app definition: import "./my-app.ts";
