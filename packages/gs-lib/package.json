@@ -18,6 +18,10 @@
       "import": "./dist/index.js"
     }
   },
+  "sideEffects": [
+    "*.css",
+    "dist/*.css"
+  ],
   "files": [
     "dist",
     "src",
