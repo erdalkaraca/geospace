@@ -5,11 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Loading...</title>
     
-    <!-- WebAwesome CSS - loaded before JavaScript to ensure CSS variables are available -->
-    <link rel="stylesheet" href="@awesome.me/webawesome/dist/styles/native.css">
-    <link rel="stylesheet" href="@awesome.me/webawesome/dist/styles/utilities.css">
-    <link rel="stylesheet" href="@awesome.me/webawesome/dist/styles/themes/default.css">
-
     <!-- Pace.js loading indicator -->
     <link rel="stylesheet" href="pace-js/themes/blue/pace-theme-minimal.css">
     <script type="module">
@@ -18,14 +13,26 @@
         Pace.start();
     </script>
     <script type="module">
-        // TODO: Replace with your app definition file path
-        // Example: import "./src/my-app.ts";
+        // Wait for all resources (including CSS) to be loaded before starting the app
+        if (document.readyState !== 'complete') {
+            await new Promise<void>((resolve) => {
+                if (document.readyState === 'complete') {
+                    resolve();
+                } else {
+                    window.addEventListener('load', () => resolve(), { once: true });
+                }
+            });
+        }
+        
+        // TODO: Create an entry file (e.g., ./src/my-app-entry.ts) that:
+        // 1. Waits for document load (copy the code above)
+        // 2. Imports your app definition: import "./my-app.ts";
+        // Then reference it here: <script type="module" src="./src/my-app-entry.ts"></script>
         // 
         // Your app definition should:
         // 1. Import from @kispace-io/appspace/api (this bootstraps the framework)
         // 2. Register the app with appLoaderService.registerApp(app, { autoStart: true, ... })
         // The app loader will automatically start when autoStart: true is set
-        // import "./src/your-app-definition.ts";
     </script>
 </head>
 <body>

@@ -5,11 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Loading...</title>
 
-    <!-- WebAwesome CSS - loaded before JavaScript to ensure CSS variables are available -->
-    <link rel="stylesheet" href="@awesome.me/webawesome/dist/styles/native.css">
-    <link rel="stylesheet" href="@awesome.me/webawesome/dist/styles/utilities.css">
-    <link rel="stylesheet" href="@awesome.me/webawesome/dist/styles/themes/default.css">
-
     <!-- Pace.js loading indicator -->
     <link rel="stylesheet" href="./loading-bar.css">
     <script type="module">
@@ -18,12 +13,7 @@
         Pace.start();
     </script>
     
-    <script type="module">
-        // Import the app definition - it will register itself with autoStart: true
-        // The framework bootstraps automatically when importing from @kispace-io/appspace/api
-        // The app loader will automatically start when the app registers with autoStart: true
-        import "./src/geospace-app.ts";
-    </script>
+    <script type="module" src="./src/geospace-app-entry.ts"></script>
 </head>
 
 <body>
