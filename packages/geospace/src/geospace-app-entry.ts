@@ -10,7 +10,6 @@ if (document.readyState !== 'complete') {
 }
 
 // Import the app definition after resources are loaded
-// The framework bootstraps automatically when importing from @kispace-io/appspace/api
-// The app loader will automatically start when the app registers with autoStart: true
-import "./geospace-app.ts";
+// Using dynamic import ensures this runs after the wait logic
+await import("./geospace-app");
 
