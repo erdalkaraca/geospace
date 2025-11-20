@@ -7,7 +7,7 @@ import { EditorInput } from '../../../../core/editorregistry';
 import { appSettings, TOPIC_SETTINGS_CHANGED } from '../../../../core/settingsservice';
 import { KEY_AI_CONFIG, TOPIC_AICONFIG_CHANGED, CID_CHAT_PROVIDERS } from '../../core/constants';
 import { subscribe } from '../../../../core/events';
-import { confirmDialog } from '../../../../core/dialog';
+import { confirmDialog } from '../../../../dialogs';
 import { contributionRegistry } from '../../../../core/contributionregistry';
 import { ProviderFactory } from '../../providers/provider-factory';
 import type { AIConfig, ChatProvider } from '../../core/types';

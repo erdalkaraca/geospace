@@ -6,7 +6,7 @@ import { EditorInput, editorRegistry } from "../../core/editorregistry";
 import { appSettings, TOPIC_SETTINGS_CHANGED } from "../../core/settingsservice";
 import { subscribe } from "../../core/events";
 import { commandRegistry } from "../../core/commandregistry";
-import { promptDialog, confirmDialog } from "../../core/dialog";
+import { promptDialog, confirmDialog } from "../../dialogs";
 
 interface TreeNode {
     key: string;

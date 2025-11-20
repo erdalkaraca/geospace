@@ -3,7 +3,7 @@ import { KElement } from "../../../parts/k-element";
 import { html, css } from "lit";
 import { tokenUsageTracker } from "../service/token-usage-tracker";
 import { subscribe } from "../../../core/events";
-import { confirmDialog } from "../../../core/dialog";
+import { confirmDialog } from "../../../dialogs";
 import { TOPIC_AI_STREAM_COMPLETE } from "../core/constants";
 import type { ProviderTokenUsage } from "../core/types";
 import { t } from "../ai-system-extension";

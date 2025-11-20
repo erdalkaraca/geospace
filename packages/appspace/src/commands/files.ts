@@ -1,7 +1,7 @@
 import {registerAll, type ExecutionContext} from "../core/commandregistry";
 import {File, workspaceService, Directory} from "../core/filesys";
 import {toastError, toastInfo} from "../core/toast";
-import {promptDialog, confirmDialog} from "../core/dialog";
+import {promptDialog, confirmDialog} from "../dialogs";
 import {activeSelectionSignal} from "../core/appstate";
 import {editorRegistry, EditorContentProvider} from "../core/editorregistry";
 import logger from "../core/logger";

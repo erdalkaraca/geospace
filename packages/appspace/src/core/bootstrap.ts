@@ -12,7 +12,7 @@ import '../i18n';
 
 // Initialize core services (set up global event listeners and state)
 import './keybindings';  // Sets up global keyboard event listener
-import './dialog';       // Initializes dialog utilities
+import '../dialogs';     // Initializes dialog utilities
 
 // Register framework parts (k-* components)
 import '../parts/index';

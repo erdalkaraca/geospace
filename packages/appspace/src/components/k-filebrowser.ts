@@ -18,7 +18,7 @@ import { HIDE_DOT_RESOURCE } from "../core/constants";
 import { commandRegistry } from "../core/commandregistry";
 import { TreeNode, treeNodeComparator } from "../core/tree-utils";
 import { activeSelectionSignal } from "../core/appstate";
-import { confirmDialog } from "../core/dialog";
+import { confirmDialog } from "../dialogs";
 import { editorRegistry } from "../core/editorregistry";
 import { TOPIC_CONTRIBUTEIONS_CHANGED, type ContributionChangeEvent } from '../core/contributionregistry';
 import { i18n } from '../core/i18n';

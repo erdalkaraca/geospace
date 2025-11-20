@@ -36,7 +36,7 @@ export type {
 } from '../core/logger';
 export type {
     NavigableDialogAction
-} from '../core/dialog';
+} from '../dialogs';
 export type {
     TreeNode,
     TreeContribution

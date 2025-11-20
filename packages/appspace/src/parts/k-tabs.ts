@@ -12,7 +12,7 @@ import {KToolbar} from "./k-toolbar";
 import {KContextMenu} from "./k-contextmenu";
 import {MouseButton, EDITOR_AREA_MAIN} from "../core/constants";
 import {activePartSignal} from "../core/appstate";
-import {confirmDialog} from "../core/dialog";
+import {confirmDialog} from "../dialogs";
 import {appLoaderService} from "../core/apploader";
 
 /**

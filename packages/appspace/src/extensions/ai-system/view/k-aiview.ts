@@ -24,7 +24,7 @@ import { SessionManager } from "./session-manager";
 import { StreamManager } from "./stream-manager";
 import { ProviderManager } from "./provider-manager";
 import { AgentGroupManager } from "./agent-group-manager";
-import { confirmDialog } from "../../../core/dialog";
+import { confirmDialog } from "../../../dialogs";
 import { t } from "../ai-system-extension";
 
 @customElement('k-aiview')

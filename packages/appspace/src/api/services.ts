@@ -28,7 +28,7 @@ export {
     confirmDialog,
     promptDialog,
     type NavigableDialogAction
-} from '../core/dialog';
+} from '../dialogs';
 export { 
     toastInfo,
     toastError,
