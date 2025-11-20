@@ -53,18 +53,11 @@ export default defineConfig({
         return `${entryName}.js`;
       },
     },
-    cssCodeSplit: false,
     rollupOptions: {
       external: isExternal,
       output: {
         preserveModules: false,
         entryFileNames: '[name].js',
-        assetFileNames: (assetInfo) => {
-          if (assetInfo.name && assetInfo.name.endsWith('.css')) {
-            return 'gs-lib.css';
-          }
-          return assetInfo.name || 'asset';
-        },
         format: 'es',
         // Output a single file to make it easier to copy for build service
         inlineDynamicImports: true,

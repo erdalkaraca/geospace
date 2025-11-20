@@ -4,6 +4,7 @@ import {fileURLToPath} from "url";
 import path from 'path';
 import mkcert from 'vite-plugin-mkcert';
 import crossOriginIsolation from 'vite-plugin-cross-origin-isolation';
+import {cssBeforeJsPlugin} from '../appspace/src/vite-plugin-css-before-js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -26,6 +27,7 @@ export default defineConfig({
     plugins: [
         mkcert(),
         crossOriginIsolation(),
+        cssBeforeJsPlugin(),
     ],
     base: process.env.VITE_BASE_PATH || '/',
     worker: {
