@@ -47,6 +47,11 @@ import '@awesome.me/webawesome/dist/components/tooltip/tooltip.js';
 import '@awesome.me/webawesome/dist/components/tree/tree.js';
 import '@awesome.me/webawesome/dist/components/zoomable-frame/zoomable-frame.js';
 
+// Import WebAwesome styles - import individually to ensure they're bundled correctly in production
+import '@awesome.me/webawesome/dist/styles/native.css';
+import '@awesome.me/webawesome/dist/styles/utilities.css';
+import '@awesome.me/webawesome/dist/styles/themes/default.css';
+
 import {
     registerIconLibrary
 } from "@awesome.me/webawesome/dist/webawesome.loader.js";
