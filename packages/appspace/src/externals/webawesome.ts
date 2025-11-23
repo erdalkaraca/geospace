@@ -1,3 +1,4 @@
+// unfortunately, webawesome has no all-in-one import, so we need to import each component individually
 import '@awesome.me/webawesome/dist/components/animated-image/animated-image.js';
 import '@awesome.me/webawesome/dist/components/animation/animation.js';
 import '@awesome.me/webawesome/dist/components/avatar/avatar.js';
@@ -47,23 +48,7 @@ import '@awesome.me/webawesome/dist/components/tooltip/tooltip.js';
 import '@awesome.me/webawesome/dist/components/tree/tree.js';
 import '@awesome.me/webawesome/dist/components/zoomable-frame/zoomable-frame.js';
 
-// Import WebAwesome styles - import individually to ensure they're bundled correctly in production
+// Import default WebAwesome styles
 import '@awesome.me/webawesome/dist/styles/native.css';
 import '@awesome.me/webawesome/dist/styles/utilities.css';
 import '@awesome.me/webawesome/dist/styles/themes/default.css';
-
-import {
-    registerIconLibrary
-} from "@awesome.me/webawesome/dist/webawesome.loader.js";
-
-registerIconLibrary('fg', {
-    resolver: (name, _family, _variant) => {
-        return import.meta.resolve(`${import.meta.env.VITE_BASE_PATH || ""}/icon-libs/font-gis.svg`) + `#fg-${name}`
-    },
-    mutator: svg => {
-        svg.setAttribute('fill', 'currentColor')
-        svg.setAttribute('width', '16')
-        svg.setAttribute('height', '16')
-    },
-    spriteSheet: true
-})
