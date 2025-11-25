@@ -1,4 +1,4 @@
-import { css, html, unsafeCSS, customElement, property, createRef, ref, Ref, when, keyed } from '@kispace-io/appspace/externals/lit-exports';
+import { css, html, unsafeCSS, customElement, property, createRef, ref, Ref, when, keyed } from '@kispace-io/appspace/externals/lit';
 import { DEFAULT_GSMAP, ensureUuidsRecursive, GsMap, GsLayerType, GsSourceType, DEFAULT_STYLES, DEFAULT_STYLE_RULES } from "@kispace-io/gs-lib";
 import { findLayerByUuid } from "./map-renderer";
 import { mapChangedSignal, MapEvents, FeatureSelection } from "./gs-signals";

@@ -1,6 +1,6 @@
 import {rtUtils} from "@kispace-io/gs-lib";
 import {toBlobUri} from "./utils";
-import {html} from "@kispace-io/appspace/externals/lit-exports";
+import {html} from "@kispace-io/appspace/externals/lit";
 import {
     EditorInput,
     editorRegistry,

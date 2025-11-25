@@ -1,4 +1,4 @@
-import { html, render } from "@kispace-io/appspace/externals/lit-exports";
+import { html, render } from "@kispace-io/appspace/externals/lit";
 import {GsMapEditor} from "../../geo/gs-map-editor";
 import {browserMapBuilder} from "./browser-map-builder";
 import {

@@ -12,7 +12,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@kispace-io/appspace": "file:../appspace",
+    "@kispace-io/appspace": "^1.1.11",
     "@kispace-io/gs-lib": "file:../gs-lib",
     "esbuild-wasm": "^0.25.11",
     "osmtogeojson": "^3.0.0-beta.5",
@@ -22,8 +22,6 @@
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",
     "@types/node": "^24.9.2",
-    "@types/pubsub-js": "^1.8.6",
-    "@types/toastify-js": "^1.12.4",
     "@vitest/coverage-v8": "^4.0.6",
     "@vitest/ui": "^4.0.6",
     "happy-dom": "^20.0.10",

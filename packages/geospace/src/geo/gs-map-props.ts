@@ -1,4 +1,4 @@
-import {css, html, customElement, state, when} from '@kispace-io/appspace/externals/lit-exports';
+import {css, html, customElement, state, when} from '@kispace-io/appspace/externals/lit';
 import {GsMapEditor} from "./gs-map-editor";
 import {mapChangedSignal} from "./gs-signals";
 import {GsLayer, GsControl, GsOverlay} from "@kispace-io/gs-lib";

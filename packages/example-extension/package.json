@@ -19,7 +19,7 @@
     "dev": "vite build --watch"
   },
   "dependencies": {
-    "@kispace-io/appspace": "file:../appspace"
+    "@kispace-io/appspace": "^1.1.11"
   },
   "devDependencies": {
     "typescript": "^5.9.3",

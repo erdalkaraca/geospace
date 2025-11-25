@@ -1,4 +1,4 @@
-import { html } from "@kispace-io/appspace/externals/lit-exports";
+import { html } from "@kispace-io/appspace/externals/lit";
 import geospacePackageJson from "../package.json";
 const appVersion = geospacePackageJson.version;
 

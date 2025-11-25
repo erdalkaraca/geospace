@@ -12,10 +12,7 @@
     "experimentalDecorators": true,
     "useDefineForClassFields": false,
     "baseUrl": ".",
-    "paths": {
-      "@kispace-io/appspace": ["../appspace/src"],
-      "@kispace-io/appspace/*": ["../appspace/src/*"]
-    }
+    "paths": {}
   },
   "include": ["src/**/*"]
 }

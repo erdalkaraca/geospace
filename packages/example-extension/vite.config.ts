@@ -24,10 +24,5 @@ export default defineConfig({
     sourcemap: true,
     minify: false
   },
-  resolve: {
-    alias: {
-      '@kispace-io/appspace': resolve(__dirname, '../appspace/src')
-    }
-  }
 });
 

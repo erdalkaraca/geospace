@@ -15,10 +15,7 @@ const isExternal = (id: string) => {
   if (id.startsWith('./') || id.startsWith('../')) {
     return false;
   }
-  // Bundle appspace imports (for webawesome-components)
-  if (id.startsWith('@kispace-io/appspace')) {
-    return false;
-  }
+  // appspace is now an external dependency from npm
   // Bundle absolute paths to source files (entry points)
   if (path.isAbsolute(id) && id.includes('/src/')) {
     return false;
@@ -31,9 +28,7 @@ const isExternal = (id: string) => {
 
 export default defineConfig({
   resolve: {
-    alias: {
-      '@kispace-io/appspace': path.resolve(__dirname, '../appspace/src'),
-    },
+    alias: {},
   },
   plugins: [
     dts({

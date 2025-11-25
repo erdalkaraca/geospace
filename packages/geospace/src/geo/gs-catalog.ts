@@ -1,4 +1,4 @@
-import {css, html, TemplateResult, customElement, state, createRef, ref} from '@kispace-io/appspace/externals/lit-exports';
+import {css, html, TemplateResult, customElement, state, createRef, ref} from '@kispace-io/appspace/externals/lit';
 import {
     KPart,
     TreeContribution,

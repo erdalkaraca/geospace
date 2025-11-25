@@ -49,7 +49,7 @@ import {Control} from "ol/control";
 import * as ol from "./gs-olns"
 import {lit} from "./gs-litns";
 import {v4 as uuidv4} from '@kispace-io/appspace/externals/third-party'
-import PubSub from '@kispace-io/appspace/externals/third-party'
+import {subscribe, publish, unsubscribe} from '@kispace-io/appspace/api'
 import {GsControlAdapter, GsOverlayAdapter} from "./gs-ol-adapters";
 import {rtUtils} from "./index";
 import Layer from "ol/layer/Layer";
@@ -441,7 +441,7 @@ const importSrc = async (adapter: GsControlAdapter | GsOverlayAdapter, src: stri
                 },
                 events: (topic: string, callback: Function | any) => {
                     if (callback instanceof Function) {
-                        const token = PubSub.subscribe(topic, (_message: string, data: any) => callback(data));
+                        const token = subscribe(topic, callback);
                         let subscriptions = olMap.get(KEY_EVENT_SUBSCRIPTIONS) as string[] | undefined;
                         if (!subscriptions) {
                             subscriptions = [];
@@ -450,7 +450,7 @@ const importSrc = async (adapter: GsControlAdapter | GsOverlayAdapter, src: stri
                         subscriptions.push(token);
                         return token;
                     } else {
-                        return PubSub.publish(topic, callback);
+                        return publish(topic, callback);
                     }
                 },
                 settings: (key: string, callback?: Function | any) => {
@@ -489,7 +489,7 @@ const importSrc = async (adapter: GsControlAdapter | GsOverlayAdapter, src: stri
                     settings[key] = callback;
                     saveSettings(settings);
                     // publish as event to inform settings listeners
-                    return PubSub.publish(key, callback);
+                    return publish(key, callback);
                 }
             }
             const objectType = adapter instanceof GsControlAdapter ? "control" : "overlay"
@@ -592,7 +592,7 @@ export const DefaultImporter: Importer = (src: string) => import(src)
 export const cleanupEventSubscriptions = (olMap: Map): void => {
     const subscriptions = olMap.get(KEY_EVENT_SUBSCRIPTIONS) as string[] | undefined;
     if (subscriptions) {
-        subscriptions.forEach(token => PubSub.unsubscribe(token));
+        subscriptions.forEach(token => unsubscribe(token));
         olMap.set(KEY_EVENT_SUBSCRIPTIONS, []);
     }
 }

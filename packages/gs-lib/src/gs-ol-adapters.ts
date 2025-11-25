@@ -1,6 +1,6 @@
 import {Map} from "ol";
 import {GsOlControl, GsOlOverlay} from "./gs-gs2ol";
-import {render as litRender} from "@kispace-io/appspace/externals/lit-exports";
+import {render as litRender} from "@kispace-io/appspace/externals/lit";
 
 export class GsOlAdapter<T extends GsOlControl | GsOlOverlay> {
     protected map: Map;

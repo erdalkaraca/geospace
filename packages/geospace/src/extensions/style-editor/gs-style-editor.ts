@@ -1,4 +1,4 @@
-import { css, html, LitElement, customElement, property, state } from '@kispace-io/appspace/externals/lit-exports'
+import { css, html, LitElement, customElement, property, state } from '@kispace-io/appspace/externals/lit'
 import { GsMap, GsStyle, GsStyleRule, GsStylesMap } from "@kispace-io/gs-lib";
 
 @customElement('gs-style-editor')

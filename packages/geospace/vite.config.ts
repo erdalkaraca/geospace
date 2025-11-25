@@ -11,14 +11,17 @@ export default defineConfig({
     root: __dirname,
     resolve: {
         alias: {
-            '@kispace-io/appspace': path.resolve(__dirname, '../appspace/src'),
             '@kispace-io/gs-lib': path.resolve(__dirname, '../gs-lib/src'),
             // Alias for dist files (used by build service)
             '@kispace-io/gs-lib/dist': path.resolve(__dirname, '../gs-lib/dist'),
             // Alias for public files (used by build service)
             // Public folder is included in the npm package, so we can import directly
             '@kispace-io/gs-lib/public': path.resolve(__dirname, '../gs-lib/public')
-        }
+        },
+        // Dedupe lit imports - ensure all lit imports resolve to the same instance
+        // This prevents multiple versions from being loaded when appspace uses direct "lit" imports
+        // appspace has 160+ files using direct "lit" imports instead of externals/lit
+        dedupe: ['lit']
     },
     optimizeDeps: {
         exclude: ['pyodide', '@kispace-io/appspace']
