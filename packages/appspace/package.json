@@ -98,7 +98,7 @@
     "idb-keyval": "^6.2.2",
     "jsonata": "^2.1.0",
     "jszip": "^3.10.1",
-    "monaco-editor": "^0.54.0",
+    "monaco-editor": "0.55.1",
     "pace-js": "^1.2.4",
     "pdfjs-dist": "^4.0.0",
     "pip-requirements-js": "^1.0.2",
