@@ -1,0 +1,1 @@
+import{r,L as o}from"./geospace-app-CEA0mcDY.js";import"./preload-helper-WQhrSmCl.js";import"./index-BMTNPmID.js";import"./chunk.LTSJC6DR-BTS7fm5P.js";import"./chunk.RRCUZAZD-5O78oK5S.js";const p=({})=>{r.put("inBrowserMLService",o)};export{p as default};
