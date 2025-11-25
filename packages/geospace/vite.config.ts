@@ -24,7 +24,7 @@ export default defineConfig({
         dedupe: ['lit']
     },
     optimizeDeps: {
-        exclude: ['pyodide', '@kispace-io/appspace']
+        exclude: []
     },
     plugins: [
         mkcert(),

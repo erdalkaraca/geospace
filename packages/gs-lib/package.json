@@ -36,7 +36,7 @@
     "ol-mapbox-style": "13.1.1"
   },
   "peerDependencies": {
-    "@kispace-io/appspace": "*",
+    "@kispace-io/appspace": "^1.0.0",
     "esbuild": "^0.27.0"
   },
   "publishConfig": {

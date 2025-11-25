@@ -12,11 +12,11 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@kispace-io/appspace": "^1.1.11",
+    "@kispace-io/appspace": "^1.1.24",
     "@kispace-io/gs-lib": "file:../gs-lib",
     "esbuild-wasm": "^0.25.11",
-    "osmtogeojson": "^3.0.0-beta.5",
     "font-gis": "^1.0.6",
+    "osmtogeojson": "^3.0.0-beta.5",
     "pace-js": "^1.2.4"
   },
   "devDependencies": {
