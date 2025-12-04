@@ -1,0 +1,12 @@
+import{M as l,N as p,x as v,Z as d,y as m,A as u}from"./index-8b_zEHWw.js";import{s as h}from"./xterm-CODBi7oP.js";import{K as w}from"./geospace-app-BEc6wX3y.js";import"./preload-helper-WQhrSmCl.js";import"./chunk.LTSJC6DR-BTS7fm5P.js";import"./chunk.RRCUZAZD-5O78oK5S.js";var D=Object.getOwnPropertyDescriptor,x=(a,r,o,i)=>{for(var e=i>1?void 0:i?D(r,o):r,t=a.length-1,n;t>=0;t--)(n=a[t])&&(e=n(e)||e);return e};const s=window.CheerpX;let c=class extends w{constructor(){super(...arguments),this.consoleRef=l()}async doInitUI(){const a=await s.CloudDevice.create("wss://disks.webvm.io/debian_large_20230522_5044875331.ext2"),r=await s.IDBDevice.create("block1"),o=await s.OverlayDevice.create(a,r),i=await s.WebDevice.create(""),e=await s.DataDevice.create(),t=await s.Linux.create({mounts:[{type:"ext2",path:"/",dev:o},{type:"dir",path:"/app",dev:i},{type:"dir",path:"/data",dev:e},{type:"devs",path:"/dev"}]});t.setConsole(this.consoleRef.value),await t.run("/bin/bash",["--login"],{env:["HOME=/home/user","HOME=/home/user","USER=user","SHELL=/bin/bash","EDITOR=vim","LANG=en_US.UTF-8","LC_ALL=C"],cwd:"/home/user",uid:1e3,gid:1e3})}render(){return v`
+            <pre class="console" ${p(this.consoleRef)}></pre>
+        `}};c.styles=[d(h),m`
+            :host {
+                display: flex;
+                flex: 1;
+            }
+
+            pre.console {
+                flex: 1;
+            }
+        `];c=x([u("k-linux-terminal")],c);export{c as KLinuxTerminal};
