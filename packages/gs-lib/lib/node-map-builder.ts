@@ -59,8 +59,8 @@ export async function createNodeResolvePlugin(projectRoot: string, gsLibPath: st
         name: 'node-resolve',
         setup(build: any) {
             build.onResolve({ filter: /.*/ }, (args: any) => {
-                // Skip external URLs
-                if (args.path.startsWith('http://') || args.path.startsWith('https://')) {
+                // Skip external URLs and data URLs
+                if (args.path.startsWith('http://') || args.path.startsWith('https://') || args.path.startsWith('data:')) {
                     return
                 }
                 
@@ -95,7 +95,16 @@ export async function createNodeResolvePlugin(projectRoot: string, gsLibPath: st
                 try {
                     const contents = await fs.readFile(args.path, 'utf-8')
                     const ext = path.extname(args.path)
-                    const loader = ext === '.ts' ? 'ts' : ext === '.js' ? 'js' : ext === '.json' ? 'json' : 'js'
+                    let loader = 'js'
+                    if (ext === '.ts') {
+                        loader = 'ts'
+                    } else if (ext === '.js') {
+                        loader = 'js'
+                    } else if (ext === '.json') {
+                        loader = 'json'
+                    } else if (ext === '.css') {
+                        loader = 'css'
+                    }
                     return { contents, loader }
                 } catch (error: any) {
                     throw new Error(`Failed to load ${args.path}: ${error.message}`)
