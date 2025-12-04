@@ -96,3 +96,18 @@ const updateName = async (event) => {
 // When content changes, esbuild generates a new hash, so the browser automatically fetches the new file
 const manifest = self.__WB_MANIFEST || [];
 workbox.precaching.precacheAndRoute(manifest);
+
+// Use NetworkFirst for index.html and manifest.json to always fetch the latest version
+// These files change with each build (index.html references new hashed app.js, manifest.json has new version)
+// NetworkFirst ensures we get the latest versions while still working offline
+workbox.routing.registerRoute(
+    ({ url }) => {
+        const pathname = url.pathname;
+        return pathname === '/' || 
+               pathname.endsWith('/index.html') || 
+               pathname.endsWith('/manifest.json');
+    },
+    new workbox.strategies.NetworkFirst({
+        cacheName: 'html-manifest-cache'
+    })
+);
