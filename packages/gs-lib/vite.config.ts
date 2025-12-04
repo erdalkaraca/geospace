@@ -15,15 +15,18 @@ const isExternal = (id: string) => {
   if (id.startsWith('./') || id.startsWith('../')) {
     return false;
   }
-  // appspace is now an external dependency from npm
+  // appspace is a peer dependency - should be external
+  if (id === '@kispace-io/appspace' || id.startsWith('@kispace-io/appspace/')) {
+    return true;
+  }
   // Bundle absolute paths to source files (entry points)
   if (path.isAbsolute(id) && id.includes('/src/')) {
     return false;
   }
-  // Bundle all dependencies to make gs-lib self-contained
+  // Bundle all other dependencies to make gs-lib self-contained
   // This is needed for the build service which runs in browser (esbuild-wasm)
   // and can't access node_modules
-  return false; // Bundle everything
+  return false; // Bundle everything else
 };
 
 export default defineConfig({
