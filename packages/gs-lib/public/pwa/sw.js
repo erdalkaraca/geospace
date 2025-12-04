@@ -2,9 +2,8 @@ importScripts(
     'https://storage.googleapis.com/workbox-cdn/releases/7.3.0/workbox-sw.js'
 );
 
-// Version management for PWA updates
-const CACHE_VERSION = '$PWA_VERSION';
-const CACHE_NAME = `geospace-v${CACHE_VERSION}`;
+// Workbox automatically manages cache versions based on precache manifest changes
+// Hashed filenames from esbuild ensure proper cache invalidation
 
 // This is your Service Worker, you can put any of your custom Service Worker
 // code in this file, above the `precacheAndRoute` line.
@@ -31,37 +30,23 @@ if (event.action == "updateName") {
 // periodic sync or widget-related state.
 self.addEventListener('widgetuninstall', (event) => {});
 
-// Handle service worker updates and version changes
+// Handle service worker updates
 self.addEventListener('install', (event) => {
-    console.log(`Service Worker installing version ${CACHE_VERSION}`);
+    console.log('Service Worker installing');
     // Skip waiting to activate immediately
     self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
-    console.log(`Service Worker activating version ${CACHE_VERSION}`);
+    console.log('Service Worker activating');
     event.waitUntil(
-        // Clean up old caches
-        caches.keys().then((cacheNames) => {
-            return Promise.all(
-                cacheNames.map((cacheName) => {
-                    // Delete caches that don't match current version
-                    if (cacheName.startsWith('geospace-v') && cacheName !== CACHE_NAME) {
-                        console.log(`Deleting old cache: ${cacheName}`);
-                        return caches.delete(cacheName);
-                    }
-                })
-            );
-        }).then(() => {
-            // Take control of all clients immediately
-            return self.clients.claim().then(() => {
-                // Notify all clients about the new version
-                return self.clients.matchAll().then(clients => {
-                    clients.forEach(client => {
-                        client.postMessage({
-                            type: 'RELOAD',
-                            version: CACHE_VERSION
-                        });
+        // Workbox automatically cleans up old precache entries
+        // We just need to take control and notify clients
+        self.clients.claim().then(() => {
+            return self.clients.matchAll().then(clients => {
+                clients.forEach(client => {
+                    client.postMessage({
+                        type: 'RELOAD'
                     });
                 });
             });
@@ -106,4 +91,8 @@ const updateName = async (event) => {
     await self.widgets.updateByInstanceId(event.instanceId, payload);
 }
 
-workbox.precaching.precacheAndRoute(self.__WB_MANIFEST || []);
+// Precache all assets with versioning
+// Hashed filenames from esbuild naturally handle cache invalidation
+// When content changes, esbuild generates a new hash, so the browser automatically fetches the new file
+const manifest = self.__WB_MANIFEST || [];
+workbox.precaching.precacheAndRoute(manifest);
