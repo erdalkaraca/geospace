@@ -65,7 +65,7 @@ export const toBlobUri = async (uri: string) => {
 }
 
 export const isAbsoluteResource = (url: string) => {
-    return url.startsWith("blob:") || url.startsWith("http:") || url.startsWith("https:");
+    return url.startsWith("blob:") || url.startsWith("http:") || url.startsWith("https:") || url.startsWith("data:");
 }
 
 export const _blobsLookup: any = {}

@@ -1,5 +1,12 @@
-import { css, html, LitElement, customElement, property, state } from '@kispace-io/appspace/externals/lit'
-import { GsMap, GsStyle, GsStyleRule, GsStylesMap } from "@kispace-io/gs-lib";
+import { html, LitElement, customElement, property, state } from '@kispace-io/appspace/externals/lit';
+import { GsMap, GsStyleRule, GsStylesMap } from "@kispace-io/gs-lib";
+
+import { styleEditorStyles } from './style-editor.styles';
+import { renderStylePreview } from './renderers/style-preview';
+import { renderStyleDetail } from './renderers/style-detail';
+import { renderRuleDetail } from './renderers/rule-detail';
+import { getGeometryTypesForStyle, getRuleConditionSummary } from './utils/geometry-utils';
+import { updateNestedProperty, createStyleUpdateHandlers } from './utils/style-update';
 
 @customElement('gs-style-editor')
 export class GsStyleEditor extends LitElement {
@@ -23,10 +30,11 @@ export class GsStyleEditor extends LitElement {
 
     private onSave?: () => void;
 
+    static styles = styleEditorStyles;
+
     show(onSave?: () => void): void {
         this.onSave = onSave;
         
-        // Create deep copies of styles and rules to work with
         if (this.gsMap) {
             this.workingStyles = JSON.parse(JSON.stringify(this.gsMap.styles || {}));
             this.workingRules = JSON.parse(JSON.stringify(this.gsMap.styleRules || []));
@@ -46,333 +54,6 @@ export class GsStyleEditor extends LitElement {
         this.requestUpdate();
     }
 
-    private handleCancel() {
-        this.hide();
-    }
-
-    private handleSave() {
-        // Apply working copies back to the original gsMap
-        if (this.gsMap && this.workingStyles && this.workingRules) {
-            this.gsMap.styles = this.workingStyles;
-            this.gsMap.styleRules = this.workingRules;
-        }
-        
-        if (this.onSave) {
-            this.onSave();
-        }
-        this.hide();
-    }
-
-    private handleStyleSelect(styleId: string) {
-        this.selectedStyleId = styleId;
-    }
-
-    private handleRuleSelect(ruleId: string) {
-        this.selectedRuleId = ruleId;
-    }
-
-    private renderStylesTab() {
-        return html`
-            <div class="split-view">
-                ${this.renderStylesList()}
-                ${this.selectedStyleId ? this.renderStyleDetail() : html`
-                    <div class="detail-panel empty">
-                        <p>Select a style to edit</p>
-                    </div>
-                `}
-            </div>
-        `;
-    }
-
-    private renderStylesList() {
-        if (!this.workingStyles) return html`<p>No styles available</p>`;
-
-        const styles = Object.entries(this.workingStyles);
-        
-        return html`
-            <div class="list-panel">
-                <div class="list-header">
-                    <h3>Styles</h3>
-                    <wa-button size="small" @click=${() => this.handleAddStyle()}>
-                        <wa-icon name="plus"></wa-icon> Add Style
-                    </wa-button>
-                </div>
-                <div class="list-items">
-                    ${styles.map(([id, style]) => html`
-                        <div 
-                            class="list-item ${this.selectedStyleId === id ? 'selected' : ''}"
-                            @click=${() => this.handleStyleSelect(id)}
-                        >
-                            <div class="style-preview">
-                                ${this.renderStylePreview(style)}
-                            </div>
-                            <div class="style-info">
-                                <div class="style-id">${id}</div>
-                            </div>
-                            <wa-icon-button 
-                                name="trash" 
-                                size="small"
-                                @click=${(e: Event) => this.handleDeleteStyle(e, id)}
-                            ></wa-icon-button>
-                        </div>
-                    `)}
-                </div>
-            </div>
-        `;
-    }
-
-    private renderStyleDetail() {
-        if (!this.selectedStyleId || !this.workingStyles) return null;
-        
-        const style = this.workingStyles[this.selectedStyleId];
-        if (!style) return null;
-
-        return html`
-            <div class="detail-panel">
-                <h3>Edit Style: ${this.selectedStyleId}</h3>
-                
-                <div class="form-section">
-                    <h4>Stroke</h4>
-                    <wa-color-picker 
-                        label="Color" 
-                        value="${style.stroke?.color || '#000000'}"
-                        opacity
-                        size="small"
-                        @change=${(e: any) => this.updateStyleProperty('stroke', 'color', e.target.value)}
-                    ></wa-color-picker>
-                    <wa-input 
-                        type="number" 
-                        label="Width" 
-                        value="${style.stroke?.width || ''}"
-                        @input=${(e: any) => this.updateStyleProperty('stroke', 'width', parseFloat(e.target.value))}
-                    ></wa-input>
-                </div>
-
-                <div class="form-section">
-                    <h4>Fill</h4>
-                    <wa-color-picker 
-                        label="Color" 
-                        value="${style.fill?.color || '#000000'}"
-                        opacity
-                        size="small"
-                        @change=${(e: any) => this.updateStyleProperty('fill', 'color', e.target.value)}
-                    ></wa-color-picker>
-                </div>
-
-                ${style.image ? html`
-                    <div class="form-section">
-                        <h4>Image (${style.image.type})</h4>
-                        ${style.image.type === 'circle' ? html`
-                            <wa-input 
-                                type="number" 
-                                label="Radius" 
-                                value="${style.image.radius || ''}"
-                                @input=${(e: any) => this.updateStyleProperty('image', 'radius', parseFloat(e.target.value))}
-                            ></wa-input>
-                            <wa-color-picker 
-                                label="Fill Color" 
-                                value="${style.image.fill?.color || '#000000'}"
-                                opacity
-                                size="small"
-                                @change=${(e: any) => this.updateImageFillProperty('color', e.target.value)}
-                            ></wa-color-picker>
-                            <wa-color-picker 
-                                label="Stroke Color" 
-                                value="${style.image.stroke?.color || '#000000'}"
-                                opacity
-                                size="small"
-                                @change=${(e: any) => this.updateImageStrokeProperty('color', e.target.value)}
-                            ></wa-color-picker>
-                            <wa-input 
-                                type="number" 
-                                label="Stroke Width" 
-                                value="${style.image.stroke?.width || ''}"
-                                @input=${(e: any) => this.updateImageStrokeProperty('width', parseFloat(e.target.value))}
-                            ></wa-input>
-                        ` : ''}
-                    </div>
-                ` : ''}
-            </div>
-        `;
-    }
-
-    private updateStyleProperty(category: 'stroke' | 'fill' | 'image', property: string, value: any) {
-        if (!this.selectedStyleId || !this.workingStyles) return;
-        
-        const style = this.workingStyles[this.selectedStyleId];
-        if (!style[category]) {
-            style[category] = {} as any;
-        }
-        (style[category] as any)[property] = value;
-        this.requestUpdate();
-    }
-
-    private updateImageFillProperty(property: string, value: any) {
-        if (!this.selectedStyleId || !this.workingStyles) return;
-        
-        const style = this.workingStyles[this.selectedStyleId];
-        if (!style.image) return;
-        if (!style.image.fill) {
-            style.image.fill = {};
-        }
-        (style.image.fill as any)[property] = value;
-        this.requestUpdate();
-    }
-
-    private updateImageStrokeProperty(property: string, value: any) {
-        if (!this.selectedStyleId || !this.workingStyles) return;
-        
-        const style = this.workingStyles[this.selectedStyleId];
-        if (!style.image) return;
-        if (!style.image.stroke) {
-            style.image.stroke = {};
-        }
-        (style.image.stroke as any)[property] = value;
-        this.requestUpdate();
-    }
-
-    private renderStylePreview(style: GsStyle) {
-        // Simple visual preview of the style
-        const strokeColor = style.stroke?.color || 'transparent';
-        const fillColor = style.fill?.color || 'transparent';
-        const strokeWidth = style.stroke?.width || 1;
-
-        if (style.image?.type === 'circle') {
-            const radius = style.image.radius || 5;
-            const imgFill = style.image.fill?.color || fillColor;
-            const imgStroke = style.image.stroke?.color || strokeColor;
-            const imgStrokeWidth = style.image.stroke?.width || strokeWidth;
-            
-            return html`
-                <svg width="40" height="40" viewBox="0 0 40 40">
-                    <circle 
-                        cx="20" 
-                        cy="20" 
-                        r="${radius}" 
-                        fill="${imgFill}" 
-                        stroke="${imgStroke}" 
-                        stroke-width="${imgStrokeWidth}"
-                    />
-                </svg>
-            `;
-        }
-
-        // Default: show a rectangle with stroke and fill
-        return html`
-            <svg width="40" height="40" viewBox="0 0 40 40">
-                <rect 
-                    x="5" 
-                    y="5" 
-                    width="30" 
-                    height="30" 
-                    fill="${fillColor}" 
-                    stroke="${strokeColor}" 
-                    stroke-width="${strokeWidth}"
-                />
-            </svg>
-        `;
-    }
-
-    private renderRulesList() {
-        if (!this.workingRules) return html`<p>No rules available</p>`;
-
-        const rules = this.workingRules;
-        
-        return html`
-            <div class="list-panel">
-                <div class="list-header">
-                    <h3>Style Rules</h3>
-                    <wa-button size="small" @click=${() => this.handleAddRule()}>
-                        <wa-icon name="plus"></wa-icon> Add Rule
-                    </wa-button>
-                </div>
-                <div class="list-items">
-                    ${rules.map((rule, index) => {
-                        const ruleId = rule.id || `rule-${index}`;
-                        return html`
-                            <div 
-                                class="list-item ${this.selectedRuleId === ruleId ? 'selected' : ''}"
-                                @click=${() => this.handleRuleSelect(ruleId)}
-                            >
-                                <div class="rule-info">
-                                    <div class="rule-id">${ruleId}</div>
-                                    <div class="rule-details">
-                                        ${this.renderRuleConditionSummary(rule)}
-                                        → <strong>${rule.styleId}</strong>
-                                    </div>
-                                </div>
-                                <wa-icon-button 
-                                    name="trash" 
-                                    size="small"
-                                    @click=${(e: Event) => this.handleDeleteRule(e, ruleId)}
-                                ></wa-icon-button>
-                            </div>
-                        `;
-                    })}
-                </div>
-            </div>
-        `;
-    }
-
-    private renderRuleConditionSummary(rule: GsStyleRule) {
-        const parts: string[] = [];
-        
-        if (rule.condition.geometryType) {
-            const types = Array.isArray(rule.condition.geometryType) 
-                ? rule.condition.geometryType 
-                : [rule.condition.geometryType];
-            parts.push(`Type: ${types.join(', ')}`);
-        }
-        
-        if (rule.condition.layerName) {
-            parts.push(`Layer: ${rule.condition.layerName}`);
-        }
-        
-        if (rule.condition.property) {
-            const prop = rule.condition.property;
-            parts.push(`${prop.key} ${prop.operator || 'exists'} ${prop.value || ''}`);
-        }
-        
-        return parts.join(' | ') || 'All features';
-    }
-
-    private handleAddStyle() {
-        // TODO: Implement add style
-        console.log('Add style');
-    }
-
-    private handleDeleteStyle(e: Event, styleId: string) {
-        e.stopPropagation();
-        if (!this.workingStyles) return;
-        
-        if (confirm(`Delete style "${styleId}"?`)) {
-            delete this.workingStyles[styleId];
-            if (this.selectedStyleId === styleId) {
-                this.selectedStyleId = undefined;
-            }
-            this.requestUpdate();
-        }
-    }
-
-    private handleAddRule() {
-        // TODO: Implement add rule
-        console.log('Add rule');
-    }
-
-    private handleDeleteRule(e: Event, ruleId: string) {
-        e.stopPropagation();
-        if (!this.workingRules) return;
-        
-        const index = this.workingRules.findIndex(r => (r.id || `rule-${this.workingRules!.indexOf(r)}`) === ruleId);
-        if (index !== -1 && confirm(`Delete rule "${ruleId}"?`)) {
-            this.workingRules.splice(index, 1);
-            if (this.selectedRuleId === ruleId) {
-                this.selectedRuleId = undefined;
-            }
-            this.requestUpdate();
-        }
-    }
-
     render() {
         if (!this.open) return null;
 
@@ -380,7 +61,7 @@ export class GsStyleEditor extends LitElement {
             <wa-dialog 
                 label="Style Editor" 
                 ?open=${this.open}
-                @wa-hide=${this.handleCancel}
+                @wa-hide=${this.handleDialogHide}
             >
                 <div class="style-editor">
                     <wa-tab-group>
@@ -392,7 +73,7 @@ export class GsStyleEditor extends LitElement {
                         </wa-tab-panel>
 
                         <wa-tab-panel name="rules">
-                            ${this.renderRulesList()}
+                            ${this.renderRulesTab()}
                         </wa-tab-panel>
                     </wa-tab-group>
                 </div>
@@ -405,146 +86,250 @@ export class GsStyleEditor extends LitElement {
         `;
     }
 
-    static styles = css`
-        wa-dialog {
-            --width: 800px;
+    // --- Styles Tab ---
+
+    private renderStylesTab() {
+        return html`
+            <wa-split-panel position="40" class="style-split-panel">
+                <div slot="start" class="pane-container">
+                    <div class="pane-header">
+                        <h3>Styles</h3>
+                        <wa-button size="small" @click=${this.handleAddStyle}>
+                            <wa-icon name="plus"></wa-icon> Add Style
+                        </wa-button>
+                    </div>
+                    <wa-scroller orientation="vertical" class="pane-scroller">
+                        ${this.renderStylesTree()}
+                    </wa-scroller>
+                </div>
+                <div slot="end" class="pane-container">
+                    <wa-scroller orientation="vertical" class="pane-scroller">
+                        ${this.renderSelectedStyleDetail()}
+                    </wa-scroller>
+                </div>
+            </wa-split-panel>
+        `;
+    }
+
+    private renderStylesTree() {
+        if (!this.workingStyles || Object.keys(this.workingStyles).length === 0) {
+            return html`<p class="empty-message">No styles available</p>`;
         }
 
-        .style-editor {
-            height: 500px;
+        return html`
+            <wa-tree selection="single" class="style-tree">
+                ${Object.entries(this.workingStyles).map(([id]) => this.renderStyleTreeItem(id))}
+            </wa-tree>
+        `;
+    }
+
+    private renderStyleTreeItem(id: string) {
+        const style = this.workingStyles![id];
+        return html`
+            <wa-tree-item 
+                ?selected=${this.selectedStyleId === id}
+                @click=${(e: Event) => {
+                    e.stopPropagation();
+                    this.handleStyleSelect(id);
+                }}
+            >
+                <div class="tree-item-content">
+                    <div class="style-preview-small">
+                        ${renderStylePreview(style)}
+                    </div>
+                    <span class="style-id">${id}</span>
+                    <wa-icon-button 
+                        name="trash" 
+                        size="small"
+                        @click=${(e: Event) => this.handleDeleteStyle(e, id)}
+                    ></wa-icon-button>
+                </div>
+            </wa-tree-item>
+        `;
+    }
+
+    private renderSelectedStyleDetail() {
+        if (!this.selectedStyleId || !this.workingStyles?.[this.selectedStyleId]) {
+            return html`
+                <div class="detail-panel empty">
+                    <p>Select a style to edit</p>
+                </div>
+            `;
         }
 
-        wa-tab-group {
-            height: 100%;
-            --track-width: 2px;
+        const style = this.workingStyles[this.selectedStyleId];
+        const geometryTypes = getGeometryTypesForStyle(this.selectedStyleId, this.workingRules || []);
+        const handlers = createStyleUpdateHandlers((path, value) => this.updateStyleProperty(path, value));
+
+        return renderStyleDetail(this.selectedStyleId, style, geometryTypes, handlers);
+    }
+
+    // --- Rules Tab ---
+
+    private renderRulesTab() {
+        return html`
+            <wa-split-panel position="40" class="rule-split-panel">
+                <div slot="start" class="pane-container">
+                    <div class="pane-header">
+                        <h3>Style Rules</h3>
+                        <wa-button size="small" @click=${this.handleAddRule}>
+                            <wa-icon name="plus"></wa-icon> Add Rule
+                        </wa-button>
+                    </div>
+                    <wa-scroller orientation="vertical" class="pane-scroller">
+                        ${this.renderRulesTree()}
+                    </wa-scroller>
+                </div>
+                <div slot="end" class="pane-container">
+                    <wa-scroller orientation="vertical" class="pane-scroller">
+                        ${this.renderSelectedRuleDetail()}
+                    </wa-scroller>
+                </div>
+            </wa-split-panel>
+        `;
+    }
+
+    private renderRulesTree() {
+        if (!this.workingRules || this.workingRules.length === 0) {
+            return html`<p class="empty-message">No rules available</p>`;
         }
 
-        wa-tab-panel {
-            height: 100%;
+        return html`
+            <wa-tree selection="single" class="rule-tree">
+                ${this.workingRules.map((rule, index) => this.renderRuleTreeItem(rule, index))}
+            </wa-tree>
+        `;
+    }
+
+    private renderRuleTreeItem(rule: GsStyleRule, index: number) {
+        const ruleId = rule.id || `rule-${index}`;
+        return html`
+            <wa-tree-item 
+                ?selected=${this.selectedRuleId === ruleId}
+                @click=${() => this.handleRuleSelect(ruleId)}
+            >
+                <div class="tree-item-content">
+                    <wa-icon name="code-branch" variant="regular"></wa-icon>
+                    <span class="rule-id">${ruleId}</span>
+                    <span class="rule-summary">${getRuleConditionSummary(rule)} → ${rule.styleId}</span>
+                    <wa-icon-button 
+                        name="trash" 
+                        size="small"
+                        @click=${(e: Event) => this.handleDeleteRule(e, ruleId)}
+                    ></wa-icon-button>
+                </div>
+            </wa-tree-item>
+        `;
+    }
+
+    private renderSelectedRuleDetail() {
+        if (!this.selectedRuleId || !this.workingRules) {
+            return html`
+                <div class="detail-panel empty">
+                    <p>Select a rule to edit</p>
+                </div>
+            `;
         }
 
-        wa-tab-panel::part(base) {
-            padding: 1rem 0;
-            height: 100%;
-            overflow: auto;
+        const rule = this.workingRules.find((r, idx) => (r.id || `rule-${idx}`) === this.selectedRuleId);
+        if (!rule) {
+            return html`
+                <div class="detail-panel empty">
+                    <p>Select a rule to edit</p>
+                </div>
+            `;
         }
 
-        .split-view {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-            height: 100%;
-        }
+        return renderRuleDetail(this.selectedRuleId, rule);
+    }
 
-        .list-panel {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            overflow: auto;
-        }
+    // --- Event Handlers ---
 
-        .list-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+    private handleDialogHide = (e: Event) => {
+        // Only close if the wa-hide event came from the dialog itself, not from child components like wa-select
+        const target = e.target as HTMLElement;
+        if (target.tagName.toLowerCase() === 'wa-dialog') {
+            this.hide();
         }
+    }
 
-        .list-header h3 {
-            margin: 0;
-            font-size: 1.25rem;
-        }
+    private handleCancel = () => {
+        this.hide();
+    }
 
-        .list-items {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
+    private handleSave = () => {
+        if (this.gsMap && this.workingStyles && this.workingRules) {
+            this.gsMap.styles = this.workingStyles;
+            this.gsMap.styleRules = this.workingRules;
         }
+        
+        this.onSave?.();
+        this.hide();
+    }
 
-        .list-item {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 0.75rem;
-            border: 1px solid var(--wa-color-neutral-200);
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background-color 0.2s;
+    private handleStyleSelect(styleId: string) {
+        if (this.selectedStyleId !== styleId) {
+            this.selectedStyleId = styleId;
+            this.requestUpdate();
         }
+    }
 
-        .list-item:hover {
-            background-color: var(--wa-color-neutral-50);
+    private handleRuleSelect(ruleId: string) {
+        if (this.selectedRuleId !== ruleId) {
+            this.selectedRuleId = ruleId;
+            this.requestUpdate();
         }
+    }
 
-        .list-item.selected {
-            background-color: var(--wa-color-primary-50);
-            border-color: var(--wa-color-primary-500);
-        }
+    private handleAddStyle = () => {
+        // TODO: Implement add style
+        console.log('Add style');
+    }
 
-        .style-preview {
-            flex-shrink: 0;
-        }
+    private handleAddRule = () => {
+        // TODO: Implement add rule
+        console.log('Add rule');
+    }
 
-        .style-info {
-            flex: 1;
+    private handleDeleteStyle(e: Event, styleId: string) {
+        e.stopPropagation();
+        if (!this.workingStyles) return;
+        
+        if (confirm(`Delete style "${styleId}"?`)) {
+            delete this.workingStyles[styleId];
+            if (this.selectedStyleId === styleId) {
+                this.selectedStyleId = undefined;
+            }
+            this.workingStyles = { ...this.workingStyles };
         }
+    }
 
-        .style-id {
-            font-weight: 600;
-            font-size: 0.9rem;
+    private handleDeleteRule(e: Event, ruleId: string) {
+        e.stopPropagation();
+        if (!this.workingRules) return;
+        
+        const index = this.workingRules.findIndex((r, idx) => (r.id || `rule-${idx}`) === ruleId);
+        if (index === -1) return;
+        
+        if (confirm(`Delete rule "${ruleId}"?`)) {
+            this.workingRules.splice(index, 1);
+            if (this.selectedRuleId === ruleId) {
+                this.selectedRuleId = undefined;
+            }
+            this.workingRules = [...this.workingRules];
         }
+    }
 
-        .detail-panel {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            overflow: auto;
-            padding: 1rem;
-            border: 1px solid var(--wa-color-neutral-200);
-            border-radius: 4px;
-        }
+    // --- Style Updates ---
 
-        .detail-panel.empty {
-            align-items: center;
-            justify-content: center;
-            color: var(--wa-color-neutral-500);
+    private updateStyleProperty(path: string[], value: any) {
+        if (!this.selectedStyleId || !this.workingStyles) return;
+        
+        const updated = updateNestedProperty(this.workingStyles, this.selectedStyleId, path, value);
+        if (updated) {
+            this.workingStyles = updated;
         }
-
-        .detail-panel h3 {
-            margin: 0;
-            font-size: 1.1rem;
-        }
-
-        .form-section {
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-        }
-
-        .form-section h4 {
-            margin: 0;
-            font-size: 0.95rem;
-            color: var(--wa-color-neutral-700);
-            border-bottom: 1px solid var(--wa-color-neutral-200);
-            padding-bottom: 0.5rem;
-        }
-
-        .rule-info {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 0.25rem;
-        }
-
-        .rule-id {
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-
-        .rule-details {
-            font-size: 0.85rem;
-            color: var(--wa-color-neutral-600);
-        }
-    `;
+    }
 }
 
 declare global {
@@ -552,4 +337,3 @@ declare global {
         'gs-style-editor': GsStyleEditor
     }
 }
-
