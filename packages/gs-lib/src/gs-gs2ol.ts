@@ -597,7 +597,7 @@ export const cleanupEventSubscriptions = (olMap: Map): void => {
     }
 }
 
-export const toOlMap = async (gsMap: GsMap, options?: MapOptions, env?: any, importer?: Importer) => {
+export const toOlMap = async (gsMap: GsMap, options?: MapOptions, env?: any, importer?: Importer, target?: HTMLElement) => {
     const olMap = withState(gsMap, new Map(options));
     olMap.set(KEY_ENV, env)
     olMap.setView(new View({
@@ -608,6 +608,12 @@ export const toOlMap = async (gsMap: GsMap, options?: MapOptions, env?: any, imp
     for (const layer of gsMap.layers || []) {
         const olLayer = toOlLayer(layer)
         olMap.addLayer(olLayer)
+    }
+
+    // Attach map to DOM early so it renders immediately
+    // This prevents blank screens when user modules request permissions (e.g., geolocation)
+    if (target) {
+        olMap.setTarget(target)
     }
 
     for (const overlay of gsMap.overlays || []) {

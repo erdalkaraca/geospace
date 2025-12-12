@@ -41,14 +41,15 @@ export const gsLib = async (options: GsAppOptions) => {
         };
     }
     
-    const olMap = await toOlMap(options.gsMap, mapOptions, options.env, importer)
-    
     // Handle both string selector and DOM element
     const target = typeof options.containerSelector === 'string' 
         ? document.querySelector(options.containerSelector)! as HTMLElement
         : options.containerSelector;
     
-    olMap.setTarget(target)
+    // Create map and attach to DOM first to ensure immediate rendering
+    // Controls and overlays are loaded after the map is visible
+    const olMap = await toOlMap(options.gsMap, mapOptions, options.env, importer, target)
+    
     return olMap
 }
 
