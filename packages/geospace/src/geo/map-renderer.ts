@@ -17,6 +17,13 @@ export type MapSyncEvent =
  * This interface is focused purely on rendering and map state management.
  * For operations, use MapOperations interface instead.
  */
+/**
+ * Screenshot result from captureScreenshot
+ */
+export type ScreenshotResult = 
+    | { success: true, dataUrl: string, width: number, height: number }
+    | { success: false, error: string };
+
 export interface MapRenderer {
     render(container: string | HTMLElement): Promise<void>;
     reattached?(): Promise<void>;
@@ -28,6 +35,7 @@ export interface MapRenderer {
     setOnSync(callback: (event: MapSyncEvent) => void): void;
     triggerSync(event: MapSyncEvent): void;
     setOnClick?(callback: () => void): void;
+    captureScreenshot(): Promise<ScreenshotResult>;
     destroy(): void;
 }
 

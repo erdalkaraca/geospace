@@ -507,7 +507,7 @@ commandRegistry.registerAll({
     command: {
         "id": "capture_map_screenshot",
         "name": "Capture map screenshot",
-        "description": "Takes a screenshot of the currently visible OpenLayers map and returns it as a base64-encoded data URL. Useful for analyzing map imagery with ML tools.",
+        "description": "Takes a screenshot of the currently visible map and returns it as a base64-encoded data URL. Useful for analyzing map imagery with ML tools.",
         "parameters": [
             {
                 "name": "filePath",

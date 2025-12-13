@@ -1,8 +1,7 @@
-import { css, html, unsafeCSS, customElement, property, createRef, ref, Ref, when, keyed } from '@kispace-io/appspace/externals/lit';
+import { css, html, customElement, property, createRef, ref, Ref, when, keyed } from '@kispace-io/appspace/externals/lit';
 import { DEFAULT_GSMAP, ensureUuidsRecursive, GsMap, GsLayerType, GsSourceType, DEFAULT_STYLES, DEFAULT_STYLE_RULES } from "@kispace-io/gs-lib";
 import { findLayerByUuid } from "./map-renderer";
 import { mapChangedSignal, MapEvents, FeatureSelection } from "./gs-signals";
-import olCSS from "ol/ol.css?raw";
 import { loadEnvs, replaceUris, revertBlobUris } from "./utils";
 import { WorkspaceModuleResolver } from "./workspace-module-resolver";
 import { MapRenderer, MapOperations, createProxy, MapSyncEvent } from "./map-renderer";
@@ -461,7 +460,6 @@ export class GsMapEditor extends KPart {
     }
 
     private async handleSelectFeatures() {
-        // Feature selection works on all vector layers - let OpenLayers handle it
         await this.operations?.enableFeatureSelection();
         this.interactionMode = 'select';
         this.updateToolbar();
@@ -515,7 +513,7 @@ export class GsMapEditor extends KPart {
     }
 
     protected doClose() {
-        // Clean up renderer (this will clean up all user modules and OpenLayers)
+        // Clean up renderer
         this.renderer?.destroy();
         this.renderer = undefined;
         this.input = undefined;
@@ -531,7 +529,7 @@ export class GsMapEditor extends KPart {
         `
     }
 
-    static styles = [unsafeCSS(olCSS), css`
+    static styles = [css`
         :host {
             display: flex;
             flex-direction: column;

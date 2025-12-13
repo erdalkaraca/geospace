@@ -1,4 +1,4 @@
-import {MapOperations, MapRenderer, MapSyncEvent} from "./map-renderer";
+import {MapOperations, MapRenderer, MapSyncEvent, ScreenshotResult} from "./map-renderer";
 import {gsLib, GsMap, GsSourceType, KEY_NAME, toOlLayer, KEY_STATE, KEY_UUID, toGsFeature, cleanupEventSubscriptions, toOlStyle, ensureUuid, getStyleForFeature, GsFeature, GsGeometry, events} from "@kispace-io/gs-lib";
 import {v4 as uuidv4} from '@kispace-io/appspace/externals/third-party';
 import {
@@ -180,13 +180,45 @@ export class OpenLayersMapRenderer implements MapRenderer {
     async getViewExtent(): Promise<number[]> {
         console.debug("Getting view extent");
         if (!this.olMap) {
-            throw new Error("OpenLayers map not available for extent calculation");
+            throw new Error("Map not available for extent calculation");
         }
 
         const view = this.olMap.getView();
         const extent = view.calculateExtent();
         console.debug(`View extent: ${extent}`);
         return extent;
+    }
+
+    async captureScreenshot(): Promise<ScreenshotResult> {
+        if (!this.olMap) {
+            return { success: false, error: 'Map not available' };
+        }
+
+        const olMap = this.olMap;
+
+        // Wait for the map to finish rendering
+        await new Promise<void>((resolve) => {
+            olMap.renderSync();
+            olMap.once('rendercomplete', () => resolve());
+            // Fallback timeout in case rendercomplete doesn't fire
+            setTimeout(() => resolve(), 2000);
+        });
+
+        const size = olMap.getSize();
+        const width = size ? size[0] : olMap.getViewport().clientWidth;
+        const height = size ? size[1] : olMap.getViewport().clientHeight;
+
+        try {
+            const canvas = olMap.getViewport().querySelector('canvas');
+            if (!canvas) {
+                return { success: false, error: 'Map canvas not found' };
+            }
+
+            const dataUrl = canvas.toDataURL('image/png');
+            return { success: true, dataUrl, width, height };
+        } catch (error: any) {
+            return { success: false, error: `Failed to capture canvas: ${error.message}` };
+        }
     }
 
     setOnDirty(callback: () => void): void {

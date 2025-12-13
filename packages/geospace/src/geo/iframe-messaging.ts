@@ -1,4 +1,5 @@
 import { OpenLayersMapRenderer } from './openlayers-map-renderer';
+import { MapRenderer } from './map-renderer';
 import { rtUtils } from '@kispace-io/gs-lib';
 
 // Override asset resolution to use the existing resolveAssetInHost function
@@ -12,7 +13,14 @@ rtUtils.resolveUrl = async (path: string) => {
     }
 };
 
-let mapRenderer: OpenLayersMapRenderer;
+// Renderer instance - uses MapRenderer interface for abstraction
+let mapRenderer: MapRenderer;
+
+// Factory function to create the appropriate renderer
+// Future: could be configured via params or environment
+function createMapRenderer(gsMap: any, env: any): MapRenderer {
+    return new OpenLayersMapRenderer(gsMap, env);
+}
 
 // Single listener for all asset resolution responses
 const pendingAssetRequests = new Map<string, { resolve: (value: string) => void; reject: (reason: any) => void; timeout: NodeJS.Timeout }>();
@@ -64,7 +72,7 @@ async function resolveAssetInHost(path: string): Promise<string> {
 async function handleOperation(method: string, params: any) {
     switch (method) {
         case 'render':
-            mapRenderer = new OpenLayersMapRenderer(params.gsMap, params.env);
+            mapRenderer = createMapRenderer(params.gsMap, params.env);
 
             // Set up event listeners for dirty and sync events
             mapRenderer.setOnDirty(() => {
@@ -92,48 +100,8 @@ async function handleOperation(method: string, params: any) {
             }
 
         case 'captureScreenshot':
-            if (mapRenderer && mapRenderer.olMap) {
-                const olMap = mapRenderer.olMap;
-                
-                // Wait for the map to finish rendering
-                await new Promise<void>((resolve) => {
-                    // Trigger a render to ensure we get a fresh rendercomplete event
-                    olMap.renderSync();
-                    
-                    // Wait for rendercomplete event
-                    olMap.once('rendercomplete', () => {
-                        resolve();
-                    });
-                    
-                    // Fallback timeout in case rendercomplete doesn't fire
-                    setTimeout(() => {
-                        resolve();
-                    }, 2000);
-                });
-
-                // Get the map size
-                const size = olMap.getSize();
-                const width = size ? size[0] : olMap.getViewport().clientWidth;
-                const height = size ? size[1] : olMap.getViewport().clientHeight;
-
-                // Capture the canvas as base64
-                try {
-                    const canvas = olMap.getViewport().querySelector('canvas');
-                    if (!canvas) {
-                        return { success: false, error: 'Map canvas not found' };
-                    }
-                    
-                    const dataUrl = canvas.toDataURL('image/png');
-                    
-                    return {
-                        success: true,
-                        dataUrl,
-                        width,
-                        height
-                    };
-                } catch (error: any) {
-                    return { success: false, error: `Failed to capture canvas: ${error.message}` };
-                }
+            if (mapRenderer) {
+                return await mapRenderer.captureScreenshot();
             } else {
                 return { success: false, error: 'Map renderer not available' };
             }
