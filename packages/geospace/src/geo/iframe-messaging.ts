@@ -1,6 +1,12 @@
-import { OpenLayersMapRenderer } from './openlayers-map-renderer';
-import { MapRenderer } from './map-renderer';
-import { rtUtils } from '@kispace-io/gs-lib';
+import {
+    MapRenderer,
+    rtUtils
+} from '@kispace-io/gs-lib';
+import { OpenLayersMapRenderer } from '@kispace-io/gs-lib/ol';
+import { MapLibreMapRenderer } from '@kispace-io/gs-lib/ml';
+
+// Supported renderer types
+export type RendererType = 'openlayers' | 'maplibre';
 
 // Override asset resolution to use the existing resolveAssetInHost function
 rtUtils.resolveUrl = async (path: string) => {
@@ -16,10 +22,20 @@ rtUtils.resolveUrl = async (path: string) => {
 // Renderer instance - uses MapRenderer interface for abstraction
 let mapRenderer: MapRenderer;
 
-// Factory function to create the appropriate renderer
-// Future: could be configured via params or environment
-function createMapRenderer(gsMap: any, env: any): MapRenderer {
-    return new OpenLayersMapRenderer(gsMap, env);
+/**
+ * Factory function to create the appropriate renderer
+ * @param gsMap - The GsMap domain model
+ * @param env - Environment variables
+ * @param rendererType - Which renderer to use ('openlayers' or 'maplibre')
+ */
+function createMapRenderer(gsMap: any, env: any, rendererType: RendererType = 'openlayers'): MapRenderer {
+    switch (rendererType) {
+        case 'maplibre':
+            return new MapLibreMapRenderer(gsMap, env);
+        case 'openlayers':
+        default:
+            return new OpenLayersMapRenderer(gsMap, env);
+    }
 }
 
 // Single listener for all asset resolution responses
@@ -72,7 +88,9 @@ async function resolveAssetInHost(path: string): Promise<string> {
 async function handleOperation(method: string, params: any) {
     switch (method) {
         case 'render':
-            mapRenderer = createMapRenderer(params.gsMap, params.env);
+            // Create renderer based on specified type (defaults to openlayers)
+            const rendererType = params.renderer as RendererType || 'openlayers';
+            mapRenderer = createMapRenderer(params.gsMap, params.env, rendererType);
 
             // Set up event listeners for dirty and sync events
             mapRenderer.setOnDirty(() => {
@@ -84,7 +102,7 @@ async function handleOperation(method: string, params: any) {
             });
 
             await mapRenderer.render('#map-container');
-            return { success: true };
+            return { success: true, renderer: rendererType };
 
         case 'modelToUI':
             if (mapRenderer) {

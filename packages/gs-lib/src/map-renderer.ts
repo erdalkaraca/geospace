@@ -1,14 +1,21 @@
-import {GsMap, GsLayer, GsControl, GsOverlay} from "@kispace-io/gs-lib";
+import { GsMap, GsLayer, GsControl, GsOverlay } from "./gs-model";
 
 /**
  * Sync event types that describe what changed in the map
  */
 export type MapSyncEvent = 
-    | { type: 'viewChanged', view: { center: [number, number], zoom: number, rotation?: number } }
+    | { type: 'viewChanged', view: { center: [number, number], zoom: number, rotation?: number, pitch?: number, bearing?: number } }
     | { type: 'featuresChanged', layerUuid: string, features: any[] }
     | { type: 'featureSelected', layerUuid: string, feature: any, metrics?: { length?: number, area?: number } }
     | { type: 'featureDeselected' }
     | { type: 'drawingDisabled' };
+
+/**
+ * Screenshot result from captureScreenshot
+ */
+export type ScreenshotResult = 
+    | { success: true, dataUrl: string, width: number, height: number }
+    | { success: false, error: string };
 
 /**
  * Abstract interface for map rendering
@@ -17,13 +24,6 @@ export type MapSyncEvent =
  * This interface is focused purely on rendering and map state management.
  * For operations, use MapOperations interface instead.
  */
-/**
- * Screenshot result from captureScreenshot
- */
-export type ScreenshotResult = 
-    | { success: true, dataUrl: string, width: number, height: number }
-    | { success: false, error: string };
-
 export interface MapRenderer {
     render(container: string | HTMLElement): Promise<void>;
     reattached?(): Promise<void>;
@@ -112,3 +112,4 @@ export const createProxy = (operations: MapOperations[]): MapOperations => {
         }
     }) as MapOperations;
 }
+

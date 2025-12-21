@@ -1,10 +1,10 @@
+// Core exports - renderer-agnostic model and utilities
+// For renderer-specific functionality, import from '@kispace-io/gs-lib/ol' or '@kispace-io/gs-lib/ml'
 export * from "./gs-model"
-export * from "./gs-gs2ol"
-export * from "./gs-ol2gs"
-export * from "./gs-ol-adapters"
-export * from "./gs-lib"
-// Re-export OpenLayers for convenience
-export * from "./gs-olns"
+
+// Map renderer interface (no implementation)
+export * from "./map-renderer"
+
 // map-builder is only used by build service - export explicitly to avoid tree-shaking issues
 export { buildMap, generateAppJs, processServiceWorker, processManifest, processHtml, bundleApp, type BuildOptions, type FileSystem, type GsLibFileCopier, type ProgressCallback } from "./base-map-builder"
 
@@ -13,3 +13,8 @@ export const rtUtils = {
         return url
     }
 };
+
+export * from "./ol/index"
+
+// Backward compatibility: export olLib as gsLib for generated build code
+export { olLib as gsLib } from "./ol/gs-ol-lib"

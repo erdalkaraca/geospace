@@ -1,0 +1,435 @@
+{
+  "view": {
+    "uuid": "view-maplibre-3d",
+    "center": [
+      1489191.5859545087,
+      6894032.320488158
+    ],
+    "zoom": 16.63041767705473,
+    "projection": "EPSG:3857",
+    "pitch": 64.50000000000006,
+    "bearing": 7.999999999999773
+  },
+  "layers": [
+    {
+      "uuid": "layer-osm-base",
+      "name": "OpenStreetMap",
+      "type": "TILE",
+      "source": {
+        "uuid": "source-osm",
+        "type": "OSM"
+      },
+      "visible": true
+    },
+    {
+      "uuid": "layer-3d-buildings",
+      "name": "3D Buildings Demo",
+      "type": "VECTOR",
+      "source": {
+        "uuid": "source-3d-buildings",
+        "type": "Features",
+        "features": [
+          {
+            "uuid": "building-1",
+            "geometry": {
+              "uuid": "geom-building-1",
+              "type": "Polygon",
+              "coordinates": [
+                [
+                  [
+                    1489100,
+                    6893900
+                  ],
+                  [
+                    1489150,
+                    6893900
+                  ],
+                  [
+                    1489150,
+                    6893950
+                  ],
+                  [
+                    1489100,
+                    6893950
+                  ],
+                  [
+                    1489100,
+                    6893900
+                  ]
+                ]
+              ]
+            },
+            "state": {
+              "name": "Office Tower",
+              "height": 85,
+              "color": "#4A90D9",
+              "type": "commercial"
+            }
+          },
+          {
+            "uuid": "building-2",
+            "geometry": {
+              "uuid": "geom-building-2",
+              "type": "Polygon",
+              "coordinates": [
+                [
+                  [
+                    1489200,
+                    6893950
+                  ],
+                  [
+                    1489280,
+                    6893950
+                  ],
+                  [
+                    1489280,
+                    6894030
+                  ],
+                  [
+                    1489200,
+                    6894030
+                  ],
+                  [
+                    1489200,
+                    6893950
+                  ]
+                ]
+              ]
+            },
+            "state": {
+              "name": "Shopping Mall",
+              "height": 25,
+              "color": "#E67E22",
+              "type": "retail"
+            }
+          },
+          {
+            "uuid": "building-3",
+            "geometry": {
+              "uuid": "geom-building-3",
+              "type": "Polygon",
+              "coordinates": [
+                [
+                  [
+                    1489050,
+                    6894000
+                  ],
+                  [
+                    1489090,
+                    6894000
+                  ],
+                  [
+                    1489090,
+                    6894080
+                  ],
+                  [
+                    1489050,
+                    6894080
+                  ],
+                  [
+                    1489050,
+                    6894000
+                  ]
+                ]
+              ]
+            },
+            "state": {
+              "name": "Residential Block A",
+              "height": 45,
+              "color": "#27AE60",
+              "type": "residential"
+            }
+          },
+          {
+            "uuid": "building-4",
+            "geometry": {
+              "uuid": "geom-building-4",
+              "type": "Polygon",
+              "coordinates": [
+                [
+                  [
+                    1489300,
+                    6893880
+                  ],
+                  [
+                    1489380,
+                    6893880
+                  ],
+                  [
+                    1489380,
+                    6893920
+                  ],
+                  [
+                    1489300,
+                    6893920
+                  ],
+                  [
+                    1489300,
+                    6893880
+                  ]
+                ]
+              ]
+            },
+            "state": {
+              "name": "Industrial Warehouse",
+              "height": 12,
+              "color": "#7F8C8D",
+              "type": "industrial"
+            }
+          },
+          {
+            "uuid": "building-5",
+            "geometry": {
+              "uuid": "geom-building-5",
+              "type": "Polygon",
+              "coordinates": [
+                [
+                  [
+                    1489180,
+                    6894100
+                  ],
+                  [
+                    1489220,
+                    6894100
+                  ],
+                  [
+                    1489220,
+                    6894180
+                  ],
+                  [
+                    1489180,
+                    6894180
+                  ],
+                  [
+                    1489180,
+                    6894100
+                  ]
+                ]
+              ]
+            },
+            "state": {
+              "name": "Landmark Tower",
+              "height": 120,
+              "color": "#9B59B6",
+              "type": "landmark"
+            }
+          },
+          {
+            "uuid": "building-6",
+            "geometry": {
+              "uuid": "geom-building-6",
+              "type": "Polygon",
+              "coordinates": [
+                [
+                  [
+                    1489320,
+                    6894050
+                  ],
+                  [
+                    1489360,
+                    6894050
+                  ],
+                  [
+                    1489360,
+                    6894100
+                  ],
+                  [
+                    1489320,
+                    6894100
+                  ],
+                  [
+                    1489320,
+                    6894050
+                  ]
+                ]
+              ]
+            },
+            "state": {
+              "name": "Residential Block B",
+              "height": 38,
+              "color": "#2ECC71",
+              "type": "residential"
+            }
+          }
+        ]
+      },
+      "visible": true
+    },
+    {
+      "uuid": "layer-poi-markers",
+      "name": "Points of Interest",
+      "type": "VECTOR",
+      "source": {
+        "uuid": "source-poi",
+        "type": "Features",
+        "features": [
+          {
+            "uuid": "poi-1",
+            "geometry": {
+              "uuid": "geom-poi-1",
+              "type": "Point",
+              "coordinates": [
+                1489125,
+                6893925
+              ]
+            },
+            "state": {
+              "name": "Main Entrance",
+              "icon": "building",
+              "category": "entrance"
+            }
+          },
+          {
+            "uuid": "poi-2",
+            "geometry": {
+              "uuid": "geom-poi-2",
+              "type": "Point",
+              "coordinates": [
+                1489240,
+                6893990
+              ]
+            },
+            "state": {
+              "name": "Food Court",
+              "icon": "utensils",
+              "category": "dining"
+            }
+          },
+          {
+            "uuid": "poi-3",
+            "geometry": {
+              "uuid": "geom-poi-3",
+              "type": "Point",
+              "coordinates": [
+                1489200,
+                6894140
+              ]
+            },
+            "state": {
+              "name": "Observation Deck",
+              "icon": "binoculars",
+              "category": "attraction"
+            }
+          }
+        ]
+      },
+      "visible": true
+    }
+  ],
+  "overlays": [],
+  "controls": [],
+  "interactions": [],
+  "styles": {
+    "default-point": {
+      "id": "default-point",
+      "image": {
+        "type": "circle",
+        "radius": 8,
+        "fill": {
+          "color": "rgba(231, 76, 60, 0.9)"
+        },
+        "stroke": {
+          "color": "white",
+          "width": 2
+        }
+      }
+    },
+    "default-line": {
+      "id": "default-line",
+      "stroke": {
+        "color": "rgba(52, 152, 219, 0.8)",
+        "width": 3
+      }
+    },
+    "default-polygon": {
+      "id": "default-polygon",
+      "fill": {
+        "color": "rgba(52, 152, 219, 0.4)"
+      },
+      "stroke": {
+        "color": "rgba(52, 152, 219, 1)",
+        "width": 2
+      }
+    },
+    "building-3d": {
+      "id": "building-3d",
+      "fill": {
+        "color": "rgba(74, 144, 217, 0.7)"
+      },
+      "stroke": {
+        "color": "rgba(41, 128, 185, 1)",
+        "width": 1
+      }
+    },
+    "selection": {
+      "id": "selection",
+      "image": {
+        "type": "circle",
+        "radius": 10,
+        "fill": {
+          "color": "rgba(255, 193, 7, 0.5)"
+        },
+        "stroke": {
+          "color": "rgba(255, 193, 7, 1)",
+          "width": 3
+        }
+      },
+      "stroke": {
+        "color": "rgba(255, 193, 7, 1)",
+        "width": 3
+      },
+      "fill": {
+        "color": "rgba(255, 193, 7, 0.3)"
+      }
+    }
+  },
+  "styleRules": [
+    {
+      "id": "default-points",
+      "condition": {
+        "geometryType": [
+          "Point",
+          "MultiPoint"
+        ]
+      },
+      "styleId": "default-point",
+      "priority": 0
+    },
+    {
+      "id": "default-lines",
+      "condition": {
+        "geometryType": [
+          "LineString",
+          "MultiLineString"
+        ]
+      },
+      "styleId": "default-line",
+      "priority": 0
+    },
+    {
+      "id": "default-polygons",
+      "condition": {
+        "geometryType": [
+          "Polygon",
+          "MultiPolygon"
+        ]
+      },
+      "styleId": "default-polygon",
+      "priority": 0
+    },
+    {
+      "id": "buildings-style",
+      "condition": {
+        "layerName": "3D Buildings Demo"
+      },
+      "styleId": "building-3d",
+      "priority": 1
+    }
+  ],
+  "chatHistory": [],
+  "state": {
+    "renderer": "maplibre",
+    "description": "A demo map showcasing 3D buildings and points of interest using MapLibre renderer"
+  },
+  "uuid": "d02c90f4-3c39-450a-800f-ed345037afe5"
+}

@@ -1,17 +1,21 @@
-import {proj} from "@kispace-io/gs-lib";
-import {MapOperations} from "./map-renderer";
-import {replaceUris} from "./utils";
 import {
+    MapOperations,
     ensureUuid,
     GsLayer,
     GsSource,
-    GsSourceType,
+    GsSourceType
+} from "@kispace-io/gs-lib";
+// TODO: Refactor to use renderer-agnostic coordinate transformation utilities
+// These OpenLayers-specific imports should be replaced with renderer-agnostic alternatives
+import {
+    proj,
     toGsLayerType,
     toGsSourceType,
     toSourceUrl
-} from "@kispace-io/gs-lib";
+} from "@kispace-io/gs-lib/ol";
+import {replaceUris} from "./utils";
 import {GsMapEditor} from "./gs-map-editor";
-import {IFrameMapRenderer} from "./proxy-map-renderer";
+import {IFrameMapRenderer} from "./iframe-map-renderer";
 import {
     commandRegistry,
     activePartSignal,
@@ -154,6 +158,8 @@ commandRegistry.registerAll({
         canExecute,
         execute: async context => {
             const operations = getMapOperations(context);
+            // TODO: Refactor to use renderer-agnostic coordinate transformation
+            // proj.fromLonLat is OpenLayers-specific; should use a renderer-agnostic utility
             const coords = proj.fromLonLat([Number(context.params!["lon"]).valueOf(), Number(context.params!["lat"]).valueOf()]);
 
             await operations.setCenter([coords[0], coords[1]]);
@@ -195,6 +201,9 @@ commandRegistry.registerAll({
             const operations = getMapOperations(context);
             const source = context.params!["source"]?.trim().toLowerCase()
             const url = context.params!["url"] as string
+            // TODO: Refactor to use renderer-agnostic utilities
+            // toGsSourceType, toGsLayerType, and toSourceUrl are OpenLayers-specific
+            // These should be moved to gs-lib core or made renderer-agnostic
             const sourceType = toGsSourceType(source)
             const isBasemap = context?.params && context.params["basemap"] == true
 
@@ -413,6 +422,8 @@ commandRegistry.registerAll({
             // Transform extent if latlon parameter is set
             let extent4326 = extent;
             if (latlon || latlon === undefined) {
+                // TODO: Refactor to use renderer-agnostic coordinate transformation
+                // proj.transformExtent is OpenLayers-specific; should use a renderer-agnostic utility (e.g., from gs-lib core)
                 extent4326 = proj.transformExtent(extent, 'EPSG:3857', 'EPSG:4326');
 
                 // Reverse coordinates to lat/lon if requested

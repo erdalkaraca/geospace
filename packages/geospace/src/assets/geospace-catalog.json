@@ -141,6 +141,14 @@
             "url": "${baseURL}/maps/sentinel2-cloudless.geospace",
             "type": "file"
           }
+        },
+        {
+          "label": "MapLibre 3D Example",
+          "icon": "cubes",
+          "state": {
+            "url": "${baseURL}/maps/maplibre-3d-demo.geospace",
+            "type": "file"
+          }
         }
       ]
     },

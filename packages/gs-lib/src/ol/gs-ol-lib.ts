@@ -1,10 +1,10 @@
 import {toOlMap, Importer} from "./gs-gs2ol";
-import {GsMap} from "./gs-model";
+import {GsMap} from "../gs-model";
 import "ol/ol.css";
 import {defaultControls, defaultInteractions} from "./gs-olns";
 // Note: WebAwesome is imported via gs-litns (which is imported by gs-gs2ol), so it's available to user modules
 
-export * from "./gs-model";
+export * from "../gs-model";
 export * from "./gs-gs2ol";
 
 export interface GsAppOptions {
@@ -18,7 +18,7 @@ export interface GsAppOptions {
     }
 }
 
-export const gsLib = async (options: GsAppOptions) => {
+export const olLib = async (options: GsAppOptions) => {
     const mapOptions = {
         interactions: defaultInteractions({keyboard: false}),
         controls: defaultControls(options.mapOptions?.controls)

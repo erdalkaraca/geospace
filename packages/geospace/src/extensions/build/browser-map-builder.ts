@@ -59,7 +59,10 @@ let workspacePlugin = {
     name: 'workspace',
     setup(build: any) {
         build.onResolve({filter: /.*/}, (args: OnResolveArgs) => {
-            if (!/^(?!https?:\/\/).+/.test(args.path)) return;
+            // Skip external URLs and data URLs (same logic as Node.js version)
+            if (args.path.startsWith('http://') || args.path.startsWith('https://') || args.path.startsWith('data:')) {
+                return
+            }
             
             let resolvedPath = args.path;
             
@@ -106,7 +109,21 @@ let workspacePlugin = {
                 throw new Error(`Module not found: ${workspacePath}`);
             }
             const contents = await resource.getContents() as string
-            return {contents: contents};
+            
+            // Determine loader based on file extension (same logic as Node.js version)
+            const ext = workspacePath.split('.').pop()?.toLowerCase()
+            let loader: string | undefined = undefined
+            if (ext === 'ts' || ext === 'tsx') {
+                loader = ext === 'tsx' ? 'tsx' : 'ts'
+            } else if (ext === 'js' || ext === 'jsx') {
+                loader = ext === 'jsx' ? 'jsx' : 'js'
+            } else if (ext === 'json') {
+                loader = 'json'
+            } else if (ext === 'css') {
+                loader = 'css'
+            }
+            
+            return {contents: contents, loader: loader};
         })
     },
 }

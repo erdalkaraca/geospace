@@ -1,7 +1,14 @@
-import {MapOperations, MapRenderer, MapSyncEvent} from "./map-renderer";
-import {GsMap} from "@kispace-io/gs-lib";
+import {
+    MapOperations,
+    MapRenderer,
+    MapSyncEvent,
+    ScreenshotResult,
+    GsMap
+} from "@kispace-io/gs-lib";
 
 const iframeSrc = "iframe-map-renderer.html";
+
+export type RendererType = 'openlayers' | 'maplibre';
 
 /**
  * IFrame map renderer that communicates with an iframe-based renderer
@@ -13,6 +20,7 @@ export class IFrameMapRenderer implements MapRenderer {
     private pendingMessages = new Map<number, { resolve: (value: any) => void; reject: (error: any) => void }>();
     private gsMap: GsMap;
     private env?: any;
+    private rendererType: RendererType;
     private operations: MapOperations;
     private onDirtyCallback?: () => void;
     private onSyncCallback?: (event: MapSyncEvent) => void;
@@ -20,10 +28,19 @@ export class IFrameMapRenderer implements MapRenderer {
     private isMobileView: boolean = false;
     private targetElement?: HTMLElement;
 
-    constructor(gsMap: GsMap, env?: any) {
+    constructor(gsMap: GsMap, env?: any, rendererType: RendererType = 'openlayers') {
         this.gsMap = gsMap;
         this.env = env;
+        this.rendererType = rendererType;
         this.operations = this.createProxy(this);
+    }
+
+    getRendererType(): RendererType {
+        return this.rendererType;
+    }
+
+    getEnv(): any {
+        return this.env;
     }
 
     createProxy(renderer: IFrameMapRenderer): MapOperations {
@@ -90,8 +107,8 @@ export class IFrameMapRenderer implements MapRenderer {
 
         this.setupMessageListener();
 
-        // Send initial render command
-        await this.sendMessage('render', { gsMap: this.gsMap, env: this.env });
+        // Send initial render command with renderer type
+        await this.sendMessage('render', { gsMap: this.gsMap, env: this.env, renderer: this.rendererType });
     }
     
     async modelToUI(updatedGsMap?: GsMap): Promise<void> {
@@ -105,6 +122,11 @@ export class IFrameMapRenderer implements MapRenderer {
     async getViewExtent(): Promise<number[]> {
         const result = await this.sendMessage('getViewExtent', {});
         return result?.extent || [0, 0, 0, 0];
+    }
+
+    async captureScreenshot(): Promise<ScreenshotResult> {
+        const result = await this.sendMessage('captureScreenshot', {});
+        return result as ScreenshotResult;
     }
 
     setOnDirty(callback: () => void): void {
@@ -285,3 +307,4 @@ export class IFrameMapRenderer implements MapRenderer {
         });
     }
 }
+

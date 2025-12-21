@@ -16,6 +16,6 @@
     "validate-ci": "node scripts/validate-ci.js"
   },
   "dependencies": {
-    "@kispace-io/appspace": "1.1.27"
+    "@kispace-io/appspace": "1.1.29"
   }
 }

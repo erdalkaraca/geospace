@@ -136,7 +136,13 @@ export interface GsInteraction extends GsState {
 export interface GsView extends GsState {
     center: number[],
     zoom: number,
-    projection: string
+    projection: string,
+    /** Camera pitch in degrees (0 = looking straight down, 60 = tilted view) */
+    pitch?: number,
+    /** Camera bearing/rotation in degrees (0 = north up) */
+    bearing?: number,
+    /** Map rotation in radians (OpenLayers) - deprecated, use bearing instead */
+    rotation?: number
 }
 
 export interface GsStrokeStyle {

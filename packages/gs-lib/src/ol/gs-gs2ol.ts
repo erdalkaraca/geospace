@@ -27,7 +27,7 @@ import {
     KEY_STATE,
     KEY_UUID,
     KEY_URL
-} from "./gs-model";
+} from "../gs-model";
 import {Feature, Map, Overlay, View} from "ol";
 import {MapOptions} from "ol/Map";
 import BaseObject from "ol/Object";
@@ -47,11 +47,11 @@ import {apply as applyMapboxStyle} from "ol-mapbox-style";
 import LayerGroup from "ol/layer/Group";
 import {Control} from "ol/control";
 import * as ol from "./gs-olns"
-import {lit} from "./gs-litns";
+import {lit} from "../gs-litns";
 import {v4 as uuidv4} from '@kispace-io/appspace/externals/third-party'
 import {subscribe, publish, unsubscribe} from '@kispace-io/appspace/core/events'
 import {GsControlAdapter, GsOverlayAdapter} from "./gs-ol-adapters";
-import {rtUtils} from "./index";
+import {rtUtils} from "../index";
 import Layer from "ol/layer/Layer";
 
 const withState = <T extends BaseObject>(state: GsState, olObject: T): T => {

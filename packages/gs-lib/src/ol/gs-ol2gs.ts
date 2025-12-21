@@ -8,7 +8,7 @@ import {
     GsState,
     KEY_STATE,
     KEY_UUID
-} from "./gs-model";
+} from "../gs-model";
 import BaseObject from "ol/Object";
 
 export const toGsLayerType = (tag: string) => {

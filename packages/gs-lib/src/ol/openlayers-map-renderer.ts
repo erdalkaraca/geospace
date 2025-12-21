@@ -1,6 +1,19 @@
-import {MapOperations, MapRenderer, MapSyncEvent, ScreenshotResult} from "./map-renderer";
-import {gsLib, GsMap, GsSourceType, KEY_NAME, toOlLayer, KEY_STATE, KEY_UUID, toGsFeature, cleanupEventSubscriptions, toOlStyle, ensureUuid, getStyleForFeature, GsFeature, GsGeometry, events} from "@kispace-io/gs-lib";
-import {v4 as uuidv4} from '@kispace-io/appspace/externals/third-party';
+import { MapOperations, MapRenderer, MapSyncEvent, ScreenshotResult } from "../map-renderer";
+import {
+    GsMap,
+    GsSourceType,
+    KEY_NAME,
+    KEY_STATE,
+    KEY_UUID,
+    GsFeature,
+    GsGeometry,
+    ensureUuid,
+    getStyleForFeature
+} from "../gs-model";
+import { toOlLayer, cleanupEventSubscriptions, toOlStyle } from "./gs-gs2ol";
+import { toGsFeature } from "./gs-ol2gs";
+import { olLib } from "./gs-ol-lib";
+import { v4 as uuidv4 } from 'uuid';
 import {
     Map as OlMap,
     Feature,
@@ -13,7 +26,7 @@ import {
     FeatureLike,
     eventsCondition,
     BaseLayer
-} from "@kispace-io/gs-lib";
+} from "./gs-olns";
 
 /**
  * Lightweight helper to extract minimal GsFeature data for style evaluation
@@ -58,7 +71,7 @@ export class OpenLayersMapRenderer implements MapRenderer {
     async render(container: string | HTMLElement): Promise<void> {
         try {
             // Use the runtime library to render the map
-            this.olMap = await gsLib({
+            this.olMap = await olLib({
                 containerSelector: container,
                 gsMap: this.gsMap,
                 env: this.env,
@@ -111,9 +124,6 @@ export class OpenLayersMapRenderer implements MapRenderer {
             const stylesMap = this.gsMap.styles;
             
             if (styleRules && stylesMap) {
-                // TODO: Optimize performance - this is called for every feature every frame
-                // Consider caching: 1) rule evaluation results by feature ID, 2) sorted rules array
-                // Current cost: O(n log n) sort + O(n) rule iteration per call
                 const gsStyle = getStyleForFeature(featureStyleData, styleRules, stylesMap, layerName);
                 if (gsStyle && gsStyle.id) {
                     // Check cache first
@@ -279,7 +289,6 @@ export class OpenLayersMapRenderer implements MapRenderer {
         const gsFeatures = olFeatures.map((olFeature: Feature) => toGsFeature(olFeature));
 
         // Notify host with features change event
-        // Host decides whether to apply based on its own layer structure
         this.triggerSync({
             type: 'featuresChanged',
             layerUuid,
@@ -336,8 +345,7 @@ export class OpenLayersMapRenderer implements MapRenderer {
 }
 
 /**
- * OpenLayers-specific map operations implementation that works with the domain model
- * This bridges the gap between command intents and the GsMap domain model
+ * OpenLayers-specific map operations implementation
  */
 export class OpenLayersMapOperations implements MapOperations {
     private drawInteraction?: interactionNS.Draw;
@@ -353,28 +361,21 @@ export class OpenLayersMapOperations implements MapOperations {
             throw new Error("OpenLayers map is required for operations");
         }
         
-        // Setup ESC key handler to disable drawing/selection when iframe is focused
+        // Setup ESC key handler
         this.keyDownListener = (event: KeyboardEvent) => {
             if (event.key === 'Escape') {
                 if (this.drawInteraction) {
                     this.disableDrawing();
-                    // Notify parent that drawing was disabled
-                    this.renderer?.triggerSync({
-                        type: 'drawingDisabled'
-                    } as any);
+                    this.renderer?.triggerSync({ type: 'drawingDisabled' } as any);
                 }
                 if (this.selectInteraction) {
                     this.disableSelection();
-                    // featureDeselected event already sent by disableSelection()
-                    // Parent will update interaction mode when it receives the event
                 }
             }
         };
         
-        // Listen on the map's target element (the container, in the iframe)
         const target = this.olMap.getTargetElement();
         if (target && target instanceof HTMLElement) {
-            // Make the target focusable for keyboard events
             target.setAttribute('tabindex', '-1');
             target.addEventListener('keydown', this.keyDownListener);
         }
@@ -388,31 +389,25 @@ export class OpenLayersMapOperations implements MapOperations {
         this.olMap.getView().setCenter(center);
     }
 
-
     async switchColorMode(mode?: 'dark' | 'light'): Promise<void> {
         const olMap = this.olMap;
         let darkMode: boolean = olMap.get("darkmode") ?? false;
 
-        // Determine new mode
         if (mode === 'dark') {
             darkMode = true;
         } else if (mode === 'light') {
             darkMode = false;
         } else {
-            // Toggle if no mode specified
             darkMode = !darkMode;
         }
 
-        // Set the dark mode property
         olMap.set("darkmode", darkMode);
 
-        // Apply canvas filter for dark mode
         const canvasElements = document.querySelectorAll('canvas');
         canvasElements.forEach(canvas => {
             canvas.style.filter = darkMode ? "invert(100%)" : "";
         });
 
-        // Trigger re-render
         olMap.render();
     }
 
@@ -488,21 +483,10 @@ export class OpenLayersMapOperations implements MapOperations {
         }
     }
 
-    async addControlFromModule(_src: string): Promise<void> {
-        // UI does not support control creation
-    }
-
-    async removeControl(_uuid: string): Promise<void> {
-        // UI does not support control removal
-    }
-
-    async addOverlayFromModule(_src: string, _position?: string): Promise<void> {
-        // UI does not support overlay creation
-    }
-
-    async removeOverlay(_uuid: string): Promise<void> {
-        // UI does not support overlay removal
-    }
+    async addControlFromModule(_src: string): Promise<void> {}
+    async removeControl(_uuid: string): Promise<void> {}
+    async addOverlayFromModule(_src: string, _position?: string): Promise<void> {}
+    async removeOverlay(_uuid: string): Promise<void> {}
 
     private setCursor(cursor: string): void {
         const viewport = this.olMap.getViewport();
@@ -542,7 +526,7 @@ export class OpenLayersMapOperations implements MapOperations {
         
         const layerSourceType = layer.get('sourceType');
         if (layerSourceType && layerSourceType !== GsSourceType.Features) {
-            throw new Error('Drawing only supported on layers with in-memory features, not URL-loaded data');
+            throw new Error('Drawing only supported on layers with in-memory features');
         }
         
         this.drawInteraction = new interactionNS.Draw({
@@ -550,14 +534,11 @@ export class OpenLayersMapOperations implements MapOperations {
             type: geometryType
         });
         
-        // Listen to the source's addfeature event which fires AFTER the feature is added
         const onFeatureAdded = (event: any) => {
-            // Assign UUID to newly drawn features (app-managed features)
             const feature = event.feature;
             if (feature && !feature.get(KEY_UUID)) {
                 const uuid = uuidv4();
                 feature.set(KEY_UUID, uuid);
-                // Also store in state
                 const state = feature.get(KEY_STATE) || {};
                 state.uuid = uuid;
                 feature.set(KEY_STATE, state);
@@ -571,7 +552,6 @@ export class OpenLayersMapOperations implements MapOperations {
         
         source.on('addfeature', onFeatureAdded);
         
-        // Store the listener so we can remove it later
         (this.drawInteraction as any)._featureAddedListener = onFeatureAdded;
         (this.drawInteraction as any)._sourceRef = source;
         
@@ -580,7 +560,6 @@ export class OpenLayersMapOperations implements MapOperations {
 
     async disableDrawing(): Promise<void> {
         if (this.drawInteraction) {
-            // Remove the addfeature listener
             const listener = (this.drawInteraction as any)._featureAddedListener;
             const source = (this.drawInteraction as any)._sourceRef;
             if (listener && source) {
@@ -593,8 +572,6 @@ export class OpenLayersMapOperations implements MapOperations {
         }
     }
     
-    // Cleanup method to remove event listeners
-    // Called by OpenLayersMapRenderer.destroy() to prevent memory leaks
     cleanup(): void {
         if (this.keyDownListener) {
             const target = this.olMap.getTargetElement();
@@ -610,8 +587,6 @@ export class OpenLayersMapOperations implements MapOperations {
         this.disableSelection();
         
         const olLayers = this.olMap.getLayers();
-        
-        // Get all vector layers to enable selection across all of them
         const vectorLayers = olLayers.getArray().filter(layer => layer instanceof layerNS.Vector) as layerNS.Vector<sourceNS.Vector>[];
         
         if (vectorLayers.length === 0) {
@@ -626,19 +601,10 @@ export class OpenLayersMapOperations implements MapOperations {
             layers: vectorLayers,
             hitTolerance: 5,
             style: selectionStyle ? toOlStyle(selectionStyle) : (_feature: any) => {
-                const stroke = new style.Stroke({
-                    color: 'rgba(255, 255, 0, 1)',
-                    width: 3
-                });
-                const fill = new style.Fill({
-                    color: 'rgba(255, 255, 0, 0.3)'
-                });
+                const stroke = new style.Stroke({ color: 'rgba(255, 255, 0, 1)', width: 3 });
+                const fill = new style.Fill({ color: 'rgba(255, 255, 0, 0.3)' });
                 return new style.Style({
-                    image: new style.Circle({
-                        radius: 7,
-                        fill: fill,
-                        stroke: stroke
-                    }),
+                    image: new style.Circle({ radius: 7, fill: fill, stroke: stroke }),
                     stroke: stroke,
                     fill: fill
                 });
@@ -647,46 +613,36 @@ export class OpenLayersMapOperations implements MapOperations {
         
         this.selectInteraction = new interactionNS.Select(selectOptions);
         
-        // Listen for feature selection events
         this.selectInteraction.on('select', (event: any) => {
             if (event.selected.length > 0) {
                 const selectedFeature = event.selected[0];
-                // Find which layer this feature belongs to
                 let featureLayerUuid: string | undefined;
                 olLayers.getArray().forEach((layer) => {
                     if (layer instanceof layerNS.Vector) {
                         const source = layer.getSource();
                         if (source && source.hasFeature(selectedFeature)) {
                             const uuid = layer.get(KEY_UUID);
-                            if (uuid) {
-                                featureLayerUuid = uuid;
-                            }
+                            if (uuid) featureLayerUuid = uuid;
                         }
                     }
                 });
                 
                 if (featureLayerUuid && this.renderer) {
                     const gsFeature = toGsFeature(selectedFeature);
-                    
-                    // Calculate metrics based on geometry type
                     const geometry = selectedFeature.getGeometry();
                     const metrics: { length?: number, area?: number } = {};
                     
                     if (geometry) {
                         const geometryType = geometry.getType();
-                        
                         try {
                             if (geometryType === 'LineString' || geometryType === 'MultiLineString') {
                                 metrics.length = sphere.getLength(geometry, { projection: this.olMap.getView().getProjection() });
                             } else if (geometryType === 'Polygon' || geometryType === 'MultiPolygon') {
                                 metrics.area = sphere.getArea(geometry, { projection: this.olMap.getView().getProjection() });
-                                // For polygons, also calculate perimeter
                                 const coordinates = geometryType === 'Polygon' 
                                     ? (geometry as any).getCoordinates()[0]
                                     : (geometry as any).getCoordinates()[0][0];
-                                
-                                if (coordinates && coordinates.length > 0) {
-                                    // Calculate perimeter by measuring the outer ring
+                                if (coordinates?.length > 0) {
                                     const perimeterLine = new geom.LineString(coordinates);
                                     metrics.length = sphere.getLength(perimeterLine, { projection: this.olMap.getView().getProjection() });
                                 }
@@ -704,9 +660,7 @@ export class OpenLayersMapOperations implements MapOperations {
                     });
                 }
             } else if (event.deselected.length > 0) {
-                this.renderer?.triggerSync({
-                    type: 'featureDeselected'
-                });
+                this.renderer?.triggerSync({ type: 'featureDeselected' });
             }
         });
         
@@ -725,14 +679,10 @@ export class OpenLayersMapOperations implements MapOperations {
             throw new Error('No features selected');
         }
         
-        // Track which layers have features deleted so we can sync them
         const layersToSync = new Set<string>();
-        
         const olLayers = this.olMap.getLayers();
         
-        // Delete features from their respective sources
         selectedFeatures.forEach((feature: any) => {
-            // Find which layer this feature belongs to
             for (let i = 0; i < olLayers.getLength(); i++) {
                 const layer = olLayers.item(i);
                 if (layer instanceof layerNS.Vector) {
@@ -740,9 +690,7 @@ export class OpenLayersMapOperations implements MapOperations {
                     if (source && source.hasFeature(feature)) {
                         source.removeFeature(feature);
                         const layerUuid = layer.get(KEY_UUID);
-                        if (layerUuid) {
-                            layersToSync.add(layerUuid);
-                        }
+                        if (layerUuid) layersToSync.add(layerUuid);
                         break;
                     }
                 }
@@ -751,7 +699,6 @@ export class OpenLayersMapOperations implements MapOperations {
         
         selectedFeatures.clear();
         
-        // Sync features back to domain model for each affected layer
         if (this.renderer && layersToSync.size > 0) {
             layersToSync.forEach(layerUuid => {
                 this.renderer!.syncLayerFeaturesToModel(layerUuid);
@@ -765,10 +712,8 @@ export class OpenLayersMapOperations implements MapOperations {
             this.olMap.removeInteraction(this.selectInteraction);
             this.selectInteraction = undefined;
             this.setCursor('');
-            // Clear selection when disabling
-            this.renderer?.triggerSync({
-                type: 'featureDeselected'
-            });
+            this.renderer?.triggerSync({ type: 'featureDeselected' });
         }
     }
 }
+

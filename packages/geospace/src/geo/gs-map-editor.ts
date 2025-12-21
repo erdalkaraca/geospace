@@ -1,11 +1,22 @@
 import { css, html, customElement, property, createRef, ref, Ref, when, keyed } from '@kispace-io/appspace/externals/lit';
-import { DEFAULT_GSMAP, ensureUuidsRecursive, GsMap, GsLayerType, GsSourceType, DEFAULT_STYLES, DEFAULT_STYLE_RULES } from "@kispace-io/gs-lib";
-import { findLayerByUuid } from "./map-renderer";
+import {
+    DEFAULT_GSMAP,
+    ensureUuidsRecursive,
+    GsMap,
+    GsLayerType,
+    GsSourceType,
+    DEFAULT_STYLES,
+    DEFAULT_STYLE_RULES,
+    findLayerByUuid,
+    MapRenderer,
+    MapOperations,
+    createProxy,
+    MapSyncEvent
+} from "@kispace-io/gs-lib";
 import { mapChangedSignal, MapEvents, FeatureSelection } from "./gs-signals";
 import { loadEnvs, replaceUris, revertBlobUris } from "./utils";
 import { WorkspaceModuleResolver } from "./workspace-module-resolver";
-import { MapRenderer, MapOperations, createProxy, MapSyncEvent } from "./map-renderer";
-import { IFrameMapRenderer } from "./proxy-map-renderer";
+import { IFrameMapRenderer, RendererType } from "./iframe-map-renderer";
 import { DomainMapOperations } from "./domain-map-operations";
 import { SignalingMapOperations } from "./signaling-map-operations";
 import {
@@ -40,6 +51,9 @@ export class GsMapEditor extends KPart {
 
     @property({ type: String })
     private interactionMode: 'draw' | 'select' | 'none' = 'none';
+
+    @property({ type: String })
+    private selectedRenderer: RendererType = 'openlayers';
 
 
     constructor() {
@@ -164,6 +178,15 @@ export class GsMapEditor extends KPart {
             </k-command>
 
             <wa-divider orientation="vertical"></wa-divider>
+
+            <wa-select 
+                size="small"
+                value="${this.selectedRenderer}"
+                title="Map Renderer"
+                @change=${(e: any) => this.handleRendererChange(e.target.value)}>
+                <wa-option value="openlayers">OpenLayers</wa-option>
+                <wa-option value="maplibre">MapLibre</wa-option>
+            </wa-select>
         `;
     }
 
@@ -217,8 +240,11 @@ export class GsMapEditor extends KPart {
             };
         }
 
+        // Get renderer type from map state, default to openlayers
+        this.selectedRenderer = (gsMap.state?.renderer as RendererType) || 'openlayers';
+
         // Create iframe renderer for isolation
-        this.renderer = new IFrameMapRenderer(gsMap, env);
+        this.renderer = new IFrameMapRenderer(gsMap, env, this.selectedRenderer);
 
         const iframeOps = this.renderer.getOperations();
         const domainOps = new DomainMapOperations(gsMap, this.renderer);
@@ -233,74 +259,7 @@ export class GsMapEditor extends KPart {
             }
             await this.renderer.render(this.mapContainer.value);
 
-            this.renderer.setOnDirty(() => this.markDirty(true));
-
-            // Handle sync events from iframe
-            this.renderer.setOnSync((event: MapSyncEvent) => {
-                if (!this.gsMap) return;
-
-                switch (event.type) {
-                    case 'viewChanged':
-                        // Update view from user interaction
-                        this.gsMap.view.center = event.view.center;
-                        this.gsMap.view.zoom = event.view.zoom;
-                        if (event.view.rotation !== undefined && event.view.rotation !== 0) {
-                            (this.gsMap.view as any).rotation = event.view.rotation;
-                        }
-                        break;
-
-                    case 'featuresChanged':
-                        // Update features for specific layer (drawing/deleting)
-                        const layer = findLayerByUuid(this.gsMap, event.layerUuid);
-                        if (layer && layer.source?.type === GsSourceType.Features) {
-                            (layer.source as any).features = event.features;
-                        }
-                        break;
-
-                    case 'featureSelected':
-                        // Emit feature selection event
-                        const selectionPayload = {
-                            feature: event.feature,
-                            layerUuid: event.layerUuid,
-                            metrics: event.metrics
-                        } as FeatureSelection;
-                        console.info(`Feature metrics:`, selectionPayload.metrics);
-                        mapChangedSignal.set({
-                            part: this,
-                            event: MapEvents.FEATURE_SELECTED,
-                            payload: selectionPayload
-                        });
-                        break;
-
-                    case 'featureDeselected':
-                        // Emit feature deselection (null payload)
-                        console.info('Feature deselected');
-                        mapChangedSignal.set({
-                            part: this,
-                            event: MapEvents.FEATURE_SELECTED,
-                            payload: null
-                        });
-                        // Update interaction mode when selection is disabled
-                        if (this.interactionMode === 'select') {
-                            this.interactionMode = 'none';
-                            this.updateToolbar();
-                        }
-                        break;
-                        
-                    case 'drawingDisabled':
-                        // Update interaction mode when drawing is disabled via ESC
-                        if (this.interactionMode === 'draw') {
-                            this.interactionMode = 'none';
-                            this.updateToolbar();
-                        }
-                        break;
-                }
-
-                this.markDirty(true);
-            });
-            this.renderer.setOnClick?.(() => {
-                activePartSignal.set(this);
-            });
+            this.setupRendererCallbacks();
 
 
             // Update toolbar after map is fully loaded
@@ -377,6 +336,86 @@ export class GsMapEditor extends KPart {
 
     getGsMap(): GsMap | undefined {
         return this.gsMap;
+    }
+
+    private setupRendererCallbacks(): void {
+        if (!this.renderer) return;
+
+        this.renderer.setOnDirty(() => this.markDirty(true));
+
+        // Handle sync events from iframe
+        this.renderer.setOnSync((event: MapSyncEvent) => {
+            if (!this.gsMap) return;
+
+            switch (event.type) {
+                case 'viewChanged':
+                    // Update view from user interaction
+                    this.gsMap.view.center = event.view.center;
+                    this.gsMap.view.zoom = event.view.zoom;
+                    if (event.view.rotation !== undefined) {
+                        this.gsMap.view.rotation = event.view.rotation;
+                    }
+                    if (event.view.pitch !== undefined) {
+                        this.gsMap.view.pitch = event.view.pitch;
+                    }
+                    if (event.view.bearing !== undefined) {
+                        this.gsMap.view.bearing = event.view.bearing;
+                    }
+                    break;
+
+                case 'featuresChanged':
+                    // Update features for specific layer (drawing/deleting)
+                    const layer = findLayerByUuid(this.gsMap, event.layerUuid);
+                    if (layer && layer.source?.type === GsSourceType.Features) {
+                        (layer.source as any).features = event.features;
+                    }
+                    break;
+
+                case 'featureSelected':
+                    // Emit feature selection event
+                    const selectionPayload = {
+                        feature: event.feature,
+                        layerUuid: event.layerUuid,
+                        metrics: event.metrics
+                    } as FeatureSelection;
+                    console.info(`Feature metrics:`, selectionPayload.metrics);
+                    mapChangedSignal.set({
+                        part: this,
+                        event: MapEvents.FEATURE_SELECTED,
+                        payload: selectionPayload
+                    });
+                    break;
+
+                case 'featureDeselected':
+                    // Emit feature deselection (null payload)
+                    console.info('Feature deselected');
+                    mapChangedSignal.set({
+                        part: this,
+                        event: MapEvents.FEATURE_SELECTED,
+                        payload: null
+                    });
+                    // Update interaction mode when selection is disabled
+                    if (this.interactionMode === 'select') {
+                        this.interactionMode = 'none';
+                        this.updateToolbar();
+                    }
+                    break;
+                    
+                case 'drawingDisabled':
+                    // Update interaction mode when drawing is disabled via ESC
+                    if (this.interactionMode === 'draw') {
+                        this.interactionMode = 'none';
+                        this.updateToolbar();
+                    }
+                    break;
+            }
+
+            this.markDirty(true);
+        });
+
+        this.renderer.setOnClick?.(() => {
+            activePartSignal.set(this);
+        });
     }
 
     async save() {
@@ -473,6 +512,47 @@ export class GsMapEditor extends KPart {
         } catch (error: any) {
             toastError(error.message);
         }
+    }
+
+    private async handleRendererChange(newRenderer: RendererType) {
+        if (newRenderer === this.selectedRenderer) return;
+        
+        this.selectedRenderer = newRenderer;
+        
+        // Store in map state for persistence
+        if (this.gsMap) {
+            if (!this.gsMap.state) {
+                this.gsMap.state = {};
+            }
+            this.gsMap.state.renderer = newRenderer;
+        }
+        
+        // Re-create the renderer with new type
+        if (this.renderer && this.gsMap && this.mapContainer.value) {
+            const env = (this.renderer as IFrameMapRenderer).getEnv();
+            
+            // Destroy old renderer
+            this.renderer.destroy();
+            
+            // Create new renderer with selected type
+            this.renderer = new IFrameMapRenderer(this.gsMap, env, newRenderer);
+            
+            const iframeOps = this.renderer.getOperations();
+            const domainOps = new DomainMapOperations(this.gsMap, this.renderer);
+            const signalingOps = new SignalingMapOperations(this);
+            this.operations = createProxy([domainOps, iframeOps, signalingOps]);
+            
+            try {
+                await this.renderer.render(this.mapContainer.value);
+                this.setupRendererCallbacks();
+                toastInfo(`Switched to ${newRenderer === 'maplibre' ? 'MapLibre' : 'OpenLayers'} renderer`);
+            } catch (error: any) {
+                toastError(`Failed to switch renderer: ${error.message}`);
+            }
+        }
+        
+        this.markDirty(true);
+        this.updateToolbar();
     }
 
     private async handleCreateDrawingLayer() {

@@ -1,4 +1,4 @@
-import { MapOperations } from "./map-renderer";
+import { MapOperations } from "@kispace-io/gs-lib";
 import { mapChangedSignal, MapEvents } from "./gs-signals";
 
 /**

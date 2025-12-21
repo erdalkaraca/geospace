@@ -221,8 +221,13 @@ export async function bundleApp(
         }
     }
     
+    // Extract filename from path (works in both browser and Node.js)
+    const extractFilename = (filePath: string): string => {
+        const lastSlash = Math.max(filePath.lastIndexOf('/'), filePath.lastIndexOf('\\'))
+        return lastSlash >= 0 ? filePath.substring(lastSlash + 1) : filePath
+    }
+    
     // Write output files and find the main entry file and CSS (fallback if metafile didn't work)
-    const path = await import('path')
     for (const file of result.outputFiles) {
         let filePath = file.path || ''
         
@@ -233,11 +238,11 @@ export async function bundleApp(
         
         if (filePath.startsWith('/') || (filePath.length > 2 && filePath[1] === ':')) {
             // Absolute path - extract filename and build relative path
-            filename = path.basename(filePath)
+            filename = extractFilename(filePath)
             relativePath = `${outputDir}/${filename}`
         } else {
             // Relative path - ensure it's under outputDir
-            filename = path.basename(filePath)
+            filename = extractFilename(filePath)
             relativePath = filePath.startsWith(outputDir) ? filePath : `${outputDir}/${filePath}`
         }
         
@@ -255,12 +260,6 @@ export async function bundleApp(
     
     if (!mainOutputFile) {
         throw new Error('Could not find main output file')
-    }
-    
-    // Extract filename from path (handle both / and \ separators)
-    const extractFilename = (filePath: string): string => {
-        const lastSlash = Math.max(filePath.lastIndexOf('/'), filePath.lastIndexOf('\\'))
-        return lastSlash >= 0 ? filePath.substring(lastSlash + 1) : filePath
     }
     
     return {
