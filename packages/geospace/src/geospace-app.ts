@@ -267,6 +267,7 @@ export const geospaceApp: AppDefinition = {
 
         logger.info('geo!space is ready!');
     },
+    render: () => html`<k-standard-app show-bottom-sidebar="true"></k-standard-app>`
 };
 
 appLoaderService.registerApp(geospaceApp, {
