@@ -28,7 +28,7 @@ import {
     toastInfo,
     toastError,
     taskService
-} from "@kispace-io/appspace/api";
+} from "@kispace-io/core/api";
 
 const logger = createLogger('GsCommandHandlers');
 

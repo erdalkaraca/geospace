@@ -47,7 +47,7 @@ import '@awesome.me/webawesome/dist/components/button/button.js';
 Or if using the appspace package:
 
 ```typescript
-import '@kispace-io/appspace/externals/webawesome';
+import '@kispace-io/core/externals/webawesome';
 ```
 
 WebAwesome is an optional peer dependency of this package - it's only needed if your user modules use WebAwesome components.

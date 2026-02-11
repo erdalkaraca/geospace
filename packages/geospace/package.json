@@ -3,6 +3,9 @@
   "version": "0.0.0",
   "type": "module",
   "license": "EPL-2.0",
+  "exports": {
+    "./geo": "./src/geo/index.ts"
+  },
   "scripts": {
     "---predev": "npm run build --workspace=@kispace-io/gs-lib",
     "dev": "vite",
@@ -12,11 +15,18 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@kispace-io/appspace": "^1.1.25",
+    "@kispace-io/core": "^0.8.2",
+    "@kispace-io/extension-ai-system": "^0.8.2",
+    "@kispace-io/extension-gtfs": "file:../extension-gtfs",
+    "@kispace-io/extension-mapbuilder": "file:../extension-mapbuilder",
+    "@kispace-io/extension-mapprops": "file:../extension-mapprops",
+    "@kispace-io/extension-overpass": "file:../extension-overpass",
+    "@kispace-io/extension-style-editor": "file:../extension-style-editor",
     "@kispace-io/gs-lib": "file:../gs-lib",
+    "dotenv": "^17.2.4",
     "esbuild-wasm": "^0.25.11",
     "font-gis": "^1.0.6",
-    "osmtogeojson": "^3.0.0-beta.5",
+    "jsonata": "^2.1.0",
     "pace-js": "^1.2.4"
   },
   "devDependencies": {

@@ -5,9 +5,7 @@ import {parse} from "dotenv";
 import {
     File,
     workspaceService,
-    contributionRegistry,
-    TreeContribution
-} from "@kispace-io/appspace/api";
+} from "@kispace-io/core/api";
 import { WorkspaceModuleResolver } from "./workspace-module-resolver";
 
 // Map file extensions to GsSourceType
@@ -108,43 +106,6 @@ export const revertBlobUris = async (obj: any, propName: string) => {
         }
         obj[propName] = _blobsLookup[blobUri]
     }
-}
-
-export interface CatalogContribution extends TreeContribution {
-    items?: CatalogContribution[]
-}
-
-export const registerCatalog = (catalog: CatalogContribution) => {
-    contributionRegistry.registerContribution("catalog.root", {
-        label: catalog.label,
-        icon: catalog.icon,
-        contributionId: catalog.contributionId
-    } as TreeContribution)
-
-    const contributionId = catalog.contributionId ?? catalog.label
-    catalog.items?.forEach((item: any) => {
-        contributionRegistry.registerContribution(contributionId, {
-            label: item.label,
-            icon: item.icon,
-            contributionId: item.contributionId
-        } as TreeContribution)
-
-        const url = (import.meta.env.VITE_BASE_PATH || "") + "/."
-        const base = import.meta.resolve(url)
-        item.items.forEach((child: any) => {
-            const contribution = {
-                label: child.label,
-                icon: child.icon,
-                state: {
-                    ...child.state
-                }
-            } as TreeContribution
-            if (contribution.state?.url) {
-                contribution.state.url = contribution.state.url.replace("${baseURL}/", base)
-            }
-            contributionRegistry.registerContribution(item.contributionId, contribution)
-        })
-    })
 }
 
 export const replaceVars = (env: any) => {

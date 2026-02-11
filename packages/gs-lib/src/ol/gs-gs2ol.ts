@@ -48,8 +48,8 @@ import LayerGroup from "ol/layer/Group";
 import {Control} from "ol/control";
 import * as ol from "./gs-olns"
 import {lit} from "../gs-litns";
-import {v4 as uuidv4} from '@kispace-io/appspace/externals/third-party'
-import {subscribe, publish, unsubscribe} from '@kispace-io/appspace/core/events'
+import {v4 as uuidv4} from '@kispace-io/core/externals/third-party'
+import {subscribe, publish, unsubscribe} from '@kispace-io/core/core/events'
 import {GsControlAdapter, GsOverlayAdapter} from "./gs-ol-adapters";
 import {rtUtils} from "../index";
 import Layer from "ol/layer/Layer";

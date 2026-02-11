@@ -1,4 +1,4 @@
-import { css, html, customElement, property, createRef, ref, Ref, when, keyed } from '@kispace-io/appspace/externals/lit';
+import { css, html, customElement, property, createRef, ref, Ref, when, keyed } from '@kispace-io/core/externals/lit';
 import {
     DEFAULT_GSMAP,
     ensureUuidsRecursive,
@@ -29,7 +29,7 @@ import {
     promptDialog,
     activePartSignal,
     createLogger
-} from "@kispace-io/appspace/api";
+} from "@kispace-io/core/api";
 
 const logger = createLogger('GsMapEditor');
 

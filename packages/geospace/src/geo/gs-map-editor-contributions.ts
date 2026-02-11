@@ -1,11 +1,11 @@
 import {rtUtils} from "@kispace-io/gs-lib";
 import {toBlobUri} from "./utils";
-import {html} from "@kispace-io/appspace/externals/lit";
+import {html} from "@kispace-io/core/externals/lit";
 import {
     EditorInput,
     editorRegistry,
     File
-} from "@kispace-io/appspace/api";
+} from "@kispace-io/core/api";
 
 rtUtils.resolveUrl = path => toBlobUri(path);
 

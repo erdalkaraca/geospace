@@ -15,26 +15,25 @@ const isExternal = (id: string) => {
   if (id.startsWith('./') || id.startsWith('../')) {
     return false;
   }
-  // Bundle appspace modules that gs-lib directly uses
-  // These are re-exports from appspace, so we bundle them to make gs-lib self-contained
-  const appspaceModulesToBundle = [
-    '@kispace-io/appspace/externals/third-party',  // uuid
-    '@kispace-io/appspace/externals/lit',          // lit
-    '@kispace-io/appspace/externals/webawesome',   // webawesome
-    '@kispace-io/appspace/core/events'              // subscribe, publish, unsubscribe
+  // Bundle core modules that gs-lib directly uses
+  // These are re-exports from core, so we bundle them to make gs-lib self-contained
+  const coreModulesToBundle = [
+    '@kispace-io/core/externals/third-party',  // uuid
+    '@kispace-io/core/externals/lit',          // lit
+    '@kispace-io/core/externals/webawesome',   // webawesome
+    '@kispace-io/core/core/events'              // subscribe, publish, unsubscribe
   ];
   
-  // Check if it's an appspace module we want to bundle
-  const isAppspaceModuleToBundle = appspaceModulesToBundle.some(module => 
+  const isCoreModuleToBundle = coreModulesToBundle.some(module =>
     id === module || id.startsWith(`${module}/`)
   );
   
-  if (isAppspaceModuleToBundle) {
-    return false; // Bundle these appspace modules
+  if (isCoreModuleToBundle) {
+    return false;
   }
   
-  // Keep other appspace imports external (e.g., ./api which pulls in the entire framework)
-  if (id.startsWith('@kispace-io/appspace')) {
+  // Keep other core imports external (e.g., ./api which pulls in the entire framework)
+  if (id.startsWith('@kispace-io/core')) {
     return true;
   }
   // Bundle absolute paths to source files (entry points)
@@ -62,21 +61,17 @@ const isExternal = (id: string) => {
   }
   
   // Bundle transitive dependencies of ol/ol-mapbox-style
-  // These are packages imported by ol/ol-mapbox-style that are not appspace
-  // Check if it's a bare specifier (not relative, not appspace)
-  const isBareSpecifier = !id.startsWith('./') && 
-                          !id.startsWith('../') && 
-                          !id.startsWith('@kispace-io/appspace');
+  // These are packages imported by ol/ol-mapbox-style that are not core
+  const isBareSpecifier = !id.startsWith('./') &&
+                          !id.startsWith('../') &&
+                          !id.startsWith('@kispace-io/core');
   
-  // Check if it's an absolute path to node_modules (but not appspace)
-  const isNodeModulesPath = path.isAbsolute(id) && 
-                           id.includes('/node_modules/') && 
-                           !id.includes('/node_modules/@kispace-io/appspace/');
+  const isNodeModulesPath = path.isAbsolute(id) &&
+                           id.includes('/node_modules/') &&
+                           !id.includes('/node_modules/@kispace-io/core/');
   
-  // If it's a bare specifier or a node_modules path (and not appspace), bundle it
-  // This bundles transitive dependencies of ol/ol-mapbox-style
   if (isBareSpecifier || isNodeModulesPath) {
-    return false; // Bundle transitive dependencies
+    return false;
   }
   
   // Everything else (node built-ins, etc.) should be external

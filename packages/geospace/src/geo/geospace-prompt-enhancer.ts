@@ -1,6 +1,6 @@
-import type { PromptEnhancer, ExecutionContext, PromptEnhancerContribution } from "@kispace-io/appspace/extensions/ai-system";
-import { CID_PROMPT_ENHANCERS } from "@kispace-io/appspace/extensions/ai-system";
-import { contributionRegistry } from "@kispace-io/appspace/api";
+import type { PromptEnhancer, PromptEnhancerContribution } from "@kispace-io/extension-ai-system/api";
+import { CID_PROMPT_ENHANCERS } from "@kispace-io/extension-ai-system/api";
+import { ExecutionContext, contributionRegistry } from "@kispace-io/core";
 
 const GEOSPACE_SPECIFIC_PROMPT = `
 **geo!space - WebGIS Application:**

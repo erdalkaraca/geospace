@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from '@kispace-io/appspace/externals/third-party'
+import { v4 as uuidv4 } from '@kispace-io/core/externals/third-party'
 
 export const KEY_LABEL = "label";
 export const KEY_NAME = "name";

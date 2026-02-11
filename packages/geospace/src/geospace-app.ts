@@ -1,4 +1,4 @@
-import { html } from "@kispace-io/appspace/externals/lit";
+import { html } from "@kispace-io/core/externals/lit";
 import geospacePackageJson from "../package.json";
 const appVersion = geospacePackageJson.version;
 
@@ -13,21 +13,25 @@ import {
     commandRegistry,
     registerAll,
     activeSelectionSignal,
-    SIDEBAR_MAIN_BOTTOM,
     TOOLBAR_MAIN,
     TOOLBAR_MAIN_RIGHT,
     File,
     StringFile,
     type IconContribution
-} from "@kispace-io/appspace/api";
+} from "@kispace-io/core/api";
+import '@kispace-io/extension-in-browser-ml';
+import '@kispace-io/extension-ai-system';
+import '@kispace-io/extension-mapbuilder';
+import '@kispace-io/extension-style-editor';
+import '@kispace-io/extension-overpass';
+import '@kispace-io/extension-gtfs';
+import '@kispace-io/extension-catalog';
+import '@kispace-io/extension-mapprops';
 
 // App-specific imports
 import "./geo/gs-map-editor-contributions"
 import './geo/gs-map-editor'
-import './geo/gs-map-props'
-import './geo/gs-catalog-contributions'
 import './geo/gs-command-handlers'
-import './geo/gs-catalog'
 
 import { registerGeospacePromptEnhancer } from "./geo/geospace-prompt-enhancer"
 import README from "../../../README.md?raw"
@@ -36,40 +40,12 @@ import { DEFAULT_GSMAP } from "@kispace-io/gs-lib";
 
 const logger = createLogger('GeoSpaceApp');
 
-const GEOSPACE_EXTENSIONS = [
-    "geospace.styleEditor",
-    "system.mdeditor",
-    "system.monaco",
-    "system.download",
-    "system.commandpalette",
-    "system.github-service",
-    "system.memoryusage",
-    "system.pythonpackagemanager",
-    "system.settings-tree",
-    "system.ai-system",
-    "system.howto"
-];
-
 const GEOSPACE_UI_CONTRIBUTIONS = [
     {
         target: TOOLBAR_MAIN,
         slot: "start",
         label: "Brand",
         html: `<span style="margin-right: 1rem;"><span><nobr>🌐<i><b>geo!</b></i><small>space</small></nobr></span></span>`
-    },
-    {
-        target: "system.fastviews-bottomend",
-        name: "catalog",
-        label: "Catalog",
-        icon: "book",
-        component: (id: string) => html`<gs-catalog id="${id}"></gs-catalog>`
-    },
-    {
-        target: SIDEBAR_MAIN_BOTTOM,
-        name: "map-props",
-        label: "Map Properties",
-        icon: "fg map-options",
-        component: (id: string) => html`<gs-map-props id="${id}"></gs-map-props>`
     },
     {
         target: "contextmenu:filebrowser",
@@ -92,37 +68,6 @@ const GEOSPACE_UI_CONTRIBUTIONS = [
     }
 ] as any[];
 
-const GEOSPACE_EXTENSION_CONTRIBUTIONS = [
-    {
-        id: "geospace.mapBuilder",
-        name: "geo!space Map Builder",
-        description: "Compile a geo!space file to an interactive website",
-        loader: () => import("./extensions/build/mapbuilder-extension"),
-        icon: "earth"
-    },
-    {
-        id: "geospace.styleEditor",
-        name: "Style Editor",
-        description: "Visual editor for defining and managing map styles and rules",
-        loader: () => import("./extensions/style-editor/style-editor-extension"),
-        icon: "palette"
-    },
-    {
-        id: "geospace.overpass",
-        name: "OpenStreetMap Overpass",
-        description: "OpenStreetMap Overpass API Integration for use with LLMs",
-        loader: () => import("./extensions/overpass-extension"),
-        icon: "table"
-    },
-    {
-        id: "geospace.gtfs",
-        name: "GTFS to GeoJSON Converter",
-        description: "Convert GTFS zip archives to GeoJSON files",
-        loader: () => import("./extensions/gtfs/gtfs-extension"),
-        icon: "map-location-dot"
-    }
-];
-
 export const geospaceApp: AppDefinition = {
     id: "geospace",
     name: "🌐geo!space",
@@ -135,20 +80,23 @@ export const geospaceApp: AppDefinition = {
         },
         favicon: '/geospace.svg'
     },
-    extensions: GEOSPACE_EXTENSIONS,
+    extensions: [
+        "geospace.catalog",
+        "geospace.mapProps",
+        "geospace.styleEditor",
+        "system.mdeditor",
+        "system.monaco",
+        "system.utils",
+        "system.commandpalette",
+        "system.github-service",
+        "system.memoryusage",
+        "system.settings-tree",
+        "system.ai-system",
+    ],
     contributions: {
         ui: GEOSPACE_UI_CONTRIBUTIONS,
-        extensions: GEOSPACE_EXTENSION_CONTRIBUTIONS
     },
-    releaseHistory: async () => {
-        try {
-            const { fetchReleases } = await import("@kispace-io/appspace/extensions/github-service/github-service");
-            return await fetchReleases();
-        } catch (error) {
-            console.error('Failed to fetch release history from GitHub:', error);
-            return [];
-        }
-    },
+    releaseHistory: [],
 
     async initialize() {
         packageInfoService.addPackage({
@@ -267,11 +215,9 @@ export const geospaceApp: AppDefinition = {
 
         logger.info('geo!space is ready!');
     },
-    render: () => html`<k-standard-app show-bottom-sidebar="true"></k-standard-app>`
+    render: () => html`<k-standard-layout show-bottom-sidebar="true"></k-standard-app>`
 };
 
 appLoaderService.registerApp(geospaceApp, {
-    defaultAppId: 'geospace',
     autoStart: true,
-    container: document.body
 });
