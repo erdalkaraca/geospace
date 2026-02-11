@@ -21,6 +21,7 @@ import type { PromptEnhancer, PromptEnhancerContribution } from "@kispace-io/ext
 import { CID_PROMPT_ENHANCERS } from "@kispace-io/extension-ai-system/api";
 import '@kispace-io/extension-in-browser-ml';
 import '@kispace-io/extension-ai-system';
+import '@kispace-io/extension-media-viewer';
 import '@kispace-io/extension-mapbuilder';
 import '@kispace-io/extension-style-editor';
 import '@kispace-io/extension-overpass';
@@ -31,6 +32,8 @@ import '@kispace-io/extension-map-editor';
 
 import README from "../../../README.md?raw";
 import GEOSPACE_SYSPROMPT from "./geospace-sysprompt.txt?raw";
+import GEOSPACE_CATALOG from "./geospace-catalog.json";
+import { registerCatalog } from "@kispace-io/extension-catalog/register-catalog";
 
 const logger = createLogger('GeoSpaceApp');
 
@@ -79,6 +82,10 @@ export const geospaceApp: AppDefinition = {
             dependencies: geospacePackageJson.dependencies,
             devDependencies: geospacePackageJson.devDependencies
         });
+
+        const basePath = (import.meta.env.BASE_URL || "/").replace(/\/?$/, "/");
+        const baseUrl = (typeof window !== "undefined" ? window.location.origin : "") + basePath;
+        registerCatalog(GEOSPACE_CATALOG as any, baseUrl);
 
         contributionRegistry.registerContribution(CID_PROMPT_ENHANCERS, {
             label: "Geo!space Prompt Enhancer",

@@ -3,9 +3,6 @@
   "version": "0.0.0",
   "type": "module",
   "license": "EPL-2.0",
-  "exports": {
-    "./geo": "./src/geo/index.ts"
-  },
   "scripts": {
     "---predev": "npm run build --workspace=@kispace-io/gs-lib",
     "dev": "vite",
@@ -17,6 +14,7 @@
   "dependencies": {
     "@kispace-io/core": "^0.8.2",
     "@kispace-io/extension-ai-system": "^0.8.2",
+    "@kispace-io/extension-media-viewer": "^0.8.2",
     "@kispace-io/extension-gtfs": "file:../extension-gtfs",
     "@kispace-io/extension-map-editor": "file:../extension-map-editor",
     "@kispace-io/extension-mapbuilder": "file:../extension-mapbuilder",

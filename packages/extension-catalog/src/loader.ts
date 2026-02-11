@@ -11,10 +11,6 @@ import {
     toastInfo,
     contributionRegistry,
 } from "@kispace-io/core/api";
-import catalogData from "./geospace-catalog.json";
-import { registerCatalog } from "./register-catalog";
-
-registerCatalog(catalogData as any);
 
 registerAll({
     command: {

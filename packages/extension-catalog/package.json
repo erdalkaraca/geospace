@@ -6,7 +6,8 @@
   "main": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./loader": "./src/loader.ts"
+    "./loader": "./src/loader.ts",
+    "./register-catalog": "./src/register-catalog.ts"
   },
   "dependencies": {
     "@kispace-io/core": "^0.8.2"

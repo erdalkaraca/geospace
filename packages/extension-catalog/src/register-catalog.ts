@@ -7,7 +7,7 @@ export interface CatalogContribution extends TreeContribution {
     items?: CatalogContribution[];
 }
 
-export function registerCatalog(catalog: CatalogContribution): void {
+export function registerCatalog(catalog: CatalogContribution, baseUrl: string): void {
     contributionRegistry.registerContribution("catalog.root", {
         label: catalog.label,
         icon: catalog.icon,
@@ -22,9 +22,6 @@ export function registerCatalog(catalog: CatalogContribution): void {
             contributionId: item.contributionId,
         } as TreeContribution);
 
-        const url =
-            (import.meta.env.VITE_BASE_PATH || "") + "/.";
-        const base = import.meta.resolve(url);
         item.items?.forEach((child: any) => {
             const contribution = {
                 label: child.label,
@@ -34,7 +31,7 @@ export function registerCatalog(catalog: CatalogContribution): void {
             if (contribution.state?.url) {
                 contribution.state.url = (
                     contribution.state.url as string
-                ).replace("${baseURL}/", base);
+                ).replace("${baseURL}/", baseUrl);
             }
             contributionRegistry.registerContribution(
                 item.contributionId!,
