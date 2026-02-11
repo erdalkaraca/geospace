@@ -6,14 +6,12 @@ import {
     GsMap
 } from "@kispace-io/gs-lib";
 
-const iframeSrc = "iframe-map-renderer.html";
+import iframeMessagingUrl from "./iframe-messaging.ts?url";
+
+const IFRAME_HTML = (scriptUrl: string) => `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Map Renderer</title><style>html,body,#map-container{height:100%;width:100%;margin:0;padding:0;overflow:hidden}</style></head><body><div id="map-container"></div><script type="module" src="${scriptUrl}"><\/script></body></html>`;
 
 export type RendererType = 'openlayers' | 'maplibre';
 
-/**
- * IFrame map renderer that communicates with an iframe-based renderer
- * This allows the host app to interact with a map renderer running in isolation
- */
 export class IFrameMapRenderer implements MapRenderer {
     private iframe?: HTMLIFrameElement;
     private messageId = 0;
@@ -53,64 +51,35 @@ export class IFrameMapRenderer implements MapRenderer {
         }) as MapOperations;
     }
 
-    /**
-     * Handles perspective switches where the editor area (and this iframe) moves in the DOM.
-     * 
-     * Browser behavior: When an iframe is detached and reattached to the DOM, browsers destroy
-     * its JavaScript context and reload the content. This is documented in:
-     * - WebKit bug #32848: "avoiding iframe reload on reparenting between documents"
-     * - Mozilla bug #254144: "iframes reload when moved around DOM tree"
-     * 
-     * Solution: Accept the reload, preserve the data model (GsMap), recreate the iframe.
-     * This takes ~1 second (iframe initialization + OpenLayers setup), which is acceptable.
-     */
     async reattached(): Promise<void> {
         if (!this.targetElement) {
             console.warn('No target element stored, cannot reattach');
             return;
         }
-        
-        // Clean up the old broken iframe
         if (this.iframe && this.iframe.parentElement) {
             this.iframe.remove();
         }
-        
-        // Re-render with a fresh iframe (preserves this.gsMap state)
         await this.render(this.targetElement);
     }
 
     async render(container: string | HTMLElement): Promise<void> {
-        // Create iframe for isolated rendering
         this.iframe = document.createElement('iframe');
         this.iframe.style.overflow = 'hidden';
-        
-        // Apply initial styles
         this.updateIframeStyles();
-
-        // Set up iframe content
-        this.iframe.src = iframeSrc;
-
-        // Append to container
+        this.iframe.srcdoc = IFRAME_HTML(iframeMessagingUrl);
         this.targetElement = typeof container === 'string'
             ? document.querySelector(container) as HTMLElement
             : container;
-
         if (!this.targetElement) {
             throw new Error('Container element not found');
         }
-
         this.targetElement.innerHTML = '';
         this.targetElement.appendChild(this.iframe);
-
-        // Wait for iframe to load and initialize
         await this.waitRendererReady();
-
         this.setupMessageListener();
-
-        // Send initial render command with renderer type
         await this.sendMessage('render', { gsMap: this.gsMap, env: this.env, renderer: this.rendererType });
     }
-    
+
     async modelToUI(updatedGsMap?: GsMap): Promise<void> {
         await this.sendMessage('modelToUI', updatedGsMap ?? this.gsMap);
     }
@@ -134,9 +103,7 @@ export class IFrameMapRenderer implements MapRenderer {
     }
 
     triggerDirty() {
-        if (this.onDirtyCallback) {
-            this.onDirtyCallback()
-        }
+        this.onDirtyCallback?.();
     }
 
     setOnSync(callback: (event: MapSyncEvent) => void): void {
@@ -148,9 +115,7 @@ export class IFrameMapRenderer implements MapRenderer {
     }
 
     triggerSync(event: MapSyncEvent) {
-        if (this.onSyncCallback) {
-            this.onSyncCallback(event)
-        }
+        this.onSyncCallback?.(event);
     }
 
     toggleMobileView(): void {
@@ -164,9 +129,7 @@ export class IFrameMapRenderer implements MapRenderer {
 
     private updateIframeStyles(): void {
         if (!this.iframe) return;
-
         if (this.isMobileView) {
-            // Mobile simulation styles
             this.iframe.style.width = '375px';
             this.iframe.style.height = '667px';
             this.iframe.style.border = '2px solid rgb(168, 168, 168)';
@@ -175,7 +138,6 @@ export class IFrameMapRenderer implements MapRenderer {
             this.iframe.style.margin = '20px auto';
             this.iframe.style.display = 'block';
         } else {
-            // Desktop styles
             this.iframe.style.width = '100%';
             this.iframe.style.height = '100%';
             this.iframe.style.border = 'none';
@@ -187,20 +149,12 @@ export class IFrameMapRenderer implements MapRenderer {
 
     private async handleAssetResolution(id: string, path: string): Promise<void> {
         try {
-            // Import the toBlobUri function from the host context
             const { toBlobUri } = await import('./utils');
             const assetUrl = await toBlobUri(path);
-            
-            // Send the resolved URL back to the iframe with the same ID
-            this.iframe!.contentWindow!.postMessage({
-                id: id,
-                success: true,
-                assetUrl: assetUrl
-            }, '*');
+            this.iframe!.contentWindow!.postMessage({ id, success: true, assetUrl }, '*');
         } catch (error) {
-            // Send error back to iframe with the same ID
             this.iframe!.contentWindow!.postMessage({
-                id: id,
+                id,
                 success: false,
                 error: error instanceof Error ? error.message : 'Unknown error'
             }, '*');
@@ -223,33 +177,24 @@ export class IFrameMapRenderer implements MapRenderer {
 
     private setupMessageListener(): void {
         this.messageListener = (event: MessageEvent) => {
-            // Only handle messages from our iframe
             if (event.source !== this.iframe?.contentWindow) {
                 return;
             }
-
             const { id, result, error, type, event: syncEvent } = event.data;
-            
-            // Handle async responses to our messages
             if (id !== undefined && this.pendingMessages.has(id)) {
                 const { resolve, reject } = this.pendingMessages.get(id)!;
                 this.pendingMessages.delete(id);
-
                 if (error) {
                     reject(new Error(error));
                 } else {
-                    // The iframe spreads result into the message, so if result is undefined,
-                    // construct it from all properties except id, type, event, and error
                     const responseData = result ?? Object.fromEntries(
-                        Object.entries(event.data).filter(([key]) => 
+                        Object.entries(event.data).filter(([key]) =>
                             !['id', 'type', 'event', 'error'].includes(key)
                         )
                     );
                     resolve(responseData);
                 }
             }
-            
-            // Handle events from iframe
             if (type === 'dirty') {
                 this.onDirtyCallback?.();
             } else if (type === 'sync') {
@@ -257,18 +202,15 @@ export class IFrameMapRenderer implements MapRenderer {
             } else if (type === 'iframeClicked') {
                 this.onClickCallback?.();
             } else if (type === 'resolveAsset') {
-                // Handle asset resolution requests from iframe
                 this.handleAssetResolution(id, event.data.path);
             }
         };
-
         window.addEventListener('message', this.messageListener);
     }
 
     private async waitRendererReady(): Promise<void> {
         return new Promise((resolve) => {
             const listener = (event: MessageEvent) => {
-                // Only handle messages from our iframe
                 if (event.source !== this.iframe?.contentWindow) {
                     return;
                 }
@@ -285,19 +227,10 @@ export class IFrameMapRenderer implements MapRenderer {
         if (!this.iframe) {
             throw new Error('Iframe not initialized');
         }
-
         const id = ++this.messageId;
-
         return new Promise((resolve, reject) => {
             this.pendingMessages.set(id, { resolve, reject });
-
-            this.iframe!.contentWindow!.postMessage({
-                id,
-                method,
-                params
-            }, '*');
-
-            // Set timeout for message response
+            this.iframe!.contentWindow!.postMessage({ id, method, params }, '*');
             setTimeout(() => {
                 if (this.pendingMessages.has(id)) {
                     this.pendingMessages.delete(id);
@@ -307,4 +240,3 @@ export class IFrameMapRenderer implements MapRenderer {
         });
     }
 }
-

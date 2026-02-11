@@ -1,7 +1,5 @@
 import {signal} from "@lit-labs/signals";
-import {
-    EMPTY_SIGNALPORT
-} from "@kispace-io/core/api";
+import {EMPTY_SIGNALPORT} from "@kispace-io/core/api";
 
 export enum MapEvents {
     LOADED, LAYER_ADDED, LAYER_DELETED, LAYER_UPDATED, FEATURE_SELECTED
@@ -16,4 +14,4 @@ export interface FeatureSelection {
     };
 }
 
-export const mapChangedSignal = signal<any>(EMPTY_SIGNALPORT)
+export const mapChangedSignal = signal<any>(EMPTY_SIGNALPORT);

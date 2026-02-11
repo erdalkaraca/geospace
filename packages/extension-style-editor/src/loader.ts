@@ -1,4 +1,4 @@
-import { GsMapEditor } from "@kispace-io/geospace/geo";
+import { GsMapEditor } from "@kispace-io/extension-map-editor/geo";
 import { GsStyleEditor } from "./gs-style-editor";
 import {
     activeEditorSignal,

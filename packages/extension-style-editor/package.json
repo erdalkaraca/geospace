@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@kispace-io/core": "^0.8.2",
-    "@kispace-io/geospace": "file:../geospace",
+    "@kispace-io/extension-map-editor": "file:../extension-map-editor",
     "@kispace-io/gs-lib": "file:../gs-lib"
   },
   "devDependencies": {

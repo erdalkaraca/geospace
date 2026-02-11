@@ -7,7 +7,7 @@ import {
     type FileSystem,
     type GsLibFileCopier,
 } from "@kispace-io/gs-lib";
-import { loadEnvs } from "@kispace-io/geospace/geo";
+import { loadEnvs } from "@kispace-io/extension-map-editor/geo";
 import {
     Directory,
     File,

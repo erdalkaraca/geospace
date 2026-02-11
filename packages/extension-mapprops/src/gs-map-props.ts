@@ -1,5 +1,5 @@
 import {css, html, customElement, state, when} from '@kispace-io/core/externals/lit';
-import {GsMapEditor, mapChangedSignal, getOriginalUri} from "@kispace-io/geospace/geo";
+import {GsMapEditor, mapChangedSignal, getOriginalUri} from "@kispace-io/extension-map-editor/geo";
 import {GsLayer, GsControl, GsOverlay, findLayerByUuid, findLayerIndexByUuid} from "@kispace-io/gs-lib";
 import {
     KPart,

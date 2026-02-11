@@ -1,5 +1,5 @@
 import { html, render } from "@kispace-io/core/externals/lit";
-import { GsMapEditor } from "@kispace-io/geospace/geo";
+import { GsMapEditor } from "@kispace-io/extension-map-editor/geo";
 import { browserMapBuilder } from "./browser-map-builder";
 import {
     activePartSignal,

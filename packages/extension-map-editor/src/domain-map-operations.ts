@@ -8,10 +8,6 @@ import {
     GsMap
 } from "@kispace-io/gs-lib";
 
-/**
- * Domain model operations that only update the GsMap domain model
- * This is used by the client side (host app) for iframe communication
- */
 export class DomainMapOperations implements MapOperations {
     constructor(
         private gsMap: GsMap,
@@ -32,9 +28,7 @@ export class DomainMapOperations implements MapOperations {
         this.triggerDirty();
     }
 
-
     async switchColorMode(mode?: 'dark' | 'light'): Promise<void> {
-        // Store color mode preference in domain model
         (this.gsMap.view as any).colorMode = mode;
         this.triggerDirty();
     }
@@ -121,24 +115,15 @@ export class DomainMapOperations implements MapOperations {
         }
     }
 
-    async enableDrawing(_geometryType: 'Point' | 'LineString' | 'Polygon', _layerUuid: string): Promise<void> {
-        // No domain model changes - this is UI-only
-    }
+    async enableDrawing(_geometryType: 'Point' | 'LineString' | 'Polygon', _layerUuid: string): Promise<void> {}
 
-    async disableDrawing(): Promise<void> {
-        // No domain model changes - this is UI-only
-    }
+    async disableDrawing(): Promise<void> {}
 
-    async enableFeatureSelection(): Promise<void> {
-        // No domain model changes - this is UI-only
-    }
+    async enableFeatureSelection(): Promise<void> {}
 
-    async disableSelection(): Promise<void> {
-        // No domain model changes - this is UI-only
-    }
+    async disableSelection(): Promise<void> {}
 
     async deleteSelectedFeatures(): Promise<void> {
-        // Features are removed from OpenLayers source, changes will sync
         this.triggerDirty();
     }
 }

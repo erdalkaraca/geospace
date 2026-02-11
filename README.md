@@ -122,7 +122,7 @@ export default function ({html, style, events, map}) {
 ```
 
 **Learn More:**
-- 📖 See the [User Modules Guide](packages/geospace/public/docs/user-modules.md) for complete documentation
+- 📖 See the [User Modules Guide](packages/app/public/docs/user-modules.md) for complete documentation
 - 🎨 Browse Web Awesome components: https://webawesome.com
 - 🗺️ Explore OpenLayers API: https://openlayers.org/
 

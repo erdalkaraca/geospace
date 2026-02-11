@@ -28,8 +28,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-/packages/geospace/public/lib
-/packages/geospace/stats.html
+/packages/app/public/lib
+/packages/app/stats.html
 
 # Internal documentation
 /docs/internal/

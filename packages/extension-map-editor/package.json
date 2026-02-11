@@ -1,18 +1,20 @@
 {
-  "name": "@kispace-io/extension-mapbuilder",
+  "name": "@kispace-io/extension-map-editor",
   "version": "0.0.0",
   "type": "module",
   "license": "EPL-2.0",
   "main": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./loader": "./src/loader.ts"
+    "./loader": "./src/loader.ts",
+    "./geo": "./src/geo.ts",
+    "./iframe-messaging": "./src/iframe-messaging.ts"
   },
   "dependencies": {
     "@kispace-io/core": "^0.8.2",
-    "@kispace-io/extension-map-editor": "file:../extension-map-editor",
     "@kispace-io/gs-lib": "file:../gs-lib",
-    "esbuild-wasm": "^0.25.11"
+    "dotenv": "^17.2.4",
+    "jsonata": "^2.1.0"
   },
   "devDependencies": {
     "typescript": "~5.9.3"

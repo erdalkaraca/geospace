@@ -9,8 +9,13 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
     root: __dirname,
+    plugins: [
+        mkcert(),
+        crossOriginIsolation(),
+    ],
     resolve: {
         alias: {
+            '@kispace-io/extension-map-editor': path.resolve(__dirname, '../extension-map-editor/src'),
             '@kispace-io/gs-lib': path.resolve(__dirname, '../gs-lib/src'),
             // Alias for dist files (used by build service)
             '@kispace-io/gs-lib/dist': path.resolve(__dirname, '../gs-lib/dist'),
@@ -26,10 +31,6 @@ export default defineConfig({
     optimizeDeps: {
         exclude: []
     },
-    plugins: [
-        mkcert(),
-        crossOriginIsolation(),
-    ],
     base: process.env.VITE_BASE_PATH || '/',
     worker: {
         format: 'es'
@@ -38,9 +39,7 @@ export default defineConfig({
         outDir: path.resolve(__dirname, '../../dist'),
         rollupOptions: {
             input: {
-                // Each app uses its own index.html (copied from appspace/index.html)
-                main: path.resolve(__dirname, 'index.html'),
-                iframe: path.resolve(__dirname, 'iframe-map-renderer.html')
+                main: path.resolve(__dirname, 'index.html')
             }
         }
     }

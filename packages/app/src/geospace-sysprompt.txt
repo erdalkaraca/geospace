@@ -1,8 +1,3 @@
-import type { PromptEnhancer, PromptEnhancerContribution } from "@kispace-io/extension-ai-system/api";
-import { CID_PROMPT_ENHANCERS } from "@kispace-io/extension-ai-system/api";
-import { ExecutionContext, contributionRegistry } from "@kispace-io/core";
-
-const GEOSPACE_SPECIFIC_PROMPT = `
 **geo!space - WebGIS Application:**
 
 geo!space is a WebGIS (Web Geographic Information System) application for creating, editing, and visualizing interactive maps.
@@ -21,19 +16,3 @@ When a .geospace file is open, the map editor provides:
 - Drawing tools for creating points, lines, and polygons
 - Style editor for customizing layer visualizations
 - Catalog integration for browsing and adding spatial data
-`;
-
-const geospacePromptEnhancer: PromptEnhancer = {
-    enhance: async (prompt: string, _context: ExecutionContext) => {
-        return `${prompt}\n\n${GEOSPACE_SPECIFIC_PROMPT}`;
-    },
-    priority: 5
-};
-
-export function registerGeospacePromptEnhancer() {
-    contributionRegistry.registerContribution(CID_PROMPT_ENHANCERS, {
-        label: "Geo!space Prompt Enhancer",
-        enhancer: geospacePromptEnhancer
-    } as PromptEnhancerContribution);
-}
-

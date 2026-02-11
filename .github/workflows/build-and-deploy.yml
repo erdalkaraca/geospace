@@ -42,7 +42,7 @@ jobs:
       - name: Set package.json version from tag
         run: |
           VERSION=${GITHUB_REF_NAME}
-          npm version --no-commit-hooks --no-git-tag-version "$VERSION" --workspace=@kispace-io/geospace
+          npm version --no-commit-hooks --no-git-tag-version "$VERSION" --workspace=@kispace-io/app
           npm version --no-commit-hooks --no-git-tag-version "$VERSION" --workspace=@kispace-io/gs-lib
 
       - name: Build gs-lib map builder package

@@ -2,13 +2,9 @@ import {GsSourceType, KEY_NAME} from "@kispace-io/gs-lib";
 import {BaseLayer, Map} from "@kispace-io/gs-lib/ol";
 import jsonata from "jsonata";
 import {parse} from "dotenv";
-import {
-    File,
-    workspaceService,
-} from "@kispace-io/core/api";
+import {File, workspaceService} from "@kispace-io/core/api";
 import { WorkspaceModuleResolver } from "./workspace-module-resolver";
 
-// Map file extensions to GsSourceType
 export const FILE_EXTENSION_TO_SOURCE_TYPE: Record<string, GsSourceType> = {
     '.geojson': GsSourceType.GeoJSON,
     '.json': GsSourceType.GeoJSON,
@@ -46,7 +42,6 @@ export const findOlLayer = (name: string, olMap: Map, notFound?: Function) => {
     if (!markersLayer && notFound) {
         markersLayer = notFound()
     }
-
     return markersLayer
 }
 
@@ -75,7 +70,6 @@ export const replaceUris = async (obj: any, propName: string, resolver?: Workspa
         if (isAbsoluteResource(url)) {
             continue
         }
-        
         let blobUri: string;
         if (propName === "src" && resolver) {
             try {
@@ -87,7 +81,6 @@ export const replaceUris = async (obj: any, propName: string, resolver?: Workspa
         } else {
             blobUri = await toBlobUri(url);
         }
-        
         _blobsLookup[blobUri] = obj[propName]
         obj[propName] = blobUri
     }
@@ -113,7 +106,7 @@ export const replaceVars = (env: any) => {
         const placeholderRegex = /\${([a-zA-Z0-9_]+)}/g;
         env[key] = (value as string).replace(placeholderRegex, (match: any, key: string) => {
             const replacementValue = env[key];
-            return replacementValue !== undefined ? replacementValue : match; // Use replacement or keep original if not found
+            return replacementValue !== undefined ? replacementValue : match;
         });
     })
 }
