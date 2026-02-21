@@ -24,6 +24,8 @@ export const toGsLayerType = (tag: string) => {
         case "bm":
         case "basemap.de":
             return GsLayerType.GROUP
+        case "scripted":
+            return GsLayerType.SCRIPTED
         default:
             return GsLayerType.VECTOR
     }

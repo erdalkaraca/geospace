@@ -58,5 +58,6 @@ editorRegistry.registerEditorInputHandler({
         editorInput.widgetFactory = (id: string) => html`
             <gs-map id="${id}" .input="${editorInput}"></gs-map>`
         return editorInput
-    }
+    },
+    ranking: 100,
 })

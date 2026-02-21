@@ -1,6 +1,7 @@
 // Core exports - renderer-agnostic model and utilities
 // For renderer-specific functionality, import from '@kispace-io/gs-lib/ol' or '@kispace-io/gs-lib/ml'
 export * from "./gs-model"
+export * from "./scripted-runtime-registry"
 
 // Map renderer interface (no implementation)
 export * from "./map-renderer"

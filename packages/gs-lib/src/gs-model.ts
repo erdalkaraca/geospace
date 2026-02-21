@@ -71,11 +71,11 @@ export interface GsState {
 }
 
 export enum GsSourceType {
-    OSM = "OSM", GeoJSON = "GeoJSON", Features = "Features", KML = "KML", GeoTIFF = "GeoTIFF", GPX = "GPX", BM = "BM", WMS = "WMS", WMTS = "WMTS", XYZ = "XYZ"
+    OSM = "OSM", GeoJSON = "GeoJSON", Features = "Features", KML = "KML", GeoTIFF = "GeoTIFF", GPX = "GPX", BM = "BM", WMS = "WMS", WMTS = "WMTS", XYZ = "XYZ", Scripted = "Scripted"
 }
 
 export enum GsLayerType {
-    TILE = "TILE", VECTOR = "VECTOR", GROUP = "GROUP"
+    TILE = "TILE", VECTOR = "VECTOR", GROUP = "GROUP", SCRIPTED = "SCRIPTED"
 }
 
 export enum GsGeometryType {
@@ -116,6 +116,12 @@ export interface GsLayer extends GsState {
     type: GsLayerType,
     source: GsSource,
     visible?: boolean
+}
+
+export interface GsScriptedVectorLayer extends GsLayer {
+    type: GsLayerType.SCRIPTED
+    lang?: string
+    params?: Record<string, any>
 }
 
 export interface GsScript extends GsState {

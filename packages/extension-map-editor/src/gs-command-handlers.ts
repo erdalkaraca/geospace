@@ -185,12 +185,22 @@ commandRegistry.registerAll({
             },
             {
                 "name": "url",
-                "description": "the URL or path within the workspace to load the features/geometries from",
+                "description": "the URL or path within the workspace to load the features/geometries from; for scripted this is the path to the script file (e.g. my-layer.js or my-layer.py)",
                 "required": false
             },
             {
                 "name": "stylePath",
                 "description": "the path within the workspace to the style json file if source is of type vector, for example, geojson",
+                "required": false
+            },
+            {
+                "name": "lang",
+                "description": "for scripted: script language override (e.g. javascript, python); inferred from url extension if omitted",
+                "required": false
+            },
+            {
+                "name": "params",
+                "description": "for scripted: JSON object of static parameters passed to the script at runtime",
                 "required": false
             }
         ]
@@ -200,12 +210,14 @@ commandRegistry.registerAll({
         execute: async context => {
             const operations = getMapOperations(context);
             const source = context.params!["source"]?.trim().toLowerCase()
+            const isBasemap = context?.params && context.params["basemap"] == true
+            const layerType = toGsLayerType(source)
+
             const url = context.params!["url"] as string
             // TODO: Refactor to use renderer-agnostic utilities
             // toGsSourceType, toGsLayerType, and toSourceUrl are OpenLayers-specific
             // These should be moved to gs-lib core or made renderer-agnostic
             const sourceType = toGsSourceType(source)
-            const isBasemap = context?.params && context.params["basemap"] == true
 
             let name: string | undefined;
             if (url) {
@@ -216,10 +228,11 @@ commandRegistry.registerAll({
                 name = sourceType;
             }
 
-            // Create layer in domain model format
             const gsLayer = ensureUuid({
                 name,
-                type: toGsLayerType(source),
+                type: layerType,
+                lang: context.params!["lang"] as string | undefined,
+                params: context.params!["params"] as Record<string, any> | undefined,
                 source: ensureUuid({
                     type: sourceType,
                     url: url ?? toSourceUrl(sourceType)

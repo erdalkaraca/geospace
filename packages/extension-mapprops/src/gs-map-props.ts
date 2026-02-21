@@ -1,6 +1,6 @@
 import {css, html, customElement, state, when} from '@kispace-io/core/externals/lit';
 import {GsMapEditor, mapChangedSignal, getOriginalUri} from "@kispace-io/extension-map-editor/geo";
-import {GsLayer, GsControl, GsOverlay, findLayerByUuid, findLayerIndexByUuid} from "@kispace-io/gs-lib";
+import {GsLayer, GsLayerType, GsScriptedVectorLayer, GsControl, GsOverlay, findLayerByUuid, findLayerIndexByUuid} from "@kispace-io/gs-lib";
 import {
     KPart,
     commandRegistry,
@@ -116,6 +116,19 @@ export class GsMapProps extends KPart {
         }
     }
 
+    private layerIcon(layer: GsLayer | GsScriptedVectorLayer) {
+        if (layer.type === GsLayerType.SCRIPTED) return 'code'
+        return 'layers'
+    }
+
+    private layerLabel(layer: GsLayer | GsScriptedVectorLayer, index: number) {
+        if (layer.type === GsLayerType.SCRIPTED) {
+            const scripted = layer as GsScriptedVectorLayer
+            return layer.name ?? scripted.src?.split('/').pop() ?? `Scripted Layer ${index + 1}`
+        }
+        return layer.name ?? `Layer ${index + 1}`
+    }
+
     private moveLayerDown(uuid: string) {
         if (!this.mapEditor) return;
 
@@ -173,13 +186,17 @@ export class GsMapProps extends KPart {
                 <wa-tree>
                     <wa-tree-item expanded>
                         <k-icon name="fg layers"></k-icon> Layers
-                        ${this.mapEditor!.getGsMap()?.layers.map((layer: GsLayer, i: number) => html`
+                        ${this.mapEditor!.getGsMap()?.layers.map((layer: GsLayer | GsScriptedVectorLayer, i: number) => html`
                             <wa-tree-item @click="${() => layer.uuid && this.selectLayer(layer.uuid)}"
                                           class="${this.selectedLayerUuid === layer.uuid ? 'selected' : ''}">
+                                <k-icon name="${this.layerIcon(layer)}"></k-icon>
                                 <div class="layer-item">
                                     <div class="layer-name">
-                                        <span>${layer.name ?? `Layer ${i + 1}`}${i == 0 ? html`
-                                            <small>(basemap)</small>` : ""}</span>
+                                        <span>${this.layerLabel(layer, i)}${i == 0 ? html`
+                                            <small>(basemap)</small>` : ""}
+                                            ${layer.type === GsLayerType.SCRIPTED ? html`
+                                            <small class="lang-badge">${(layer as GsScriptedVectorLayer).lang ?? 'js'}</small>` : ""}
+                                        </span>
                                     </div>
                                     <div class="layer-actions">
                                         <k-command size="small"
@@ -276,6 +293,17 @@ export class GsMapProps extends KPart {
         .layer-actions {
             display: flex;
             gap: 2px;
+        }
+
+        .lang-badge {
+            display: inline-block;
+            padding: 0 4px;
+            border-radius: 3px;
+            background: var(--wa-color-primary-100);
+            color: var(--wa-color-primary-700);
+            font-size: 0.7em;
+            vertical-align: middle;
+            margin-left: 4px;
         }
     `;
 }

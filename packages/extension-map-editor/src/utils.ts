@@ -1,5 +1,5 @@
-import {GsSourceType, KEY_NAME} from "@kispace-io/gs-lib";
-import {BaseLayer, Map} from "@kispace-io/gs-lib/ol";
+import {GsSourceType, KEY_NAME, scriptedRuntimeRegistry} from "@kispace-io/gs-lib";
+import {BaseLayer, Map, resolveScriptLang} from "@kispace-io/gs-lib/ol";
 import jsonata from "jsonata";
 import {parse} from "dotenv";
 import {File, workspaceService} from "@kispace-io/core/api";
@@ -21,6 +21,10 @@ export const getSourceTypeFromFile = (file: File): GsSourceType | null => {
         if (fileName.endsWith(ext)) {
             return sourceType;
         }
+    }
+    const lang = resolveScriptLang(fileName)
+    if (scriptedRuntimeRegistry.get(lang)) {
+        return GsSourceType.Scripted
     }
     return null;
 };

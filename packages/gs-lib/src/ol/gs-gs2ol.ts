@@ -10,6 +10,7 @@ import {
     GsLayerType,
     GsMap,
     GsOverlay,
+    GsScriptedVectorLayer,
     GsSource,
     GsSourceType,
     GsState,
@@ -28,6 +29,7 @@ import {
     KEY_UUID,
     KEY_URL
 } from "../gs-model";
+import { scriptedRuntimeRegistry, type ScriptedVars } from "../scripted-runtime-registry";
 import {Feature, Map, Overlay, View} from "ol";
 import {MapOptions} from "ol/Map";
 import BaseObject from "ol/Object";
@@ -38,6 +40,8 @@ import {optionsFromCapabilities} from "ol/source/WMTS";
 import FeatureFormat from "ol/format/Feature";
 import WMTSCapabilities from "ol/format/WMTSCapabilities";
 import VectorSource from "ol/source/Vector";
+import {bbox} from "ol/loadingstrategy";
+import {transformExtent} from "ol/proj";
 import {GeoJSON, GPX} from "ol/format";
 import TileLayer from "ol/layer/Tile";
 import TileSource from "ol/source/Tile";
@@ -339,6 +343,13 @@ export const toOlSource = (source: GsSource, olLayer?: TileLayer<TileSource>) =>
     return withState(source, OL_SOURCES[source.type](source, olLayer))
 }
 
+export const resolveScriptLang = (src: string, lang?: string): string => {
+    if (lang) return lang
+    const ext = src.split('?')[0].split('.').pop()?.toLowerCase() ?? ''
+    if (ext === 'py') return 'python'
+    return 'javascript'
+}
+
 export const OL_LAYERS: any = {}
 OL_LAYERS[GsLayerType.TILE] = (layer: GsLayer) => {
     const tileLayer = new TileLayer()
@@ -358,8 +369,60 @@ OL_LAYERS[GsLayerType.GROUP] = (layer: GsLayer) => {
     applyMapboxStyle(group, layer.source.url).then()
     return group
 }
-export const toOlLayer = (layer: GsLayer) => {
-    const olLayer: BaseLayer = withState(layer, OL_LAYERS[layer.type](layer))
+OL_LAYERS[GsLayerType.SCRIPTED] = (layer: GsScriptedVectorLayer, env: any) => {
+    const src = layer.source.url!
+    const lang = resolveScriptLang(src, layer.lang)
+    const runtime = scriptedRuntimeRegistry.get(lang)
+    if (!runtime) throw new Error(`No scripted runtime registered for lang "${lang}"`)
+
+    let olVectorLayer: VectorLayer<VectorSource>
+    const source = new VectorSource({
+        loader: async (extent, resolution, projection, success, failure) => {
+            const view = olVectorLayer?.getMapInternal()?.getView()
+            const vars: ScriptedVars = {
+                params: layer.params ?? {},
+                env: env ?? {},
+                viewState: {
+                    extent: transformExtent(extent, projection, 'EPSG:4326'),
+                    zoom: view?.getZoomForResolution(resolution) ?? 0,
+                    projection: 'EPSG:4326',
+                },
+            }
+            try {
+                const result = await runtime.run(src, vars)
+                const format = new GeoJSON()
+                source.clear()
+                const allFeatures: any[] = []
+                const readBatch = (data: any) => {
+                    const features = format.readFeatures(data, {
+                        dataProjection: 'EPSG:4326',
+                        featureProjection: projection,
+                    })
+                    source.addFeatures(features)
+                    allFeatures.push(...features)
+                }
+                if (result && typeof (result as any)[Symbol.asyncIterator] === 'function') {
+                    for await (const batch of result as AsyncIterable<any>) {
+                        readBatch(batch)
+                    }
+                } else {
+                    readBatch(result)
+                }
+                success!(allFeatures)
+            } catch (e) {
+                console.error('Scripted layer error:', e)
+                failure!()
+            }
+        },
+        strategy: bbox,
+    })
+
+    olVectorLayer = new VectorLayer({ source })
+    return olVectorLayer
+}
+
+export const toOlLayer = (layer: GsLayer, env?: any) => {
+    const olLayer: BaseLayer = withState(layer, OL_LAYERS[layer.type](layer, env))
     olLayer.set(KEY_LABEL, layer.type)
     olLayer.set(KEY_NAME, layer.name)
     olLayer.set(KEY_GS_MANAGED, true)
@@ -606,7 +669,7 @@ export const toOlMap = async (gsMap: GsMap, options?: MapOptions, env?: any, imp
         projection: gsMap.view.projection || DEFAULT_GSMAP.view.projection
     }))
     for (const layer of gsMap.layers || []) {
-        const olLayer = toOlLayer(layer)
+        const olLayer = toOlLayer(layer, env)
         olMap.addLayer(olLayer)
     }
 
