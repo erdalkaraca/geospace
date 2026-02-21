@@ -17,11 +17,22 @@ import {
     type IconContribution,
     HTMLContribution
 } from "@kispace-io/core/api";
-import type { PromptEnhancer, PromptEnhancerContribution } from "@kispace-io/extension-ai-system/api";
-import { CID_PROMPT_ENHANCERS } from "@kispace-io/extension-ai-system/api";
+
+import '@kispace-io/extension-utils';
+import '@kispace-io/extension-md-editor';
+import '@kispace-io/extension-media-viewer';
+import '@kispace-io/extension-memory-usage';
+import '@kispace-io/extension-monaco-editor';
+import '@kispace-io/extension-settings-tree';
+
+import '@kispace-io/extension-github-service';
+import '@kispace-io/extension-python-runtime';
+import '@kispace-io/extension-notebook';
+import '@kispace-io/extension-command-palette';
 import '@kispace-io/extension-in-browser-ml';
 import '@kispace-io/extension-ai-system';
-import '@kispace-io/extension-media-viewer';
+import '@kispace-io/extension-howto-system';
+
 
 import '@kispace-io/extension-mapbuilder';
 import '@kispace-io/extension-style-editor';
@@ -30,6 +41,9 @@ import '@kispace-io/extension-gtfs';
 import '@kispace-io/extension-catalog';
 import '@kispace-io/extension-mapprops';
 import '@kispace-io/extension-map-editor';
+
+import { CID_PROMPT_ENHANCERS } from "@kispace-io/extension-ai-system/api";
+import type { PromptEnhancer, PromptEnhancerContribution } from "@kispace-io/extension-ai-system/api";
 
 import README from "../../../README.md?raw";
 import GEOSPACE_SYSPROMPT from "./geospace-sysprompt.txt?raw";
@@ -55,14 +69,16 @@ export const geospaceApp: AppDefinition = {
         "geospace.mapEditor",
         "geospace.mapProps",
         "geospace.styleEditor",
-        "system.mdeditor",
-        "system.monaco",
-        "system.utils",
-        "system.commandpalette",
-        "system.github-service",
-        "system.memoryusage",
-        "system.settings-tree",
-        "system.ai-system",
+        "geospace.overpass",
+        "geospace.gtfs",
+        '@kispace-io/extension-utils',
+        '@kispace-io/extension-command-palette',
+        '@kispace-io/extension-md-editor',
+        '@kispace-io/extension-monaco-editor',
+        '@kispace-io/extension-media-viewer',
+        '@kispace-io/extension-settings-tree',
+        '@kispace-io/extension-memory-usage',
+        '@kispace-io/extension-ai-system',
     ],
     contributions: {
         ui: [
