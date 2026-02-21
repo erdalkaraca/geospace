@@ -14,15 +14,16 @@ export default defineConfig({
         crossOriginIsolation(),
     ],
     resolve: {
-        alias: {
-            '@kispace-io/extension-map-editor': path.resolve(__dirname, '../extension-map-editor/src'),
-            '@kispace-io/gs-lib': path.resolve(__dirname, '../gs-lib/src'),
-            // Alias for dist files (used by build service)
-            '@kispace-io/gs-lib/dist': path.resolve(__dirname, '../gs-lib/dist'),
-            // Alias for public files (used by build service)
-            // Public folder is included in the npm package, so we can import directly
-            '@kispace-io/gs-lib/public': path.resolve(__dirname, '../gs-lib/public')
-        },
+        alias: [
+            // Local packages aliased to source for debuggable dev server
+            ...['extension-catalog', 'extension-gtfs', 'extension-map-editor', 'extension-mapbuilder', 'extension-mapprops', 'extension-overpass', 'extension-style-editor'].map(pkg => ({
+                find: new RegExp(`^@kispace-io/${pkg}(.*)`),
+                replacement: path.resolve(__dirname, `../${pkg}/src$1`),
+            })),
+            { find: /^@kispace-io\/gs-lib\/dist(.*)/, replacement: path.resolve(__dirname, '../gs-lib/dist$1') },
+            { find: /^@kispace-io\/gs-lib\/public(.*)/, replacement: path.resolve(__dirname, '../gs-lib/public$1') },
+            { find: '@kispace-io/gs-lib', replacement: path.resolve(__dirname, '../gs-lib/src') },
+        ],
         // Dedupe lit imports - ensure all lit imports resolve to the same instance
         // This prevents multiple versions from being loaded when appspace uses direct "lit" imports
         // appspace has 160+ files using direct "lit" imports instead of externals/lit

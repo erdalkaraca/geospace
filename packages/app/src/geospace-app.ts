@@ -22,6 +22,7 @@ import { CID_PROMPT_ENHANCERS } from "@kispace-io/extension-ai-system/api";
 import '@kispace-io/extension-in-browser-ml';
 import '@kispace-io/extension-ai-system';
 import '@kispace-io/extension-media-viewer';
+
 import '@kispace-io/extension-mapbuilder';
 import '@kispace-io/extension-style-editor';
 import '@kispace-io/extension-overpass';

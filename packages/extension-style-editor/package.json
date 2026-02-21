@@ -9,9 +9,9 @@
     "./loader": "./src/loader.ts"
   },
   "dependencies": {
-    "@kispace-io/core": "^0.8.2",
-    "@kispace-io/extension-map-editor": "file:../extension-map-editor",
-    "@kispace-io/gs-lib": "file:../gs-lib"
+    "@kispace-io/core": "*",
+    "@kispace-io/extension-map-editor": "*",
+    "@kispace-io/gs-lib": "*"
   },
   "devDependencies": {
     "typescript": "~5.9.3"

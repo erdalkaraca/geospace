@@ -9,7 +9,7 @@
     "./loader": "./src/loader.ts"
   },
   "dependencies": {
-    "@kispace-io/core": "^0.8.2"
+    "@kispace-io/core": "*"
   },
   "devDependencies": {
     "typescript": "~5.9.3"

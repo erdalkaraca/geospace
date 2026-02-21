@@ -11,8 +11,8 @@
     "./iframe-messaging": "./src/iframe-messaging.ts"
   },
   "dependencies": {
-    "@kispace-io/core": "^0.8.2",
-    "@kispace-io/gs-lib": "file:../gs-lib",
+    "@kispace-io/core": "*",
+    "@kispace-io/gs-lib": "*",
     "dotenv": "^17.2.4",
     "jsonata": "^2.1.0"
   },

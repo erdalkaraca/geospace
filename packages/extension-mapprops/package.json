@@ -1,1 +1,19 @@
-{"name":"@kispace-io/extension-mapprops","version":"0.0.0","type":"module","license":"EPL-2.0","main":"./src/index.ts","exports":{".":"./src/index.ts","./loader":"./src/loader.ts"},"dependencies":{"@kispace-io/core":"^0.8.2","@kispace-io/extension-map-editor":"file:../extension-map-editor","@kispace-io/gs-lib":"file:../gs-lib"},"devDependencies":{"typescript":"~5.9.3"}}
+{
+    "name": "@kispace-io/extension-mapprops",
+    "version": "0.0.0",
+    "type": "module",
+    "license": "EPL-2.0",
+    "main": "./src/index.ts",
+    "exports": {
+        ".": "./src/index.ts",
+        "./loader": "./src/loader.ts"
+    },
+    "dependencies": {
+        "@kispace-io/core": "*",
+        "@kispace-io/extension-map-editor": "*",
+        "@kispace-io/gs-lib": "*"
+    },
+    "devDependencies": {
+        "typescript": "~5.9.3"
+    }
+}
