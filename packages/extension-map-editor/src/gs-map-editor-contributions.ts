@@ -32,7 +32,7 @@ registerAll({
             };
             const path = context.params?.path ?? "map.geospace";
             const finalPath = path.endsWith(".geospace") ? path : `${path}.geospace`;
-            return commandRegistry.execute("create_file", {
+            return commandRegistry.execute("touch", {
                 params: {
                     path: finalPath,
                     contents: JSON.stringify(gsMap, null, 2),
