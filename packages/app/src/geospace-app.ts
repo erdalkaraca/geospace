@@ -18,6 +18,8 @@ import {
     HTMLContribution
 } from "@kispace-io/core/api";
 
+import { fetchReleases } from "@kispace-io/extension-github-service";
+
 import '@kispace-io/extension-utils';
 import '@kispace-io/extension-md-editor';
 import '@kispace-io/extension-media-viewer';
@@ -52,6 +54,9 @@ import { registerCatalog } from "@kispace-io/extension-catalog/register-catalog"
 
 const logger = createLogger('GeoSpaceApp');
 
+const GITHUB_OWNER = 'erdalkaraca';
+const GITHUB_REPO = 'geospace';
+
 export const geospaceApp: AppDefinition = {
     id: "geospace",
     name: "🌐geo!space",
@@ -59,18 +64,19 @@ export const geospaceApp: AppDefinition = {
     description: "An IDE for working with geospatial data.",
     metadata: {
         github: {
-            owner: 'erdalkaraca',
-            repo: 'geospace'
+            owner: GITHUB_OWNER,
+            repo: GITHUB_REPO
         },
         favicon: '/geospace.svg'
     },
     extensions: [
-        "geospace.catalog",
-        "geospace.mapEditor",
-        "geospace.mapProps",
-        "geospace.styleEditor",
-        "geospace.overpass",
-        "geospace.gtfs",
+        '@kispace-io/extension-catalog',
+        '@kispace-io/extension-map-editor',
+        '@kispace-io/extension-mapprops',
+        '@kispace-io/extension-style-editor',
+        '@kispace-io/extension-overpass',
+        '@kispace-io/extension-gtfs',
+        '@kispace-io/extension-mapbuilder',
         '@kispace-io/extension-utils',
         '@kispace-io/extension-command-palette',
         '@kispace-io/extension-md-editor',
@@ -90,7 +96,7 @@ export const geospaceApp: AppDefinition = {
             } as HTMLContribution
         ],
     },
-    releaseHistory: [],
+    releaseHistory: fetchReleases,
 
     async initialize() {
         packageInfoService.addPackage({

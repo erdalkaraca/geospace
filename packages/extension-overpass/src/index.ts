@@ -1,7 +1,7 @@
 import { extensionRegistry } from "@kispace-io/core/api";
 
 extensionRegistry.registerExtension({
-    id: "geospace.overpass",
+    id: "@kispace-io/extension-overpass",
     name: "OpenStreetMap Overpass",
     description: "OpenStreetMap Overpass API Integration for use with LLMs",
     loader: () => import("./loader"),

@@ -1,7 +1,7 @@
 import { extensionRegistry } from "@kispace-io/core/api";
 
 extensionRegistry.registerExtension({
-    id: "geospace.gtfs",
+    id: "@kispace-io/extension-gtfs",
     name: "GTFS to GeoJSON Converter",
     description: "Convert GTFS zip archives to GeoJSON files",
     loader: () => import("./loader"),

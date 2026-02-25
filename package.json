@@ -16,5 +16,6 @@
     "validate-ci": "node scripts/validate-ci.js"
   },
   "dependencies": {
+    "@kispace-io/extension-github-service": "^0.8.4"
   }
 }
