@@ -12,7 +12,7 @@ interface ImportMatch {
     endIndex: number;
 }
 
-function resolveWorkspacePath(relativePath: string, basePath: string): string {
+export function resolveWorkspacePath(relativePath: string, basePath: string): string {
     if (relativePath.startsWith('/')) {
         return relativePath.slice(1);
     }

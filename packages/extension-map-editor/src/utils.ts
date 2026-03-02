@@ -3,7 +3,7 @@ import {BaseLayer, Map, resolveScriptLang} from "@kispace-io/gs-lib/ol";
 import jsonata from "jsonata";
 import {parse} from "dotenv";
 import {File, workspaceService} from "@kispace-io/core/api";
-import { WorkspaceModuleResolver } from "./workspace-module-resolver";
+import { resolveWorkspacePath, WorkspaceModuleResolver } from "./workspace-module-resolver";
 
 export const FILE_EXTENSION_TO_SOURCE_TYPE: Record<string, GsSourceType> = {
     '.geojson': GsSourceType.GeoJSON,
@@ -49,25 +49,26 @@ export const findOlLayer = (name: string, olMap: Map, notFound?: Function) => {
     return markersLayer
 }
 
-export const toBlobUri = async (uri: string) => {
+export const isAbsoluteResource = (url: string) => {
+    return url.startsWith("blob:") || url.startsWith("http:") || url.startsWith("https:") || url.startsWith("data:");
+}
+
+export const toBlobUri = async (uri: string, basePath?: string) => {
     const workspace = await workspaceService.getWorkspace()
     if (!workspace) {
         throw new Error("No workspace available")
     }
-    const resource = await workspace.getResource(uri) as File
+    const path = basePath && !isAbsoluteResource(uri) ? resolveWorkspacePath(uri, basePath) : uri
+    const resource = await workspace.getResource(path) as File
     if (!resource) {
         throw new Error("Invalid URL: " + uri)
     }
     return await resource.getContents({uri: true}) as string
 }
 
-export const isAbsoluteResource = (url: string) => {
-    return url.startsWith("blob:") || url.startsWith("http:") || url.startsWith("https:") || url.startsWith("data:");
-}
-
 export const _blobsLookup: any = {}
 
-export const replaceUris = async (obj: any, propName: string, resolver?: WorkspaceModuleResolver) => {
+export const replaceUris = async (obj: any, propName: string, resolver?: WorkspaceModuleResolver, basePath?: string) => {
     const urlObjects = await jsonata(`[**[${propName}!='']]`).evaluate(obj)
     for (const obj of urlObjects) {
         const url = obj[propName] as string
@@ -77,13 +78,15 @@ export const replaceUris = async (obj: any, propName: string, resolver?: Workspa
         let blobUri: string;
         if (propName === "src" && resolver) {
             try {
-                const resolved = await resolver.resolveWorkspaceModule(url);
+                const resolved = basePath
+                    ? await resolver.resolveWorkspaceModule(url, basePath)
+                    : await resolver.resolveWorkspaceModule(url);
                 blobUri = resolved.blobUrl;
             } catch (error) {
-                blobUri = await toBlobUri(url);
+                blobUri = await toBlobUri(url, basePath);
             }
         } else {
-            blobUri = await toBlobUri(url);
+            blobUri = await toBlobUri(url, basePath);
         }
         _blobsLookup[blobUri] = obj[propName]
         obj[propName] = blobUri

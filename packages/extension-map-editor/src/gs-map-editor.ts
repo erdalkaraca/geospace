@@ -155,20 +155,21 @@ export class GsMapEditor extends KPart {
 
     protected async doInitUI() {
         const file = this.input?.data as File;
+        const basePath = file?.getWorkspacePath?.();
         const env = await loadEnvs(".env");
         env["BUILD_TIME"] = new Date();
         const textContents = await file.getContents();
         let gsMap = (textContents && textContents.trim() ? JSON.parse(textContents) : DEFAULT_GSMAP)! as GsMap;
         gsMap = this.migrateGsMap(gsMap);
         ensureUuidsRecursive(gsMap);
-        await replaceUris(gsMap, "url");
-        await replaceUris(gsMap, "src", this.moduleResolver);
+        await replaceUris(gsMap, "url", undefined, basePath);
+        await replaceUris(gsMap, "src", this.moduleResolver, basePath);
         this.gsMap = gsMap;
         if (gsMap.view) {
             this.initialView = { center: [...gsMap.view.center] as [number, number], zoom: gsMap.view.zoom };
         }
         this.selectedRenderer = (gsMap.state?.renderer as RendererType) || 'openlayers';
-        this.renderer = new IFrameMapRenderer(gsMap, env, this.selectedRenderer);
+        this.renderer = new IFrameMapRenderer(gsMap, env, this.selectedRenderer, basePath);
         const iframeOps = this.renderer.getOperations();
         const domainOps = new DomainMapOperations(gsMap, this.renderer);
         const signalingOps = new SignalingMapOperations(this);
@@ -267,11 +268,13 @@ export class GsMapEditor extends KPart {
 
     async refresh() {
         if (!this.renderer || !this.gsMap) return;
+        const file = this.input?.data as File;
+        const basePath = file?.getWorkspacePath?.();
         await revertBlobUris(this.gsMap, "url");
         await revertBlobUris(this.gsMap, "src");
         this.moduleResolver.clear();
-        await replaceUris(this.gsMap, "url");
-        await replaceUris(this.gsMap, "src", this.moduleResolver);
+        await replaceUris(this.gsMap, "url", undefined, basePath);
+        await replaceUris(this.gsMap, "src", this.moduleResolver, basePath);
         await this.renderer.modelToUI(this.gsMap);
     }
 
@@ -296,8 +299,9 @@ export class GsMapEditor extends KPart {
         if (this.gsMap) { if (!this.gsMap.state) this.gsMap.state = {}; this.gsMap.state.renderer = newRenderer; }
         if (this.renderer && this.gsMap && this.mapContainer.value) {
             const env = (this.renderer as IFrameMapRenderer).getEnv();
+            const basePath = (this.input?.data as File)?.getWorkspacePath?.();
             this.renderer.destroy();
-            this.renderer = new IFrameMapRenderer(this.gsMap, env, newRenderer);
+            this.renderer = new IFrameMapRenderer(this.gsMap, env, newRenderer, basePath);
             const iframeOps = this.renderer.getOperations();
             const domainOps = new DomainMapOperations(this.gsMap, this.renderer);
             const signalingOps = new SignalingMapOperations(this);

@@ -25,11 +25,13 @@ export class IFrameMapRenderer implements MapRenderer {
     private onClickCallback?: () => void;
     private isMobileView: boolean = false;
     private targetElement?: HTMLElement;
+    private basePath?: string;
 
-    constructor(gsMap: GsMap, env?: any, rendererType: RendererType = 'openlayers') {
+    constructor(gsMap: GsMap, env?: any, rendererType: RendererType = 'openlayers', basePath?: string) {
         this.gsMap = gsMap;
         this.env = env;
         this.rendererType = rendererType;
+        this.basePath = basePath;
         this.operations = this.createProxy(this);
     }
 
@@ -150,7 +152,7 @@ export class IFrameMapRenderer implements MapRenderer {
     private async handleAssetResolution(id: string, path: string): Promise<void> {
         try {
             const { toBlobUri } = await import('./utils');
-            const assetUrl = await toBlobUri(path);
+            const assetUrl = await toBlobUri(path, this.basePath);
             this.iframe!.contentWindow!.postMessage({ id, success: true, assetUrl }, '*');
         } catch (error) {
             this.iframe!.contentWindow!.postMessage({

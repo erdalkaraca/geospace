@@ -239,7 +239,9 @@ commandRegistry.registerAll({
                 } as GsSource)
             } as GsLayer)
 
-            await replaceUris(gsLayer, "url");
+            const editor = context.activeEditor as GsMapEditor;
+            const basePath = (editor?.input?.data as File)?.getWorkspacePath?.();
+            await replaceUris(gsLayer, "url", undefined, basePath);
             await operations.addLayer(gsLayer, isBasemap);
         }
     }
