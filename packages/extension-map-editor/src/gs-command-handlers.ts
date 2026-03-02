@@ -13,7 +13,7 @@ import {
     toGsSourceType,
     toSourceUrl
 } from "@kispace-io/gs-lib/ol";
-import {replaceUris} from "./utils";
+import {replaceUris, resolveWorkspacePath} from "./utils";
 import {GsMapEditor} from "./gs-map-editor";
 import {IFrameMapRenderer} from "./iframe-map-renderer";
 import {
@@ -640,12 +640,15 @@ commandRegistry.registerAll({
 
                         // Ensure .png extension
                         const finalFilename = filename.endsWith('.png') ? filename : `${filename}.png`;
-                        
-                        progress.message = `Saving screenshot to ${finalFilename}...`;
+                        const mapFile = editor.input?.data as File | undefined;
+                        const basePath = mapFile?.getWorkspacePath?.();
+                        const savePath = basePath ? resolveWorkspacePath(finalFilename, basePath) : finalFilename;
+
+                        progress.message = `Saving screenshot to ${savePath}...`;
                         progress.progress = 70;
-                        
-                        logger.info(`Saving screenshot to: ${finalFilename}`);
-                        
+
+                        logger.info(`Saving screenshot to: ${savePath}`);
+
                         // Convert base64 data URL to Blob
                         if (!result.dataUrl) {
                             logger.error('No dataUrl in screenshot result');
@@ -667,11 +670,11 @@ commandRegistry.registerAll({
                         const blob = new Blob([binaryData], { type: 'image/png' });
                         
                         // Create file and save
-                        const file = await workspace.getResource(finalFilename, { create: true }) as File;
+                        const file = await workspace.getResource(savePath, { create: true }) as File;
                         if (!file) {
-                            logger.error(`Failed to create file resource: ${finalFilename}`);
-                            toastError(`Failed to save screenshot: Could not create file ${finalFilename}`);
-                            throw new Error(`Failed to create file: ${finalFilename}`);
+                            logger.error(`Failed to create file resource: ${savePath}`);
+                            toastError(`Failed to save screenshot: Could not create file ${savePath}`);
+                            throw new Error(`Failed to create file: ${savePath}`);
                         }
 
                         progress.message = "Writing file to workspace...";
@@ -686,8 +689,8 @@ commandRegistry.registerAll({
                         progress.message = "Screenshot saved successfully";
                         progress.progress = 100;
 
-                        logger.info(`Screenshot saved successfully to: ${finalFilename}`);
-                        toastInfo(`Screenshot saved: ${finalFilename}`);
+                        logger.info(`Screenshot saved successfully to: ${savePath}`);
+                        toastInfo(`Screenshot saved: ${savePath}`);
                         return {
                             dataUrl: result.dataUrl,
                             width: result.width,

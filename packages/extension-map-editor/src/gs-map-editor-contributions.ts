@@ -1,9 +1,14 @@
 import {rtUtils, DEFAULT_GSMAP} from "@kispace-io/gs-lib";
 import {toBlobUri} from "./utils";
 import {html} from "@kispace-io/core/externals/lit";
-import {EditorInput, editorRegistry, File, contributionRegistry, commandRegistry, registerAll} from "@kispace-io/core/api";
+import {EditorInput, editorRegistry, File, contributionRegistry, commandRegistry, registerAll, activePartSignal} from "@kispace-io/core/api";
+import {GsMapEditor} from "./gs-map-editor";
 
-rtUtils.resolveUrl = path => toBlobUri(path);
+rtUtils.resolveUrl = async (path: string) => {
+    const active = activePartSignal.get();
+    const basePath = (active?.input?.data as File)?.getWorkspacePath?.();
+    return toBlobUri(path, active instanceof GsMapEditor ? basePath : undefined);
+};
 
 contributionRegistry.registerContribution("filebrowser.create", {
     label: "geo!space map",

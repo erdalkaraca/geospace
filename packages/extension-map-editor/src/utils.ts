@@ -3,7 +3,9 @@ import {BaseLayer, Map, resolveScriptLang} from "@kispace-io/gs-lib/ol";
 import jsonata from "jsonata";
 import {parse} from "dotenv";
 import {File, workspaceService} from "@kispace-io/core/api";
-import { resolveWorkspacePath, WorkspaceModuleResolver } from "./workspace-module-resolver";
+import { resolveWorkspacePath as resolveWorkspacePathImpl, WorkspaceModuleResolver } from "./workspace-module-resolver";
+
+export { resolveWorkspacePath } from "./workspace-module-resolver";
 
 export const FILE_EXTENSION_TO_SOURCE_TYPE: Record<string, GsSourceType> = {
     '.geojson': GsSourceType.GeoJSON,
@@ -58,7 +60,7 @@ export const toBlobUri = async (uri: string, basePath?: string) => {
     if (!workspace) {
         throw new Error("No workspace available")
     }
-    const path = basePath && !isAbsoluteResource(uri) ? resolveWorkspacePath(uri, basePath) : uri
+    const path = basePath && !isAbsoluteResource(uri) ? resolveWorkspacePathImpl(uri, basePath) : uri
     const resource = await workspace.getResource(path) as File
     if (!resource) {
         throw new Error("Invalid URL: " + uri)
@@ -118,11 +120,12 @@ export const replaceVars = (env: any) => {
     })
 }
 
-export const loadEnvs = async (...envs: string[]) => {
+export const loadEnvs = async (envNames: string[], basePath?: string) => {
     const workspace = await workspaceService.getWorkspace()
     const finalEnv: any = {}
-    for (const envName of envs) {
-        const envFile = (await workspace?.getResource(envName)) as File
+    for (const envName of envNames) {
+        const path = basePath ? resolveWorkspacePathImpl(envName, basePath) : envName
+        const envFile = (await workspace?.getResource(path)) as File
         if (!envFile) {
             continue
         }

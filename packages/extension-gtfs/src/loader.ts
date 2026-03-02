@@ -10,6 +10,25 @@ import {
     rootContext,
 } from "@kispace-io/core/api";
 
+function resolveWorkspacePath(relativePath: string, basePath: string): string {
+    if (relativePath.startsWith("/")) return relativePath.slice(1);
+    const baseParts = basePath.split("/").filter((p) => p);
+    const pathParts = relativePath.split("/").filter((p) => p);
+    const isRelative = relativePath.startsWith("./") || relativePath.startsWith("../");
+    if (isRelative || !relativePath.startsWith("/")) {
+        baseParts.pop();
+    }
+    for (const part of pathParts) {
+        if (part === ".") continue;
+        if (part === "..") {
+            if (baseParts.length > 0) baseParts.pop();
+        } else {
+            baseParts.push(part);
+        }
+    }
+    return baseParts.join("/");
+}
+
 registerAll({
     command: {
         id: "gtfs_to_geojson",
@@ -75,6 +94,7 @@ registerAll({
                         }
 
                         const file = fileResource as File;
+                        const fileWorkspacePath = file.getWorkspacePath();
 
                         let targetFolder =
                             context.params && context.params["target"];
@@ -83,16 +103,20 @@ registerAll({
                             targetFolder =
                                 fileName.replace(/\.zip$/i, "_geojson") + "/";
                         }
+                        const targetPath = resolveWorkspacePath(
+                            targetFolder.replace(/\/$/, ""),
+                            fileWorkspacePath
+                        );
 
                         progress.message = "Preparing conversion...";
                         progress.progress = 1;
 
-                        await workspaceDir.getResource(targetFolder, {
+                        await workspaceDir.getResource(targetPath, {
                             create: true,
                         });
 
-                        const inputPath = file.getWorkspacePath();
-                        const outputPath = targetFolder.replace(/\/$/, "");
+                        const inputPath = fileWorkspacePath;
+                        const outputPath = targetPath;
 
                         progress.message = "Initializing Python environment...";
                         progress.progress = 2;
@@ -136,7 +160,7 @@ registerAll({
                             progress.progress = 100;
 
                             toastInfo(
-                                `GTFS converted successfully to ${targetFolder.replace(/\/$/, "")}`
+                                `GTFS converted successfully to ${outputPath}`
                             );
                         } catch (err) {
                             toastError("Python script failed: " + err);

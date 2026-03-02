@@ -156,7 +156,7 @@ export class GsMapEditor extends KPart {
     protected async doInitUI() {
         const file = this.input?.data as File;
         const basePath = file?.getWorkspacePath?.();
-        const env = await loadEnvs(".env");
+        const env = await loadEnvs([".env"], basePath);
         env["BUILD_TIME"] = new Date();
         const textContents = await file.getContents();
         let gsMap = (textContents && textContents.trim() ? JSON.parse(textContents) : DEFAULT_GSMAP)! as GsMap;

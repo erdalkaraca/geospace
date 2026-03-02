@@ -10,7 +10,16 @@ import {
     toastError,
     toastInfo,
     contributionRegistry,
+    type Directory,
 } from "@kispace-io/core/api";
+
+async function ensureWorkspacePath(workspace: Directory | undefined, path: string): Promise<string> {
+    if (!workspace || path.includes("/")) return path;
+    const children = await workspace.listChildren(false);
+    const first = children[0];
+    if (!first) return path;
+    return `${first.getName()}/${path}`;
+}
 
 registerAll({
     command: {
@@ -45,11 +54,12 @@ registerAll({
             }
             fetch(url, { method: "GET" })
                 .then((resp) => resp.blob())
-                .then((blob) => {
+                .then(async (blob) => {
                     const segs = new URL(url).pathname.split("/");
                     const fileName = segs[segs.length - 1];
+                    const savePath = await ensureWorkspacePath(workspaceDir, fileName);
                     return workspaceDir
-                        .getResource(fileName, { create: true })
+                        .getResource(savePath, { create: true })
                         .then((resource) => {
                             const file = resource as File;
                             return file

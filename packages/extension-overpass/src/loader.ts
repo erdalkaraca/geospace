@@ -4,8 +4,17 @@ import {
     type CommandRegistry,
     type WorkspaceService,
     type File,
+    type Directory,
     logger,
 } from "@kispace-io/core/api";
+
+async function ensureWorkspacePath(workspace: Directory | undefined, path: string): Promise<string> {
+    if (!workspace || path.includes("/")) return path;
+    const children = await workspace.listChildren(false);
+    const first = children[0];
+    if (!first) return path;
+    return `${first.getName()}/${path}`;
+}
 
 export default ({
     commandRegistry,
@@ -56,7 +65,8 @@ export default ({
                     .then(toGeojson);
 
                 const workspace = await workspaceService.getWorkspace();
-                const outFile = (await workspace?.getResource(outputFile, {
+                const outPath = await ensureWorkspacePath(workspace, outputFile);
+                const outFile = (await workspace?.getResource(outPath, {
                     create: true,
                 }))! as File;
                 if (outFile) {
