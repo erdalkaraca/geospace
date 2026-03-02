@@ -6,7 +6,7 @@ import {
     GsMap
 } from "@kispace-io/gs-lib";
 
-import iframeMessagingUrl from "./iframe-messaging.ts?url";
+import iframeMessagingUrl from "./iframe-messaging?url";
 
 const IFRAME_HTML = (scriptUrl: string) => `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Map Renderer</title><style>html,body,#map-container{height:100%;width:100%;margin:0;padding:0;overflow:hidden}</style></head><body><div id="map-container"></div><script type="module" src="${scriptUrl}"><\/script></body></html>`;
 
