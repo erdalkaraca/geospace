@@ -6,4 +6,5 @@ extensionRegistry.registerExtension({
     description: "Visual editor for defining and managing map styles and rules",
     loader: () => import("./loader"),
     icon: "palette",
+    dependencies: ["@kispace-io/extension-map-editor"],
 });
