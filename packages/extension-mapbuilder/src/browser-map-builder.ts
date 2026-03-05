@@ -21,6 +21,17 @@ import { rootContext } from "@kispace-io/core/api";
 
 export type { BuildOptions };
 
+function dirname(workspacePath: string): string {
+    const i = workspacePath.lastIndexOf("/");
+    return i >= 0 ? workspacePath.slice(0, i) : "";
+}
+
+function resolvePath(basePath: string | undefined, path: string): string {
+    if (!basePath) return path;
+    const combined = `${basePath}/${path}`;
+    return combined.replace(/\/+/g, "/");
+}
+
 function resolveWorkspacePath(relativePath: string, basePath: string): string {
     if (relativePath.startsWith("/")) {
         return relativePath.slice(1);
@@ -157,7 +168,7 @@ export class BrowserMapBuilder {
         }
     }
 
-    private createBrowserFileCopier(): GsLibFileCopier {
+    private createBrowserFileCopier(basePath?: string): GsLibFileCopier {
         const workspace = this.getWorkspace.bind(this);
 
         const importMap: Record<string, () => Promise<any>> = {
@@ -230,7 +241,8 @@ export class BrowserMapBuilder {
             }
 
             const ws = await workspace();
-            const destFile = (await ws.getResource(destPath, {
+            const resolvedDest = resolvePath(basePath, destPath);
+            const destFile = (await ws.getResource(resolvedDest, {
                 create: true,
             })) as File;
             await destFile.saveContents(content);
@@ -258,7 +270,8 @@ export class BrowserMapBuilder {
     public async build(
         options: BuildOptions,
         cleanAfterBuild = undefined,
-        progressMonitor?: ProgressMonitor
+        progressMonitor?: ProgressMonitor,
+        basePath?: string
     ) {
         const updateProgress = (step: number, message: string) => {
             if (progressMonitor) {
@@ -274,9 +287,10 @@ export class BrowserMapBuilder {
 
         const workspaceFs: FileSystem = {
             async readFile(path: string): Promise<string | Uint8Array> {
-                const resource = (await workspace.getResource(path)) as File;
+                const resolved = resolvePath(basePath, path);
+                const resource = (await workspace.getResource(resolved)) as File;
                 if (!resource) {
-                    throw new Error(`File not found: ${path}`);
+                    throw new Error(`File not found: ${resolved}`);
                 }
                 return (await resource.getContents()) as string;
             },
@@ -284,38 +298,38 @@ export class BrowserMapBuilder {
                 path: string,
                 content: string | Uint8Array
             ): Promise<void> {
-                const file = (await workspace.getResource(path, {
+                const resolved = resolvePath(basePath, path);
+                const file = (await workspace.getResource(resolved, {
                     create: true,
                 })) as File;
                 await file.saveContents(content);
             },
             async ensureDir(path: string): Promise<void> {
-                await workspace.getResource(
-                    path.endsWith("/") ? path : path + "/",
-                    { create: true }
-                );
+                const resolved = resolvePath(basePath, path.endsWith("/") ? path : path + "/");
+                await workspace.getResource(resolved, { create: true });
             },
             async exists(path: string): Promise<boolean> {
-                const resource = await workspace.getResource(path);
+                const resolved = resolvePath(basePath, path);
+                const resource = await workspace.getResource(resolved);
                 return resource !== null;
             },
             async deleteDir(path: string): Promise<void> {
-                const resource = await workspace.getResource(path);
+                const resolved = resolvePath(basePath, path);
+                const resource = await workspace.getResource(resolved);
                 if (resource instanceof Directory) {
                     await resource.delete();
                 }
             },
         };
 
-        const gsLibCopier = this.createBrowserFileCopier();
+        const gsLibCopier = this.createBrowserFileCopier(basePath);
 
         const copyAssets = async (
             _fs: FileSystem,
             outputDir: string
         ) => {
-            const assetDir = (await workspace.getResource(
-                "assets"
-            )) as Directory;
+            const assetsPath = resolvePath(basePath, "assets");
+            const assetDir = (await workspace.getResource(assetsPath)) as Directory;
             if (assetDir) {
                 await assetDir.copyTo(`${outputDir}/assets`);
             }
@@ -344,8 +358,9 @@ export class BrowserMapBuilder {
 
     public async buildMapFile(mapFile: File, envPath?: string) {
         const gsMap = JSON.parse(await mapFile.getContents());
-        const basePath = mapFile.getWorkspacePath();
-        const env = await loadEnvs([envPath || ".env"], basePath);
+        const mapFilePath = mapFile.getWorkspacePath();
+        const basePath = dirname(mapFilePath);
+        const env = await loadEnvs([envPath || ".env"], basePath || undefined);
         taskService
             .runAsync("Building map", async (progressMonitor) => {
                 await browserMapBuilder.build(
@@ -356,7 +371,8 @@ export class BrowserMapBuilder {
                         version: env["VERSION"] || "0.0.0",
                     },
                     undefined,
-                    progressMonitor
+                    progressMonitor,
+                    basePath || undefined
                 );
             })
             .then(() => {
