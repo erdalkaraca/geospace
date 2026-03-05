@@ -6,9 +6,12 @@ import {
     GsMap
 } from "@kispace-io/gs-lib";
 
-import iframeMessagingUrl from "./iframe-messaging?url";
-
-const IFRAME_HTML = (scriptUrl: string) => `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Map Renderer</title><style>html,body,#map-container{height:100%;width:100%;margin:0;padding:0;overflow:hidden}</style></head><body><div id="map-container"></div><script type="module" src="${scriptUrl}"><\/script></body></html>`;
+/**
+ * URL of the iframe document. We load it from the app (not srcdoc + script ?url) because Vite
+ * serves .ts ?url with MIME video/mp2t, breaking module scripts. See
+ * docs/known-issues/iframe-map-renderer-vite-mime-workaround.md and https://github.com/vitejs/vite/issues/10271
+ */
+const IFRAME_HTML_PATH = `${(import.meta as any).env?.BASE_URL ?? '/'}`.replace(/\/$/, '') + '/iframe-map-renderer.html';
 
 export type RendererType = 'openlayers' | 'maplibre';
 
@@ -68,7 +71,7 @@ export class IFrameMapRenderer implements MapRenderer {
         this.iframe = document.createElement('iframe');
         this.iframe.style.overflow = 'hidden';
         this.updateIframeStyles();
-        this.iframe.srcdoc = IFRAME_HTML(iframeMessagingUrl);
+        this.iframe.src = IFRAME_HTML_PATH;
         this.targetElement = typeof container === 'string'
             ? document.querySelector(container) as HTMLElement
             : container;
