@@ -6,8 +6,10 @@ import {GsMapEditor} from "./gs-map-editor";
 
 rtUtils.resolveUrl = async (path: string) => {
     const active = activePartSignal.get();
-    const basePath = (active?.input?.data as File)?.getWorkspacePath?.();
-    return toBlobUri(path, active instanceof GsMapEditor ? basePath : undefined);
+    const basePath = active instanceof GsMapEditor
+        ? (active.input?.data as File)?.getWorkspacePath?.()
+        : undefined;
+    return toBlobUri(path, basePath);
 };
 
 contributionRegistry.registerContribution("filebrowser.create", {
@@ -50,6 +52,8 @@ registerAll({
 });
 
 editorRegistry.registerEditorInputHandler({
+    editorId: "map-editor",
+    label: "geo!space map",
     canHandle: input => input instanceof File && input.getName().endsWith(".geospace"),
     handle: async (input: File) => {
         const editorInput = {
@@ -58,11 +62,11 @@ editorRegistry.registerEditorInputHandler({
             key: input.getName(),
             editorId: "map-editor",
             icon: "location-dot",
-            state: {}
-        } as EditorInput
-        editorInput.widgetFactory = (id: string) => html`
-            <gs-map id="${id}" .input="${editorInput}"></gs-map>`
-        return editorInput
+            state: {} as { [key: string]: unknown },
+            widgetFactory: (id: string) => html`
+                <gs-map id="${id}" .input="${editorInput}"></gs-map>`,
+        };
+        return editorInput as EditorInput;
     },
     ranking: 100,
-})
+});
