@@ -1,4 +1,4 @@
-import { html } from "@kispace-io/core/externals/lit";
+import { html } from "@eclipse-lyra/core/externals/lit";
 import { GsCatalog } from "./gs-catalog";
 import {
     registerAll,
@@ -11,7 +11,7 @@ import {
     toastInfo,
     contributionRegistry,
     type Directory,
-} from "@kispace-io/core/api";
+} from "@eclipse-lyra/core/api";
 
 async function ensureWorkspacePath(workspace: Directory | undefined, path: string): Promise<string> {
     if (!workspace || path.includes("/")) return path;

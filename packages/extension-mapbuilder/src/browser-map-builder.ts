@@ -16,8 +16,8 @@ import {
     toastInfo,
     taskService,
     ProgressMonitor,
-} from "@kispace-io/core/api";
-import { rootContext } from "@kispace-io/core/api";
+} from "@eclipse-lyra/core/api";
+import { rootContext } from "@eclipse-lyra/core/api";
 
 export type { BuildOptions };
 

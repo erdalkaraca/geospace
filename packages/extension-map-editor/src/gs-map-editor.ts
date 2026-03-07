@@ -1,4 +1,4 @@
-import { css, html, customElement, property, createRef, ref, Ref, when, keyed } from '@kispace-io/core/externals/lit';
+import { css, html, customElement, property, createRef, ref, Ref, when, keyed } from '@eclipse-lyra/core/externals/lit';
 import {
     DEFAULT_GSMAP,
     ensureUuidsRecursive,
@@ -21,7 +21,7 @@ import { DomainMapOperations } from "./domain-map-operations";
 import { SignalingMapOperations } from "./signaling-map-operations";
 import {
     CommandStack,
-    KPart,
+    LyraPart,
     EditorInput,
     File,
     toastError,
@@ -29,12 +29,12 @@ import {
     promptDialog,
     activePartSignal,
     createLogger
-} from "@kispace-io/core/api";
+} from "@eclipse-lyra/core/api";
 
 const logger = createLogger('GsMapEditor');
 
 @customElement('gs-map')
-export class GsMapEditor extends KPart {
+export class GsMapEditor extends LyraPart {
     @property({ attribute: false })
     public input?: EditorInput;
 
@@ -69,12 +69,12 @@ export class GsMapEditor extends KPart {
     }
 
     protected doBeforeUI() {
-        this.watch(mapChangedSignal, ({ part, event }: { part: KPart, event: MapEvents }) => {
+        this.watch(mapChangedSignal, ({ part, event }: { part: LyraPart, event: MapEvents }) => {
             this.onMapChanged({ part, event });
         });
     }
 
-    protected onMapChanged({ part, event }: { part: KPart, event: MapEvents }) {
+    protected onMapChanged({ part, event }: { part: LyraPart, event: MapEvents }) {
         if (part !== this) return;
         if (event === MapEvents.LAYER_ADDED ||
             event === MapEvents.LAYER_DELETED ||
@@ -94,17 +94,17 @@ export class GsMapEditor extends KPart {
         const hasActiveLayer = this.activeDrawingLayerUuid !== undefined;
 
         return html`
-            <k-command cmd="zoom_in" icon="magnifying-glass-plus" title="Zoom in"></k-command>
-            <k-command cmd="zoom_out" icon="magnifying-glass-minus" title="Zoom out"></k-command>
-            <k-command cmd="reset_view" icon="house" title="Reset view"></k-command>
-            <k-command cmd="refresh_map" icon="rotate" title="Refresh map"></k-command>
+            <lyra-command cmd="zoom_in" icon="magnifying-glass-plus" title="Zoom in"></lyra-command>
+            <lyra-command cmd="zoom_out" icon="magnifying-glass-minus" title="Zoom out"></lyra-command>
+            <lyra-command cmd="reset_view" icon="house" title="Reset view"></lyra-command>
+            <lyra-command cmd="refresh_map" icon="rotate" title="Refresh map"></lyra-command>
             <wa-divider orientation="vertical"></wa-divider>
-            <k-command cmd="capture_map_screenshot" icon="camera" title="Capture screenshot"></k-command>
+            <lyra-command cmd="capture_map_screenshot" icon="camera" title="Capture screenshot"></lyra-command>
             <wa-divider orientation="vertical"></wa-divider>
-            <k-command cmd="toggle_color_mode" icon="circle-half-stroke" title="Toggle dark/light mode"></k-command>
-            <k-command cmd="toggle_mobile_view" icon="mobile" title="Toggle mobile view"></k-command>
+            <lyra-command cmd="toggle_color_mode" icon="circle-half-stroke" title="Toggle dark/light mode"></lyra-command>
+            <lyra-command cmd="toggle_mobile_view" icon="mobile" title="Toggle mobile view"></lyra-command>
             <wa-divider orientation="vertical"></wa-divider>
-            <k-command icon="plus" title="Create Drawing Layer" .action=${() => this.handleCreateDrawingLayer()}></k-command>
+            <lyra-command icon="plus" title="Create Drawing Layer" .action=${() => this.handleCreateDrawingLayer()}></lyra-command>
             ${when(drawableLayers.length > 0, () => {
                 const layerKey = drawableLayers.map((layer) => `${layer.uuid}:${layer.name}`).join('|');
                 return html`
@@ -123,14 +123,14 @@ export class GsMapEditor extends KPart {
                             ${drawableLayers.map((layer) => html`<wa-option value="${layer.uuid}">${layer.name || 'Layer'}</wa-option>`)}
                         </wa-select>
                     `)}
-                    <k-command icon="location-dot" title="Draw Point" ?disabled=${!hasActiveLayer} .action=${() => this.handleDrawPoint()}></k-command>
-                    <k-command icon="minus" title="Draw LineString" ?disabled=${!hasActiveLayer} .action=${() => this.handleDrawLine()}></k-command>
-                    <k-command icon="draw-polygon" title="Draw Polygon" ?disabled=${!hasActiveLayer} .action=${() => this.handleDrawPolygon()}></k-command>
-                    <k-command icon="trash" title="Delete Selected Features" ?disabled=${this.interactionMode !== 'select'} .action=${() => this.handleDeleteSelected()}></k-command>
+                    <lyra-command icon="location-dot" title="Draw Point" ?disabled=${!hasActiveLayer} .action=${() => this.handleDrawPoint()}></lyra-command>
+                    <lyra-command icon="minus" title="Draw LineString" ?disabled=${!hasActiveLayer} .action=${() => this.handleDrawLine()}></lyra-command>
+                    <lyra-command icon="draw-polygon" title="Draw Polygon" ?disabled=${!hasActiveLayer} .action=${() => this.handleDrawPolygon()}></lyra-command>
+                    <lyra-command icon="trash" title="Delete Selected Features" ?disabled=${this.interactionMode !== 'select'} .action=${() => this.handleDeleteSelected()}></lyra-command>
                     <wa-divider orientation="vertical"></wa-divider>
                 `;
             })}
-            <k-command icon="hand-pointer" title="Select Features" .action=${() => this.handleSelectFeatures()}></k-command>
+            <lyra-command icon="hand-pointer" title="Select Features" .action=${() => this.handleSelectFeatures()}></lyra-command>
             <wa-divider orientation="vertical"></wa-divider>
             <wa-select size="small" value="${this.selectedRenderer}" title="Map Renderer" @change=${(e: any) => this.handleRendererChange(e.target.value)}>
                 <wa-option value="openlayers">OpenLayers</wa-option>

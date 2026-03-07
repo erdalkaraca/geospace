@@ -67,8 +67,7 @@ export default defineConfig({
             { find: '@kispace-io/gs-lib', replacement: path.resolve(__dirname, '../gs-lib/src') },
         ],
         // Dedupe lit imports - ensure all lit imports resolve to the same instance
-        // This prevents multiple versions from being loaded when appspace uses direct "lit" imports
-        // appspace has 160+ files using direct "lit" imports instead of externals/lit
+        // Prevents multiple lit versions when Lyra uses direct "lit" imports
         dedupe: ['lit']
     },
     optimizeDeps: {

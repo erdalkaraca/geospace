@@ -1,4 +1,4 @@
-import { css } from "@kispace-io/core/externals/lit";
+import { css } from "@eclipse-lyra/core/externals/lit";
 
 export const styleEditorStyles = css`
     wa-dialog {

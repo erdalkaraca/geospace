@@ -1,22 +1,22 @@
-import {css, html, customElement, state, when} from '@kispace-io/core/externals/lit';
+import {css, html, customElement, state, when} from '@eclipse-lyra/core/externals/lit';
 import {GsMapEditor, mapChangedSignal, getOriginalUri} from "@kispace-io/extension-map-editor/geo";
 import {GsLayer, GsLayerType, GsScriptedVectorLayer, GsControl, GsOverlay, findLayerByUuid, findLayerIndexByUuid} from "@kispace-io/gs-lib";
 import {
-    KPart,
+    LyraPart,
     commandRegistry,
     confirmDialog,
     activeEditorSignal
-} from "@kispace-io/core/api";
+} from "@eclipse-lyra/core/api";
 
 @customElement('gs-map-props')
-export class GsMapProps extends KPart {
+export class GsMapProps extends LyraPart {
     private mapEditor?: GsMapEditor;
 
     @state()
     private selectedLayerUuid?: string;
 
     protected doBeforeUI() {
-        this.watch(activeEditorSignal, (part: KPart) => {
+        this.watch(activeEditorSignal, (part: LyraPart) => {
             this.onPartChanged(part);
         });
         this.watch(mapChangedSignal, ({part}: any) => {
@@ -24,7 +24,7 @@ export class GsMapProps extends KPart {
         });
     }
 
-    protected onPartChanged(part: KPart) {
+    protected onPartChanged(part: LyraPart) {
         if (part == this || part == this.mapEditor) {
             return
         }
@@ -149,16 +149,16 @@ export class GsMapProps extends KPart {
         const hasSelection = this.selectedLayerUuid !== undefined;
 
         return html`
-            <k-command ?disabled=${!hasSelection}
+            <lyra-command ?disabled=${!hasSelection}
                       title="Rename selected layer"
                       icon="pen"
                       .action=${() => this.renameLayer()}>
-            </k-command>
-            <k-command ?disabled=${!hasSelection}
+            </lyra-command>
+            <lyra-command ?disabled=${!hasSelection}
                       title="Delete selected layer"
                       icon="trash"
                       .action=${() => this.deleteLayer()}>
-            </k-command>
+            </lyra-command>
         `;
     }
 
@@ -166,30 +166,30 @@ export class GsMapProps extends KPart {
         const hasSelection = this.selectedLayerUuid !== undefined;
 
         return html`
-            <k-command ?disabled=${!hasSelection}
+            <lyra-command ?disabled=${!hasSelection}
                       icon="pen"
                       .action=${() => this.renameLayer()}>
                 Rename
-            </k-command>
-            <k-command ?disabled=${!hasSelection}
+            </lyra-command>
+            <lyra-command ?disabled=${!hasSelection}
                       icon="trash"
                       .action=${() => this.deleteLayer()}>
                 Delete
-            </k-command>
+            </lyra-command>
         `;
     }
 
     render() {
         return when(!this.mapEditor, () => html`
-                    <k-no-content message="Select a map."></k-no-content>`,
+                    <lyra-no-content message="Select a map."></lyra-no-content>`,
             () => html`
                 <wa-tree>
                     <wa-tree-item expanded>
-                        <k-icon name="fg layers"></k-icon> Layers
+                        <lyra-icon name="fg layers"></lyra-icon> Layers
                         ${this.mapEditor!.getGsMap()?.layers.map((layer: GsLayer | GsScriptedVectorLayer, i: number) => html`
                             <wa-tree-item @click="${() => layer.uuid && this.selectLayer(layer.uuid)}"
                                           class="${this.selectedLayerUuid === layer.uuid ? 'selected' : ''}">
-                                <k-icon name="${this.layerIcon(layer)}"></k-icon>
+                                <lyra-icon name="${this.layerIcon(layer)}"></lyra-icon>
                                 <div class="layer-item">
                                     <div class="layer-name">
                                         <span>${this.layerLabel(layer, i)}${i == 0 ? html`
@@ -199,34 +199,34 @@ export class GsMapProps extends KPart {
                                         </span>
                                     </div>
                                     <div class="layer-actions">
-                                        <k-command size="small"
+                                        <lyra-command size="small"
                                                   icon="${layer.visible !== false ? "eye" : "eye-slash"}"
                                                   title="${layer.visible !== false ? 'Hide layer' : 'Show layer'}"
                                                   .action=${() => layer.uuid && this.toggleVisible(layer.uuid)}>
-                                        </k-command>
-                                        <k-command size="small"
+                                        </lyra-command>
+                                        <lyra-command size="small"
                                                   icon="arrow-up"
                                                   title="Move layer up"
                                                   ?disabled="${i === 0}"
                                                   .action=${() => layer.uuid && this.moveLayerUp(layer.uuid)}>
-                                        </k-command>
-                                        <k-command size="small"
+                                        </lyra-command>
+                                        <lyra-command size="small"
                                                   icon="arrow-down"
                                                   title="Move layer down"
                                                   ?disabled="${i === this.mapEditor!.getGsMap()!.layers.length - 1}"
                                                   .action=${() => layer.uuid && this.moveLayerDown(layer.uuid)}>
-                                        </k-command>
+                                        </lyra-command>
                                     </div>
                                 </div>
                             </wa-tree-item>
                         `)}
                     </wa-tree-item>
                     <wa-tree-item expanded>
-                        <k-icon name="fg map-control"></k-icon> Controls
+                        <lyra-icon name="fg map-control"></lyra-icon> Controls
                         ${this.mapEditor?.getGsMap()?.controls.map((control: GsControl) => html`
                             <wa-tree-item>
                                 <span>${getOriginalUri(control.src)}</span>
-                                <k-command size="small"
+                                <lyra-command size="small"
                                           icon="trash"
                                           title="Delete control"
                                           .action=${() => {
@@ -234,16 +234,16 @@ export class GsMapProps extends KPart {
                                                   this.confirmAction(`Delete control "${getOriginalUri(control.src)}"?`, () => this.withRefresh(() => this.mapEditor?.mapOperations?.removeControl(control.uuid!)))
                                               }
                                           }}>
-                                </k-command>
+                                </lyra-command>
                             </wa-tree-item>
                         `)}
                     </wa-tree-item>
                     <wa-tree-item expanded>
-                        <k-icon name="fg map-poi"></k-icon> Overlays
+                        <lyra-icon name="fg map-poi"></lyra-icon> Overlays
                         ${this.mapEditor?.getGsMap()?.overlays.map((overlay: GsOverlay) => html`
                             <wa-tree-item>
                                 <span>${getOriginalUri(overlay.src)}</span>
-                                <k-command size="small"
+                                <lyra-command size="small"
                                           icon="trash"
                                           title="Delete overlay"
                                           .action=${() => {
@@ -251,12 +251,12 @@ export class GsMapProps extends KPart {
                                                   this.confirmAction(`Delete overlay "${getOriginalUri(overlay.src)}"?`, () => this.withRefresh(() => this.mapEditor?.mapOperations?.removeOverlay(overlay.uuid!)))
                                               }
                                           }}>
-                                </k-command>
+                                </lyra-command>
                             </wa-tree-item>
                         `)}
                     </wa-tree-item>
                     <wa-tree-item expanded>
-                        <k-icon name="highlighter"></k-icon> Styles
+                        <lyra-icon name="highlighter"></lyra-icon> Styles
                         <wa-tree-item>
                             <span>Defined Styles: ${Object.keys(this.mapEditor!.getGsMap()?.styles || {}).length}</span>
                         </wa-tree-item>

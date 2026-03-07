@@ -9,7 +9,7 @@
     "./loader": "./src/loader.ts"
   },
   "dependencies": {
-    "@kispace-io/core": "*",
+    "@eclipse-lyra/core": "*",
     "@kispace-io/extension-map-editor": "*",
     "@kispace-io/gs-lib": "*"
   },

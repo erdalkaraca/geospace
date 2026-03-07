@@ -10,8 +10,8 @@ import {
     LayerSpecification,
     SourceSpecification
 } from 'maplibre-gl';
-import { v4 as uuidv4 } from '@kispace-io/core/externals/third-party';
-import { subscribe, publish } from '@kispace-io/core/core/events';
+import { v4 as uuidv4 } from '@eclipse-lyra/core/externals/third-party';
+import { subscribe, publish } from '@eclipse-lyra/core/core/events';
 import { GsMlControl, GsMlControlAdapter, GsMlOverlayAdapter } from './gs-ml-adapters';
 
 import {

@@ -6,7 +6,7 @@ import {
     type File,
     type Directory,
     logger,
-} from "@kispace-io/core/api";
+} from "@eclipse-lyra/core/api";
 
 async function ensureWorkspacePath(workspace: Directory | undefined, path: string): Promise<string> {
     if (!workspace || path.includes("/")) return path;

@@ -1,4 +1,4 @@
-import { extensionRegistry } from "@kispace-io/core/api";
+import { extensionRegistry } from "@eclipse-lyra/core/api";
 
 extensionRegistry.registerExtension({
     id: "@kispace-io/extension-catalog",

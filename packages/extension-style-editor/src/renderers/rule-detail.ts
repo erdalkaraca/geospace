@@ -1,4 +1,4 @@
-import { html } from "@kispace-io/core/externals/lit";
+import { html } from "@eclipse-lyra/core/externals/lit";
 import { GsStyleRule } from "@kispace-io/gs-lib";
 
 export function renderRuleDetail(ruleId: string, rule: GsStyleRule) {

@@ -2,7 +2,7 @@ import {GsSourceType, KEY_NAME, scriptedRuntimeRegistry} from "@kispace-io/gs-li
 import {BaseLayer, Map, resolveScriptLang} from "@kispace-io/gs-lib/ol";
 import jsonata from "jsonata";
 import {parse} from "dotenv";
-import {File, workspaceService} from "@kispace-io/core/api";
+import {File, workspaceService} from "@eclipse-lyra/core/api";
 import { resolveWorkspacePath as resolveWorkspacePathImpl, WorkspaceModuleResolver } from "./workspace-module-resolver";
 
 export { resolveWorkspacePath } from "./workspace-module-resolver";

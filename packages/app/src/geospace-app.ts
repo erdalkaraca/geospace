@@ -1,4 +1,4 @@
-import { html } from "@kispace-io/core/externals/lit";
+import { html } from "@eclipse-lyra/core/externals/lit";
 import geospacePackageJson from "../package.json";
 const appVersion = geospacePackageJson.version;
 
@@ -16,24 +16,24 @@ import {
     StringFile,
     type IconContribution,
     HTMLContribution
-} from "@kispace-io/core/api";
+} from "@eclipse-lyra/core/api";
 
-import { fetchReleases } from "@kispace-io/extension-github-service";
+import { fetchReleases } from "@eclipse-lyra/extension-github-service";
 
-import '@kispace-io/extension-utils';
-import '@kispace-io/extension-md-editor';
-import '@kispace-io/extension-media-viewer';
-import '@kispace-io/extension-memory-usage';
-import '@kispace-io/extension-monaco-editor';
-import '@kispace-io/extension-settings-tree';
+import '@eclipse-lyra/extension-utils';
+import '@eclipse-lyra/extension-md-editor';
+import '@eclipse-lyra/extension-media-viewer';
+import '@eclipse-lyra/extension-memory-usage';
+import '@eclipse-lyra/extension-monaco-editor';
+import '@eclipse-lyra/extension-settings-tree';
 
-import '@kispace-io/extension-github-service';
-import '@kispace-io/extension-python-runtime';
-import '@kispace-io/extension-notebook';
-import '@kispace-io/extension-command-palette';
-import '@kispace-io/extension-in-browser-ml';
-import '@kispace-io/extension-ai-system';
-import '@kispace-io/extension-howto-system';
+import '@eclipse-lyra/extension-github-service';
+import '@eclipse-lyra/extension-python-runtime';
+import '@eclipse-lyra/extension-notebook';
+import '@eclipse-lyra/extension-command-palette';
+import '@eclipse-lyra/extension-in-browser-ml';
+import '@eclipse-lyra/extension-ai-system';
+import '@eclipse-lyra/extension-howto-system';
 
 
 import '@kispace-io/extension-mapbuilder';
@@ -44,8 +44,8 @@ import '@kispace-io/extension-catalog';
 import '@kispace-io/extension-mapprops';
 import '@kispace-io/extension-map-editor';
 
-import { CID_PROMPT_ENHANCERS } from "@kispace-io/extension-ai-system/api";
-import type { PromptEnhancer, PromptEnhancerContribution } from "@kispace-io/extension-ai-system/api";
+import { CID_PROMPT_ENHANCERS } from "@eclipse-lyra/extension-ai-system/api";
+import type { PromptEnhancer, PromptEnhancerContribution } from "@eclipse-lyra/extension-ai-system/api";
 
 import README from "../../../README.md?raw";
 import GEOSPACE_SYSPROMPT from "./geospace-sysprompt.txt?raw";
@@ -77,14 +77,14 @@ export const geospaceApp: AppDefinition = {
         '@kispace-io/extension-overpass',
         '@kispace-io/extension-gtfs',
         '@kispace-io/extension-mapbuilder',
-        '@kispace-io/extension-utils',
-        '@kispace-io/extension-command-palette',
-        '@kispace-io/extension-md-editor',
-        '@kispace-io/extension-monaco-editor',
-        '@kispace-io/extension-media-viewer',
-        '@kispace-io/extension-settings-tree',
-        '@kispace-io/extension-memory-usage',
-        '@kispace-io/extension-ai-system',
+        '@eclipse-lyra/extension-utils',
+        '@eclipse-lyra/extension-command-palette',
+        '@eclipse-lyra/extension-md-editor',
+        '@eclipse-lyra/extension-monaco-editor',
+        '@eclipse-lyra/extension-media-viewer',
+        '@eclipse-lyra/extension-settings-tree',
+        '@eclipse-lyra/extension-memory-usage',
+        '@eclipse-lyra/extension-ai-system',
     ],
     contributions: {
         ui: [
@@ -148,7 +148,7 @@ export const geospaceApp: AppDefinition = {
 
         logger.info('geo!space is ready!');
     },
-    render: () => html`<k-standard-layout show-bottom-sidebar="true"></k-standard-app>`
+    render: () => html`<lyra-standard-layout show-bottom-sidebar="true"></lyra-standard-layout>`
 };
 
 appLoaderService.registerApp(geospaceApp, {

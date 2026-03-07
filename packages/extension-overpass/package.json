@@ -9,7 +9,7 @@
     "./loader": "./src/loader.ts"
   },
   "dependencies": {
-    "@kispace-io/core": "*",
+    "@eclipse-lyra/core": "*",
     "osmtogeojson": "^3.0.0-beta.5"
   },
   "devDependencies": {

@@ -8,7 +8,7 @@ import {
     toastInfo,
     taskService,
     rootContext,
-} from "@kispace-io/core/api";
+} from "@eclipse-lyra/core/api";
 
 function resolveWorkspacePath(relativePath: string, basePath: string): string {
     if (relativePath.startsWith("/")) return relativePath.slice(1);

@@ -18,10 +18,10 @@ const isExternal = (id: string) => {
   // Bundle core modules that gs-lib directly uses
   // These are re-exports from core, so we bundle them to make gs-lib self-contained
   const coreModulesToBundle = [
-    '@kispace-io/core/externals/third-party',  // uuid
-    '@kispace-io/core/externals/lit',          // lit
-    '@kispace-io/core/externals/webawesome',   // webawesome
-    '@kispace-io/core/core/events'              // subscribe, publish, unsubscribe
+    '@eclipse-lyra/core/externals/third-party',  // uuid
+    '@eclipse-lyra/core/externals/lit',          // lit
+    '@eclipse-lyra/core/externals/webawesome',   // webawesome
+    '@eclipse-lyra/core/core/events'              // subscribe, publish, unsubscribe
   ];
   
   const isCoreModuleToBundle = coreModulesToBundle.some(module =>
@@ -33,7 +33,7 @@ const isExternal = (id: string) => {
   }
   
   // Keep other core imports external (e.g., ./api which pulls in the entire framework)
-  if (id.startsWith('@kispace-io/core')) {
+  if (id.startsWith('@eclipse-lyra/core')) {
     return true;
   }
   // Bundle absolute paths to source files (entry points)
@@ -64,11 +64,11 @@ const isExternal = (id: string) => {
   // These are packages imported by ol/ol-mapbox-style that are not core
   const isBareSpecifier = !id.startsWith('./') &&
                           !id.startsWith('../') &&
-                          !id.startsWith('@kispace-io/core');
+                          !id.startsWith('@eclipse-lyra/core');
   
   const isNodeModulesPath = path.isAbsolute(id) &&
                            id.includes('/node_modules/') &&
-                           !id.includes('/node_modules/@kispace-io/core/');
+                           !id.includes('/node_modules/@eclipse-lyra/core/');
   
   if (isBareSpecifier || isNodeModulesPath) {
     return false;

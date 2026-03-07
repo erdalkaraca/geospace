@@ -6,20 +6,20 @@ import {
     state,
     createRef,
     ref,
-} from "@kispace-io/core/externals/lit";
+} from "@eclipse-lyra/core/externals/lit";
 import {
-    KPart,
+    LyraPart,
     TreeContribution,
     TreeNode,
     contributionRegistry,
     activePartSignal,
     activeSelectionSignal,
-} from "@kispace-io/core/api";
+} from "@eclipse-lyra/core/api";
 
 export const CID_CATALOG_ROOT = "catalog.root";
 
 @customElement("gs-catalog")
-export class GsCatalog extends KPart {
+export class GsCatalog extends LyraPart {
     @state()
     private rootNodes?: TreeNode[];
 
@@ -38,29 +38,29 @@ export class GsCatalog extends KPart {
             activeSelectionSignal.get() !== undefined;
 
         return html`
-            <k-command
+            <lyra-command
                 cmd="checkout"
                 icon="file-arrow-down"
                 ?disabled=${!isActiveAndHasSelection}
                 title="Checkout"
-            ></k-command>
-            <k-command
+            ></lyra-command>
+            <lyra-command
                 cmd="refresh_catalog"
                 icon="arrows-rotate"
                 title="Refresh Catalog"
-            ></k-command>
-            <k-command
+            ></lyra-command>
+            <lyra-command
                 cmd="catalog_expand_all"
                 icon="angles-down"
                 slot="end"
                 title="Expand All"
-            ></k-command>
-            <k-command
+            ></lyra-command>
+            <lyra-command
                 cmd="catalog_collapse_all"
                 icon="angles-up"
                 slot="end"
                 title="Collapse All"
-            ></k-command>
+            ></lyra-command>
         `;
     }
 
@@ -117,7 +117,7 @@ export class GsCatalog extends KPart {
                 .model=${node}
                 ?expanded=${expanded}
             >
-                <span><k-icon name="${node.icon}"></k-icon> ${node.label}</span>
+                <span><lyra-icon name="${node.icon}"></lyra-icon> ${node.label}</span>
                 ${node.children?.map((child) => this.createTreeItems(child))}
             </wa-tree-item>
         `;

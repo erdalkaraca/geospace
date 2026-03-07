@@ -1,7 +1,7 @@
 import {
     contributionRegistry,
     type TreeContribution,
-} from "@kispace-io/core/api";
+} from "@eclipse-lyra/core/api";
 
 export interface CatalogContribution extends TreeContribution {
     items?: CatalogContribution[];

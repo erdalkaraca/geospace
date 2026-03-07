@@ -28,7 +28,7 @@ import {
     toastInfo,
     toastError,
     taskService
-} from "@kispace-io/core/api";
+} from "@eclipse-lyra/core/api";
 
 const logger = createLogger('GsCommandHandlers');
 
