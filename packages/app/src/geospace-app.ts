@@ -1,4 +1,3 @@
-import { html } from "@eclipse-lyra/core/externals/lit";
 import geospacePackageJson from "../package.json";
 const appVersion = geospacePackageJson.version;
 
@@ -7,7 +6,6 @@ import {
     AppDefinition,
     appLoaderService,
     createLogger,
-    packageInfoService,
     contributionRegistry,
     editorRegistry,
     registerAll,
@@ -58,8 +56,8 @@ const GITHUB_OWNER = 'erdalkaraca';
 const GITHUB_REPO = 'geospace';
 
 export const geospaceApp: AppDefinition = {
-    id: "geospace",
     name: "🌐geo!space",
+    path: "geospace",
     version: appVersion,
     description: "An IDE for working with geospatial data.",
     metadata: {
@@ -92,20 +90,13 @@ export const geospaceApp: AppDefinition = {
                 target: TOOLBAR_MAIN,
                 slot: "start",
                 label: "Brand",
-                html: `<span style="margin-right: 1rem;"><span><nobr>🌐<i><b>geo!</b></i><small>space</small></nobr></span></span>`
+                component: `<span style="margin-right: 1rem;"><span><nobr>🌐<i><b>geo!</b></i><small>space</small></nobr></span></span>`
             } as HTMLContribution
         ],
     },
     releaseHistory: fetchReleases,
 
     async initialize() {
-        packageInfoService.addPackage({
-            name: geospacePackageJson.name,
-            version: geospacePackageJson.version,
-            dependencies: geospacePackageJson.dependencies,
-            devDependencies: geospacePackageJson.devDependencies
-        });
-
         const basePath = (import.meta.env.BASE_URL || "/").replace(/\/?$/, "/");
         const baseUrl = (typeof window !== "undefined" ? window.location.origin : "") + basePath;
         registerCatalog(GEOSPACE_CATALOG as any, baseUrl);
@@ -148,9 +139,10 @@ export const geospaceApp: AppDefinition = {
 
         logger.info('geo!space is ready!');
     },
-    render: () => html`<lyra-standard-layout show-bottom-sidebar="true"></lyra-standard-layout>`
+    layout: "standard-bottom-sidebar",
 };
 
 appLoaderService.registerApp(geospaceApp, {
     autoStart: true,
+    hostConfig: true,
 });

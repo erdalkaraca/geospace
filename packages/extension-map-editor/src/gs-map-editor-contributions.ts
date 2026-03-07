@@ -63,7 +63,7 @@ editorRegistry.registerEditorInputHandler({
             editorId: "map-editor",
             icon: "location-dot",
             state: {} as { [key: string]: unknown },
-            widgetFactory: (id: string) => html`
+            component: (id: string) => html`
                 <gs-map id="${id}" .input="${editorInput}"></gs-map>`,
         };
         return editorInput as EditorInput;

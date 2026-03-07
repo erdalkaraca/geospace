@@ -4,6 +4,7 @@ import {fileURLToPath} from "url";
 import path from 'path';
 import mkcert from 'vite-plugin-mkcert';
 import crossOriginIsolation from 'vite-plugin-cross-origin-isolation';
+import { resolveDepVersionsPlugin } from '@eclipse-lyra/core/vite-plugin-resolve-deps';
 import fs from 'fs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -51,6 +52,7 @@ function iframeMapRendererHtmlPlugin() {
 export default defineConfig({
     root: __dirname,
     plugins: [
+        resolveDepVersionsPlugin(),
         mkcert(),
         crossOriginIsolation(),
         iframeMapRendererHtmlPlugin(),
