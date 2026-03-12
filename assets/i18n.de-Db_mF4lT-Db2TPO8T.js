@@ -1,0 +1,1 @@
+const t="Python-Runtime",n="Pyodide-Runtime, Python-Paketverwaltung und Befehl Python-Skript ausführen",e={EXT_PYTHONRUNTIME_NAME:t,EXT_PYTHONRUNTIME_DESC:n};export{n as EXT_PYTHONRUNTIME_DESC,t as EXT_PYTHONRUNTIME_NAME,e as default};

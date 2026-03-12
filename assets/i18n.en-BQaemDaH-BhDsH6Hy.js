@@ -1,0 +1,1 @@
+const s="In-Browser ML",e="In-browser machine learning service using transformers.js for specialized tasks (zero-shot classification, embeddings, etc.)",n={EXT_IN_BROWSER_ML_NAME:s,EXT_IN_BROWSER_ML_DESC:e};export{e as EXT_IN_BROWSER_ML_DESC,s as EXT_IN_BROWSER_ML_NAME,n as default};

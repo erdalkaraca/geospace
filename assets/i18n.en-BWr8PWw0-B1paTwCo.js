@@ -1,0 +1,1 @@
+const o="Memory Usage Monitor",t="Displays JavaScript heap memory usage in the bottom toolbar",a={EXT_MEMORYUSAGE_NAME:o,EXT_MEMORYUSAGE_DESC:t};export{t as EXT_MEMORYUSAGE_DESC,o as EXT_MEMORYUSAGE_NAME,a as default};

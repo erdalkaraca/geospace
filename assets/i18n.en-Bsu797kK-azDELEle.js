@@ -1,0 +1,1 @@
+const e="Jupyter-like Notebook Editor",o="View and execute Jupyter-like notebooks (.ipynb) with Python code execution and markdown rendering",n={EXT_NOTEBOOK_NAME:e,EXT_NOTEBOOK_DESC:o};export{o as EXT_NOTEBOOK_DESC,e as EXT_NOTEBOOK_NAME,n as default};

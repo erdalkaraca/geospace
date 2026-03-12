@@ -1,0 +1,1 @@
+const e="Speicherverbrauch-Monitor",n="Zeigt die JavaScript-Heap-Speichernutzung in der unteren Symbolleiste an",t={EXT_MEMORYUSAGE_NAME:e,EXT_MEMORYUSAGE_DESC:n};export{n as EXT_MEMORYUSAGE_DESC,e as EXT_MEMORYUSAGE_NAME,t as default};

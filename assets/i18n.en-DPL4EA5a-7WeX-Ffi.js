@@ -1,0 +1,1 @@
+const n="Python Runtime",t="Pyodide runtime, Python package management, and Run Python Script command",e={EXT_PYTHONRUNTIME_NAME:n,EXT_PYTHONRUNTIME_DESC:t};export{t as EXT_PYTHONRUNTIME_DESC,n as EXT_PYTHONRUNTIME_NAME,e as default};

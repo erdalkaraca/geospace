@@ -1,21 +1,32 @@
 <!doctype html>
 <html lang="en" class="wa-dark">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Loading...</title>
-
-    <!-- Pace.js loading indicator -->
-    
-    <!-- App entry point - waits for resources to load before importing app -->
-  <script type="module" crossorigin src="/assets/main-B-30C_s6.js"></script>
+    <style>@keyframes app-loading-bar{0%{transform:translateX(0)}50%{transform:translateX(144px)}100%{transform:translateX(0)}}</style>
+  <script type="module" crossorigin src="/assets/main-BzSeGkpT.js"></script>
   <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-B5Qt9EMX.js">
-  <link rel="modulepreload" crossorigin href="/assets/preload-helper-WQhrSmCl.js">
-  <link rel="stylesheet" crossorigin href="/assets/main-Dh05uxkL.css">
+  <link rel="modulepreload" crossorigin href="/assets/preload-helper-BXl3LOEh.js">
 </head>
-
 <body>
-    <!-- App will be rendered here by the app loader -->
+  <div id="app-root"></div>
+  <div id="app-loading-overlay" style="position:fixed;inset:0;z-index:1000;background:var(--wa-background,#1a1a1a);pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2rem;">
+    <img src="/logo.svg" alt="" width="192" height="64" style="display:block;width:192px;height:64px;max-width:192px;max-height:64px;min-width:192px;min-height:64px;" aria-hidden="true"/>
+    <div style="width:240px;height:3px;background:var(--wa-layer-2,#2a2a2a);border-radius:2px;overflow:hidden;">
+      <div style="width:40%;height:100%;background:var(--wa-color-primary,#2299dd);border-radius:2px;animation:app-loading-bar 1.5s ease-in-out infinite;" aria-hidden="true"></div>
+    </div>
+    <div id="app-load-progress" style="font-size:0.8125rem;color:var(--wa-text-secondary,#888);" aria-live="polite">Starting…</div>
+  </div>
+  <script>
+    window.addEventListener('app-load-progress', function(e) {
+      var el = document.getElementById('app-load-progress');
+      if (el && e.detail && e.detail.message) el.textContent = e.detail.message;
+    });
+    window.addEventListener('app-loaded', function() {
+      var el = document.getElementById('app-loading-overlay');
+      if (el) { el.style.opacity = '0'; el.style.transition = 'opacity 0.15s'; setTimeout(function() { el.remove(); }, 160); }
+    }, { once: true });
+  </script>
 </body>
-
 </html>

@@ -1,0 +1,1 @@
+const t="Command Palette",e="VS Code-style command palette at the top center for quick command execution (Ctrl+Shift+P)",o={EXT_COMMANDPALETTE_NAME:t,EXT_COMMANDPALETTE_DESC:e};export{e as EXT_COMMANDPALETTE_DESC,t as EXT_COMMANDPALETTE_NAME,o as default};

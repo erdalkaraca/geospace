@@ -1,0 +1,1 @@
+const E="Einstellungs-Baum-Editor",t="Baumbasierter Editor für Einstellungen mit direkter Bearbeitung",e={EXT_SETTINGS_TREE_NAME:E,EXT_SETTINGS_TREE_DESC:t};export{t as EXT_SETTINGS_TREE_DESC,E as EXT_SETTINGS_TREE_NAME,e as default};

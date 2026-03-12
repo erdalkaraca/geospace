@@ -1,0 +1,1 @@
+const n="DuckDB",e="In-browser SQL engine (DuckDB-WASM) for advanced queries, analytics, and Parquet/CSV/JSON.",D={EXT_DUCKDB_NAME:n,EXT_DUCKDB_DESC:e};export{e as EXT_DUCKDB_DESC,n as EXT_DUCKDB_NAME,D as default};

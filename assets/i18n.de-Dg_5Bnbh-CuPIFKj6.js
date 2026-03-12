@@ -1,0 +1,1 @@
+const e="Medien-Viewer",E="PDF-, Bild- und HTML-Dateien im Browser anzeigen",n={EXT_MEDIAVIEWER_NAME:e,EXT_MEDIAVIEWER_DESC:E};export{E as EXT_MEDIAVIEWER_DESC,e as EXT_MEDIAVIEWER_NAME,n as default};

@@ -1,0 +1,1 @@
+const e="Aktive Aufgaben",t="Aktive Aufgaben: {taskCount}. Klicken Sie, um Details anzuzeigen.",n={ACTIVE_TASKS:e,ACTIVE_TASKS_TITLE:t};export{e as ACTIVE_TASKS,t as ACTIVE_TASKS_TITLE,n as default};

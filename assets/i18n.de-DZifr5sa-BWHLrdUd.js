@@ -1,0 +1,1 @@
+const e="ML im Browser",s="Maschinelles Lernen im Browser mit transformers.js für spezialisierte Aufgaben (Zero-Shot-Klassifizierung, Embeddings usw.)",r={EXT_IN_BROWSER_ML_NAME:e,EXT_IN_BROWSER_ML_DESC:s};export{s as EXT_IN_BROWSER_ML_DESC,e as EXT_IN_BROWSER_ML_NAME,r as default};
