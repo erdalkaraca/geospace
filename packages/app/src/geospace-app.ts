@@ -1,54 +1,53 @@
-import geospacePackageJson from "../package.json";
-const appVersion = geospacePackageJson.version;
-
-// Framework API imports
 import {
     AppDefinition,
-    appLoaderService,
-    createLogger,
-    contributionRegistry,
-    editorRegistry,
-    registerAll,
+    HTMLContribution,
+    StringFile,
     TOOLBAR_MAIN,
     TOOLBAR_MAIN_RIGHT,
-    StringFile,
-    type IconContribution,
-    HTMLContribution
+    appLoaderService,
+    contributionRegistry,
+    createLogger,
+    editorRegistry,
+    registerAll,
+    type IconContribution
 } from "@eclipse-lyra/core/api";
 
 import { fetchReleases } from "@eclipse-lyra/extension-github-service";
 
-import '@eclipse-lyra/extension-utils';
 import '@eclipse-lyra/extension-md-editor';
 import '@eclipse-lyra/extension-media-viewer';
 import '@eclipse-lyra/extension-memory-usage';
 import '@eclipse-lyra/extension-monaco-editor';
 import '@eclipse-lyra/extension-settings-tree';
+import '@eclipse-lyra/extension-utils';
 
-import '@eclipse-lyra/extension-github-service';
-import '@eclipse-lyra/extension-python-runtime';
-import '@eclipse-lyra/extension-notebook';
-import '@eclipse-lyra/extension-command-palette';
-import '@eclipse-lyra/extension-in-browser-ml';
 import '@eclipse-lyra/extension-ai-system';
+import '@eclipse-lyra/extension-command-palette';
+import '@eclipse-lyra/extension-github-service';
 import '@eclipse-lyra/extension-howto-system';
+import '@eclipse-lyra/extension-in-browser-ml';
+import '@eclipse-lyra/extension-notebook';
+import '@eclipse-lyra/extension-python-runtime';
+import '@eclipse-lyra/extension-dataviewer';
+import '@eclipse-lyra/extension-sqleditor';
+import '@eclipse-lyra/extension-duckdb';
+import '@eclipse-lyra/extension-pglite';
 
-
-import '@kispace-io/extension-mapbuilder';
-import '@kispace-io/extension-style-editor';
-import '@kispace-io/extension-overpass';
-import '@kispace-io/extension-gtfs';
 import '@kispace-io/extension-catalog';
-import '@kispace-io/extension-mapprops';
+import '@kispace-io/extension-gtfs';
 import '@kispace-io/extension-map-editor';
+import '@kispace-io/extension-mapbuilder';
+import '@kispace-io/extension-mapprops';
+import '@kispace-io/extension-overpass';
+import '@kispace-io/extension-style-editor';
 
-import { CID_PROMPT_ENHANCERS } from "@eclipse-lyra/extension-ai-system/api";
 import type { PromptEnhancer, PromptEnhancerContribution } from "@eclipse-lyra/extension-ai-system/api";
+import { CID_PROMPT_ENHANCERS } from "@eclipse-lyra/extension-ai-system/api";
 
-import README from "../../../README.md?raw";
-import GEOSPACE_SYSPROMPT from "./geospace-sysprompt.txt?raw";
-import GEOSPACE_CATALOG from "./geospace-catalog.json";
 import { registerCatalog } from "@kispace-io/extension-catalog/register-catalog";
+import README from "../../../README.md?raw";
+import GEOSPACE_CATALOG from "./geospace-catalog.json";
+import GEOSPACE_SYSPROMPT from "./geospace-sysprompt.txt?raw";
 
 const logger = createLogger('GeoSpaceApp');
 
@@ -57,15 +56,12 @@ const GITHUB_REPO = 'geospace';
 
 export const geospaceApp: AppDefinition = {
     name: "🌐geo!space",
-    path: "geospace",
-    version: appVersion,
-    description: "An IDE for working with geospatial data.",
     metadata: {
         github: {
             owner: GITHUB_OWNER,
             repo: GITHUB_REPO
         },
-        favicon: '/geospace.svg'
+        favicon: '/logo.svg'
     },
     extensions: [
         '@kispace-io/extension-catalog',
@@ -83,14 +79,16 @@ export const geospaceApp: AppDefinition = {
         '@eclipse-lyra/extension-settings-tree',
         '@eclipse-lyra/extension-memory-usage',
         '@eclipse-lyra/extension-ai-system',
+        '@eclipse-lyra/extension-dataviewer',
     ],
     contributions: {
         ui: [
             {
+                name: "toolbar.brand.geospace",
                 target: TOOLBAR_MAIN,
                 slot: "start",
                 label: "Brand",
-                component: `<span style="margin-right: 1rem;"><span><nobr>🌐<i><b>geo!</b></i><small>space</small></nobr></span></span>`
+                component: `<span style="margin-right: 1rem; display: inline-flex; align-items: center;"><img src="/logo.svg" alt="geo!space" style="height: 24px; display: block;" /></span>`
             } as HTMLContribution
         ],
     },
@@ -142,7 +140,9 @@ export const geospaceApp: AppDefinition = {
     layout: "standard-bottom-sidebar",
 };
 
+const appRoot = document.getElementById('app-root') ?? document.body;
 appLoaderService.registerApp(geospaceApp, {
     autoStart: true,
     hostConfig: true,
+    container: appRoot,
 });

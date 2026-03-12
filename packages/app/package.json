@@ -1,6 +1,7 @@
 {
   "name": "@kispace-io/app",
   "version": "0.0.0",
+  "description": "An IDE for working with geospatial data.",
   "type": "module",
   "license": "EPL-2.0",
   "scripts": {
@@ -26,6 +27,10 @@
     "@eclipse-lyra/extension-monaco-editor": "*",
     "@eclipse-lyra/extension-notebook": "*",
     "@eclipse-lyra/extension-settings-tree": "*",
+    "@eclipse-lyra/extension-sqleditor": "*",
+    "@eclipse-lyra/extension-duckdb": "*",
+    "@eclipse-lyra/extension-pglite": "*",
+    "@eclipse-lyra/extension-dataviewer": "*",
 
     "@kispace-io/extension-catalog": "^0.0.0",
     "@kispace-io/extension-gtfs": "^0.0.0",
