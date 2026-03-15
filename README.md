@@ -1,31 +1,31 @@
-# 🌐 geo!space
+# geo!space
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/erdalkaraca/geospace)
-[![Browser Support](https://img.shields.io/badge/Chrome%20%7C%20Opera-Supported-brightgreen)](#-browser-compatibility)
-[![PWA Ready](https://img.shields.io/badge/PWA-Ready-purple)](#-key-features)
-[![No Installation](https://img.shields.io/badge/Installation-None%20Required-orange)](#-quick-start)
+[![Browser Support](https://img.shields.io/badge/Chrome%20%7C%20Opera-Supported-brightgreen)](#browser-compatibility)
+[![PWA Ready](https://img.shields.io/badge/PWA-Ready-purple)](#key-features)
+[![No Installation](https://img.shields.io/badge/Installation-None%20Required-orange)](#quick-start)
 [![Built on Eclipse Lyra](https://img.shields.io/badge/Built%20on-Eclipse%20Lyra-blue)](https://projects.eclipse.org/proposals/eclipse-lyra)
 
 **The Interactive Mapping IDE in Your Browser**
 
 geo!space is a powerful browser-based mapping IDE built as an [Eclipse Lyra](https://projects.eclipse.org/proposals/eclipse-lyra) app. It provides professional mapping capabilities entirely in your browser: create interactive maps, work with geospatial data, and transform maps into cross-platform Progressive Web Apps – all without installing any native software.
 
-## 📑 Table of Contents
+## Table of Contents
 
-- [✨ Key Features](#-key-features)
-- [🌐 Browser Compatibility](#-browser-compatibility)
-- [🌟 Use Cases](#-use-cases)
-- [🚀 Getting Started](#-getting-started)
-- [👨‍💻 Development](#-development)
-- [💡 Examples](#-examples)
-- [🔧 Troubleshooting](#-troubleshooting)
-- [❓ FAQ](#-faq)
-- [🏗️ Technical Architecture](#️-technical-architecture)
-- [🤝 Trusted by](#-trusted-by)
-- [⚡ Quick Start](#-quick-start)
+- [Key Features](#key-features)
+- [Browser Compatibility](#browser-compatibility)
+- [Use Cases](#use-cases)
+- [Getting Started](#getting-started)
+- [Development](#development)
+- [Examples](#examples)
+- [Troubleshooting](#troubleshooting)
+- [FAQ](#faq)
+- [Technical Architecture](#technical-architecture)
+- [Used by](#used-by)
+- [Quick Start](#quick-start)
 
-## ✨ Key Features
+## Key Features
 
-### 🗺️ **Professional Mapping**
+### Professional Mapping
 - **Interactive Map Editor**: Create and edit maps using the custom `.geospace` format
 - **Multiple Data Sources**: Support for OSM, XYZ tiles, GeoJSON, KML, GeoTIFF, GPX, Features, BM (basemap.de), WMS, WMTS, and Overpass API
 - **Satellite Imagery**: Built-in access to Esri World Imagery and Sentinel-2 satellite imagery
@@ -34,12 +34,12 @@ geo!space is a powerful browser-based mapping IDE built as an [Eclipse Lyra](htt
 - **Advanced Styling**: Dynamic style loading and management system
 - **PWA Transformation**: Convert `.geospace` files into cross-platform Progressive Web Apps
 
-### 🛠️ **Map Building & Deployment**
+### Map Building & Deployment
 - **PWA Builder**: Transform `.geospace` files into cross-platform Progressive Web Apps
 - **Custom Controls**: Create interactive UI components using JavaScript modules
 - **Module System**: Import and share custom map controls within your workspace
 
-## 🌟 Use Cases
+## Use Cases
 
 - **Data Analysts**: Create interactive maps for data visualization
 - **Urban Planners**: Design and prototype mapping applications  
@@ -48,7 +48,7 @@ geo!space is a powerful browser-based mapping IDE built as an [Eclipse Lyra](htt
 - **Educators**: Teach mapping and geospatial concepts interactively
 - **App Creators**: Transform maps into cross-platform PWAs for mobile, desktop, and web deployment
 
-## 🚀 Getting Started
+## Getting Started
 
 ### 1. **Connect a Workspace**
 - In the Workspace tab, click the folder icon "Load workspace folder"
@@ -71,7 +71,7 @@ geo!space is a powerful browser-based mapping IDE built as an [Eclipse Lyra](htt
 - Use the "Checkout" button to download items directly to your workspace
 - Access pre-built basemaps (OpenStreetMap, basemap.de) and sample datasets
 
-## 👨‍💻 Development
+## Development
 
 geo!space runs as an Eclipse Lyra app and provides a powerful development environment for creating custom map controls, overlays, and workflows.
 
@@ -90,7 +90,7 @@ To work on geo!space itself:
    - Build: `npm run build`
    - Preview: `npm run preview`
 
-The main app definition lives in `packages/app/src/geospace-app.ts`, where the Eclipse Lyra `AppDefinition` is registered along with all geo!space-specific extensions.
+The main app definition lives in `packages/app/src/main.ts`, where the Eclipse Lyra `AppDefinition` is registered along with all geo!space-specific extensions.
 
 ### **Custom Modules**
 
@@ -130,11 +130,11 @@ export default function ({html, style, events, map}) {
 ```
 
 **Learn More:**
-- 📖 See the [User Modules Guide](packages/app/public/docs/user-modules.md) for complete documentation
-- 🎨 Browse Web Awesome components: https://webawesome.com
-- 🗺️ Explore OpenLayers API: https://openlayers.org/
+- See the [User Modules Guide](packages/app/public/docs/user-modules.md) for complete documentation
+- Browse Web Awesome components: https://webawesome.com
+- Explore OpenLayers API: https://openlayers.org/
 
-## 💡 Examples
+## Examples
 
 ### **Create a City Map**
 ```
@@ -152,7 +152,7 @@ export default function ({html, style, events, map}) {
 4. Build the map as a PWA for deployment
 ```
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
 ### **Common Issues**
 
@@ -169,7 +169,7 @@ export default function ({html, style, events, map}) {
 - Verify data source URLs are accessible
 - Ensure required resources (icons, styles) are available
 
-## ❓ FAQ
+## FAQ
 
 **Q: Do I need to install anything?**
 A: No! geo!space runs entirely in your browser. Just open it in Chrome or Opera.
@@ -189,11 +189,11 @@ A: Maps: `.geospace` (JSON), Data: GeoJSON, KML, GPX, GeoTIFF, Features. Tile so
 **Q: Can I customize maps?**
 A: Yes! Create custom controls using JavaScript modules with Lit and WebAwesome components.
 
-## 🏗️ Technical Architecture
+## Technical Architecture
 
 geo!space is implemented as an [Eclipse Lyra](https://projects.eclipse.org/proposals/eclipse-lyra) app that uses Lyra's core IDE infrastructure and extension system.
 
-At startup, the Lyra `AppDefinition` in `packages/app/src/geospace-app.ts` is registered and auto-started into the `#app-root` container. The built-in "Welcome" command opens this `README.md` inside Lyra's editor system as the in-app welcome page.
+At startup, the Lyra `AppDefinition` in `packages/app/src/main.ts` is registered and auto-started into the `#app-root` container. The built-in "Welcome" command opens this `README.md` inside Lyra's editor system as the in-app welcome page.
 
 **geo!space-Specific Stack:**
 - **Eclipse Lyra Core**: Application shell, workspace, command palette, editor registry, AI system, and utilities (`@eclipse-lyra/core` and Lyra extensions)
@@ -221,14 +221,14 @@ flowchart TD
   gsLib --> openLayers["OpenLayers"]
 ```
 
-## 🤝 Trusted by
+## Used by
 
 - **[Kiosk Scout](https://finder.kioskscout.de)**: A cross-platform PWA for finding nearby vending machines
 - **Want your geo!space app listed here?** Contact us!
 
 ---
 
-## ⚡ Quick Start
+## Quick Start
 
 **Get up and running in 3 minutes:**
 
@@ -243,7 +243,7 @@ flowchart TD
 - **Add data sources** - Import your geospatial data or use built-in tile sources
 - **Customize maps** - Create custom controls using JavaScript modules
 
-## 🎯 Ready to Start?
+## Ready to Start?
 
 1. **Load the app** in Chrome or Opera
 2. **Connect a workspace** folder
@@ -251,4 +251,4 @@ flowchart TD
 4. **Add layers and customize** your map
 5. **Build and share** your interactive maps as PWAs
 
-**Happy mapping! 🗺️✨**
+**Happy mapping!**

@@ -1,3 +1,5 @@
+import './webawesome';
+
 import {
     AppDefinition,
     HTMLContribution,
@@ -51,15 +53,13 @@ import GEOSPACE_SYSPROMPT from "./geospace-sysprompt.txt?raw";
 
 const logger = createLogger('GeoSpaceApp');
 
-const GITHUB_OWNER = 'erdalkaraca';
-const GITHUB_REPO = 'geospace';
 
-export const geospaceApp: AppDefinition = {
+const geospaceApp: AppDefinition = {
     name: "🌐geo!space",
     metadata: {
         github: {
-            owner: GITHUB_OWNER,
-            repo: GITHUB_REPO
+            owner: 'erdalkaraca',
+            repo: 'geospace'
         },
         favicon: '/logo.svg'
     },
@@ -80,6 +80,8 @@ export const geospaceApp: AppDefinition = {
         '@eclipse-lyra/extension-memory-usage',
         '@eclipse-lyra/extension-ai-system',
         '@eclipse-lyra/extension-dataviewer',
+        '@eclipse-lyra/extension-sqleditor',
+        '@eclipse-lyra/extension-github-service',
     ],
     contributions: {
         ui: [
@@ -88,7 +90,7 @@ export const geospaceApp: AppDefinition = {
                 target: TOOLBAR_MAIN,
                 slot: "start",
                 label: "Brand",
-                component: `<span style="margin-right: 1rem; display: inline-flex; align-items: center;"><img src="/logo.svg" alt="geo!space" style="height: 24px; display: block;" /></span>`
+                component: `<span style="margin-right: 1rem; display: inline-flex; align-items: center;"><img src="/geospace.svg" alt="geo!space" style="height: 24px; display: block;" /></span>`
             } as HTMLContribution
         ],
     },

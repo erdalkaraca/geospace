@@ -5,10 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Loading...</title>
     <style>@keyframes app-loading-bar{0%{transform:translateX(0)}50%{transform:translateX(144px)}100%{transform:translateX(0)}}</style>
-    <script type="module">
-        await import("./src/webawesome");
-        await import("./src/geospace-app");
-    </script>
 </head>
 <body>
   <div id="app-root"></div>
@@ -29,5 +25,6 @@
       if (el) { el.style.opacity = '0'; el.style.transition = 'opacity 0.15s'; setTimeout(function() { el.remove(); }, 160); }
     }, { once: true });
   </script>
+  <script type="module" src="/src/main.ts"></script>
 </body>
 </html>
