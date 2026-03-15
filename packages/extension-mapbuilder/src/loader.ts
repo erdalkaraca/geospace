@@ -13,7 +13,7 @@ import {
     ProgressMonitor,
     type CommandRegistry,
     contributionRegistry,
-} from "@eclipse-lyra/core/api";
+} from "@eclipse-lyra/core";
 
 const GEOSPACE_EXTENSION = ".geospace";
 const ENV_EXTENSION = ".env";

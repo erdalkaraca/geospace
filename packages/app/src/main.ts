@@ -12,7 +12,7 @@ import {
     editorRegistry,
     registerAll,
     type IconContribution
-} from "@eclipse-lyra/core/api";
+} from "@eclipse-lyra/core";
 
 import { fetchReleases } from "@eclipse-lyra/extension-github-service";
 
@@ -22,7 +22,7 @@ import '@eclipse-lyra/extension-memory-usage';
 import '@eclipse-lyra/extension-monaco-editor';
 import '@eclipse-lyra/extension-settings-tree';
 import '@eclipse-lyra/extension-utils';
-
+import '@eclipse-lyra/extension-catalog';
 import '@eclipse-lyra/extension-ai-system';
 import '@eclipse-lyra/extension-command-palette';
 import '@eclipse-lyra/extension-github-service';
@@ -35,7 +35,7 @@ import '@eclipse-lyra/extension-sqleditor';
 import '@eclipse-lyra/extension-duckdb';
 import '@eclipse-lyra/extension-pglite';
 
-import '@kispace-io/extension-catalog';
+
 import '@kispace-io/extension-gtfs';
 import '@kispace-io/extension-map-editor';
 import '@kispace-io/extension-mapbuilder';
@@ -46,7 +46,7 @@ import '@kispace-io/extension-style-editor';
 import type { PromptEnhancer, PromptEnhancerContribution } from "@eclipse-lyra/extension-ai-system/api";
 import { CID_PROMPT_ENHANCERS } from "@eclipse-lyra/extension-ai-system/api";
 
-import { registerCatalog } from "@kispace-io/extension-catalog/register-catalog";
+import { registerCatalog } from "@eclipse-lyra/extension-catalog/api";
 import README from "../../../README.md?raw";
 import GEOSPACE_CATALOG from "./geospace-catalog.json";
 import GEOSPACE_SYSPROMPT from "./geospace-sysprompt.txt?raw";
@@ -64,13 +64,13 @@ const geospaceApp: AppDefinition = {
         favicon: '/logo.svg'
     },
     extensions: [
-        '@kispace-io/extension-catalog',
         '@kispace-io/extension-map-editor',
         '@kispace-io/extension-mapprops',
         '@kispace-io/extension-style-editor',
         '@kispace-io/extension-overpass',
         '@kispace-io/extension-gtfs',
         '@kispace-io/extension-mapbuilder',
+        '@eclipse-lyra/extension-catalog',
         '@eclipse-lyra/extension-utils',
         '@eclipse-lyra/extension-command-palette',
         '@eclipse-lyra/extension-md-editor',
@@ -82,6 +82,7 @@ const geospaceApp: AppDefinition = {
         '@eclipse-lyra/extension-dataviewer',
         '@eclipse-lyra/extension-sqleditor',
         '@eclipse-lyra/extension-github-service',
+        '@eclipse-lyra/extension-notebook'
     ],
     contributions: {
         ui: [

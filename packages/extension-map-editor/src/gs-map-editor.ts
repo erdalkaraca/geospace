@@ -29,7 +29,7 @@ import {
     promptDialog,
     activePartSignal,
     createLogger
-} from "@eclipse-lyra/core/api";
+} from "@eclipse-lyra/core";
 
 const logger = createLogger('GsMapEditor');
 

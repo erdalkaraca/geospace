@@ -5,7 +5,7 @@ import {
     toastError,
     toastInfo,
     type CommandRegistry,
-} from "@eclipse-lyra/core/api";
+} from "@eclipse-lyra/core";
 
 export default ({ commandRegistry }: { commandRegistry: CommandRegistry }) => {
     commandRegistry.registerAll({

@@ -1,7 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 128" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-8 -8 64 64" role="img" aria-labelledby="title desc">
   <title id="title">geo!space</title>
-  <rect width="512" height="128" fill="none" rx="16" ry="16" />
-  <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle"
+  <text x="24" y="24" dominant-baseline="middle" text-anchor="middle"
         font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
         font-size="48" fill="#2299dd">
     🌐

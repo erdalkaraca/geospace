@@ -7,7 +7,7 @@ import {
     activeSelectionSignal,
     createLogger,
     File,
-} from "@eclipse-lyra/core/api";
+} from "@eclipse-lyra/core";
 import { getSourceTypeFromFile, isSupportedSpatialFile } from "@kispace-io/extension-map-editor/geo";
 import "./gs-map-props";
 

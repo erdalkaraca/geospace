@@ -4,7 +4,6 @@ import {fileURLToPath} from "url";
 import path from 'path';
 import mkcert from 'vite-plugin-mkcert';
 import crossOriginIsolation from 'vite-plugin-cross-origin-isolation';
-import { resolveDepVersionsPlugin } from '@eclipse-lyra/core/vite-plugin-resolve-deps';
 import fs from 'fs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -52,7 +51,6 @@ function iframeMapRendererHtmlPlugin() {
 export default defineConfig({
     root: __dirname,
     plugins: [
-        resolveDepVersionsPlugin(),
         mkcert(),
         crossOriginIsolation(),
         iframeMapRendererHtmlPlugin(),
@@ -60,7 +58,7 @@ export default defineConfig({
     resolve: {
         alias: [
             // Local packages aliased to source for debuggable dev server
-            ...['extension-catalog', 'extension-gtfs', 'extension-map-editor', 'extension-mapbuilder', 'extension-mapprops', 'extension-overpass', 'extension-style-editor'].map(pkg => ({
+            ...['extension-gtfs', 'extension-map-editor', 'extension-mapbuilder', 'extension-mapprops', 'extension-overpass', 'extension-style-editor'].map(pkg => ({
                 find: new RegExp(`^@kispace-io/${pkg}(.*)`),
                 replacement: path.resolve(__dirname, `../${pkg}/src$1`),
             })),
@@ -68,8 +66,7 @@ export default defineConfig({
             { find: /^@kispace-io\/gs-lib\/public(.*)/, replacement: path.resolve(__dirname, '../gs-lib/public$1') },
             { find: '@kispace-io/gs-lib', replacement: path.resolve(__dirname, '../gs-lib/src') },
         ],
-        // Dedupe lit imports - ensure all lit imports resolve to the same instance
-        // Prevents multiple lit versions when Lyra uses direct "lit" imports
+        // Dedupe lit imports so all Lyra/code resolve to the same instance
         dedupe: ['lit']
     },
     optimizeDeps: {
@@ -81,6 +78,7 @@ export default defineConfig({
     },
     build: {
         outDir: path.resolve(__dirname, '../../dist'),
+        assetsInlineLimit: 0,
         rollupOptions: {
             input: {
                 main: path.resolve(__dirname, 'index.html'),

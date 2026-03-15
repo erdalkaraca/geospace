@@ -1,4 +1,4 @@
-import { File, workspaceService } from "@eclipse-lyra/core/api";
+import { File, workspaceService } from "@eclipse-lyra/core";
 
 function isAbsoluteResource(url: string): boolean {
     return url.startsWith("blob:") || url.startsWith("http:") || url.startsWith("https:");

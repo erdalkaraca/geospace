@@ -5,8 +5,9 @@ import {
     LyraPart,
     commandRegistry,
     confirmDialog,
-    activeEditorSignal
-} from "@eclipse-lyra/core/api";
+    activeEditorSignal,
+    icon,
+} from "@eclipse-lyra/core";
 
 @customElement('gs-map-props')
 export class GsMapProps extends LyraPart {
@@ -185,11 +186,11 @@ export class GsMapProps extends LyraPart {
             () => html`
                 <wa-tree>
                     <wa-tree-item expanded>
-                        <lyra-icon name="fg layers"></lyra-icon> Layers
+                        ${icon('fg layers')} Layers
                         ${this.mapEditor!.getGsMap()?.layers.map((layer: GsLayer | GsScriptedVectorLayer, i: number) => html`
                             <wa-tree-item @click="${() => layer.uuid && this.selectLayer(layer.uuid)}"
                                           class="${this.selectedLayerUuid === layer.uuid ? 'selected' : ''}">
-                                <lyra-icon name="${this.layerIcon(layer)}"></lyra-icon>
+                                ${icon(this.layerIcon(layer))}
                                 <div class="layer-item">
                                     <div class="layer-name">
                                         <span>${this.layerLabel(layer, i)}${i == 0 ? html`
@@ -222,7 +223,7 @@ export class GsMapProps extends LyraPart {
                         `)}
                     </wa-tree-item>
                     <wa-tree-item expanded>
-                        <lyra-icon name="fg map-control"></lyra-icon> Controls
+                        ${icon('fg map-control')} Controls
                         ${this.mapEditor?.getGsMap()?.controls.map((control: GsControl) => html`
                             <wa-tree-item>
                                 <span>${getOriginalUri(control.src)}</span>
@@ -239,7 +240,7 @@ export class GsMapProps extends LyraPart {
                         `)}
                     </wa-tree-item>
                     <wa-tree-item expanded>
-                        <lyra-icon name="fg map-poi"></lyra-icon> Overlays
+                        ${icon('fg map-poi')} Overlays
                         ${this.mapEditor?.getGsMap()?.overlays.map((overlay: GsOverlay) => html`
                             <wa-tree-item>
                                 <span>${getOriginalUri(overlay.src)}</span>
@@ -256,7 +257,7 @@ export class GsMapProps extends LyraPart {
                         `)}
                     </wa-tree-item>
                     <wa-tree-item expanded>
-                        <lyra-icon name="highlighter"></lyra-icon> Styles
+                        ${icon('highlighter')} Styles
                         <wa-tree-item>
                             <span>Defined Styles: ${Object.keys(this.mapEditor!.getGsMap()?.styles || {}).length}</span>
                         </wa-tree-item>

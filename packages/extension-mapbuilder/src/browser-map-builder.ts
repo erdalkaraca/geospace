@@ -16,8 +16,8 @@ import {
     toastInfo,
     taskService,
     ProgressMonitor,
-} from "@eclipse-lyra/core/api";
-import { rootContext } from "@eclipse-lyra/core/api";
+} from "@eclipse-lyra/core";
+import { rootContext } from "@eclipse-lyra/core";
 
 export type { BuildOptions };
 
