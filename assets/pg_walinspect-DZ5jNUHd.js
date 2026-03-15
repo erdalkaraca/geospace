@@ -1,0 +1,1 @@
+import{u as t}from"./chunk-QY3QWFKW-CdepMCHW.js";t();var a=async(e,p)=>({bundlePath:new URL("/assets/pg_walinspect.tar-KOg5Nltx.gz",import.meta.url)}),n={name:"pg_walinspect",setup:a};export{n as pg_walinspect};
