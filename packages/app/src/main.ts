@@ -55,7 +55,7 @@ const logger = createLogger('GeoSpaceApp');
 
 
 const geospaceApp: AppDefinition = {
-    name: "🌐geo!space",
+    name: "geo!space",
     metadata: {
         github: {
             owner: 'erdalkaraca',
@@ -70,7 +70,7 @@ const geospaceApp: AppDefinition = {
         '@kispace-io/extension-overpass',
         '@kispace-io/extension-gtfs',
         '@kispace-io/extension-mapbuilder',
-        
+
         '@eclipse-lyra/extension-catalog',
         '@eclipse-lyra/extension-utils',
         '@eclipse-lyra/extension-command-palette',
