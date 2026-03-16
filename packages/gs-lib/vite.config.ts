@@ -7,74 +7,23 @@ import dts from 'vite-plugin-dts';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const isExternal = (id: string) => {
-  // Exclude Vite-specific modules (development only)
+  // Always externalize Vite client/runtime modules
   if (id === '@vite/client' || id.startsWith('@vite/')) {
     return true;
   }
-  // Bundle relative imports (./something, ../something)
+
+  // Keep gs-lib's own source bundled:
+  // - relative imports inside the library
+  // - absolute paths that point into this package's src tree
   if (id.startsWith('./') || id.startsWith('../')) {
     return false;
   }
-  // Bundle core modules that gs-lib directly uses
-  // These are re-exports from core, so we bundle them to make gs-lib self-contained
-  const coreModulesToBundle = [
-    '@eclipse-lyra/core/externals/third-party',  // uuid
-    '@eclipse-lyra/core/externals/lit',          // lit
-    '@eclipse-lyra/core/externals/webawesome',   // webawesome
-    '@eclipse-lyra/core/core/events'              // subscribe, publish, unsubscribe
-  ];
-  
-  const isCoreModuleToBundle = coreModulesToBundle.some(module =>
-    id === module || id.startsWith(`${module}/`)
-  );
-  
-  if (isCoreModuleToBundle) {
-    return false;
-  }
-  
-  // Keep other core imports external (e.g., ./api which pulls in the entire framework)
-  if (id.startsWith('@eclipse-lyra/core')) {
-    return true;
-  }
-  // Bundle absolute paths to source files (entry points)
   if (path.isAbsolute(id) && id.includes('/src/')) {
     return false;
   }
-  // Only bundle direct dependencies: ol and ol-mapbox-style
-  // Also bundle their transitive dependencies (needed for ol to work)
-  const directDependencies = ['ol', 'ol-mapbox-style'];
-  // Check both original import specifier and resolved paths
-  const isDirectDep = directDependencies.some(dep => {
-    // Match original import specifier (e.g., 'ol', 'ol/Map')
-    if (id === dep || id.startsWith(`${dep}/`)) {
-      return true;
-    }
-    // Match resolved absolute paths (e.g., '/path/to/node_modules/ol/index.js')
-    if (path.isAbsolute(id) && id.includes(`/node_modules/${dep}/`)) {
-      return true;
-    }
-    return false;
-  });
-  
-  if (isDirectDep) {
-    return false; // Bundle direct dependencies
-  }
-  
-  // Bundle transitive dependencies of ol/ol-mapbox-style
-  // These are packages imported by ol/ol-mapbox-style that are not core
-  const isBareSpecifier = !id.startsWith('./') &&
-                          !id.startsWith('../') &&
-                          !id.startsWith('@eclipse-lyra/core');
-  
-  const isNodeModulesPath = path.isAbsolute(id) &&
-                           id.includes('/node_modules/') &&
-                           !id.includes('/node_modules/@eclipse-lyra/core/');
-  
-  if (isBareSpecifier || isNodeModulesPath) {
-    return false;
-  }
-  
-  // Everything else (node built-ins, etc.) should be external
+
+  // Everything else (node built-ins, third-party deps, Lyra core, etc.)
+  // stays external and must be provided by the consumer.
   return true;
 };
 

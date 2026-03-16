@@ -1,12 +1,11 @@
 import {defineConfig} from "vite";
-import {dirname} from "path";
 import {fileURLToPath} from "url";
 import path from 'path';
 import mkcert from 'vite-plugin-mkcert';
 import crossOriginIsolation from 'vite-plugin-cross-origin-isolation';
 import fs from 'fs';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /** Iframe HTML from extension; copied into app at build so Rollup input path stays in-app. See iframe-map-renderer workaround doc. */
 const IFRAME_HTML_SOURCE = path.resolve(__dirname, '../extension-map-editor/src/iframe-map-renderer.html');
@@ -57,20 +56,12 @@ export default defineConfig({
     ],
     resolve: {
         alias: [
-            // Local packages aliased to source for debuggable dev server
+            // Local extensions: use package-style imports but point to src for dev
             ...['extension-gtfs', 'extension-map-editor', 'extension-mapbuilder', 'extension-mapprops', 'extension-overpass', 'extension-style-editor'].map(pkg => ({
                 find: new RegExp(`^@kispace-io/${pkg}(.*)`),
                 replacement: path.resolve(__dirname, `../${pkg}/src$1`),
             })),
-            { find: /^@kispace-io\/gs-lib\/dist(.*)/, replacement: path.resolve(__dirname, '../gs-lib/dist$1') },
-            { find: /^@kispace-io\/gs-lib\/public(.*)/, replacement: path.resolve(__dirname, '../gs-lib/public$1') },
-            { find: '@kispace-io/gs-lib', replacement: path.resolve(__dirname, '../gs-lib/src') },
         ],
-        // Dedupe lit imports so all Lyra/code resolve to the same instance
-        dedupe: ['lit']
-    },
-    optimizeDeps: {
-        exclude: []
     },
     base: process.env.VITE_BASE_PATH || '/',
     worker: {

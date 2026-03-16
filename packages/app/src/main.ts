@@ -37,11 +37,11 @@ import '@eclipse-lyra/extension-pglite';
 
 
 import '@kispace-io/extension-gtfs';
-import '@kispace-io/extension-map-editor';
-import '@kispace-io/extension-mapbuilder';
-import '@kispace-io/extension-mapprops';
 import '@kispace-io/extension-overpass';
+import '@kispace-io/extension-map-editor';
+import '@kispace-io/extension-mapprops';
 import '@kispace-io/extension-style-editor';
+import '@kispace-io/extension-mapbuilder';
 
 import type { PromptEnhancer, PromptEnhancerContribution } from "@eclipse-lyra/extension-ai-system/api";
 import { CID_PROMPT_ENHANCERS } from "@eclipse-lyra/extension-ai-system/api";
@@ -70,6 +70,7 @@ const geospaceApp: AppDefinition = {
         '@kispace-io/extension-overpass',
         '@kispace-io/extension-gtfs',
         '@kispace-io/extension-mapbuilder',
+        
         '@eclipse-lyra/extension-catalog',
         '@eclipse-lyra/extension-utils',
         '@eclipse-lyra/extension-command-palette',

@@ -16,6 +16,14 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./ol": {
+      "types": "./dist/ol/index.d.ts",
+      "import": "./src/ol/index.ts"
+    },
+    "./ml": {
+      "types": "./dist/ml/index.d.ts",
+      "import": "./src/ml/index.ts"
     }
   },
   "files": [

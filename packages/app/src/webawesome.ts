@@ -1,6 +1,4 @@
-import {
-    registerIconLibrary
-} from "@awesome.me/webawesome/dist/webawesome.loader.js";
+import { registerIconLibrary } from "@eclipse-lyra/core/externals/webawesome";
 
 registerIconLibrary('fg', {
     resolver: (name, _family, _variant) => {
