@@ -25,7 +25,8 @@ import {
     interaction as interactionNS,
     FeatureLike,
     eventsCondition,
-    BaseLayer
+    BaseLayer,
+    proj
 } from "./gs-olns";
 
 /**
@@ -340,6 +341,27 @@ export class OpenLayersMapRenderer implements MapRenderer {
         }
         this.olMap?.dispose();
         this.olMap = undefined;
+    }
+
+    async transform(
+        coord: [number, number],
+        options?: { sourceProjection?: string; targetProjection?: string }
+    ): Promise<[number, number]> {
+        if (!this.olMap) {
+            throw new Error("Map not available for coordinate transformation");
+        }
+
+        const view = this.olMap.getView();
+        const mapProj = view.getProjection()?.getCode() || "EPSG:3857";
+        const source = options?.sourceProjection ?? mapProj;
+        const target = options?.targetProjection ?? "EPSG:4326";
+
+        if (source === target) {
+            return coord;
+        }
+
+        const result = proj.transform(coord, source, target);
+        return result as [number, number];
     }
 
 }

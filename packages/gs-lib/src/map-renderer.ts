@@ -36,6 +36,19 @@ export interface MapRenderer {
     triggerSync(event: MapSyncEvent): void;
     setOnClick?(callback: () => void): void;
     captureScreenshot(): Promise<ScreenshotResult>;
+    /**
+     * Transform a coordinate from one projection to another.
+     *
+     * - If sourceProjection is omitted, the map's current projection is assumed.
+     * - If targetProjection is omitted, WGS84 (EPSG:4326) is assumed.
+     */
+    transform(
+        coord: [number, number],
+        options?: {
+            sourceProjection?: string;
+            targetProjection?: string;
+        }
+    ): Promise<[number, number]>;
     destroy(): void;
 }
 
@@ -98,16 +111,22 @@ export interface MapOperations {
     enableFeatureSelection(): Promise<void>;
     disableSelection(): Promise<void>;
     deleteSelectedFeatures(): Promise<void>;
+
 }
 
 export const createProxy = (operations: MapOperations[]): MapOperations => {
     return new Proxy({}, {
         get: (_, prop: string) => {
             return async (...args: any[]) => {
-                // Execute the operation on all registered operations
-                for (const operation of operations) {
-                    await (operation as any)[prop](...args);
-                }
+                await Promise.all(
+                    operations.map((operation: any) => {
+                        const fn = operation[prop];
+                        if (typeof fn === "function") {
+                            return fn.apply(operation, args);
+                        }
+                        return undefined;
+                    }),
+                );
             };
         }
     }) as MapOperations;

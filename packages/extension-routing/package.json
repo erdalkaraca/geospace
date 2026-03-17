@@ -1,0 +1,23 @@
+{
+  "name": "@kispace-io/extension-routing",
+  "version": "0.0.0",
+  "type": "module",
+  "license": "EPL-2.0",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./loader": "./src/loader.ts"
+  },
+  "scripts": {
+    "build:wasm": "cd routx-wasm && cargo build --target wasm32-unknown-unknown --release && wasm-bindgen --target web --out-dir ../src --no-typescript target/wasm32-unknown-unknown/release/routx_wasm.wasm"
+  },
+  "dependencies": {
+    "@eclipse-lyra/core": "*",
+    "@kispace-io/extension-map-editor": "^0.0.0",
+    "@kispace-io/gs-lib": "*"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.3"
+  }
+}
+

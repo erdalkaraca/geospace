@@ -92,6 +92,21 @@ async function handleOperation(method: string, params: any) {
             } catch (error: any) {
                 return { success: false, error: error.message };
             }
+        case 'transform':
+            if (mapRenderer) {
+                // Params arrive as an object of indexed args from the proxy:
+                // { 0: coord, 1: options }
+                const [coord, options] = Object.values(params || {}) as [
+                    [number, number],
+                    { sourceProjection?: string; targetProjection?: string } | undefined
+                ];
+                const result = await (mapRenderer as any).transform(coord, options);
+                // Wrap in an object so the host-side listener can pick it up
+                // via the dedicated `result` property instead of spreading
+                // array entries into top-level numeric keys.
+                return { result };
+            }
+            throw new Error('transform() not available on current renderer');
         default:
             if (mapRenderer && mapRenderer.getOperations) {
                 const operations: any = mapRenderer.getOperations();

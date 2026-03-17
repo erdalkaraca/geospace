@@ -39,6 +39,7 @@
     "@kispace-io/extension-mapprops": "^0.0.0",
     "@kispace-io/extension-overpass": "^0.0.0",
     "@kispace-io/extension-style-editor": "^0.0.0",
+    "@kispace-io/extension-routing": "^0.0.0",
     "@kispace-io/gs-lib": "^1.2.2",
     "font-gis": "^1.0.6"
   },

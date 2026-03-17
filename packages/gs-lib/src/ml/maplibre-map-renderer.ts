@@ -20,7 +20,10 @@ import {
     toMlCirclePaint,
     toWgs84,
     toWebMercator,
-    ML_KEY_GS_LAYER_UUID
+    ML_KEY_GS_LAYER_UUID,
+    transformCoords,
+    EPSG_3857,
+    EPSG_4326
 } from './gs-gs2ml';
 import { toGsFeature } from './gs-ml2gs';
 import { v4 as uuidv4 } from 'uuid';
@@ -174,6 +177,15 @@ export class MapLibreMapRenderer implements MapRenderer {
         if (this.operations) this.operations.cleanup();
         this.map?.remove();
         this.map = undefined;
+    }
+
+    async transform(
+        coord: [number, number],
+        options?: { sourceProjection?: string; targetProjection?: string }
+    ): Promise<[number, number]> {
+        const source = options?.sourceProjection ?? EPSG_3857;
+        const target = options?.targetProjection ?? EPSG_4326;
+        return transformCoords(coord, source, target);
     }
 }
 

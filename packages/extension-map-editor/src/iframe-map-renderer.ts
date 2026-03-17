@@ -103,6 +103,14 @@ export class IFrameMapRenderer implements MapRenderer {
         return result as ScreenshotResult;
     }
 
+    async transform(
+        coord: [number, number],
+        options?: { sourceProjection?: string; targetProjection?: string }
+    ): Promise<[number, number]> {
+        const result = await this.sendMessage('transform', { 0: coord, 1: options });
+        return result as [number, number];
+    }
+
     setOnDirty(callback: () => void): void {
         this.onDirtyCallback = callback;
     }
