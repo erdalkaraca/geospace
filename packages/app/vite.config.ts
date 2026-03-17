@@ -1,9 +1,11 @@
-import {defineConfig} from "vite";
-import {fileURLToPath} from "url";
+import { defineConfig, type UserConfig } from 'vite';
+import { fileURLToPath } from 'url';
 import path from 'path';
 import mkcert from 'vite-plugin-mkcert';
 import crossOriginIsolation from 'vite-plugin-cross-origin-isolation';
 import fs from 'fs';
+import { resolveDepVersionsPlugin } from '@eclipse-lyra/core/vite-plugin-resolve-deps';
+import { localAliasesPlugin } from '@eclipse-lyra/core/vite-plugin-local-aliases';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -47,35 +49,39 @@ function iframeMapRendererHtmlPlugin() {
     };
 }
 
-export default defineConfig({
-    root: __dirname,
-    plugins: [
-        mkcert(),
-        crossOriginIsolation(),
-        iframeMapRendererHtmlPlugin(),
-    ],
-    resolve: {
-        alias: [
-            // Local extensions: use package-style imports but point to src for dev
-            ...['extension-gtfs', 'extension-map-editor', 'extension-mapbuilder', 'extension-mapprops', 'extension-overpass', 'extension-style-editor'].map(pkg => ({
-                find: new RegExp(`^@kispace-io/${pkg}(.*)`),
-                replacement: path.resolve(__dirname, `../${pkg}/src$1`),
-            })),
+export default defineConfig((): UserConfig => {
+    const packagesRoot = path.resolve(__dirname, '..');
+
+    return {
+        root: __dirname,
+        plugins: [
+            mkcert(),
+            crossOriginIsolation(),
+            iframeMapRendererHtmlPlugin(),
+            resolveDepVersionsPlugin(),
+            localAliasesPlugin({
+                packagesRoot,
+                alwaysUseSrc: true,
+                patterns: [{ folderPrefix: 'extension-' }],
+            }),
         ],
-    },
-    base: process.env.VITE_BASE_PATH || '/',
-    worker: {
-        format: 'es'
-    },
-    build: {
-        outDir: path.resolve(__dirname, '../../dist'),
-        assetsInlineLimit: 0,
-        rollupOptions: {
-            input: {
-                main: path.resolve(__dirname, 'index.html'),
-                /** Iframe map entry (workaround for Vite ?url MIME bug). See docs/known-issues/iframe-map-renderer-vite-mime-workaround.md */
-                iframeMapRenderer: IFRAME_HTML_IN_APP,
-            }
-        }
-    }
+        resolve: {
+            alias: {},
+        },
+        base: process.env.VITE_BASE_PATH || '/',
+        worker: {
+            format: 'es',
+        },
+        build: {
+            outDir: path.resolve(__dirname, '../../dist'),
+            assetsInlineLimit: 0,
+            rollupOptions: {
+                input: {
+                    main: path.resolve(__dirname, 'index.html'),
+                    /** Iframe map entry (workaround for Vite ?url MIME bug). See docs/known-issues/iframe-map-renderer-vite-mime-workaround.md */
+                    iframeMapRenderer: IFRAME_HTML_IN_APP,
+                },
+            },
+        },
+    };
 });
