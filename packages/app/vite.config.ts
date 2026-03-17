@@ -62,7 +62,10 @@ export default defineConfig((): UserConfig => {
             localAliasesPlugin({
                 packagesRoot,
                 alwaysUseSrc: true,
-                patterns: [{ folderPrefix: 'extension-' }],
+                patterns: [
+                    { folderPrefix: 'extension-' },
+                    { folderPrefix: 'gs-lib' },
+                ],
             }),
         ],
         resolve: {
