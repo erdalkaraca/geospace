@@ -1,4 +1,7 @@
 import { logger, appSettings } from "@eclipse-lyra/core";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore – Vite's ?worker import has no TS types
+import RoutingWorker from "./routing-worker?worker";
 
 export type GeoJSONPosition = [number, number];
 
@@ -35,11 +38,7 @@ export class RoutingService {
       return this.worker;
     }
 
-    const worker = new Worker(
-      // Vite-compatible way to create a module worker colocated with this file.
-      new URL("./routing-worker.ts", import.meta.url),
-      { type: "module" },
-    );
+    const worker: Worker = new RoutingWorker();
 
     worker.onmessage = (event: MessageEvent<any>) => {
       const { id, success, error, ...rest } = event.data ?? {};
