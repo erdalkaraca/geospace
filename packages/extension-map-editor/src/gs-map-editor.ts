@@ -1,4 +1,4 @@
-import { css, html, customElement, property, createRef, ref, Ref, when, keyed } from '@eclipse-lyra/core/externals/lit';
+import { css, html, customElement, property, createRef, ref, Ref, unsafeHTML, when } from '@eclipse-lyra/core/externals/lit';
 import {
     DEFAULT_GSMAP,
     ensureUuidsRecursive,
@@ -24,11 +24,18 @@ import {
     LyraPart,
     EditorInput,
     File,
+    contributionRegistry,
     toastError,
     toastInfo,
     promptDialog,
     activePartSignal
 } from "@eclipse-lyra/core";
+import type { MapEditorToolbarExtensionContribution } from "./map-editor-toolbar-extension";
+import {
+    GS_MAP_EDITOR_TOOLBAR_CONTEXT,
+    type GsMapEditorToolbarContextDetail,
+    type GsMapEditorToolbarContextReason,
+} from "./gs-map-editor-toolbar-events";
 
 @customElement('gs-map')
 export class GsMapEditor extends LyraPart {
@@ -52,6 +59,9 @@ export class GsMapEditor extends LyraPart {
     @property({ type: String })
     private selectedRenderer: RendererType = 'openlayers';
 
+    @property({ type: Boolean })
+    private hasSelectedFeature = false;
+
     constructor() {
         super();
         this.commandStack = new CommandStack()
@@ -65,6 +75,20 @@ export class GsMapEditor extends LyraPart {
         return this.operations!;
     }
 
+    getActiveDrawingLayerUuid(): string | undefined {
+        return this.activeDrawingLayerUuid;
+    }
+
+    public emitToolbarContextChange(reason?: GsMapEditorToolbarContextReason): void {
+        this.dispatchEvent(
+            new CustomEvent<GsMapEditorToolbarContextDetail>(GS_MAP_EDITOR_TOOLBAR_CONTEXT, {
+                bubbles: true,
+                composed: true,
+                detail: { reason },
+            }),
+        );
+    }
+
     protected doBeforeUI() {
         this.watch(mapChangedSignal, ({ part, event }: { part: LyraPart, event: MapEvents }) => {
             this.onMapChanged({ part, event });
@@ -76,6 +100,15 @@ export class GsMapEditor extends LyraPart {
         if (event === MapEvents.LAYER_ADDED ||
             event === MapEvents.LAYER_DELETED ||
             event === MapEvents.LAYER_UPDATED) {
+            const hasActiveLayer = this.gsMap?.layers.some(layer =>
+                layer.uuid === this.activeDrawingLayerUuid &&
+                layer.type === GsLayerType.VECTOR &&
+                layer.source?.type === GsSourceType.Features
+            );
+            if (!hasActiveLayer && this.activeDrawingLayerUuid) {
+                this.setActiveDrawingLayer(undefined);
+            }
+            this.emitToolbarContextChange("layers");
         }
     }
 
@@ -87,7 +120,19 @@ export class GsMapEditor extends LyraPart {
                 const isFeatures = layer.source?.type === GsSourceType.Features;
                 return isVector && isFeatures;
             }) || [];
+        const hasDrawableLayers = drawableLayers.length > 0;
         const hasActiveLayer = this.activeDrawingLayerUuid !== undefined;
+        const activeDrawingLayer = drawableLayers.find((layer) => layer.uuid === this.activeDrawingLayerUuid);
+        const drawingLayerLabel = activeDrawingLayer?.name || 'Drawing layer';
+        const extensionContributions = contributionRegistry.getContributions<MapEditorToolbarExtensionContribution>('mapeditor.toolbar.extensions');
+        const extensionNodes = extensionContributions.map((c) => {
+            const { component } = c;
+            if (typeof component === 'string') {
+                return unsafeHTML(component);
+            }
+            return component(this);
+        });
+        const hasExtensions = extensionContributions.length > 0;
 
         return html`
             <lyra-command cmd="zoom_in" icon="magnifying-glass-plus" title="Zoom in"></lyra-command>
@@ -95,42 +140,27 @@ export class GsMapEditor extends LyraPart {
             <lyra-command cmd="reset_view" icon="house" title="Reset view"></lyra-command>
             <lyra-command cmd="refresh_map" icon="rotate" title="Refresh map"></lyra-command>
             <wa-divider orientation="vertical"></wa-divider>
-            <lyra-command cmd="capture_map_screenshot" icon="camera" title="Capture screenshot"></lyra-command>
-            <wa-divider orientation="vertical"></wa-divider>
-            <lyra-command cmd="toggle_color_mode" icon="circle-half-stroke" title="Toggle dark/light mode"></lyra-command>
-            <lyra-command cmd="toggle_mobile_view" icon="mobile" title="Toggle mobile view"></lyra-command>
-            <wa-divider orientation="vertical"></wa-divider>
-            <lyra-command icon="plus" title="Create Drawing Layer" .action=${() => this.handleCreateDrawingLayer()}></lyra-command>
-            ${when(drawableLayers.length > 0, () => {
-                const layerKey = drawableLayers.map((layer) => `${layer.uuid}:${layer.name}`).join('|');
-                return html`
-                    ${keyed(layerKey, html`
-                        <wa-select placeholder="Drawing layer" size="small" value="${this.activeDrawingLayerUuid ?? ''}"
-                            @change=${(e: any) => {
-                                const newUuid = e.target.value || undefined;
-                                this.activeDrawingLayerUuid = newUuid;
-                                if (newUuid === undefined || e.target.value === '') {
-                                    this.operations?.disableDrawing();
-                                    this.interactionMode = 'none';
-                                }
-                            }}>
-                            <wa-option value="">Select layer</wa-option>
-                            ${drawableLayers.map((layer) => html`<wa-option value="${layer.uuid}">${layer.name || 'Layer'}</wa-option>`)}
-                        </wa-select>
-                    `)}
-                    <lyra-command icon="location-dot" title="Draw Point" ?disabled=${!hasActiveLayer} .action=${() => this.handleDrawPoint()}></lyra-command>
-                    <lyra-command icon="minus" title="Draw LineString" ?disabled=${!hasActiveLayer} .action=${() => this.handleDrawLine()}></lyra-command>
-                    <lyra-command icon="draw-polygon" title="Draw Polygon" ?disabled=${!hasActiveLayer} .action=${() => this.handleDrawPolygon()}></lyra-command>
-                    <lyra-command icon="trash" title="Delete Selected Features" ?disabled=${this.interactionMode !== 'select'} .action=${() => this.handleDeleteSelected()}></lyra-command>
-                    <wa-divider orientation="vertical"></wa-divider>
-                `;
-            })}
-            <lyra-command icon="hand-pointer" title="Select Features" .action=${() => this.handleSelectFeatures()}></lyra-command>
-            <wa-divider orientation="vertical"></wa-divider>
-            <wa-select size="small" value="${this.selectedRenderer}" title="Map Renderer" @change=${(e: any) => this.handleRendererChange(e.target.value)}>
-                <wa-option value="openlayers">OpenLayers</wa-option>
-                <wa-option value="maplibre">MapLibre</wa-option>
-            </wa-select>
+            <wa-dropdown placement="bottom-start" @wa-select=${(event: any) => this.handleDrawingLayerSelection(event)}>
+                <wa-button slot="trigger" appearance="plain" size="small" with-caret title="Drawing layer">${drawingLayerLabel}</wa-button>
+                <wa-dropdown-item value="__create_drawing_layer__">Create Drawing Layer</wa-dropdown-item>
+                <wa-divider></wa-divider>
+                <wa-dropdown-item type="checkbox" ?checked=${!this.activeDrawingLayerUuid} value="">Disable drawing</wa-dropdown-item>
+                ${drawableLayers.map((layer) => html`
+                    <wa-dropdown-item type="checkbox" ?checked=${this.activeDrawingLayerUuid === layer.uuid} value="${layer.uuid}">
+                        ${layer.name || 'Layer'}
+                    </wa-dropdown-item>
+                `)}
+            </wa-dropdown>
+            ${when(hasDrawableLayers, () => html`
+                <lyra-command icon="fg point" title="Draw Point" ?disabled=${!hasActiveLayer} .action=${() => this.handleDrawPoint()}></lyra-command>
+                <lyra-command icon="fg polyline-pt" title="Draw LineString" ?disabled=${!hasActiveLayer} .action=${() => this.handleDrawLine()}></lyra-command>
+                <lyra-command icon="fg polygon" title="Draw Polygon" ?disabled=${!hasActiveLayer} .action=${() => this.handleDrawPolygon()}></lyra-command>
+                <lyra-command icon="fg select-extent" title="Select Features" .action=${() => this.handleSelectFeatures()}></lyra-command>
+                <lyra-command icon="trash" title="Delete Selected Features" ?disabled=${!this.hasSelectedFeature} .action=${() => this.handleDeleteSelected()}></lyra-command>
+                <wa-divider orientation="vertical"></wa-divider>
+            `)}
+            ${when(hasExtensions, () => html`${extensionNodes}<wa-divider orientation="vertical"></wa-divider>`)}
+            <lyra-command icon="ellipsis-vertical" title="Misc tools" slot="end" dropdown="mapeditor.toolbar.misc" placement="bottom-end"></lyra-command>
         `;
     }
 
@@ -160,6 +190,16 @@ export class GsMapEditor extends LyraPart {
         await replaceUris(gsMap, "url", undefined, basePath);
         await replaceUris(gsMap, "src", this.moduleResolver, basePath);
         this.gsMap = gsMap;
+        const storedDrawingLayerUuid = gsMap.state?.activeDrawingLayerUuid as string | undefined;
+        if (storedDrawingLayerUuid && gsMap.layers.some(layer =>
+            layer.uuid === storedDrawingLayerUuid &&
+            layer.type === GsLayerType.VECTOR &&
+            layer.source?.type === GsSourceType.Features)
+        ) {
+            this.activeDrawingLayerUuid = storedDrawingLayerUuid;
+        } else {
+            this.setActiveDrawingLayer(undefined, false);
+        }
         if (gsMap.view) {
             this.initialView = { center: [...gsMap.view.center] as [number, number], zoom: gsMap.view.zoom };
         }
@@ -174,6 +214,7 @@ export class GsMapEditor extends LyraPart {
             await this.renderer.render(this.mapContainer.value);
             this.setupRendererCallbacks();
             mapChangedSignal.set({ part: this, event: MapEvents.LOADED });
+            this.emitToolbarContextChange("map-loaded");
         } catch (error: any) {
             console.error('Failed to render map:', error);
             toastError(`Failed to render map: ${error.message}`);
@@ -209,6 +250,7 @@ export class GsMapEditor extends LyraPart {
         this.renderer.setOnDirty(() => this.markDirty(true));
         this.renderer.setOnSync((event: MapSyncEvent) => {
             if (!this.gsMap) return;
+            let shouldMarkDirty = true;
             switch (event.type) {
                 case 'viewChanged':
                     this.gsMap.view.center = event.view.center;
@@ -222,19 +264,28 @@ export class GsMapEditor extends LyraPart {
                     if (layer && layer.source?.type === GsSourceType.Features) {
                         (layer.source as any).features = event.features;
                     }
+                    this.emitToolbarContextChange("features");
                     break;
                 case 'featureSelected':
+                    shouldMarkDirty = false;
+                    this.hasSelectedFeature = true;
+                    this.interactionMode = 'select';
                     mapChangedSignal.set({ part: this, event: MapEvents.FEATURE_SELECTED, payload: { feature: event.feature, layerUuid: event.layerUuid, metrics: event.metrics } });
+                    this.emitToolbarContextChange("selection");
                     break;
                 case 'featureDeselected':
+                    shouldMarkDirty = false;
+                    this.hasSelectedFeature = false;
                     mapChangedSignal.set({ part: this, event: MapEvents.FEATURE_SELECTED, payload: null });
                     if (this.interactionMode === 'select') { this.interactionMode = 'none'; }
+                    this.emitToolbarContextChange("selection");
                     break;
                 case 'drawingDisabled':
+                    shouldMarkDirty = false;
                     if (this.interactionMode === 'draw') { this.interactionMode = 'none'; }
                     break;
             }
-            this.markDirty(true);
+            if (shouldMarkDirty) this.markDirty(true);
         });
         this.renderer.setOnClick?.(() => activePartSignal.set(this));
     }
@@ -281,10 +332,31 @@ export class GsMapEditor extends LyraPart {
     private async handleDrawPoint() { if (!this.activeDrawingLayerUuid) return; await this.operations?.enableDrawing('Point', this.activeDrawingLayerUuid); this.interactionMode = 'draw'; }
     private async handleDrawLine() { if (!this.activeDrawingLayerUuid) return; await this.operations?.enableDrawing('LineString', this.activeDrawingLayerUuid); this.interactionMode = 'draw'; }
     private async handleDrawPolygon() { if (!this.activeDrawingLayerUuid) return; await this.operations?.enableDrawing('Polygon', this.activeDrawingLayerUuid); this.interactionMode = 'draw'; }
-    private async handleSelectFeatures() { await this.operations?.enableFeatureSelection(); this.interactionMode = 'select'; }
+    private async handleSelectFeatures() { await this.operations?.enableFeatureSelection(); this.interactionMode = 'select'; this.hasSelectedFeature = false; }
+    private async handleDrawingLayerSelection(event: any) {
+        const selectedUuid = event?.detail?.item?.value as string | undefined;
+        if (selectedUuid === '__create_drawing_layer__') {
+            await this.handleCreateDrawingLayer();
+            return;
+        }
+        const newUuid = selectedUuid || undefined;
+        this.setActiveDrawingLayer(newUuid);
+        if (newUuid) return;
+        await this.operations?.disableDrawing();
+        this.interactionMode = 'none';
+    }
+
     private async handleDeleteSelected() {
-        if (this.interactionMode !== 'select') return;
-        try { await this.operations?.deleteSelectedFeatures(); toastInfo('Selected features deleted'); } catch (error: any) { toastError(error.message); }
+        if (!this.hasSelectedFeature) return;
+        try {
+            await this.operations?.deleteSelectedFeatures();
+            this.hasSelectedFeature = false;
+            this.interactionMode = 'none';
+            this.emitToolbarContextChange("features");
+            toastInfo('Selected features deleted');
+        } catch (error: any) {
+            toastError(error.message);
+        }
     }
 
     private async handleRendererChange(newRenderer: RendererType) {
@@ -309,6 +381,11 @@ export class GsMapEditor extends LyraPart {
             }
         }
         this.markDirty(true);
+        this.emitToolbarContextChange("renderer");
+    }
+
+    public async setRenderer(newRenderer: RendererType) {
+        await this.handleRendererChange(newRenderer);
     }
 
     private async handleCreateDrawingLayer() {
@@ -322,10 +399,28 @@ export class GsMapEditor extends LyraPart {
             visible: true
         } as any);
         await this.operations?.addLayer(newLayer, false);
-        const addedLayer = this.gsMap?.layers.find(layer => layer.uuid === newLayer.uuid);
-        if (addedLayer?.uuid) this.activeDrawingLayerUuid = addedLayer.uuid;
+        if (newLayer.uuid) this.setActiveDrawingLayer(newLayer.uuid);
         await this.updateComplete;
         toastInfo(`Created drawing layer: ${layerName}`);
+    }
+
+    private setActiveDrawingLayer(uuid?: string, markDirty = true) {
+        this.activeDrawingLayerUuid = uuid;
+        if (this.gsMap) {
+            if (!this.gsMap.state) this.gsMap.state = {};
+            if (uuid) {
+                this.gsMap.state.activeDrawingLayerUuid = uuid;
+            } else {
+                delete this.gsMap.state.activeDrawingLayerUuid;
+            }
+            mapChangedSignal.set({
+                part: this,
+                event: MapEvents.DRAWING_LAYER_CHANGED,
+                payload: { uuid }
+            });
+        }
+        if (markDirty) this.markDirty(true);
+        this.emitToolbarContextChange("drawing-layer");
     }
 
     protected doClose() {

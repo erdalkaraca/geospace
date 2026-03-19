@@ -56,6 +56,7 @@ type IncomingMessage =
   | GraphStatsMessage;
 
 let initialized = false;
+let loadedGraphName: string | undefined;
 
 async function ensureInitialized(): Promise<void> {
   if (initialized) {
@@ -70,6 +71,7 @@ async function handleBuildGraphFromPbf(msg: BuildGraphFromPbfMessage) {
 
   // Build graph from PBF in WASM memory.
   await load_graph_from_pbf(msg.bytes);
+  loadedGraphName = msg.name;
 
   // Export serialized graph bytes.
   const graphBytes: Uint8Array = await export_graph();
@@ -108,7 +110,17 @@ async function handleBuildGraphFromPbfUrl(msg: BuildGraphFromPbfUrlMessage) {
 
 async function handleLoadGraphFromBlob(msg: LoadGraphFromBlobMessage) {
   await ensureInitialized();
+  if (loadedGraphName === msg.name) {
+    (self as any).postMessage({
+      id: msg.id,
+      success: true,
+      name: msg.name,
+    });
+    return;
+  }
+
   await load_graph_from_blob(msg.graphBytes);
+  loadedGraphName = msg.name;
 
   (self as any).postMessage({
     id: msg.id,

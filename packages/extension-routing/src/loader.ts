@@ -12,22 +12,18 @@ import {
   File,
   FileContentType,
 } from "@eclipse-lyra/core";
-import { html, render } from "@eclipse-lyra/core/externals/lit";
+import { html } from "@eclipse-lyra/core/externals/lit";
 import { GsMapEditor } from "@kispace-io/extension-map-editor/geo";
-import {
-  GsLayerType,
-  GsSourceType,
-  type GsLayer,
-} from "@kispace-io/gs-lib";
 import routingService from "./routing-service";
-import "./routing-graph-selector";
+import "./routing-toolbar";
 
-function assertGsMapEditor(context: ExecutionContext): GsMapEditor {
-  const editor = context.activeEditor;
-  if (!(editor instanceof GsMapEditor)) {
-    throw new Error("Active editor is not a map editor");
-  }
-  return editor;
+function updateActiveMapRoutingGraph(graphPath: string) {
+  const active = activePartSignal.get();
+  if (!(active instanceof GsMapEditor)) return;
+  const gsMap = active.getGsMap();
+  if (!gsMap) return;
+  if (!gsMap.state) gsMap.state = {} as any;
+  (gsMap.state as any).activeRoutingGraphPath = graphPath;
 }
 
 export default ({ commandRegistry }: { commandRegistry: CommandRegistry }) => {
@@ -102,196 +98,12 @@ export default ({ commandRegistry }: { commandRegistry: CommandRegistry }) => {
     },
   });
 
-  // Command to run routing based on two points in the active drawing layer
-  commandRegistry.registerAll({
-    command: {
-      id: "routing.run_route",
-      name: "Run routing",
-      description:
-        "Runs a route request using the first two points in the active drawing layer (start and end).",
-      parameters: [],
-    },
-    handler: {
-      canExecute: (context: ExecutionContext) =>
-        context.activeEditor instanceof GsMapEditor,
-      execute: async (context: ExecutionContext) => {
-        const editor = assertGsMapEditor(context);
-        const gsMap = editor.getGsMap();
-        if (!gsMap) {
-          toastError("Map not initialized");
-          return;
-        }
-
-        const operations = editor.mapOperations;
-        if (!operations) {
-          toastError("Map operations not available");
-          return;
-        }
-
-        const activeDrawingLayerUuid =
-          (editor as any).activeDrawingLayerUuid as string | undefined;
-
-        if (!activeDrawingLayerUuid) {
-          toastError("No active drawing layer selected. Please pick one in the toolbar.");
-          return;
-        }
-
-        const layer = gsMap.layers.find(
-          (l: GsLayer) =>
-            l.uuid === activeDrawingLayerUuid &&
-            l.type === GsLayerType.VECTOR &&
-            l.source?.type === GsSourceType.Features,
-        ) as GsLayer | undefined;
-
-        if (!layer) {
-          toastError("Active drawing layer is not a vector features layer.");
-          return;
-        }
-
-        const features = (layer.source as any).features as any[] | undefined;
-        if (!features || features.length < 2) {
-          toastError("Active drawing layer must contain at least two Point features.");
-          return;
-        }
-
-        const pointFeatures = features.filter(
-          f => f?.geometry?.type === "Point" &&
-            Array.isArray(f.geometry.coordinates),
-        );
-
-        if (pointFeatures.length < 2) {
-          toastError("Active drawing layer must contain at least two Point features.");
-          return;
-        }
-
-        const [start, end] = pointFeatures;
-        const startCoord = start.geometry.coordinates as [number, number];
-        const endCoord = end.geometry.coordinates as [number, number];
-
-        try {
-          const renderer = editor.getRenderer();
-          if (!renderer) {
-            toastError("Map renderer not available");
-            return;
-          }
-          // Ensure the currently active graph is loaded; the active graph
-          // is selected via the toolbar dropdown and stored as a .routx path.
-          const activeGraphPath = await routingService.getActiveGraphPath();
-          if (!activeGraphPath) {
-            toastError("No active routing graph selected.");
-            return;
-          }
-          const workspace = await workspaceService.getWorkspace();
-          if (!workspace) {
-            toastError("No workspace available");
-            return;
-          }
-          const resource = await workspace.getResource(activeGraphPath);
-          if (!(resource instanceof File)) {
-            toastError(`Routing graph not found: ${activeGraphPath}`);
-            return;
-          }
-          const graphBlob = await resource.getContents({ blob: true });
-          const graphBuffer = await (graphBlob as Blob).arrayBuffer();
-          const graphBytes = new Uint8Array(graphBuffer);
-          await routingService.loadGraphFromBlob(graphBytes);
-          const [startLon, startLat] = await (renderer as any).transform(startCoord);
-          const [endLon, endLat] = await (renderer as any).transform(endCoord);
-          const fc = await routingService.route(
-            startLat,
-            startLon,
-            endLat,
-            endLon,
-          );
-
-          // Create a dedicated route layer containing both routing points and
-          // the resulting LineString(s), so each run produces a self-contained
-          // "Route N" layer.
-          const targetProjection =
-            gsMap.view?.projection ?? "EPSG:3857";
-
-          const targetFeatures: any[] = [];
-
-          // Include the original start/end points in the new route layer.
-          targetFeatures.push(start);
-          targetFeatures.push(end);
-
-          // Transform and add all LineStrings from the routing result.
-          for (const feature of fc.features) {
-            if (feature.geometry?.type === "LineString") {
-              const coords = feature.geometry.coordinates as [number, number][];
-              const transformed: [number, number][] = [];
-              for (const c of coords) {
-                const projCoord = await (renderer as any).transform(
-                  [c[0], c[1]],
-                  { sourceProjection: "EPSG:4326", targetProjection }
-                );
-                transformed.push(projCoord);
-              }
-              feature.geometry.coordinates = transformed;
-            }
-            targetFeatures.push(feature);
-          }
-
-          // Determine next "Route N" name.
-          let routeIndex = 0;
-          const existingNames = new Set(
-            (gsMap.layers as GsLayer[])
-              .map((l) => l.name)
-              .filter((name): name is string => typeof name === "string"),
-          );
-          while (existingNames.has(`Route ${routeIndex}`)) {
-            routeIndex += 1;
-          }
-
-          const routeLayer: GsLayer = {
-            name: `Route ${routeIndex}`,
-            type: GsLayerType.VECTOR,
-            source: {
-              type: GsSourceType.Features,
-              features: targetFeatures,
-            } as any,
-            visible: true,
-          } as any;
-
-          await operations.addLayer(routeLayer, false);
-
-          toastInfo(`Route added as layer "Route ${routeIndex}".`);
-        } catch (error: any) {
-          logger.error("Routing failed", error);
-
-          const message =
-            (typeof error === "string" && error) ||
-            (error?.message as string | undefined) ||
-            (() => {
-              try {
-                return JSON.stringify(error);
-              } catch {
-                return undefined;
-              }
-            })() ||
-            "Unknown error occurred";
-
-          toastError(`Routing failed: ${message}`);
-        }
-      },
-    },
-  });
-
-  // Toolbar contributions for the map editor
-  contributionRegistry.registerContribution("toolbar:map-editor", {
-    command: "routing.run_route",
-    icon: "play",
-    label: "Run Route",
-    disabled: () => !(activePartSignal.get() instanceof GsMapEditor),
-  } as any);
-
-  // Toolbar dropdown to select the active routing PBF
-  contributionRegistry.registerContribution("toolbar:map-editor", {
-    name: "toolbar.routing.graphSelector",
-    target: "toolbar:map-editor",
-    slot: "end",
-    component: `<routing-graph-selector></routing-graph-selector>`,
+  // Map editor toolbar extension (editor-coupled)
+  contributionRegistry.registerContribution("mapeditor.toolbar.extensions", {
+    name: "routing.toolbar",
+    label: "Routing toolbar",
+    component: (editor: GsMapEditor) =>
+      html`<routing-toolbar .editor=${editor}></routing-toolbar>`,
   } as any);
 
   // Filebrowser context menu: convert PBF -> routx graph
@@ -415,6 +227,7 @@ export default ({ commandRegistry }: { commandRegistry: CommandRegistry }) => {
             const graphPath = targetFile.getWorkspacePath();
             await routingService.registerGraphPath(graphPath);
             await routingService.setActiveGraphPath(graphPath);
+            updateActiveMapRoutingGraph(graphPath);
 
             progress.message = "Routing graph created.";
 
@@ -474,6 +287,7 @@ export default ({ commandRegistry }: { commandRegistry: CommandRegistry }) => {
         const graphPath = file.getWorkspacePath();
         await routingService.registerGraphPath(graphPath);
         await routingService.setActiveGraphPath(graphPath);
+        updateActiveMapRoutingGraph(graphPath);
         toastInfo(`Registered routing graph: ${graphPath}`);
       },
     },

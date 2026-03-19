@@ -18,6 +18,43 @@ contributionRegistry.registerContribution("filebrowser.create", {
     command: "create_map_file",
 } as any);
 
+contributionRegistry.registerContribution("mapeditor.toolbar.misc", {
+    name: "mapeditor.toolbar.misc.screenshot",
+    command: "capture_map_screenshot",
+    icon: "camera",
+    label: "Capture screenshot",
+});
+
+contributionRegistry.registerContribution("mapeditor.toolbar.misc", {
+    name: "mapeditor.toolbar.misc.theme",
+    command: "toggle_color_mode",
+    icon: "circle-half-stroke",
+    label: "Toggle dark/light mode",
+});
+
+contributionRegistry.registerContribution("mapeditor.toolbar.misc", {
+    name: "mapeditor.toolbar.misc.mobile",
+    command: "toggle_mobile_view",
+    icon: "mobile",
+    label: "Toggle mobile view",
+});
+
+contributionRegistry.registerContribution("mapeditor.toolbar.misc", {
+    name: "mapeditor.toolbar.misc.renderer.openlayers",
+    command: "set_map_renderer",
+    icon: "layer-group",
+    label: "Renderer: OpenLayers",
+    params: { renderer: "openlayers" },
+});
+
+contributionRegistry.registerContribution("mapeditor.toolbar.misc", {
+    name: "mapeditor.toolbar.misc.renderer.maplibre",
+    command: "set_map_renderer",
+    icon: "map",
+    label: "Renderer: MapLibre",
+    params: { renderer: "maplibre" },
+});
+
 registerAll({
     command: {
         id: "create_map_file",
@@ -47,6 +84,28 @@ registerAll({
                     ask: !path || path === "map.geospace",
                 },
             });
+        },
+    },
+});
+
+registerAll({
+    command: {
+        id: "set_map_renderer",
+        name: "Set map renderer",
+        description: "Switches the active map editor renderer.",
+        parameters: [{
+            name: "renderer",
+            description: "Renderer key, either 'openlayers' or 'maplibre'.",
+            required: true,
+        }],
+    },
+    handler: {
+        execute: async (context: any) => {
+            const active = activePartSignal.get();
+            if (!(active instanceof GsMapEditor)) return;
+
+            const renderer = context.params?.renderer === "maplibre" ? "maplibre" : "openlayers";
+            await active.setRenderer(renderer);
         },
     },
 });

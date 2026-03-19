@@ -397,7 +397,7 @@ export default ({ commandRegistry }: { commandRegistry: CommandRegistry }) => {
             },
         },
         contribution: {
-            target: "toolbar:map-editor",
+            target: "mapeditor.toolbar.misc",
             icon: "hammer",
             label: "Build map",
             disabled: () => {

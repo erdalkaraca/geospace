@@ -2,7 +2,7 @@ import {signal} from "@lit-labs/signals";
 import {EMPTY_SIGNALPORT} from "@eclipse-lyra/core";
 
 export enum MapEvents {
-    LOADED, LAYER_ADDED, LAYER_DELETED, LAYER_UPDATED, FEATURE_SELECTED
+    LOADED, LAYER_ADDED, LAYER_DELETED, LAYER_UPDATED, FEATURE_SELECTED, DRAWING_LAYER_CHANGED
 }
 
 export interface FeatureSelection {

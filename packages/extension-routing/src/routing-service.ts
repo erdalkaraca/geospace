@@ -21,17 +21,25 @@ export interface GeoJSONFeatureCollection<G = GeoJSONLineString, P = Record<stri
   features: Array<GeoJSONFeature<G, P>>;
 }
 
+export const ROUTING_REGISTERED_GRAPHS_KEY = "routing.registeredGraphs";
+export const ROUTING_ACTIVE_GRAPH_PATH_KEY = "routing.activeGraphPath";
+
 export class RoutingService {
   private initialized = false;
   private worker?: Worker;
   private nextMessageId = 1;
+
+  // Lightweight cache: we remember which graph name is currently loaded into the worker.
+  // This avoids re-loading the same `.routx` file for repeated routing runs.
+  private loadedGraphName?: string;
+  private loadingGraphPromises = new Map<string, Promise<void>>();
   private pending = new Map<
     number,
     { resolve: (value: any) => void; reject: (reason: any) => void }
   >();
 
-  private static readonly STORAGE_KEY = "routing.registeredGraphs";
-  private static readonly ACTIVE_KEY = "routing.activeGraphPath";
+  private static readonly STORAGE_KEY = ROUTING_REGISTERED_GRAPHS_KEY;
+  private static readonly ACTIVE_KEY = ROUTING_ACTIVE_GRAPH_PATH_KEY;
 
   private ensureWorker(): Worker {
     if (this.worker) {
@@ -56,6 +64,7 @@ export class RoutingService {
 
     this.worker = worker;
     this.initialized = true;
+    this.loadedGraphName = undefined;
     logger.info("RoutingService: worker initialized");
     return worker;
   }
@@ -86,9 +95,19 @@ export class RoutingService {
       throw new Error("No active routing graph selected.");
     }
 
+    return this.routeWithGraphName(activePath, fromLat, fromLon, toLat, toLon);
+  }
+
+  async routeWithGraphName(
+    graphName: string,
+    fromLat: number,
+    fromLon: number,
+    toLat: number,
+    toLon: number
+  ): Promise<GeoJSONFeatureCollection> {
     const { coords } = await this.callWorker<{
       coords: [number, number][];
-    }>("route", { name: activePath, fromLat, fromLon, toLat, toLon });
+    }>("route", { name: graphName, fromLat, fromLon, toLat, toLon });
 
     return {
       type: "FeatureCollection",
@@ -122,7 +141,47 @@ export class RoutingService {
   async loadGraphFromBlob(blob: Uint8Array): Promise<void> {
     const activePath = await this.getActiveGraphPath();
     const name = activePath ?? "unnamed";
-    await this.callWorker("loadGraphFromBlob", { name, graphBytes: blob });
+    await this.loadGraphFromBlobAs(name, blob);
+  }
+
+  async loadGraphFromBlobAs(graphName: string, blob: Uint8Array): Promise<void> {
+    if (this.loadedGraphName === graphName) {
+      return;
+    }
+
+    const cached = this.loadingGraphPromises.get(graphName);
+    if (cached) {
+      return cached;
+    }
+
+    const promise = this.callWorker("loadGraphFromBlob", {
+      name: graphName,
+      graphBytes: blob,
+    }).then(() => {
+      this.loadedGraphName = graphName;
+    });
+
+    this.loadingGraphPromises.set(graphName, promise);
+    try {
+      await promise;
+    } finally {
+      this.loadingGraphPromises.delete(graphName);
+    }
+  }
+
+  async isGraphLoaded(graphName: string): Promise<boolean> {
+    return this.loadedGraphName === graphName;
+  }
+
+  isGraphLoading(graphName: string): boolean {
+    return this.loadingGraphPromises.has(graphName);
+  }
+
+  async waitForGraphLoading(graphName: string): Promise<boolean> {
+    const promise = this.loadingGraphPromises.get(graphName);
+    if (!promise) return false;
+    await promise;
+    return true;
   }
 
   // Registration and selection are stored in localStorage as workspace paths
@@ -152,6 +211,6 @@ export class RoutingService {
   }
 }
 
-const routingService = new RoutingService();
+const routingService = new RoutingService(); // default global scope
 export default routingService;
 
