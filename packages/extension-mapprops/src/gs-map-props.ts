@@ -64,8 +64,6 @@ export class GsMapProps extends LyraPart {
 
     private selectLayer(uuid: string) {
         this.selectedLayerUuid = uuid;
-        this.updateToolbar();
-        this.updateContextMenu();
     }
 
     private renameLayer(uuid?: string) {
@@ -124,8 +122,7 @@ export class GsMapProps extends LyraPart {
 
     private layerLabel(layer: GsLayer | GsScriptedVectorLayer, index: number) {
         if (layer.type === GsLayerType.SCRIPTED) {
-            const scripted = layer as GsScriptedVectorLayer
-            return layer.name ?? scripted.src?.split('/').pop() ?? `Scripted Layer ${index + 1}`
+            return layer.name ?? `Scripted Layer ${index + 1}`
         }
         return layer.name ?? `Layer ${index + 1}`
     }
@@ -180,7 +177,7 @@ export class GsMapProps extends LyraPart {
         `;
     }
 
-    render() {
+    protected renderContent() {
         return when(!this.mapEditor, () => html`
                     <lyra-no-content message="Select a map."></lyra-no-content>`,
             () => html`
@@ -272,8 +269,13 @@ export class GsMapProps extends LyraPart {
 
     static styles = css`
         :host {
-            display: flex;
-            flex-direction: column;
+            display: block;
+            min-height: 0;
+        }
+
+        wa-tree {
+            display: block;
+            min-height: 0;
         }
 
         wa-tree-item.selected {

@@ -13,7 +13,7 @@ import {
     createProxy,
     MapSyncEvent
 } from "@kispace-io/gs-lib";
-import { mapChangedSignal, MapEvents, FeatureSelection } from "./gs-signals";
+import { mapChangedSignal, MapEvents } from "./gs-signals";
 import { loadEnvs, replaceUris, revertBlobUris } from "./utils";
 import { WorkspaceModuleResolver } from "./workspace-module-resolver";
 import { IFrameMapRenderer, RendererType } from "./iframe-map-renderer";
@@ -27,11 +27,8 @@ import {
     toastError,
     toastInfo,
     promptDialog,
-    activePartSignal,
-    createLogger
+    activePartSignal
 } from "@eclipse-lyra/core";
-
-const logger = createLogger('GsMapEditor');
 
 @customElement('gs-map')
 export class GsMapEditor extends LyraPart {
@@ -79,7 +76,6 @@ export class GsMapEditor extends LyraPart {
         if (event === MapEvents.LAYER_ADDED ||
             event === MapEvents.LAYER_DELETED ||
             event === MapEvents.LAYER_UPDATED) {
-            this.updateToolbar();
         }
     }
 
@@ -117,7 +113,6 @@ export class GsMapEditor extends LyraPart {
                                     this.operations?.disableDrawing();
                                     this.interactionMode = 'none';
                                 }
-                                this.updateToolbar();
                             }}>
                             <wa-option value="">Select layer</wa-option>
                             ${drawableLayers.map((layer) => html`<wa-option value="${layer.uuid}">${layer.name || 'Layer'}</wa-option>`)}
@@ -178,7 +173,6 @@ export class GsMapEditor extends LyraPart {
             if (!this.mapContainer.value) throw new Error('Map container not available');
             await this.renderer.render(this.mapContainer.value);
             this.setupRendererCallbacks();
-            this.updateToolbar();
             mapChangedSignal.set({ part: this, event: MapEvents.LOADED });
         } catch (error: any) {
             console.error('Failed to render map:', error);
@@ -234,10 +228,10 @@ export class GsMapEditor extends LyraPart {
                     break;
                 case 'featureDeselected':
                     mapChangedSignal.set({ part: this, event: MapEvents.FEATURE_SELECTED, payload: null });
-                    if (this.interactionMode === 'select') { this.interactionMode = 'none'; this.updateToolbar(); }
+                    if (this.interactionMode === 'select') { this.interactionMode = 'none'; }
                     break;
                 case 'drawingDisabled':
-                    if (this.interactionMode === 'draw') { this.interactionMode = 'none'; this.updateToolbar(); }
+                    if (this.interactionMode === 'draw') { this.interactionMode = 'none'; }
                     break;
             }
             this.markDirty(true);
@@ -284,10 +278,10 @@ export class GsMapEditor extends LyraPart {
         await this.operations.setZoom(this.initialView.zoom);
     }
 
-    private async handleDrawPoint() { if (!this.activeDrawingLayerUuid) return; await this.operations?.enableDrawing('Point', this.activeDrawingLayerUuid); this.interactionMode = 'draw'; this.updateToolbar(); }
-    private async handleDrawLine() { if (!this.activeDrawingLayerUuid) return; await this.operations?.enableDrawing('LineString', this.activeDrawingLayerUuid); this.interactionMode = 'draw'; this.updateToolbar(); }
-    private async handleDrawPolygon() { if (!this.activeDrawingLayerUuid) return; await this.operations?.enableDrawing('Polygon', this.activeDrawingLayerUuid); this.interactionMode = 'draw'; this.updateToolbar(); }
-    private async handleSelectFeatures() { await this.operations?.enableFeatureSelection(); this.interactionMode = 'select'; this.updateToolbar(); }
+    private async handleDrawPoint() { if (!this.activeDrawingLayerUuid) return; await this.operations?.enableDrawing('Point', this.activeDrawingLayerUuid); this.interactionMode = 'draw'; }
+    private async handleDrawLine() { if (!this.activeDrawingLayerUuid) return; await this.operations?.enableDrawing('LineString', this.activeDrawingLayerUuid); this.interactionMode = 'draw'; }
+    private async handleDrawPolygon() { if (!this.activeDrawingLayerUuid) return; await this.operations?.enableDrawing('Polygon', this.activeDrawingLayerUuid); this.interactionMode = 'draw'; }
+    private async handleSelectFeatures() { await this.operations?.enableFeatureSelection(); this.interactionMode = 'select'; }
     private async handleDeleteSelected() {
         if (this.interactionMode !== 'select') return;
         try { await this.operations?.deleteSelectedFeatures(); toastInfo('Selected features deleted'); } catch (error: any) { toastError(error.message); }
@@ -315,7 +309,6 @@ export class GsMapEditor extends LyraPart {
             }
         }
         this.markDirty(true);
-        this.updateToolbar();
     }
 
     private async handleCreateDrawingLayer() {
@@ -332,7 +325,6 @@ export class GsMapEditor extends LyraPart {
         const addedLayer = this.gsMap?.layers.find(layer => layer.uuid === newLayer.uuid);
         if (addedLayer?.uuid) this.activeDrawingLayerUuid = addedLayer.uuid;
         await this.updateComplete;
-        this.updateToolbar();
         toastInfo(`Created drawing layer: ${layerName}`);
     }
 
@@ -343,7 +335,7 @@ export class GsMapEditor extends LyraPart {
         this.moduleResolver.clear();
     }
 
-    render() {
+    protected renderContent() {
         return html`<div class="gc-map-container" ${ref(this.mapContainer)}></div>`;
     }
 
