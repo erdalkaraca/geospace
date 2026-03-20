@@ -8,8 +8,13 @@
     ".": "./src/index.ts",
     "./loader": "./src/loader.ts"
   },
+  "bin": {
+    "pbf-to-routx": "./src/bin/pbf-to-routx"
+  },
   "scripts": {
-    "build:wasm": "cd routx-wasm && cargo build --target wasm32-unknown-unknown --release && wasm-bindgen --target web --out-dir ../src --no-typescript target/wasm32-unknown-unknown/release/routx_wasm.wasm"
+    "build:wasm": "cd routx-wasm && cargo build --target wasm32-unknown-unknown --release --lib && wasm-bindgen --target web --out-dir ../src --no-typescript target/wasm32-unknown-unknown/release/routx_wasm.wasm",
+    "build:linux": "cd routx-wasm && cargo build --release --bin pbf-to-routx --features bin && mkdir -p ../src/bin && cp target/release/pbf-to-routx ../src/bin/",
+    "pbf-to-routx": "./src/bin/pbf-to-routx"
   },
   "dependencies": {
     "@eclipse-lyra/core": "*",

@@ -11,17 +11,22 @@ thread_local! {
 /// Format:
 /// - u32: node_count
 /// - node_count * (Node + u32 edge_count + edge_count * Edge)
-fn serialize_graph(graph: &Graph) -> Vec<u8> {
+pub fn serialize_graph(graph: &Graph) -> Vec<u8> {
     use std::convert::TryInto;
 
     let mut buf = Vec::new();
-
-    // Number of nodes (u32)
     let node_count = graph.len() as u32;
+    let progress_interval = (node_count as usize / 10).max(100_000);
+
+    log::info!("Serializing {} nodes", node_count);
     buf.extend_from_slice(&node_count.to_le_bytes());
 
-    // Graph::iter() yields &Node; we then pull edges via get_edges(node.id)
+    let mut processed = 0usize;
     for node in graph.iter() {
+        if processed > 0 && processed % progress_interval == 0 {
+            log::info!("  Serialized {} / {} nodes", processed, node_count);
+        }
+        processed += 1;
         buf.extend_from_slice(&node.id.to_le_bytes());
         buf.extend_from_slice(&node.osm_id.to_le_bytes());
         buf.extend_from_slice(&node.lat.to_le_bytes());
@@ -99,6 +104,24 @@ fn deserialize_graph(bytes: &[u8]) -> Result<Graph, String> {
     }
 
     Ok(Graph::from_iter(nodes, edges))
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub fn build_graph_from_pbf_file(path: impl AsRef<std::path::Path>) -> Result<Graph, String> {
+    let path = path.as_ref();
+    log::info!("Loading PBF from {}", path.display());
+
+    let mut graph = Graph::new();
+    let opts = routx::osm::Options {
+        profile: &routx::osm::CAR_PROFILE,
+        file_format: routx::osm::FileFormat::Unknown,
+        bbox: [0.0; 4],
+    };
+    routx::osm::add_features_from_file(&mut graph, &opts, path)
+        .map_err(|e| e.to_string())?;
+
+    log::info!("PBF loaded: {} nodes", graph.len());
+    Ok(graph)
 }
 
 #[wasm_bindgen]

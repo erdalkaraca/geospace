@@ -1,4 +1,4 @@
-import { logger, appSettings } from "@eclipse-lyra/core";
+import { logger, appSettings, taskService } from "@eclipse-lyra/core";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore – Vite's ?worker import has no TS types
 import RoutingWorker from "./routing-worker?worker";
@@ -105,36 +105,44 @@ export class RoutingService {
     toLat: number,
     toLon: number
   ): Promise<GeoJSONFeatureCollection> {
-    const { coords } = await this.callWorker<{
-      coords: [number, number][];
-    }>("route", { name: graphName, fromLat, fromLon, toLat, toLon });
+    return taskService.runAsync("Computing route", async (progress) => {
+      progress.message = "Finding path…";
+      const { coords } = await this.callWorker<{
+        coords: [number, number][];
+      }>("route", { name: graphName, fromLat, fromLon, toLat, toLon });
 
-    return {
-      type: "FeatureCollection",
-      features: [
-        {
-          type: "Feature",
-          geometry: {
-            type: "LineString",
-            coordinates: coords,
+      return {
+        type: "FeatureCollection",
+        features: [
+          {
+            type: "Feature",
+            geometry: {
+              type: "LineString",
+              coordinates: coords,
+            },
+            properties: {},
           },
-          properties: {},
-        },
-      ],
-    };
+        ],
+      };
+    });
   }
 
   async loadGraphFromPbf(pbf: Uint8Array): Promise<void> {
     const activePath = await this.getActiveGraphPath();
     const name = activePath ?? "unnamed";
-    await this.callWorker("buildGraphFromPbf", { name, bytes: pbf });
+    await taskService.runAsync("Building routing graph from PBF", async (progress) => {
+      progress.message = "Processing PBF…";
+      await this.callWorker("buildGraphFromPbf", { name, bytes: pbf });
+    });
   }
 
-  // Convenience for worker-based builds directly from a blob URL.
   async loadGraphFromPbfUrl(pbfName: string, blobUrl: string): Promise<void> {
-    await this.callWorker("buildGraphFromPbfUrl", {
-      name: pbfName,
-      url: blobUrl,
+    await taskService.runAsync("Building routing graph from PBF", async (progress) => {
+      progress.message = "Processing PBF (this may take a while)…";
+      await this.callWorker("buildGraphFromPbfUrl", {
+        name: pbfName,
+        url: blobUrl,
+      });
     });
   }
 
@@ -154,10 +162,12 @@ export class RoutingService {
       return cached;
     }
 
-    const promise = this.callWorker("loadGraphFromBlob", {
-      name: graphName,
-      graphBytes: blob,
-    }).then(() => {
+    const promise = taskService.runAsync("Loading routing graph", async (progress) => {
+      progress.message = `Loading ${graphName}…`;
+      await this.callWorker("loadGraphFromBlob", {
+        name: graphName,
+        graphBytes: blob,
+      });
       this.loadedGraphName = graphName;
     });
 
