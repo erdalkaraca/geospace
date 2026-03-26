@@ -78,7 +78,7 @@ export default defineConfig((): UserConfig => {
         build: {
             outDir: path.resolve(__dirname, '../../dist'),
             assetsInlineLimit: 0,
-            rollupOptions: {
+            rolldownOptions: {
                 input: {
                     main: path.resolve(__dirname, 'index.html'),
                     /** Iframe map entry (workaround for Vite ?url MIME bug). See docs/known-issues/iframe-map-renderer-vite-mime-workaround.md */

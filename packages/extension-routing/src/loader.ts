@@ -217,7 +217,7 @@ export default ({ commandRegistry }: { commandRegistry: CommandRegistry }) => {
               return;
             }
 
-            const graphBlob = new Blob([graphBytes], {
+            const graphBlob = new Blob([graphBytes as BlobPart], {
               type: "application/octet-stream",
             });
             await targetFile.saveContents(graphBlob, {

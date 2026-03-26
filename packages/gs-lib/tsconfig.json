@@ -2,7 +2,10 @@
   "compilerOptions": {
     "target": "ES2022",
     "module": "ESNext",
-    "lib": ["ES2022", "DOM"],
+    "lib": [
+      "ES2022",
+      "DOM"
+    ],
     "moduleResolution": "bundler",
     "noEmit": true,
     "strict": true,
@@ -12,9 +15,13 @@
     "sourceMap": true,
     "experimentalDecorators": true,
     "useDefineForClassFields": false,
-    "baseUrl": ".",
-    "paths": {}
+    "paths": {},
+    "rootDir": "src",
+    "types": [
+      "node"
+    ]
   },
-  "include": ["src/**/*"]
+  "include": [
+    "src/**/*"
+  ]
 }
-

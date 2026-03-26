@@ -24,6 +24,18 @@
   ],
   "tasks": [
     {
+      "label": "cargo build pbf-to-routx",
+      "type": "shell",
+      "command": "cargo",
+      "args": ["build", "--manifest-path", "packages/extension-routing/routx-wasm/Cargo.toml", "--bin", "pbf-to-routx", "--features", "bin"],
+      "group": "build",
+      "problemMatcher": ["$rustc"],
+      "detail": "Build pbf-to-routx binary for debugging",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+    {
       "label": "dev",
       "type": "npm",
       "script": "dev",

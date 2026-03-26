@@ -160,7 +160,7 @@ export function processHtml(content: string, title: string, appJsFilename?: stri
 export async function bundleApp(
     entryPointPath: string,
     outputDir: string,
-    gsLibPath: string,
+    _gsLibPath: string,
     fileSys: FileSystem,
     resolvePlugin: EsbuildPlugin,
     esbuildInstance: EsbuildInstance,
@@ -334,7 +334,7 @@ export function createFileSystemGsLibCopier(
 /**
  * Recursively copy a directory
  */
-async function copyDirectory(fs: FileSystem, src: string, dest: string): Promise<void> {
+async function copyDirectory(fs: FileSystem, _src: string, dest: string): Promise<void> {
     // This is a simplified version - would need full directory traversal
     // For now, we'll handle specific known directories
     await fs.ensureDir(dest)
@@ -363,8 +363,8 @@ export function calculateTotalSteps(
 /**
  * Create a standard copyAssets function that works with FileSystem
  */
-export function createCopyAssetsFunction(fs: FileSystem): (fs: FileSystem, outputDir: string, progress?: ProgressCallback) => Promise<void> {
-    return async (fileSys: FileSystem, outputDir: string, progress?: ProgressCallback) => {
+export function createCopyAssetsFunction(_fs: FileSystem): (fs: FileSystem, outputDir: string, progress?: ProgressCallback) => Promise<void> {
+    return async (fileSys: FileSystem, outputDir: string, _progress?: ProgressCallback) => {
         if (await fileSys.exists('assets')) {
             await copyDirectory(fileSys, 'assets', `${outputDir}/assets`)
         }

@@ -25,7 +25,6 @@ export const ROUTING_REGISTERED_GRAPHS_KEY = "routing.registeredGraphs";
 export const ROUTING_ACTIVE_GRAPH_PATH_KEY = "routing.activeGraphPath";
 
 export class RoutingService {
-  private initialized = false;
   private worker?: Worker;
   private nextMessageId = 1;
 
@@ -63,7 +62,6 @@ export class RoutingService {
     };
 
     this.worker = worker;
-    this.initialized = true;
     this.loadedGraphName = undefined;
     logger.info("RoutingService: worker initialized");
     return worker;

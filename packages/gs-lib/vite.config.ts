@@ -49,7 +49,7 @@ export default defineConfig({
         return `${entryName}.js`;
       },
     },
-    rollupOptions: {
+    rolldownOptions: {
       external: isExternal,
       output: {
         preserveModules: false,

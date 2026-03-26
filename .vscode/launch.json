@@ -1,6 +1,23 @@
 {
   "version": "0.2.0",
+  "inputs": [
+    {
+      "id": "pbfPath",
+      "type": "promptString",
+      "description": "Path to OSM PBF input file",
+      "default": "${workspaceFolder}/packages/extension-routing/routx-wasm/sample.pbf"
+    }
+  ],
   "configurations": [
+    {
+      "name": "Debug pbf-to-routx",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/packages/extension-routing/routx-wasm/target/debug/pbf-to-routx",
+      "args": ["${input:pbfPath}"],
+      "cwd": "${workspaceFolder}/packages/extension-routing/routx-wasm",
+      "preLaunchTask": "cargo build pbf-to-routx"
+    },
     {
       "name": "🐛 Debug in Chrome",
       "type": "node",
