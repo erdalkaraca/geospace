@@ -1,0 +1,1 @@
+import{l as e}from"./chunk-QY3QWFKW-BGin8aqG.js";e();var t={name:`pgcrypto`,setup:async(e,t)=>({bundlePath:new URL(`/assets/pgcrypto.tar-Ck3eHq04.gz`,``+import.meta.url)})};export{t as pgcrypto};

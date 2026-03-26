@@ -1,0 +1,1 @@
+var e=`Settings Tree Editor`,t=`Tree-based editor for settings with in-place editing`,n={EXT_SETTINGS_TREE_NAME:e,EXT_SETTINGS_TREE_DESC:t};export{t as EXT_SETTINGS_TREE_DESC,e as EXT_SETTINGS_TREE_NAME,n as default};

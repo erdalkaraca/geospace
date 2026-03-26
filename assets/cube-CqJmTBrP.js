@@ -1,0 +1,1 @@
+import{l as e}from"./chunk-QY3QWFKW-BGin8aqG.js";e();var t={name:`cube`,setup:async(e,t)=>({bundlePath:new URL(`/assets/cube.tar-DUj9u60n.gz`,``+import.meta.url)})};export{t as cube};

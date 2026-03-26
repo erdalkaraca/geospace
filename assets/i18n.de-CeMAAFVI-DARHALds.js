@@ -1,0 +1,1 @@
+var e=`ML im Browser`,t=`Maschinelles Lernen im Browser mit transformers.js für spezialisierte Aufgaben (Zero-Shot-Klassifizierung, Embeddings usw.)`,n={EXT_IN_BROWSER_ML_NAME:e,EXT_IN_BROWSER_ML_DESC:t};export{t as EXT_IN_BROWSER_ML_DESC,e as EXT_IN_BROWSER_ML_NAME,n as default};

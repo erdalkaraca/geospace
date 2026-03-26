@@ -1,1 +1,0 @@
-import{u as r}from"./chunk-QY3QWFKW-CdepMCHW.js";r();var e=async(s,t)=>({bundlePath:new URL("/assets/pg_surgery.tar-BfSkVhhP.gz",import.meta.url)}),p={name:"pg_surgery",setup:e};export{p as pg_surgery};

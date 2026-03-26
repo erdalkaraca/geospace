@@ -1,1 +1,0 @@
-const n="GitHub-Dienst",t="GitHub-API-Anbindung für Releases und Repository-Informationen",e={EXT_GITHUB_SERVICE_NAME:n,EXT_GITHUB_SERVICE_DESC:t};export{t as EXT_GITHUB_SERVICE_DESC,n as EXT_GITHUB_SERVICE_NAME,e as default};

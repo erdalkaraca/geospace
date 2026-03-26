@@ -1,1 +1,0 @@
-import{u as t}from"./chunk-QY3QWFKW-CdepMCHW.js";t();var a=async(e,r)=>({bundlePath:new URL("/assets/earthdistance.tar-qQyUvpYk.gz",import.meta.url)}),n={name:"earthdistance",setup:a};export{n as earthdistance};

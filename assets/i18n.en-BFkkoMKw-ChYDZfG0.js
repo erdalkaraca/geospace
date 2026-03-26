@@ -1,1 +1,0 @@
-const o="Monaco Code Editor",t="Code editor with syntax highlighting, code completion, and Python execution support",n={EXT_MONACO_NAME:o,EXT_MONACO_DESC:t};export{t as EXT_MONACO_DESC,o as EXT_MONACO_NAME,n as default};

@@ -1,0 +1,1 @@
+import{l as e}from"./chunk-QY3QWFKW-BGin8aqG.js";e();var t={name:`tcn`,setup:async(e,t)=>({bundlePath:new URL(`/assets/tcn.tar-RZAiX7o5.gz`,``+import.meta.url)})};export{t as tcn};

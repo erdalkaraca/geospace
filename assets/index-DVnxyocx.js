@@ -1,1 +1,0 @@
-import{u as a}from"./chunk-QY3QWFKW-CdepMCHW.js";a();var r=async(t,s)=>({emscriptenOpts:s,bundlePath:new URL("/assets/pg_hashids.tar-BfFoOOrg.gz",import.meta.url)}),p={name:"pg_hashids",setup:r};export{p as pg_hashids};

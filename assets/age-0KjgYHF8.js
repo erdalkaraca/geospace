@@ -1,0 +1,1 @@
+import{l as e}from"./chunk-QY3QWFKW-BGin8aqG.js";e();var t={name:`age`,setup:async(e,t)=>({emscriptenOpts:t,bundlePath:new URL(`/assets/age.tar-oeaIYq-m.gz`,``+import.meta.url)})};export{t as age};

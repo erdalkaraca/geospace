@@ -1,0 +1,1 @@
+import{l as e}from"./chunk-QY3QWFKW-BGin8aqG.js";e();var t={name:`amcheck`,setup:async(e,t)=>({bundlePath:new URL(`/assets/amcheck.tar-rr67BEjH.gz`,``+import.meta.url)})};export{t as amcheck};

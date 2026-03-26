@@ -1,1 +1,0 @@
-import{u as e}from"./chunk-QY3QWFKW-CdepMCHW.js";e();var m=async(p,t)=>({emscriptenOpts:t,bundlePath:new URL("/assets/pg_ivm.tar-CASCSAN8.gz",import.meta.url)}),s={name:"pg_ivm",setup:m};export{s as pg_ivm};

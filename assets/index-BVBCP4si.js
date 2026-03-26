@@ -1,1 +1,0 @@
-import{u as e}from"./chunk-QY3QWFKW-CdepMCHW.js";e();var r=async(s,t)=>({emscriptenOpts:t,bundlePath:new URL("/assets/vector.tar-B_-MpuGu.gz",import.meta.url)}),o={name:"pgvector",setup:r};export{o as vector};

@@ -1,0 +1,1 @@
+var e=`Python-Runtime`,t=`Pyodide-Runtime, Python-Paketverwaltung und Befehl Python-Skript ausführen`,n={EXT_PYTHONRUNTIME_NAME:e,EXT_PYTHONRUNTIME_DESC:t};export{t as EXT_PYTHONRUNTIME_DESC,e as EXT_PYTHONRUNTIME_NAME,n as default};

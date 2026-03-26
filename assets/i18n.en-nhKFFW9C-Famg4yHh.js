@@ -1,1 +1,0 @@
-const t="GitHub Service",e="GitHub API integration for releases and repository information",n={EXT_GITHUB_SERVICE_NAME:t,EXT_GITHUB_SERVICE_DESC:e};export{e as EXT_GITHUB_SERVICE_DESC,t as EXT_GITHUB_SERVICE_NAME,n as default};

@@ -1,0 +1,1 @@
+var e=`HowTo System`,t=`Step-by-step workflow system with pre and post condition checks`,n={EXT_HOWTO_NAME:e,EXT_HOWTO_DESC:t};export{t as EXT_HOWTO_DESC,e as EXT_HOWTO_NAME,n as default};

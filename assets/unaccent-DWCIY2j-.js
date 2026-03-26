@@ -1,0 +1,1 @@
+import{l as e}from"./chunk-QY3QWFKW-BGin8aqG.js";e();var t={name:`unaccent`,setup:async(e,t)=>({bundlePath:new URL(`/assets/unaccent.tar-CV_p05Oj.gz`,``+import.meta.url)})};export{t as unaccent};

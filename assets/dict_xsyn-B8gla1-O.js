@@ -1,0 +1,1 @@
+import{l as e}from"./chunk-QY3QWFKW-BGin8aqG.js";e();var t={name:`dict_xsyn`,setup:async(e,t)=>({bundlePath:new URL(`/assets/dict_xsyn.tar-C-0eUzp0.gz`,``+import.meta.url)})};export{t as dict_xsyn};

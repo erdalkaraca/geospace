@@ -1,0 +1,1 @@
+import{l as e}from"./chunk-QY3QWFKW-BGin8aqG.js";e();var t={name:`lo`,setup:async(e,t)=>({bundlePath:new URL(`/assets/lo.tar-C9ESou33.gz`,``+import.meta.url)})};export{t as lo};

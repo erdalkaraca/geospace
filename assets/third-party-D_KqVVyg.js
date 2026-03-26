@@ -1,0 +1,1 @@
+function e(){return crypto.randomUUID()}export{e as t};

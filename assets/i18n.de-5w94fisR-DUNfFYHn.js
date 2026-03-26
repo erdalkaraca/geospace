@@ -1,0 +1,1 @@
+var e=`HowTo-System`,t=`Schritt-für-Schritt-Workflow-System mit Vor- und Nachbedingungsprüfungen`,n={EXT_HOWTO_NAME:e,EXT_HOWTO_DESC:t};export{t as EXT_HOWTO_DESC,e as EXT_HOWTO_NAME,n as default};

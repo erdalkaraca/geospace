@@ -1,0 +1,1 @@
+var e=`DuckDB`,t=`SQL-Engine im Browser (DuckDB-WASM) für erweiterte Abfragen, Analysen und Parquet/CSV/JSON.`,n={EXT_DUCKDB_NAME:e,EXT_DUCKDB_DESC:t};export{t as EXT_DUCKDB_DESC,e as EXT_DUCKDB_NAME,n as default};

@@ -1,0 +1,1 @@
+var e=`GitHub-Dienst`,t=`GitHub-API-Anbindung für Releases und Repository-Informationen`,n={EXT_GITHUB_SERVICE_NAME:e,EXT_GITHUB_SERVICE_DESC:t};export{t as EXT_GITHUB_SERVICE_DESC,e as EXT_GITHUB_SERVICE_NAME,n as default};

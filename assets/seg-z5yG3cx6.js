@@ -1,0 +1,1 @@
+import{l as e}from"./chunk-QY3QWFKW-BGin8aqG.js";e();var t={name:`seg`,setup:async(e,t)=>({bundlePath:new URL(`/assets/seg.tar-B3fBsmcM.gz`,``+import.meta.url)})};export{t as seg};

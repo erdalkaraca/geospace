@@ -1,1 +1,0 @@
-import{u as t}from"./chunk-QY3QWFKW-CdepMCHW.js";t();var u=async(a,p)=>({emscriptenOpts:p,bundlePath:new URL("/assets/pg_uuidv7.tar-BcOLFO_p.gz",import.meta.url)}),s={name:"pg_uuidv7",setup:u};export{s as pg_uuidv7};

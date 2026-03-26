@@ -1,0 +1,1 @@
+var e=`In-Browser ML`,t=`In-browser machine learning service using transformers.js for specialized tasks (zero-shot classification, embeddings, etc.)`,n={EXT_IN_BROWSER_ML_NAME:e,EXT_IN_BROWSER_ML_DESC:t};export{t as EXT_IN_BROWSER_ML_DESC,e as EXT_IN_BROWSER_ML_NAME,n as default};

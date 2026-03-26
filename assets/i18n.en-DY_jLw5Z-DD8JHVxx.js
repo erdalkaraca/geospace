@@ -1,0 +1,1 @@
+var e=`Monaco Code Editor`,t=`Code editor with syntax highlighting, code completion, and Python execution support`,n={EXT_MONACO_NAME:e,EXT_MONACO_DESC:t};export{t as EXT_MONACO_DESC,e as EXT_MONACO_NAME,n as default};

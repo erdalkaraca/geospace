@@ -1,0 +1,1 @@
+var e=`Befehls-Palette`,t=`VS Code-ähnliche Befehls-Palette oben in der Mitte für schnelle Befehlsausführung (Strg+Umschalt+P)`,n={EXT_COMMANDPALETTE_NAME:e,EXT_COMMANDPALETTE_DESC:t};export{t as EXT_COMMANDPALETTE_DESC,e as EXT_COMMANDPALETTE_NAME,n as default};

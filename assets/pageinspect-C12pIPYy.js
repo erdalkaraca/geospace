@@ -1,1 +1,0 @@
-import{u as e}from"./chunk-QY3QWFKW-CdepMCHW.js";e();var a=async(t,p)=>({bundlePath:new URL("/assets/pageinspect.tar-DPQzTqlv.gz",import.meta.url)}),n={name:"pageinspect",setup:a};export{n as pageinspect};

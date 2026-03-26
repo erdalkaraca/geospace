@@ -1,0 +1,1 @@
+import{l as e}from"./chunk-QY3QWFKW-BGin8aqG.js";e();var t={name:`citext`,setup:async(e,t)=>({bundlePath:new URL(`/assets/citext.tar-CzaiuPPF.gz`,``+import.meta.url)})};export{t as citext};

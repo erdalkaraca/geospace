@@ -1,0 +1,1 @@
+import{l as e}from"./chunk-QY3QWFKW-BGin8aqG.js";e();var t={name:`pgtap`,setup:async(e,t)=>({emscriptenOpts:t,bundlePath:new URL(`/assets/pgtap.tar-CtOajxsk.gz`,``+import.meta.url)})};export{t as pgtap};
