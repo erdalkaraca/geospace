@@ -1,4 +1,4 @@
-import { html, render } from "@eclipse-lyra/core/externals/lit";
+import { html, render } from "@eclipse-docks/core/externals/lit";
 import { GsMapEditor } from "@kispace-io/extension-map-editor/geo";
 import { browserMapBuilder } from "./browser-map-builder";
 import {
@@ -13,7 +13,7 @@ import {
     ProgressMonitor,
     type CommandRegistry,
     contributionRegistry,
-} from "@eclipse-lyra/core";
+} from "@eclipse-docks/core";
 
 const GEOSPACE_EXTENSION = ".geospace";
 const ENV_EXTENSION = ".env";

@@ -22,7 +22,7 @@ const isExternal = (id: string) => {
     return false;
   }
 
-  // Everything else (node built-ins, third-party deps, Lyra core, etc.)
+  // Everything else (node built-ins, third-party deps, Docks core, etc.)
   // stays external and must be provided by the consumer.
   return true;
 };

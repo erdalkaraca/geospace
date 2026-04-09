@@ -1,14 +1,14 @@
 import {
-  LyraElement,
+  DocksElement,
   TOPIC_SETTINGS_CHANGED,
-} from '@eclipse-lyra/core';
+} from '@eclipse-docks/core';
 import {
   css,
   customElement,
   html,
   property,
-} from '@eclipse-lyra/core/externals/lit';
-import type { PropertyValues } from '@eclipse-lyra/core/externals/lit';
+} from '@eclipse-docks/core/externals/lit';
+import type { PropertyValues } from '@eclipse-docks/core/externals/lit';
 import { GsLayerType, GsSourceType } from "@kispace-io/gs-lib";
 import {
   GsMapEditor,
@@ -18,7 +18,7 @@ import routingService from "./routing-service";
 import { runRoutingIntoActiveDrawingLayer } from "./routing-actions";
 
 @customElement("routing-toolbar")
-export class RoutingToolbar extends LyraElement {
+export class RoutingToolbar extends DocksElement {
   @property({ attribute: false })
   editor: GsMapEditor | null = null;
 
@@ -199,12 +199,12 @@ export class RoutingToolbar extends LyraElement {
           `,
         )}
       </wa-dropdown>
-      <lyra-command
+      <docks-command
         icon="fg route"
         title="Run Route"
         ?disabled=${!canRun}
         .action=${() => void this.runRoute()}>
-      </lyra-command>
+      </docks-command>
     `;
   }
 }

@@ -2,7 +2,7 @@ import {
   workspaceService,
   File,
   toastError,
-} from "@eclipse-lyra/core";
+} from "@eclipse-docks/core";
 import { GsLayerType, GsSourceType, type GsLayer } from "@kispace-io/gs-lib";
 import { GsMapEditor } from "@kispace-io/extension-map-editor/geo";
 import type { RoutingService } from "./routing-service";

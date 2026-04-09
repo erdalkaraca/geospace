@@ -1,7 +1,7 @@
 import {rtUtils, DEFAULT_GSMAP} from "@kispace-io/gs-lib";
 import {toBlobUri} from "./utils";
-import {html} from "@eclipse-lyra/core/externals/lit";
-import {EditorInput, editorRegistry, File, contributionRegistry, commandRegistry, registerAll, activePartSignal} from "@eclipse-lyra/core";
+import {html} from "@eclipse-docks/core/externals/lit";
+import {EditorInput, editorRegistry, File, contributionRegistry, commandRegistry, registerAll, activePartSignal} from "@eclipse-docks/core";
 import {GsMapEditor} from "./gs-map-editor";
 
 rtUtils.resolveUrl = async (path: string) => {

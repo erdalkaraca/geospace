@@ -1,4 +1,4 @@
-import { css, html, customElement, property, createRef, ref, Ref, unsafeHTML, when } from '@eclipse-lyra/core/externals/lit';
+import { css, html, customElement, property, createRef, ref, Ref, unsafeHTML, when } from '@eclipse-docks/core/externals/lit';
 import {
     DEFAULT_GSMAP,
     ensureUuidsRecursive,
@@ -21,7 +21,7 @@ import { DomainMapOperations } from "./domain-map-operations";
 import { SignalingMapOperations } from "./signaling-map-operations";
 import {
     CommandStack,
-    LyraPart,
+    DocksPart,
     EditorInput,
     File,
     contributionRegistry,
@@ -29,7 +29,7 @@ import {
     toastInfo,
     promptDialog,
     activePartSignal
-} from "@eclipse-lyra/core";
+} from "@eclipse-docks/core";
 import type { MapEditorToolbarExtensionContribution } from "./map-editor-toolbar-extension";
 import {
     GS_MAP_EDITOR_TOOLBAR_CONTEXT,
@@ -38,7 +38,7 @@ import {
 } from "./gs-map-editor-toolbar-events";
 
 @customElement('gs-map')
-export class GsMapEditor extends LyraPart {
+export class GsMapEditor extends DocksPart {
     @property({ attribute: false })
     public input?: EditorInput;
 
@@ -90,12 +90,12 @@ export class GsMapEditor extends LyraPart {
     }
 
     protected doBeforeUI() {
-        this.watch(mapChangedSignal, ({ part, event }: { part: LyraPart, event: MapEvents }) => {
+        this.watch(mapChangedSignal, ({ part, event }: { part: DocksPart, event: MapEvents }) => {
             this.onMapChanged({ part, event });
         });
     }
 
-    protected onMapChanged({ part, event }: { part: LyraPart, event: MapEvents }) {
+    protected onMapChanged({ part, event }: { part: DocksPart, event: MapEvents }) {
         if (part !== this) return;
         if (event === MapEvents.LAYER_ADDED ||
             event === MapEvents.LAYER_DELETED ||
@@ -135,10 +135,10 @@ export class GsMapEditor extends LyraPart {
         const hasExtensions = extensionContributions.length > 0;
 
         return html`
-            <lyra-command cmd="zoom_in" icon="magnifying-glass-plus" title="Zoom in"></lyra-command>
-            <lyra-command cmd="zoom_out" icon="magnifying-glass-minus" title="Zoom out"></lyra-command>
-            <lyra-command cmd="reset_view" icon="house" title="Reset view"></lyra-command>
-            <lyra-command cmd="refresh_map" icon="rotate" title="Refresh map"></lyra-command>
+            <docks-command cmd="zoom_in" icon="magnifying-glass-plus" title="Zoom in"></docks-command>
+            <docks-command cmd="zoom_out" icon="magnifying-glass-minus" title="Zoom out"></docks-command>
+            <docks-command cmd="reset_view" icon="house" title="Reset view"></docks-command>
+            <docks-command cmd="refresh_map" icon="rotate" title="Refresh map"></docks-command>
             <wa-divider orientation="vertical"></wa-divider>
             <wa-dropdown placement="bottom-start" @wa-select=${(event: any) => this.handleDrawingLayerSelection(event)}>
                 <wa-button slot="trigger" appearance="plain" size="small" with-caret title="Drawing layer">${drawingLayerLabel}</wa-button>
@@ -152,15 +152,15 @@ export class GsMapEditor extends LyraPart {
                 `)}
             </wa-dropdown>
             ${when(hasDrawableLayers, () => html`
-                <lyra-command icon="fg point" title="Draw Point" ?disabled=${!hasActiveLayer} .action=${() => this.handleDrawPoint()}></lyra-command>
-                <lyra-command icon="fg polyline-pt" title="Draw LineString" ?disabled=${!hasActiveLayer} .action=${() => this.handleDrawLine()}></lyra-command>
-                <lyra-command icon="fg polygon" title="Draw Polygon" ?disabled=${!hasActiveLayer} .action=${() => this.handleDrawPolygon()}></lyra-command>
-                <lyra-command icon="fg select-extent" title="Select Features" .action=${() => this.handleSelectFeatures()}></lyra-command>
-                <lyra-command icon="trash" title="Delete Selected Features" ?disabled=${!this.hasSelectedFeature} .action=${() => this.handleDeleteSelected()}></lyra-command>
+                <docks-command icon="fg point" title="Draw Point" ?disabled=${!hasActiveLayer} .action=${() => this.handleDrawPoint()}></docks-command>
+                <docks-command icon="fg polyline-pt" title="Draw LineString" ?disabled=${!hasActiveLayer} .action=${() => this.handleDrawLine()}></docks-command>
+                <docks-command icon="fg polygon" title="Draw Polygon" ?disabled=${!hasActiveLayer} .action=${() => this.handleDrawPolygon()}></docks-command>
+                <docks-command icon="fg select-extent" title="Select Features" .action=${() => this.handleSelectFeatures()}></docks-command>
+                <docks-command icon="trash" title="Delete Selected Features" ?disabled=${!this.hasSelectedFeature} .action=${() => this.handleDeleteSelected()}></docks-command>
                 <wa-divider orientation="vertical"></wa-divider>
             `)}
             ${when(hasExtensions, () => html`${extensionNodes}<wa-divider orientation="vertical"></wa-divider>`)}
-            <lyra-command icon="ellipsis-vertical" title="Misc tools" slot="end" dropdown="mapeditor.toolbar.misc" placement="bottom-end"></lyra-command>
+            <docks-command icon="ellipsis-vertical" title="Misc tools" slot="end" dropdown="mapeditor.toolbar.misc" placement="bottom-end"></docks-command>
         `;
     }
 

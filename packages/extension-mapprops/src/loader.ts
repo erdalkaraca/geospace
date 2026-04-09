@@ -1,4 +1,4 @@
-import { html } from "@eclipse-lyra/core/externals/lit";
+import { html } from "@eclipse-docks/core/externals/lit";
 import {
     contributionRegistry,
     SIDEBAR_MAIN_BOTTOM,
@@ -7,7 +7,7 @@ import {
     activeSelectionSignal,
     createLogger,
     File,
-} from "@eclipse-lyra/core";
+} from "@eclipse-docks/core";
 import { getSourceTypeFromFile, isSupportedSpatialFile } from "@kispace-io/extension-map-editor/geo";
 import "./gs-map-props";
 

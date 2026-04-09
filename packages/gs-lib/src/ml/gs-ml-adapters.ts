@@ -1,5 +1,5 @@
 import { Map, Popup, IControl, LngLatLike } from 'maplibre-gl';
-import { render as litRender } from "@eclipse-lyra/core/externals/lit";
+import { render as litRender } from "@eclipse-docks/core/externals/lit";
 
 /**
  * MapLibre Control adapter for user modules

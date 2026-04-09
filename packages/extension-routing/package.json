@@ -17,7 +17,7 @@
     "pbf-to-routx": "./src/bin/pbf-to-routx"
   },
   "dependencies": {
-    "@eclipse-lyra/core": "*",
+    "@eclipse-docks/core": "*",
     "@kispace-io/extension-map-editor": "^0.0.0",
     "@kispace-io/gs-lib": "*"
   },

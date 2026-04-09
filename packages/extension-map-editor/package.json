@@ -11,7 +11,7 @@
     "./iframe-messaging": "./src/iframe-messaging.ts"
   },
   "dependencies": {
-    "@eclipse-lyra/core": "*",
+    "@eclipse-docks/core": "*",
     "@kispace-io/gs-lib": "*",
     "dotenv": "^17.2.4",
     "jsonata": "^2.1.0"

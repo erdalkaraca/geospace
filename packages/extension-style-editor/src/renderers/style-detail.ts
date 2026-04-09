@@ -1,4 +1,4 @@
-import { html } from "@eclipse-lyra/core/externals/lit";
+import { html } from "@eclipse-docks/core/externals/lit";
 import { GsStyle, GsGeometryType } from "@kispace-io/gs-lib";
 import { shouldShowProperty } from "../utils/geometry-utils";
 

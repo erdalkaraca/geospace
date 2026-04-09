@@ -1,4 +1,4 @@
-import { registerIconLibrary } from "@eclipse-lyra/core/externals/webawesome";
+import { registerIconLibrary } from "@eclipse-docks/core/externals/webawesome";
 
 registerIconLibrary('fg', {
     resolver: (name, _family, _variant) => {

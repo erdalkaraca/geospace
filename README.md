@@ -3,11 +3,11 @@
 [![Browser Support](https://img.shields.io/badge/Chrome%20%7C%20Opera-Supported-brightgreen)](#browser-compatibility)
 [![PWA Ready](https://img.shields.io/badge/PWA-Ready-purple)](#key-features)
 [![No Installation](https://img.shields.io/badge/Installation-None%20Required-orange)](#quick-start)
-[![Built on Eclipse Lyra](https://img.shields.io/badge/Built%20on-Eclipse%20Lyra-blue)](https://projects.eclipse.org/proposals/eclipse-lyra)
+[![Built on Eclipse Docks](https://img.shields.io/badge/Built%20on-Eclipse%20Docks-blue)](https://projects.eclipse.org/proposals/eclipse-docks)
 
 **The Interactive Mapping IDE in Your Browser**
 
-geo!space is a powerful browser-based mapping IDE built as an [Eclipse Lyra](https://projects.eclipse.org/proposals/eclipse-lyra) app. It provides professional mapping capabilities entirely in your browser: create interactive maps, work with geospatial data, and transform maps into cross-platform Progressive Web Apps – all without installing any native software.
+geo!space is a powerful browser-based mapping IDE built as an [Eclipse Docks](https://projects.eclipse.org/proposals/eclipse-docks) app. It provides professional mapping capabilities entirely in your browser: create interactive maps, work with geospatial data, and transform maps into cross-platform Progressive Web Apps – all without installing any native software.
 
 ## Table of Contents
 
@@ -73,7 +73,7 @@ geo!space is a powerful browser-based mapping IDE built as an [Eclipse Lyra](htt
 
 ## Development
 
-geo!space runs as an Eclipse Lyra app and provides a powerful development environment for creating custom map controls, overlays, and workflows.
+geo!space runs as an Eclipse Docks app and provides a powerful development environment for creating custom map controls, overlays, and workflows.
 
 ### **Run locally (for developers)**
 
@@ -85,12 +85,12 @@ To work on geo!space itself:
 2. **Start the dev server**
    - From the root:
      - `npm run dev`
-   - This runs the Lyra-based app from the `@kispace-io/app` workspace (served by Vite) and mounts it into the `#app-root` element in `index.html`.
+   - This runs the Docks-based app from the `@kispace-io/app` workspace (served by Vite) and mounts it into the `#app-root` element in `index.html`.
 3. **Build and preview**
    - Build: `npm run build`
    - Preview: `npm run preview`
 
-The main app definition lives in `packages/app/src/main.ts`, where the Eclipse Lyra `AppDefinition` is registered along with all geo!space-specific extensions.
+The main app definition lives in `packages/app/src/main.ts`, where the Eclipse Docks `AppDefinition` is registered along with all geo!space-specific extensions.
 
 ### **Custom Modules**
 
@@ -191,20 +191,20 @@ A: Yes! Create custom controls using JavaScript modules with Lit and WebAwesome 
 
 ## Technical Architecture
 
-geo!space is implemented as an [Eclipse Lyra](https://projects.eclipse.org/proposals/eclipse-lyra) app that uses Lyra's core IDE infrastructure and extension system.
+geo!space is implemented as an [Eclipse Docks](https://projects.eclipse.org/proposals/eclipse-docks) app that uses Docks' core IDE infrastructure and extension system.
 
-At startup, the Lyra `AppDefinition` in `packages/app/src/main.ts` is registered and auto-started into the `#app-root` container. The built-in "Welcome" command opens this `README.md` inside Lyra's editor system as the in-app welcome page.
+At startup, the Docks `AppDefinition` in `packages/app/src/main.ts` is registered and auto-started into the `#app-root` container. The built-in "Welcome" command opens this `README.md` inside Docks' editor system as the in-app welcome page.
 
 **geo!space-Specific Stack:**
-- **Eclipse Lyra Core**: Application shell, workspace, command palette, editor registry, AI system, and utilities (`@eclipse-lyra/core` and Lyra extensions)
-- **Mapping Extensions**: geo!space-specific Lyra extensions such as:
+- **Eclipse Docks Core**: Application shell, workspace, command palette, editor registry, AI system, and utilities (`@eclipse-docks/core` and Docks extensions)
+- **Mapping Extensions**: geo!space-specific Docks extensions such as:
   - `@kispace-io/extension-map-editor`
   - `@kispace-io/extension-mapbuilder`
   - `@kispace-io/extension-mapprops`
   - `@kispace-io/extension-style-editor`
   - `@kispace-io/extension-overpass`
   - `@kispace-io/extension-gtfs`
-- **IDE Extensions**: Additional Lyra extensions for markdown editing, Monaco code editing, media viewing, settings, memory usage, AI assistance, data viewing, and more
+- **IDE Extensions**: Additional Docks extensions for markdown editing, Monaco code editing, media viewing, settings, memory usage, AI assistance, data viewing, and more
 - **OpenLayers**: Professional mapping library used for rendering and interaction
 - **Custom Runtime (`gs-lib`)**: Map-to-OpenLayers conversion system and runtime utilities
 - **Style Loader**: Dynamic style loading for geospatial data
@@ -213,10 +213,10 @@ At startup, the Lyra `AppDefinition` in `packages/app/src/main.ts` is registered
 
 ```mermaid
 flowchart TD
-  browserUser[BrowserUser] --> geospaceApp["geo!space (Lyra App)"]
-  geospaceApp --> lyraCore["EclipseLyraCore"]
+  browserUser[BrowserUser] --> geospaceApp["geo!space (Docks App)"]
+  geospaceApp --> docksCore["EclipseDocksCore"]
   geospaceApp --> mappingExtensions["KiSpaceMappingExtensions"]
-  geospaceApp --> lyraExtensions["LyraIDEExtensions"]
+  geospaceApp --> docksExtensions["DocksIDEExtensions"]
   mappingExtensions --> gsLib["gs-lib Runtime"]
   gsLib --> openLayers["OpenLayers"]
 ```

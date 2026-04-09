@@ -1,16 +1,16 @@
-import {css, html, customElement, state, when} from '@eclipse-lyra/core/externals/lit';
+import {css, html, customElement, state, when} from '@eclipse-docks/core/externals/lit';
 import {GsMapEditor, mapChangedSignal, getOriginalUri} from "@kispace-io/extension-map-editor/geo";
 import {GsLayer, GsLayerType, GsScriptedVectorLayer, GsControl, GsOverlay, findLayerByUuid, findLayerIndexByUuid} from "@kispace-io/gs-lib";
 import {
-    LyraPart,
+    DocksPart,
     commandRegistry,
     confirmDialog,
     activeEditorSignal,
     icon,
-} from "@eclipse-lyra/core";
+} from "@eclipse-docks/core";
 
 @customElement('gs-map-props')
-export class GsMapProps extends LyraPart {
+export class GsMapProps extends DocksPart {
     private mapEditor?: GsMapEditor;
 
     @state()
@@ -26,7 +26,7 @@ export class GsMapProps extends LyraPart {
     private dropPosition: 'before' | 'after' = 'before';
 
     protected doBeforeUI() {
-        this.watch(activeEditorSignal, (part: LyraPart) => {
+        this.watch(activeEditorSignal, (part: DocksPart) => {
             this.onPartChanged(part);
         });
         this.watch(mapChangedSignal, ({part}: any) => {
@@ -34,7 +34,7 @@ export class GsMapProps extends LyraPart {
         });
     }
 
-    protected onPartChanged(part: LyraPart) {
+    protected onPartChanged(part: DocksPart) {
         if (part == this || part == this.mapEditor) {
             return
         }
@@ -222,26 +222,26 @@ export class GsMapProps extends LyraPart {
         const canMoveDown = selectedIndex >= 0 && !!gsMap && selectedIndex < gsMap.layers.length - 1;
 
         return html`
-            <lyra-command ?disabled=${!hasSelection}
+            <docks-command ?disabled=${!hasSelection}
                       title="Rename selected layer"
                       icon="pen"
                       .action=${() => this.renameLayer()}>
-            </lyra-command>
-            <lyra-command ?disabled=${!hasSelection}
+            </docks-command>
+            <docks-command ?disabled=${!hasSelection}
                       title="Delete selected layer"
                       icon="trash"
                       .action=${() => this.deleteLayer()}>
-            </lyra-command>
-            <lyra-command ?disabled=${!canMoveUp}
+            </docks-command>
+            <docks-command ?disabled=${!canMoveUp}
                       title="Move selected layer up"
                       icon="arrow-up"
                       .action=${() => this.selectedLayerUuid && this.moveLayerUp(this.selectedLayerUuid)}>
-            </lyra-command>
-            <lyra-command ?disabled=${!canMoveDown}
+            </docks-command>
+            <docks-command ?disabled=${!canMoveDown}
                       title="Move selected layer down"
                       icon="arrow-down"
                       .action=${() => this.selectedLayerUuid && this.moveLayerDown(this.selectedLayerUuid)}>
-            </lyra-command>
+            </docks-command>
         `;
     }
 
@@ -255,32 +255,32 @@ export class GsMapProps extends LyraPart {
         const canMoveDown = selectedIndex >= 0 && !!gsMap && selectedIndex < gsMap.layers.length - 1;
 
         return html`
-            <lyra-command ?disabled=${!canMoveUp}
+            <docks-command ?disabled=${!canMoveUp}
                       icon="arrow-up"
                       .action=${() => this.selectedLayerUuid && this.moveLayerUp(this.selectedLayerUuid)}>
                 Move Up
-            </lyra-command>
-            <lyra-command ?disabled=${!canMoveDown}
+            </docks-command>
+            <docks-command ?disabled=${!canMoveDown}
                       icon="arrow-down"
                       .action=${() => this.selectedLayerUuid && this.moveLayerDown(this.selectedLayerUuid)}>
                 Move Down
-            </lyra-command>
-            <lyra-command ?disabled=${!hasSelection}
+            </docks-command>
+            <docks-command ?disabled=${!hasSelection}
                       icon="pen"
                       .action=${() => this.renameLayer()}>
                 Rename
-            </lyra-command>
-            <lyra-command ?disabled=${!hasSelection}
+            </docks-command>
+            <docks-command ?disabled=${!hasSelection}
                       icon="trash"
                       .action=${() => this.deleteLayer()}>
                 Delete
-            </lyra-command>
+            </docks-command>
         `;
     }
 
     protected renderContent() {
         return when(!this.mapEditor, () => html`
-                    <lyra-no-content message="Select a map."></lyra-no-content>`,
+                    <docks-no-content message="Select a map."></docks-no-content>`,
             () => html`
                 <wa-tree>
                     <wa-tree-item expanded>
@@ -295,11 +295,11 @@ export class GsMapProps extends LyraPart {
                                           class="${this.selectedLayerUuid === layer.uuid ? 'selected' : ''} ${this.draggedLayerUuid === layer.uuid ? 'dragging' : ''} ${this.dropTargetLayerUuid === layer.uuid ? 'drop-target' : ''} ${this.dropTargetLayerUuid === layer.uuid && this.dropPosition === 'before' ? 'drop-before' : ''} ${this.dropTargetLayerUuid === layer.uuid && this.dropPosition === 'after' ? 'drop-after' : ''}">
                                 <div class="layer-item">
                                     <div class="layer-main">
-                                        <lyra-command size="small"
+                                        <docks-command size="small"
                                                   icon="${layer.visible !== false ? "eye" : "eye-slash"}"
                                                   title="${layer.visible !== false ? 'Hide layer' : 'Show layer'}"
                                                   .action=${() => layer.uuid && this.toggleVisible(layer.uuid)}>
-                                        </lyra-command>
+                                        </docks-command>
                                         <div class="layer-name">
                                             <span>${this.layerLabel(layer, i)}${i == 0 ? html`
                                                 <small>(basemap)</small>` : ""}
@@ -317,7 +317,7 @@ export class GsMapProps extends LyraPart {
                         ${this.mapEditor?.getGsMap()?.controls.map((control: GsControl) => html`
                             <wa-tree-item>
                                 <span>${getOriginalUri(control.src)}</span>
-                                <lyra-command size="small"
+                                <docks-command size="small"
                                           icon="trash"
                                           title="Delete control"
                                           .action=${() => {
@@ -325,7 +325,7 @@ export class GsMapProps extends LyraPart {
                                                   this.confirmAction(`Delete control "${getOriginalUri(control.src)}"?`, () => this.withRefresh(() => this.mapEditor?.mapOperations?.removeControl(control.uuid!)))
                                               }
                                           }}>
-                                </lyra-command>
+                                </docks-command>
                             </wa-tree-item>
                         `)}
                     </wa-tree-item>
@@ -334,7 +334,7 @@ export class GsMapProps extends LyraPart {
                         ${this.mapEditor?.getGsMap()?.overlays.map((overlay: GsOverlay) => html`
                             <wa-tree-item>
                                 <span>${getOriginalUri(overlay.src)}</span>
-                                <lyra-command size="small"
+                                <docks-command size="small"
                                           icon="trash"
                                           title="Delete overlay"
                                           .action=${() => {
@@ -342,7 +342,7 @@ export class GsMapProps extends LyraPart {
                                                   this.confirmAction(`Delete overlay "${getOriginalUri(overlay.src)}"?`, () => this.withRefresh(() => this.mapEditor?.mapOperations?.removeOverlay(overlay.uuid!)))
                                               }
                                           }}>
-                                </lyra-command>
+                                </docks-command>
                             </wa-tree-item>
                         `)}
                     </wa-tree-item>
@@ -364,7 +364,7 @@ export class GsMapProps extends LyraPart {
         :host {
             display: block;
             min-height: 0;
-            /* Align with lyra-toolbar: tree lyra-commands are not inside lyra-toolbar. */
+            /* Align with docks-toolbar: tree docks-commands are not inside docks-toolbar. */
             --wa-form-control-padding-inline: var(--wa-space-2xs);
         }
 

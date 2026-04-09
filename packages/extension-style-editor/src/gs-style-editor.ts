@@ -4,7 +4,7 @@ import {
     customElement,
     property,
     state,
-} from "@eclipse-lyra/core/externals/lit";
+} from "@eclipse-docks/core/externals/lit";
 import { GsMap, GsStyleRule, GsStylesMap } from "@kispace-io/gs-lib";
 
 import { styleEditorStyles } from "./style-editor.styles";

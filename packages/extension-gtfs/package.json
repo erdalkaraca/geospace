@@ -9,7 +9,7 @@
     "./loader": "./src/loader.ts"
   },
   "dependencies": {
-    "@eclipse-lyra/core": "*"
+    "@eclipse-docks/core": "*"
   },
   "devDependencies": {
     "typescript": "^6.0.0"

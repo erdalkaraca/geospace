@@ -12,28 +12,28 @@ import {
     editorRegistry,
     registerAll,
     type IconContribution
-} from "@eclipse-lyra/core";
+} from "@eclipse-docks/core";
 
-import { fetchReleases } from "@eclipse-lyra/extension-github-service";
+import { fetchReleases } from "@eclipse-docks/extension-github-service";
 
-import '@eclipse-lyra/extension-md-editor';
-import '@eclipse-lyra/extension-media-viewer';
-import '@eclipse-lyra/extension-memory-usage';
-import '@eclipse-lyra/extension-monaco-editor';
-import '@eclipse-lyra/extension-settings-tree';
-import '@eclipse-lyra/extension-utils';
-import '@eclipse-lyra/extension-catalog';
-import '@eclipse-lyra/extension-ai-system';
-import '@eclipse-lyra/extension-command-palette';
-import '@eclipse-lyra/extension-github-service';
-import '@eclipse-lyra/extension-howto-system';
-import '@eclipse-lyra/extension-in-browser-ml';
-import '@eclipse-lyra/extension-notebook';
-import '@eclipse-lyra/extension-python-runtime';
-import '@eclipse-lyra/extension-dataviewer';
-import '@eclipse-lyra/extension-sqleditor';
-import '@eclipse-lyra/extension-duckdb';
-import '@eclipse-lyra/extension-pglite';
+import '@eclipse-docks/extension-md-editor';
+import '@eclipse-docks/extension-media-viewer';
+import '@eclipse-docks/extension-memory-usage';
+import '@eclipse-docks/extension-monaco-editor';
+import '@eclipse-docks/extension-settings-tree';
+import '@eclipse-docks/extension-utils';
+import '@eclipse-docks/extension-catalog';
+import '@eclipse-docks/extension-ai-system';
+import '@eclipse-docks/extension-command-palette';
+import '@eclipse-docks/extension-github-service';
+import '@eclipse-docks/extension-howto-system';
+import '@eclipse-docks/extension-in-browser-ml';
+import '@eclipse-docks/extension-notebook';
+import '@eclipse-docks/extension-python-runtime';
+import '@eclipse-docks/extension-dataviewer';
+import '@eclipse-docks/extension-sqleditor';
+import '@eclipse-docks/extension-duckdb';
+import '@eclipse-docks/extension-pglite';
 
 
 import '@kispace-io/extension-gtfs';
@@ -44,10 +44,10 @@ import '@kispace-io/extension-style-editor';
 import '@kispace-io/extension-mapbuilder';
 import '@kispace-io/extension-routing';
 
-import type { PromptEnhancer, PromptEnhancerContribution } from "@eclipse-lyra/extension-ai-system/api";
-import { CID_PROMPT_ENHANCERS } from "@eclipse-lyra/extension-ai-system/api";
+import type { PromptEnhancer, PromptEnhancerContribution } from "@eclipse-docks/extension-ai-system/api";
+import { CID_PROMPT_ENHANCERS } from "@eclipse-docks/extension-ai-system/api";
 
-import { registerCatalog } from "@eclipse-lyra/extension-catalog/api";
+import { registerCatalog } from "@eclipse-docks/extension-catalog/api";
 import README from "../../../README.md?raw";
 import GEOSPACE_CATALOG from "./geospace-catalog.json";
 import GEOSPACE_SYSPROMPT from "./geospace-sysprompt.txt?raw";
@@ -73,19 +73,19 @@ const geospaceApp: AppDefinition = {
         '@kispace-io/extension-mapbuilder',
         '@kispace-io/extension-routing',
 
-        '@eclipse-lyra/extension-catalog',
-        '@eclipse-lyra/extension-utils',
-        '@eclipse-lyra/extension-command-palette',
-        '@eclipse-lyra/extension-md-editor',
-        '@eclipse-lyra/extension-monaco-editor',
-        '@eclipse-lyra/extension-media-viewer',
-        '@eclipse-lyra/extension-settings-tree',
-        '@eclipse-lyra/extension-memory-usage',
-        '@eclipse-lyra/extension-ai-system',
-        '@eclipse-lyra/extension-dataviewer',
-        '@eclipse-lyra/extension-sqleditor',
-        '@eclipse-lyra/extension-github-service',
-        '@eclipse-lyra/extension-notebook'
+        '@eclipse-docks/extension-catalog',
+        '@eclipse-docks/extension-utils',
+        '@eclipse-docks/extension-command-palette',
+        '@eclipse-docks/extension-md-editor',
+        '@eclipse-docks/extension-monaco-editor',
+        '@eclipse-docks/extension-media-viewer',
+        '@eclipse-docks/extension-settings-tree',
+        '@eclipse-docks/extension-memory-usage',
+        '@eclipse-docks/extension-ai-system',
+        '@eclipse-docks/extension-dataviewer',
+        '@eclipse-docks/extension-sqleditor',
+        '@eclipse-docks/extension-github-service',
+        '@eclipse-docks/extension-notebook'
     ],
     contributions: {
         ui: [

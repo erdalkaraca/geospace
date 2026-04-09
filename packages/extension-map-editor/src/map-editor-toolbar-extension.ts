@@ -1,4 +1,4 @@
-import type { TemplateResult } from "@eclipse-lyra/core/externals/lit";
+import type { TemplateResult } from "@eclipse-docks/core/externals/lit";
 import type { GsMapEditor } from "./gs-map-editor";
 
 export type MapEditorToolbarExtensionComponent =

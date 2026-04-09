@@ -1,4 +1,4 @@
-import { logger, appSettings, taskService } from "@eclipse-lyra/core";
+import { logger, appSettings, taskService } from "@eclipse-docks/core";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore – Vite's ?worker import has no TS types
 import RoutingWorker from "./routing-worker?worker";

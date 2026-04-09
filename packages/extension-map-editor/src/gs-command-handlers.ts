@@ -28,7 +28,7 @@ import {
     toastInfo,
     toastError,
     taskService
-} from "@eclipse-lyra/core";
+} from "@eclipse-docks/core";
 
 const logger = createLogger('GsCommandHandlers');
 

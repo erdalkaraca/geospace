@@ -11,8 +11,8 @@ import {
   taskService,
   File,
   FileContentType,
-} from "@eclipse-lyra/core";
-import { html } from "@eclipse-lyra/core/externals/lit";
+} from "@eclipse-docks/core";
+import { html } from "@eclipse-docks/core/externals/lit";
 import { GsMapEditor } from "@kispace-io/extension-map-editor/geo";
 import routingService from "./routing-service";
 import "./routing-toolbar";

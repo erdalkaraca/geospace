@@ -1,5 +1,5 @@
-import { subscribe, toastError, toastInfo } from "@eclipse-lyra/core";
-import { LitElement, css, html } from "@eclipse-lyra/core/externals/lit";
+import { subscribe, toastError, toastInfo } from "@eclipse-docks/core";
+import { LitElement, css, html } from "@eclipse-docks/core/externals/lit";
 import routingService from "./routing-service";
 
 export class RoutingGraphSelector extends LitElement {
