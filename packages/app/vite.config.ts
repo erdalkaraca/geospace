@@ -6,7 +6,7 @@ import crossOriginIsolation from 'vite-plugin-cross-origin-isolation';
 import fs from 'fs';
 import { resolveDepVersionsPlugin } from '@eclipse-docks/core/vite-plugin-resolve-deps';
 import { localAliasesPlugin } from '@eclipse-docks/core/vite-plugin-local-aliases';
-import { appSplashPlugin } from '../../../appspace/packages/core/src/vite-plugin-app-splash';
+import { appSplashPlugin } from '@eclipse-docks/core/vite-plugin-app-splash';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
