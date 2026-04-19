@@ -149,7 +149,7 @@ export class GsMapProps extends DocksPart {
 
     private isCommandEvent(event: Event): boolean {
         return event.composedPath().some(
-            (el) => el instanceof HTMLElement && el.tagName === 'LYRA-COMMAND'
+            (el) => el instanceof HTMLElement && el.tagName === 'DOCKS-COMMAND'
         );
     }
 
