@@ -44,9 +44,17 @@ jobs:
           VERSION=${GITHUB_REF_NAME}
           npm version --no-commit-hooks --no-git-tag-version "$VERSION" --workspace=@kispace-io/app
           npm version --no-commit-hooks --no-git-tag-version "$VERSION" --workspace=@kispace-io/gs-lib
+          npm version --no-commit-hooks --no-git-tag-version "$VERSION" --workspace=@kispace-io/gs-lib-ol
+          npm version --no-commit-hooks --no-git-tag-version "$VERSION" --workspace=@kispace-io/gs-lib-ml
 
       - name: Build gs-lib map builder package
         run: npm run build --workspace=@kispace-io/gs-lib
+
+      - name: Build gs-lib-ol package
+        run: npm run build --workspace=@kispace-io/gs-lib-ol
+
+      - name: Build gs-lib-ml package
+        run: npm run build --workspace=@kispace-io/gs-lib-ml
 
       - name: Build geo!space app
         run: npm run build
@@ -56,6 +64,12 @@ jobs:
 
       - name: Publish gs-lib package to npm
         run: npm publish --workspace=@kispace-io/gs-lib --access public
+
+      - name: Publish gs-lib-ol package to npm
+        run: npm publish --workspace=@kispace-io/gs-lib-ol --access public
+
+      - name: Publish gs-lib-ml package to npm
+        run: npm publish --workspace=@kispace-io/gs-lib-ml --access public
 
       - name: Add CNAME file
         run: echo "geo.kispace.de" > ./dist/CNAME
