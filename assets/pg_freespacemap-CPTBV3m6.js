@@ -1,0 +1,1 @@
+import{l as e}from"./chunk-QY3QWFKW--Q_mGPOy.js";e();var t={name:`pg_freespacemap`,setup:async(e,t)=>({bundlePath:new URL(`/assets/pg_freespacemap.tar-B2h9cDsj.gz`,``+import.meta.url)})};export{t as pg_freespacemap};

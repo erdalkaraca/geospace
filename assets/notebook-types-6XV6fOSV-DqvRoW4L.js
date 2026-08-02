@@ -1,1 +1,0 @@
-function e(e){return!!(e&&typeof e.executeCell==`function`&&typeof e.focusedCellIndex==`number`)}export{e as t};

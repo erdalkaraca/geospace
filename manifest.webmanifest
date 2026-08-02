@@ -1,0 +1,1 @@
+{"name":"geo!space","short_name":"geo!space","description":"An IDE for working with geospatial data.","start_url":"/","display":"standalone","background_color":"#1a1a1a","theme_color":"#1a1a1a","lang":"en","scope":"/","icons":[{"src":"logo.svg","sizes":"any","type":"image/svg+xml","purpose":"any"},{"src":"favicon.svg","sizes":"any","type":"image/svg+xml","purpose":"monochrome"}]}

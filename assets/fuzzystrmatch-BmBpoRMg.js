@@ -1,0 +1,1 @@
+import{l as e}from"./chunk-QY3QWFKW--Q_mGPOy.js";e();var t={name:`fuzzystrmatch`,setup:async(e,t)=>({bundlePath:new URL(`/assets/fuzzystrmatch.tar-CjN4BV8h.gz`,``+import.meta.url)})};export{t as fuzzystrmatch};

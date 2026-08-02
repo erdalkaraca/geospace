@@ -1,0 +1,1 @@
+var e=`PWA`,t=`Service-Worker-Update und Installationshinweis in der mittleren Haupt-Symbolleiste, wenn der Browser das unterstützt.`,n={EXT_PWA_NAME:`PWA`,EXT_PWA_DESC:t};export{t as EXT_PWA_DESC,e as EXT_PWA_NAME,n as default};

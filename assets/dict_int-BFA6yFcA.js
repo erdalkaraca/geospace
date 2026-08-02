@@ -1,0 +1,1 @@
+import{l as e}from"./chunk-QY3QWFKW--Q_mGPOy.js";e();var t={name:`dict_int`,setup:async(e,t)=>({bundlePath:new URL(`/assets/dict_int.tar-vMZzoYEK.gz`,``+import.meta.url)})};export{t as dict_int};
