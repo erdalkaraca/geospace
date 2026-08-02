@@ -1,8 +1,7 @@
-import {GsSourceType, KEY_NAME, scriptedRuntimeRegistry} from "@kispace-io/gs-lib";
-import {BaseLayer, Map, resolveScriptLang} from "@kispace-io/gs-lib/ol";
+import { File, workspaceService } from "@eclipse-docks/core";
+import { GsSourceType, resolveScriptLang, scriptedRuntimeRegistry } from "@kispace-io/gs-lib";
+import { parse } from "dotenv";
 import jsonata from "jsonata";
-import {parse} from "dotenv";
-import {File, workspaceService} from "@eclipse-docks/core";
 import { resolveWorkspacePath as resolveWorkspacePathImpl, WorkspaceModuleResolver } from "./workspace-module-resolver";
 
 export { resolveWorkspacePath } from "./workspace-module-resolver";
@@ -34,22 +33,6 @@ export const getSourceTypeFromFile = (file: File): GsSourceType | null => {
 export const isSupportedSpatialFile = (file: File): boolean => {
     return getSourceTypeFromFile(file) !== null;
 };
-
-export const findOlLayer = (name: string, olMap: Map, notFound?: Function) => {
-    const layers = olMap.getLayers()
-    let markersLayer: BaseLayer | undefined;
-    for (let i = 0; i < layers.getLength(); i++) {
-        const layer = layers.item(i)
-        if (layer.get(KEY_NAME) === name) {
-            markersLayer = layer as BaseLayer
-            break
-        }
-    }
-    if (!markersLayer && notFound) {
-        markersLayer = notFound()
-    }
-    return markersLayer
-}
 
 export const isAbsoluteResource = (url: string) => {
     return url.startsWith("blob:") || url.startsWith("http:") || url.startsWith("https:") || url.startsWith("data:");

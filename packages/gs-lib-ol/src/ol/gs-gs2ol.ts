@@ -27,9 +27,10 @@ import {
     KEY_SRC,
     KEY_STATE,
     KEY_UUID,
-    KEY_URL
-} from "../gs-model";
-import { scriptedRuntimeRegistry, type ScriptedVars } from "../scripted-runtime-registry";
+    KEY_URL,
+    scriptedRuntimeRegistry,
+    type ScriptedVars
+} from "@kispace-io/gs-lib";
 import {Feature, Map, Overlay, View} from "ol";
 import {MapOptions} from "ol/Map";
 import BaseObject from "ol/Object";
@@ -51,11 +52,10 @@ import {apply as applyMapboxStyle} from "ol-mapbox-style";
 import LayerGroup from "ol/layer/Group";
 import {Control} from "ol/control";
 import * as ol from "./gs-olns"
-import {lit} from "../gs-litns";
+import {lit, rtUtils} from "@kispace-io/gs-lib";
 import {v4 as uuidv4} from '@eclipse-docks/core/externals/third-party'
 import {subscribe, publish, unsubscribe} from '@eclipse-docks/core/core/events'
 import {GsControlAdapter, GsOverlayAdapter} from "./gs-ol-adapters";
-import {rtUtils} from "../index";
 import Layer from "ol/layer/Layer";
 
 const withState = <T extends BaseObject>(state: GsState, olObject: T): T => {

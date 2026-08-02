@@ -1,17 +1,11 @@
 {
-  "name": "@kispace-io/gs-lib",
+  "name": "@kispace-io/gs-lib-ml",
   "version": "0.0.0",
+  "private": true,
   "type": "module",
   "license": "EPL-2.0",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/erdalkaraca/geospace.git"
-  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "bin": {
-    "map-builder": "./bin/map-builder.js"
-  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -21,9 +15,6 @@
   "files": [
     "dist",
     "src",
-    "lib",
-    "public",
-    "bin",
     "tsconfig.json",
     "README.md"
   ],
@@ -31,13 +22,15 @@
     "build": "vite build",
     "type-check": "tsc --noEmit"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@kispace-io/gs-lib": "^0.0.0",
+    "maplibre-gl": "^4.7.1",
+    "proj4": "^2.15.0",
+    "uuid": "^11.1.0"
+  },
   "peerDependencies": {
     "@eclipse-docks/core": "*",
     "esbuild": "^0.27.0"
-  },
-  "publishConfig": {
-    "access": "public"
   },
   "devDependencies": {
     "@types/node": "^24.9.2",

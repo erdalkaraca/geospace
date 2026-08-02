@@ -1,11 +1,8 @@
 // OpenLayers renderer exports
-// Import from '@kispace-io/gs-lib/ol' for OpenLayers-specific functionality
+// Import from '@kispace-io/gs-lib-ol' for OpenLayers-specific functionality
 
-// Core model (needed for types)
-export * from "../gs-model"
-
-// Renderer interface
-export * from "../map-renderer"
+// Core model and renderer interface
+export * from "@kispace-io/gs-lib"
 
 // OpenLayers-specific exports
 export * from "./gs-gs2ol"

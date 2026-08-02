@@ -2,16 +2,7 @@
  * MapLibre GL map renderer implementation
  */
 
-import { MapOperations, MapRenderer, MapSyncEvent, ScreenshotResult } from '../map-renderer';
-import {
-    GsMap,
-    GsSourceType,
-    GsLayerType,
-    GsFeature,
-    GsGeometry,
-    KEY_UUID,
-    ensureUuid
-} from '../gs-model';
+import { MapOperations, MapRenderer, MapSyncEvent, ScreenshotResult, GsMap, GsSourceType, GsLayerType, GsFeature, GsGeometry, ensureUuid } from '@kispace-io/gs-lib';
 import { mlLib } from './gs-ml-lib';
 import {
     toGeoJsonFeatureCollection,
@@ -186,6 +177,12 @@ export class MapLibreMapRenderer implements MapRenderer {
         const source = options?.sourceProjection ?? EPSG_3857;
         const target = options?.targetProjection ?? EPSG_4326;
         return transformCoords(coord, source, target);
+    }
+
+    async transformExtentToLatLon(extent: number[]): Promise<number[]> {
+        // MapLibre internally uses WGS84 coordinates for map bounds,
+        // so extents are already in [west, south, east, north] order.
+        return extent;
     }
 }
 

@@ -1,11 +1,8 @@
 // MapLibre renderer exports
-// Import from '@kispace-io/gs-lib/ml' for MapLibre-specific functionality
+// Import from '@kispace-io/gs-lib-ml' for MapLibre-specific functionality
 
-// Core model (needed for types)
-export * from "../gs-model"
-
-// Renderer interface
-export * from "../map-renderer"
+// Core model and renderer interface
+export * from "@kispace-io/gs-lib"
 
 // MapLibre-specific exports
 export * from "./gs-ml-lib"

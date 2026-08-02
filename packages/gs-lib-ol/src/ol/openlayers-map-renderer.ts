@@ -1,15 +1,4 @@
-import { MapOperations, MapRenderer, MapSyncEvent, ScreenshotResult } from "../map-renderer";
-import {
-    GsMap,
-    GsSourceType,
-    KEY_NAME,
-    KEY_STATE,
-    KEY_UUID,
-    GsFeature,
-    GsGeometry,
-    ensureUuid,
-    getStyleForFeature
-} from "../gs-model";
+import { MapOperations, MapRenderer, MapSyncEvent, ScreenshotResult, GsMap, GsSourceType, KEY_NAME, KEY_STATE, KEY_UUID, GsFeature, GsGeometry, ensureUuid, getStyleForFeature } from "@kispace-io/gs-lib";
 import { toOlLayer, cleanupEventSubscriptions, toOlStyle } from "./gs-gs2ol";
 import { toGsFeature } from "./gs-ol2gs";
 import { olLib } from "./gs-ol-lib";
@@ -362,6 +351,19 @@ export class OpenLayersMapRenderer implements MapRenderer {
 
         const result = proj.transform(coord, source, target);
         return result as [number, number];
+    }
+
+    async transformExtentToLatLon(extent: number[]): Promise<number[]> {
+        if (!this.olMap) {
+            throw new Error("Map not available for extent transformation");
+        }
+
+        const view = this.olMap.getView();
+        const mapProj = view.getProjection()?.getCode() || "EPSG:3857";
+        const [xMin, yMin, xMax, yMax] = extent;
+        const [minLon, minLat] = proj.transform([xMin, yMin], mapProj, "EPSG:4326");
+        const [maxLon, maxLat] = proj.transform([xMax, yMax], mapProj, "EPSG:4326");
+        return [minLon, minLat, maxLon, maxLat];
     }
 
 }

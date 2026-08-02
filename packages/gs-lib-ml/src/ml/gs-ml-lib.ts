@@ -1,4 +1,4 @@
-import {GsMap} from "../gs-model";
+import {GsMap, GsLayerType, GsSourceType} from "@kispace-io/gs-lib";
 import "maplibre-gl/dist/maplibre-gl.css";
 import {
     Map,
@@ -17,9 +17,8 @@ import {
     GsMlControl,
     GsMlOverlayAdapter
 } from "./gs-ml-adapters";
-import {GsLayerType, GsSourceType} from "../gs-model";
 
-export * from "../gs-model";
+export * from "@kispace-io/gs-lib";
 export * from "./gs-gs2ml";
 
 export interface MlLibOptions {

@@ -49,6 +49,12 @@ export interface MapRenderer {
             targetProjection?: string;
         }
     ): Promise<[number, number]>;
+    /**
+     * Convert a rendered view extent into WGS84 lat/lon coordinates.
+     *
+     * Implementations should return an extent in [west, south, east, north] order.
+     */
+    transformExtentToLatLon(extent: number[]): Promise<number[]>;
     destroy(): void;
 }
 

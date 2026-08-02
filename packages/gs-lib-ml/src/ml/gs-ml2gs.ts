@@ -1,10 +1,9 @@
 import {
     GsFeature,
     GsGeometry,
-    GsState,
     KEY_UUID,
     ensureUuid
-} from "../gs-model";
+} from "@kispace-io/gs-lib";
 import { toWebMercator, EPSG_4326 } from "./gs-gs2ml";
 
 /**

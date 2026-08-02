@@ -2,8 +2,6 @@ import {
     MapRenderer,
     rtUtils
 } from '@kispace-io/gs-lib';
-import { OpenLayersMapRenderer } from '@kispace-io/gs-lib/ol';
-import { MapLibreMapRenderer } from '@kispace-io/gs-lib/ml';
 
 export type RendererType = 'openlayers' | 'maplibre';
 
@@ -18,13 +16,17 @@ rtUtils.resolveUrl = async (path: string) => {
 
 let mapRenderer: MapRenderer;
 
-function createMapRenderer(gsMap: any, env: any, rendererType: RendererType = 'openlayers'): MapRenderer {
+async function createMapRenderer(gsMap: any, env: any, rendererType: RendererType = 'openlayers'): Promise<MapRenderer> {
     switch (rendererType) {
-        case 'maplibre':
-            return new MapLibreMapRenderer(gsMap, env);
+        case 'maplibre': {
+            const module = await import('@kispace-io/gs-lib-ml');
+            return new module.MapLibreMapRenderer(gsMap, env);
+        }
         case 'openlayers':
-        default:
-            return new OpenLayersMapRenderer(gsMap, env);
+        default: {
+            const module = await import('@kispace-io/gs-lib-ol');
+            return new module.OpenLayersMapRenderer(gsMap, env);
+        }
     }
 }
 
@@ -61,7 +63,7 @@ async function handleOperation(method: string, params: any) {
     switch (method) {
         case 'render':
             const rendererType = params.renderer as RendererType || 'openlayers';
-            mapRenderer = createMapRenderer(params.gsMap, params.env, rendererType);
+            mapRenderer = await createMapRenderer(params.gsMap, params.env, rendererType);
             mapRenderer.setOnDirty(() => {
                 window.parent.postMessage({ type: 'dirty' }, '*');
             });
@@ -107,6 +109,13 @@ async function handleOperation(method: string, params: any) {
                 return { result };
             }
             throw new Error('transform() not available on current renderer');
+        case 'transformExtentToLatLon':
+            if (mapRenderer) {
+                const [extent] = Object.values(params || {}) as [number[]];
+                const result = await (mapRenderer as any).transformExtentToLatLon(extent);
+                return result;
+            }
+            throw new Error('transformExtentToLatLon() not available on current renderer');
         default:
             if (mapRenderer && mapRenderer.getOperations) {
                 const operations: any = mapRenderer.getOperations();

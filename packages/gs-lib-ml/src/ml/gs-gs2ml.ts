@@ -5,14 +5,13 @@
 
 import {
     Map,
-    LngLatLike,
     StyleSpecification,
     LayerSpecification,
     SourceSpecification
 } from 'maplibre-gl';
 import { v4 as uuidv4 } from '@eclipse-docks/core/externals/third-party';
 import { subscribe, publish } from '@eclipse-docks/core/core/events';
-import { GsMlControl, GsMlControlAdapter, GsMlOverlayAdapter } from './gs-ml-adapters';
+import { GsMlControl, GsMlOverlayAdapter } from './gs-ml-adapters';
 
 import {
     GsMap,
@@ -22,10 +21,10 @@ import {
     GsLayerType,
     GsFeature,
     GsStyle,
-    KEY_UUID
-} from '../gs-model';
-import { lit } from '../gs-litns';
-import { rtUtils } from '../index';
+    KEY_UUID,
+    lit,
+    rtUtils
+} from '@kispace-io/gs-lib';
 import proj4 from 'proj4';
 
 // Key constants for MapLibre

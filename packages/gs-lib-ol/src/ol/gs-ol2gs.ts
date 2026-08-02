@@ -8,7 +8,7 @@ import {
     GsState,
     KEY_STATE,
     KEY_UUID
-} from "../gs-model";
+} from "@kispace-io/gs-lib";
 import BaseObject from "ol/Object";
 
 export const toGsLayerType = (tag: string) => {

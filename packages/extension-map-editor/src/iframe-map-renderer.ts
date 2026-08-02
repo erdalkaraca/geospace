@@ -111,6 +111,11 @@ export class IFrameMapRenderer implements MapRenderer {
         return result as [number, number];
     }
 
+    async transformExtentToLatLon(extent: number[]): Promise<number[]> {
+        const result = await this.sendMessage('transformExtentToLatLon', { 0: extent });
+        return result as number[];
+    }
+
     setOnDirty(callback: () => void): void {
         this.onDirtyCallback = callback;
     }

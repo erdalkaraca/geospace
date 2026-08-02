@@ -13,6 +13,8 @@
   "dependencies": {
     "@eclipse-docks/core": "*",
     "@kispace-io/gs-lib": "*",
+    "@kispace-io/gs-lib-ol": "*",
+    "@kispace-io/gs-lib-ml": "*",
     "dotenv": "^17.2.4",
     "jsonata": "^2.1.0"
   },

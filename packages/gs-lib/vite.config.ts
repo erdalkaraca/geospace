@@ -49,14 +49,15 @@ export default defineConfig({
         return `${entryName}.js`;
       },
     },
-    rolldownOptions: {
+    rollupOptions: {
       external: isExternal,
       output: {
         preserveModules: false,
         entryFileNames: '[name].js',
         format: 'es',
-        // Output a single file to make it easier to copy for build service
-        inlineDynamicImports: true,
+        // Allow multiple entrypoints to build correctly.
+        // Use output chunking instead of deprecated inlineDynamicImports.
+        manualChunks: undefined,
       },
     },
     outDir: 'dist',
