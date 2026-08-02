@@ -16,6 +16,7 @@ import {
 
 import { fetchReleases } from "@eclipse-docks/extension-github-service";
 
+import '@eclipse-docks/extension-pwa';
 import '@eclipse-docks/extension-md-editor';
 import '@eclipse-docks/extension-media-viewer';
 import '@eclipse-docks/extension-memory-usage';
@@ -65,6 +66,8 @@ const geospaceApp: AppDefinition = {
         favicon: '/logo.svg'
     },
     extensions: [
+        '@eclipse-docks/extension-pwa',
+
         '@kispace-io/extension-map-editor',
         '@kispace-io/extension-mapprops',
         '@kispace-io/extension-style-editor',

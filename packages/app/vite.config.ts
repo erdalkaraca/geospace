@@ -7,8 +7,14 @@ import fs from 'fs';
 import { resolveDepVersionsPlugin } from '@eclipse-docks/core/vite-plugin-resolve-deps';
 import { localAliasesPlugin } from '@eclipse-docks/core/vite-plugin-local-aliases';
 import { appSplashPlugin } from '@eclipse-docks/core/vite-plugin-app-splash';
+import { createDocksPwaPlugin } from '@eclipse-docks/extension-pwa/vite';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+const APP_NAME = 'geo!space';
+const APP_DESCRIPTION = 'An IDE for working with geospatial data.';
+/** DuckDB / WASM and other IDE assets can exceed Workbox’s default precache limit. */
+const PWA_MAX_CACHE_BYTES = 100 * 1024 * 1024;
 
 /** Iframe HTML from extension; copied into app at build so Rollup input path stays in-app. See iframe-map-renderer workaround doc. */
 const IFRAME_HTML_SOURCE = path.resolve(__dirname, '../extension-map-editor/src/iframe-map-renderer.html');
@@ -52,13 +58,22 @@ function iframeMapRendererHtmlPlugin() {
 
 export default defineConfig((): UserConfig => {
     const packagesRoot = path.resolve(__dirname, '..');
+    const base = process.env.VITE_BASE_PATH || '/';
 
     return {
         root: __dirname,
+        base,
         plugins: [
             appSplashPlugin({ logo: { src: '/logo.svg' } }),
             mkcert(),
             crossOriginIsolation(),
+            createDocksPwaPlugin({
+                basePath: base,
+                appName: APP_NAME,
+                shortName: APP_NAME,
+                appDescription: APP_DESCRIPTION,
+                maximumFileSizeToCacheInBytes: PWA_MAX_CACHE_BYTES,
+            }),
             iframeMapRendererHtmlPlugin(),
             resolveDepVersionsPlugin(),
             localAliasesPlugin({
@@ -73,7 +88,6 @@ export default defineConfig((): UserConfig => {
         resolve: {
             alias: {},
         },
-        base: process.env.VITE_BASE_PATH || '/',
         worker: {
             format: 'es',
         },
