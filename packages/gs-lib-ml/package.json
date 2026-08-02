@@ -3,6 +3,10 @@
   "version": "0.0.0",
   "type": "module",
   "license": "EPL-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/erdalkaraca/geospace.git"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
